@@ -8,51 +8,53 @@ import networkx.readwrite.nx_yaml as nx_yaml
 
 class Graph(object):
 
-    def __init__(self, file_name):
-        self.graph = Graph.read_yaml_file(file_name)
+    def __init__(self, file_name, save_flag=True):
+        self.graph = self.read_yaml_file(file_name)
+        self.save_flag = save_flag
 
-    @staticmethod
-    def read_yaml_file(config_files):
+    def read_yaml_file(self, config_files):
         """
             reads the yaml file data and stores them in appropriate variables
         """
         with open(config_files + ".yaml", 'r') as stream:
-            data_loaded = yaml.safe_load(stream)
+            data_loaded = yaml.load(stream, Loader=yaml.Loader)
 
         graph = data_loaded['graph']
 
         return graph
 
-    @staticmethod
-    def create_fancy_graph(graph, save_flag):
+    def create_fancy_graph(self):
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
         :rtype:
         """
-        dot = Digraph(name="Astar graph")
-        nodes = graph["vertices"]
+        dot = Digraph(name="graph")
+        nodes = self.graph["vertices"]
         for n in nodes:
-            if n == 'g':
+            if n[1]['player'] == 'eve':
                 dot.attr('node', shape='rectangle')
-                dot.node(n, 'goal')
-            elif n == 's':
-                dot.node(n, 'start')
+                # dot.node('eve_{}'.format(n[0]))
+                dot.node(str(n[0]))
             else:
-                dot.node(n, n)
+                dot.attr('node', shape='circle')
+                # dot.node('adam_{}'.format(n[0]))
+                dot.node(str(n[0]))
 
         # add all the edges
-        edges = graph["edges"]
+        edges = self.graph["edges"]
 
         # load the weights to illustrate on the graph
-        weight = graph["weights"]
+        # weight = graph["weights"]
         for counter, edge in enumerate(edges):
-            dot.edge(edge[1], edge[3], label=str(weight[counter]))
+            dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']))
 
-        if save_flag:
-            Graph.save_dot_graph(dot, False)
-    @staticmethod
-    def save_dot_graph(self, dot_object, view):
+
+        if self.save_flag:
+            self.save_dot_graph(dot, True)
+
+
+    def save_dot_graph(self, dot_object, view=False):
         """
         :param dot_object: object of @Diagraph
         :type Digraph
@@ -63,7 +65,7 @@ class Graph(object):
         """
         if view:
             dot_object.view()
-        dot_object.render('graph-q1/gv', view=view)
+        dot_object.render('graph/og_graph', view=view)
 
 class figure_methods(object):
 
@@ -117,17 +119,16 @@ print_edge = True
 def create_MG():
     MG = nx.MultiDiGraph()
     MG.add_nodes_from([1, 2, 3])
-    MG.add_weighted_edges_from([(1, 2, 2),
+    MG.add_weighted_edges_from([(1, 2, 1),
                                 (2, 1, -1),
                                 (1, 3, 1),
                                 (3, 3, 0.5),
                                 ])
-    # MG.add_edge(1, 2, weight=1)
-    # MG.add_edge(2, 1, weight=-1)
-    # MG.add_edge(1, 3, weight=1)
 
-    # add a self loop at 3 and
-    # MG.add_edge(3, 3, weight=0.5)
+    # assgin each node a player - this is then later used to plot them conveniently
+    MG.nodes[1]['player'] = 'eve'
+    MG.nodes[2]['player'] = 'adam'
+    MG.nodes[3]['player'] = 'adam'
 
     return MG
 
@@ -171,32 +172,34 @@ def plot_graph(graph):
     G.draw('file.png', prog='dot')
 
 
-def dump_to_yaml(graph):
+def dump_to_yaml(graph, file_name):
 
-    # given the graph dump the content to yaml file
-    # nx_yaml.write_yaml(graph, 'sample.yaml')
-    # sample to dump
+    """
+    A method to dump the contents of the grpah in to yaml document which the Graph() class reads to visualize it
 
-    document = """"
-    graph:
+    The sample dump should look like
+
+    graph :
         vertices:
-         - (s, 1)
-         - (a, 1)
-         - (b, 2)
+            eve: set()
+            adam: set()
         edges:
-         - ()
-         - ()
+            (parent node, child node, edge weight)
 
+    :param graph:
+    :type graph: graph of networkx
+    :return: None
     """
 
     data = dict(
         graph=dict(
-            vertices = [('s',1), ('a',1), ('b', 2)],
-            edges = [(), (), ()]
+            vertices=[node for node in graph.nodes.data()],
+            edges=[edge for edge in graph.edges.data()]
         )
     )
 
-    with open('sample.yaml', 'w') as outfile:
+    config_file_name = str(file_name + '.yaml')
+    with open(config_file_name, 'w') as outfile:
         yaml.dump(data, outfile, default_flow_style=False)
 
 
@@ -208,7 +211,14 @@ def main():
         print_edges(graph)
 
     print(dict(graph.edges))
-    dump_to_yaml(graph)
+    file_name = 'org_graph'
+    # dump contect to yaml
+    dump_to_yaml(graph, file_name)
+
+    # call the graph class to create a graph
+    g = Graph(file_name, True)
+    g.create_fancy_graph()
+
     # plot_graph(graph)
     # plt.plot(111)
     # nx.draw(graph, with_labels=True)

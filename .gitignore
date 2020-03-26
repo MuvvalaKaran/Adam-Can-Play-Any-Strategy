@@ -1,2 +1,8 @@
 # ignore pycharm ide files
 *.idea
+
+# ignore the graph pdf files being spotaneously produced
+src/*.gv.pdf
+
+# ignore cache files
+.pytest_cache/

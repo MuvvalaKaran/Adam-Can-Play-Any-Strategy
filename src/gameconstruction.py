@@ -35,11 +35,11 @@ class Graph(object):
             if n[1]['player'] == 'eve':
                 dot.attr('node', shape='rectangle')
                 # dot.node('eve_{}'.format(n[0]))
-                dot.node(str(n[0]))
+                dot.node(str(f"v{n[0]}"))
             else:
                 dot.attr('node', shape='circle')
                 # dot.node('adam_{}'.format(n[0]))
-                dot.node(str(n[0]))
+                dot.node(str(f"v{n[0]}"))
 
         # add all the edges
         edges = self.graph["edges"]
@@ -47,8 +47,11 @@ class Graph(object):
         # load the weights to illustrate on the graph
         # weight = graph["weights"]
         for counter, edge in enumerate(edges):
-            dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']))
+            dot.edge(str(f"v{edge[0]}"), str(f"v{edge[1]}"), label=str(edge[2]['weight']))
 
+        # set graph attributes
+        dot.graph_attr['rankdir'] = 'LR'
+        dot.edge_attr.update(arrowhead='vee', arrowsize='1')
 
         if self.save_flag:
             self.save_dot_graph(dot, True)
@@ -64,8 +67,8 @@ class Graph(object):
         :rtype:
         """
         if view:
-            dot_object.view()
-        dot_object.render('graph/og_graph', view=view)
+            dot_object.view(cleanup=True)
+        dot_object.render('graph/og_graph', view=view, cleanup=True)
 
 class figure_methods(object):
 
@@ -181,13 +184,15 @@ def dump_to_yaml(graph, file_name):
 
     graph :
         vertices:
-            eve: set()
-            adam: set()
+                 int
+                 {'player' : eve/adam}
         edges:
             (parent node, child node, edge weight)
 
     :param graph:
     :type graph: graph of networkx
+    :param file_name: Name of the original graph yaml
+    :type : str
     :return: None
     """
 
@@ -211,8 +216,8 @@ def main():
         print_edges(graph)
 
     print(dict(graph.edges))
-    file_name = 'org_graph'
-    # dump contect to yaml
+    file_name = 'config/org_graph'
+    # dump content to yaml config file
     dump_to_yaml(graph, file_name)
 
     # call the graph class to create a graph

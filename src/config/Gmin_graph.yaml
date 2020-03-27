@@ -1,0 +1,97 @@
+graph:
+  edges:
+  - !!python/tuple
+    - &id001 !!python/tuple
+      - 1
+      - 1
+    - &id002 !!python/tuple
+      - 2
+      - 1
+    - weight: 1
+  - !!python/tuple
+    - *id001
+    - &id004 !!python/tuple
+      - 3
+      - 1
+    - weight: 1
+  - !!python/tuple
+    - &id003 !!python/tuple
+      - 1
+      - 2
+    - *id002
+    - weight: 1
+  - !!python/tuple
+    - *id003
+    - *id004
+    - weight: 1
+  - !!python/tuple
+    - &id005 !!python/tuple
+      - 1
+      - 0.5
+    - &id006 !!python/tuple
+      - 2
+      - 0.5
+    - weight: 0.5
+  - !!python/tuple
+    - *id005
+    - &id007 !!python/tuple
+      - 3
+      - 0.5
+    - weight: 0.5
+  - !!python/tuple
+    - *id002
+    - *id001
+    - weight: 1
+  - !!python/tuple
+    - &id008 !!python/tuple
+      - 2
+      - 2
+    - *id001
+    - weight: 1
+  - !!python/tuple
+    - *id006
+    - *id005
+    - weight: 0.5
+  - !!python/tuple
+    - *id004
+    - *id004
+    - weight: 1
+  - !!python/tuple
+    - &id009 !!python/tuple
+      - 3
+      - 2
+    - *id004
+    - weight: 1
+  - !!python/tuple
+    - *id007
+    - *id007
+    - weight: 0.5
+  vertices:
+  - !!python/tuple
+    - *id001
+    - player: eve
+  - !!python/tuple
+    - *id003
+    - init: true
+      player: eve
+  - !!python/tuple
+    - *id005
+    - player: eve
+  - !!python/tuple
+    - *id002
+    - player: adam
+  - !!python/tuple
+    - *id008
+    - player: adam
+  - !!python/tuple
+    - *id006
+    - player: adam
+  - !!python/tuple
+    - *id004
+    - player: adam
+  - !!python/tuple
+    - *id009
+    - player: adam
+  - !!python/tuple
+    - *id007
+    - player: adam

@@ -7,6 +7,7 @@ from graphviz import Digraph
 import networkx.readwrite.nx_yaml as nx_yaml
 print_edge = False
 debug = True
+test_case = False
 
 class Graph(object):
 
@@ -42,10 +43,18 @@ class Graph(object):
         nodes = graph.graph_yaml["vertices"]
         for n in nodes:
             if n[1]['player'] == 'eve':
+                if n[1].get('init'):
+                    dot.attr('node', style='filled', fillcolor='red')
+                else:
+                    dot.attr('node', style='filled', fillcolor='lightgrey')
                 dot.attr('node', shape='rectangle')
                 # dot.node('eve_{}'.format(n[0]))
                 dot.node(str(f"v{n[0]}"))
             else:
+                if n[1].get('init'):
+                    dot.attr('node', style='filled', fillcolor='red')
+                else:
+                    dot.attr('node', style='filled', fillcolor='lightgrey')
                 dot.attr('node', shape='circle')
                 # dot.node('adam_{}'.format(n[0]))
                 dot.node(str(f"v{n[0]}"))
@@ -59,8 +68,9 @@ class Graph(object):
             dot.edge(str(f"v{edge[0]}"), str(f"v{edge[1]}"), label=str(edge[2]['weight']))
 
         # set graph attributes
-        dot.graph_attr['rankdir'] = 'LR'
-        dot.edge_attr.update(arrowhead='vee', arrowsize='1')
+        # dot.graph_attr['rankdir'] = 'LR'
+        dot.node_attr['fixedsize'] = 'False'
+        dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
 
         if graph.save_flag:
             graph_name = str(graph.graph.__getattribute__('name'))
@@ -89,17 +99,38 @@ class Graph(object):
         :rtype: graph
         """
         MG = nx.MultiDiGraph(name="org_graph")
-        MG.add_nodes_from([1, 2, 3])
-        MG.add_weighted_edges_from([(1, 2, 1),
-                                    (2, 1, 2),
-                                    (1, 3, 1),
-                                    (3, 3, 0.5),
-                                    ])
 
-        # assgin each node a player - this is then later used to plot them conveniently
-        MG.nodes[1]['player'] = 'eve'
-        MG.nodes[2]['player'] = 'adam'
-        MG.nodes[3]['player'] = 'adam'
+        if test_case:
+            MG.add_nodes_from([1, 2, 3])
+            MG.add_weighted_edges_from([(1, 2, 1),
+                                        (2, 1, -1),
+                                        (1, 3, 1),
+                                        (3, 3, 0.5)
+                                        ])
+
+            # assgin each node a player - this is then later used to plot them conveniently
+            MG.nodes[1]['player'] = 'eve'
+            MG.nodes[2]['player'] = 'adam'
+            MG.nodes[3]['player'] = 'adam'
+
+        else:
+            MG.add_nodes_from([1, 2, 3, 4, 5])
+            MG.add_weighted_edges_from([(1, 2, 1),
+                                        (2, 1, -1),
+                                        (1, 3, 1),
+                                        (3, 3, 0.5),
+                                        (3, 5, 1),
+                                        (2, 4, 2),
+                                        (4, 4, 2),
+                                        (5, 5, 1)
+                                        ])
+
+            # assgin each node a player - this is then later used to plot them conveniently
+            MG.nodes[1]['player'] = 'eve'
+            MG.nodes[2]['player'] = 'adam'
+            MG.nodes[3]['player'] = 'adam'
+            MG.nodes[4]['player'] = 'eve'
+            MG.nodes[5]['player'] = 'eve'
 
         # add node 1 as the initial node
         MG.nodes[1]['init'] = True
@@ -169,7 +200,6 @@ class Graph(object):
         # third element is the weight value
         max_edge = max(dict(org_graph.edges).items(), key=lambda x: x[1]['weight'])
         W = max_edge[1].get('weight')
-
 
         # assign nodes to Gmin with player as attributes to each node
         for n in V_prime:

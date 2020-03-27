@@ -11,11 +11,27 @@ graph:
   - !!python/tuple
     - 2
     - 1
+    - weight: -1
+  - !!python/tuple
+    - 2
+    - 4
     - weight: 2
   - !!python/tuple
     - 3
     - 3
     - weight: 0.5
+  - !!python/tuple
+    - 3
+    - 5
+    - weight: 1
+  - !!python/tuple
+    - 4
+    - 4
+    - weight: 2
+  - !!python/tuple
+    - 5
+    - 5
+    - weight: 1
   vertices:
   - !!python/tuple
     - 1
@@ -27,3 +43,9 @@ graph:
   - !!python/tuple
     - 3
     - player: adam
+  - !!python/tuple
+    - 4
+    - player: eve
+  - !!python/tuple
+    - 5
+    - player: eve

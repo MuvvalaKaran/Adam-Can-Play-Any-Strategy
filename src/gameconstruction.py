@@ -2,12 +2,41 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pygraphviz as pgv
 import yaml
+import copy
+
 from graphviz import Digraph
+
 
 import networkx.readwrite.nx_yaml as nx_yaml
 print_edge = False
 debug = True
+
+# set this boolean to true if you want to test Gmin and Gmax construction on a smaller graph
 test_case = False
+
+
+class Strategy(object):
+    def __init__(self, path, player):
+        """
+        A class to hold all the strategies
+        :param path:
+        :type path:
+        :param player:
+        :type player:
+        """
+        self.path = path
+        self.player = player
+        # dictionary of form "m" : "all paths"
+        self.dict = {}
+
+    def setpath(self, newpath):
+        self.path = newpath
+
+    def setplayer(self, player):
+        self.player = player
+
+    def updatedict(self, key, value):
+        self.dict.update({key: value})
 
 class Graph(object):
 
@@ -215,7 +244,8 @@ class Graph(object):
             if n[0][1].get('init') and n[1] == W:
                 Gmin.nodes[(n[0][0], n[1])]['init'] = True
 
-        print(Gmin.nodes.data())
+        if debug:
+            print(Gmin.nodes.data())
 
         # constructing edges as per the requirement mentioned in the doc_string
         for parent in Gmin.nodes:
@@ -282,10 +312,107 @@ class Graph(object):
 
         return Gmax
 
+    # helper method to get states that belong to eve and adam respectively
+    def get_eve_adam_states(self,graph):
+        """
+        A method to retrieve the states that belong to eve and adam
+        :param graph:
+        :type graph: netowkrx
+        :return: (eve_states, adam_state)
+        :rtype: tuple
+        """
+
+        eve_states = []
+        adam_states = []
+
+        for n in graph.nodes.data():
+            if n[1]['player'] == 'eve':
+                eve_states.append(n)
+            else:
+                adam_states.append(n)
+
+        return eve_states, adam_states
+
+    # use this method to create a range of strategies
+    def create_set_of_strategies(self, graph, bound):
+        """
+        Hypothetically G for eve and adam should be
+        :param range:
+        :type range:
+        :return: None
+        :rtype: None
+        """
+        # trim all non-essential stuff
+        states = self.get_eve_adam_states(graph)
+
+        # create eve and adam list to hold the vertex labels
+        _eve_states = []
+        _adam_states = []
+
+        # states[0] belong to eve and state[1] belong to adam
+        for e in states[0]:
+            _eve_states.append(e[0])
+
+        for a in states[1]:
+            _adam_states.append(a[0])
+
+        pathx = Strategy([], None)
+        for m in range(1, bound):
+            strs = self.strategy_synthesis_w_finite_memory(graph, m, _eve_states, _adam_states, pathx)
+
+        return strs
+
+    # use this method to create a set of strategies for a give memory (m) value
+    def strategy_synthesis_w_finite_memory(self, graph, m, _eve_states, _adam_states, pathx):
+        # m = 1 denotes memoryless strategy and m = n denotes you roll out n times excluding the initial vertex
+        # so you rollout n + 1 times
+        paths = {}
+
+
+        for n in graph.nodes():
+            paths.update({str(n): self.compute_all_path(graph, n, m, _eve_states, _adam_states, pathx)})
+            # add this path to the str dict
+            pathx.updatedict(m, paths)
+        return pathx
+
+    def compute_all_path(self, graph, curr_node, m, _eve_state, _adam_states, pathx):
+        """
+        A method to synthesize a m memory startegy
+        :param graph: the graph on which on compute the strategy
+        :type graph: Networkx
+        :param m:
+        :type m: int
+        :return: a dictionary of strategy
+        :rtype:
+        """
+
+        if type(m) is not int:
+            raise ValueError
+
+        # initially pathx is an empty list []
+        path = copy.deepcopy(pathx)
+        newpath = path.path + [curr_node]
+        path.setpath(newpath)
+        if not path.player:
+            path.setplayer("eve" if path.path[0] in _eve_state else "adam")
+        paths = []
+        if m != 0:
+            for e in graph.edges(curr_node):
+                node = e[1]
+                # here we get away with using eve and adam states as none because the states are only used at
+                # path initialization time
+                newpaths = self.compute_all_path(graph, node, m-1, None, None, path)
+                for newpath in newpaths:
+                    paths.append(newpath)
+        else:
+            paths.append(path)
+            return paths
+        return paths
+
 
 def main():
     # a main routine to create a the graph and implement the strategy synthesis
-    graph_obj = Graph(True)
+    graph_obj = Graph(False)
 
     # create a multigraph
     org_graph = graph_obj.create_multigrpah()
@@ -326,6 +453,21 @@ def main():
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
     graph_obj.plot_fancy_graph(graph_obj)
 
+    # get eve and adam states
+    eve_states, adam_states = graph_obj.get_eve_adam_states(Gmax)
+    # graph_obj.strategy_synthesis_w_finite_memory(org_graph, None, 2, [])
+
+    # trail = graph_obj.strategy_synthesis_w_finite_memory(org_graph, 3, _eve_states ,_adam_states)
+    # print(trail)
+    # for k, v in trail.items():
+    #     print(k, [(value.path, value.player)  for value in v])
+    #     print(f"for vertex {k}, the number of paths are {len(v)}")
+
+    strs = graph_obj.create_set_of_strategies(org_graph, 5)
+
+    for k, v in strs.dict.items():
+        # print(k, [(value.path, value.player)  for value in v])
+        print(f"for vertex {k}, the number of paths are {len(v)}")
 
 if __name__ == "__main__":
     main()

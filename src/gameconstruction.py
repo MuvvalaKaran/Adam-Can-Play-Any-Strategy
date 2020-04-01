@@ -6,11 +6,16 @@ import copy
 
 from graphviz import Digraph
 
-
-import networkx.readwrite.nx_yaml as nx_yaml
 print_edge = False
-debug = True
-
+# use this boolean to print nodes and edges with their respective weights
+print_Gmin_nodes = False
+print_Gmax_nodes = False
+print_Gmin_edges = False
+print_Gmax_edges = False
+# print a particular strategy with m memory
+print_str_m = False
+# print strategies for a given range of m
+print_range_str_m = False
 # set this boolean to true if you want to test Gmin and Gmax construction on a smaller graph
 test_case = False
 
@@ -27,7 +32,7 @@ class Strategy(object):
         self.path = path
         self.player = player
         # dictionary of form "m" : "all paths"
-        self.dict = {}
+        # self.dict = {}
 
     def setpath(self, newpath):
         self.path = newpath
@@ -35,8 +40,8 @@ class Strategy(object):
     def setplayer(self, player):
         self.player = player
 
-    def updatedict(self, key, value):
-        self.dict.update({key: value})
+    # def updatedict(self, key, value):
+    #     self.dict.update({key: value})
 
 class Graph(object):
 
@@ -45,6 +50,7 @@ class Graph(object):
         self.graph_yaml = self.read_yaml_file(self.file_name)
         self.save_flag = save_flag
         self.graph = None
+        self.Strs_dict = {}
 
     @staticmethod
     def read_yaml_file(config_files):
@@ -244,8 +250,8 @@ class Graph(object):
             if n[0][1].get('init') and n[1] == W:
                 Gmin.nodes[(n[0][0], n[1])]['init'] = True
 
-        if debug:
-            print(Gmin.nodes.data())
+        if print_Gmin_nodes:
+            print("Printing Gmin nodes : \n", Gmin.nodes.data())
 
         # constructing edges as per the requirement mentioned in the doc_string
         for parent in Gmin.nodes:
@@ -254,7 +260,8 @@ class Graph(object):
                     if child[1] == min(parent[1], org_graph.get_edge_data(1, 2)[0]['weight']):
                         Gmin.add_edge(parent, child, weight=child[1])
 
-        if debug:
+        if print_Gmin_edges:
+            print("Printing Gmin edges and with weights \n")
             for (u, v, wt) in Gmin.edges.data('weight'):
                 print(f"({u}, {v}, {wt})")
 
@@ -299,6 +306,9 @@ class Graph(object):
             if n[0][1].get('init') and n[1] == W:
                 Gmax.nodes[(n[0][0], n[1])]['init'] = True
 
+        if print_Gmax_nodes:
+            print("Printing Gmax nodes : \n", Gmax.nodes.data())
+
         # constructing edges as per the requirement mentioned in the doc_string
         for parent in Gmax.nodes:
             for child in Gmax.nodes:
@@ -306,14 +316,15 @@ class Graph(object):
                     if child[1] == max(parent[1], org_graph.get_edge_data(1, 2)[0]['weight']):
                         Gmax.add_edge(parent, child, weight=child[1])
 
-        if debug:
+        if print_Gmax_edges:
+            print("Printing Gmax edges and with weights \n")
             for (u, v, wt) in Gmax.edges.data('weight'):
                 print(f"({u}, {v}, {wt})")
 
         return Gmax
 
     # helper method to get states that belong to eve and adam respectively
-    def get_eve_adam_states(self,graph):
+    def get_eve_adam_states(self, graph):
         """
         A method to retrieve the states that belong to eve and adam
         :param graph:
@@ -336,11 +347,17 @@ class Graph(object):
     # use this method to create a range of strategies
     def create_set_of_strategies(self, graph, bound):
         """
-        Hypothetically G for eve and adam should be
-        :param range:
-        :type range:
-        :return: None
-        :rtype: None
+        Hypothetically G for eve and adam should be infinte. But technically we done have infinte memory to compute
+        strategies with infinite memory. Also we implement recursion to compute all possible paths. The max depth of
+        recursion in python is (~1000). So m < 1000 is a must.
+
+        This method is used to compute strategies for a given range of m.
+        :param graph: Graph from which we would like to compute strategies for a range of m values
+        :type graph: @Networkx
+        :param bound: Upper Bound on the memory
+        :type bound: int
+        :return: a dictionary of form {{m:set of strategies from each vertex }}
+        :rtype: dict
         """
         # trim all non-essential stuff
         states = self.get_eve_adam_states(graph)
@@ -356,36 +373,60 @@ class Graph(object):
         for a in states[1]:
             _adam_states.append(a[0])
 
-        pathx = Strategy([], None)
         for m in range(1, bound):
-            strs = self.strategy_synthesis_w_finite_memory(graph, m, _eve_states, _adam_states, pathx)
+            strs = self.strategy_synthesis_w_finite_memory(graph, m, _eve_states, _adam_states)
+            self.Strs_dict.update({m: strs})
 
-        return strs
+        return self.Strs_dict
 
-    # use this method to create a set of strategies for a give memory (m) value
-    def strategy_synthesis_w_finite_memory(self, graph, m, _eve_states, _adam_states, pathx):
-        # m = 1 denotes memoryless strategy and m = n denotes you roll out n times excluding the initial vertex
-        # so you rollout n + 1 times
+    def strategy_synthesis_w_finite_memory(self, graph, m, _eve_states, _adam_states):
+        """
+        A method to compute a set of strategies for a given graph. This method calls @compute_all_paths() to compute
+        all possible paths from a give vertex. While doing so each path is assigned which player that strategy belongs
+        to. In this method m = 1 denotes memoryless strategy and m = n denotes you roll out n times excluding the
+        initial vertex. In total the path length is n + 1 as we include the initial vertex as well.
+
+        We can employ this method to create a set of strategies for a given memory(m) value
+        :param graph: Graph from which we would like to compute strategies
+        :type graph: @Networkx
+        :param m:memory of the strategy
+        :type m:int
+        :param _eve_states:
+        :type _eve_states: list
+        :param _adam_states:
+        :type _adam_states: lisy
+        :return:a dictonary of all paths computes from each states with memory m {{vertex_label: paths} }
+        :rtype: dict
+        """
         paths = {}
 
-
         for n in graph.nodes():
-            paths.update({str(n): self.compute_all_path(graph, n, m, _eve_states, _adam_states, pathx)})
-            # add this path to the str dict
-            pathx.updatedict(m, paths)
-        return pathx
+            paths.update({str(n): self.compute_all_path(graph, n, m,
+                                                        _eve_states,
+                                                        _adam_states,
+                                                        pathx=Strategy([], None))})
+        return paths
 
     def compute_all_path(self, graph, curr_node, m, _eve_state, _adam_states, pathx):
         """
-        A method to synthesize a m memory startegy
-        :param graph: the graph on which on compute the strategy
-        :type graph: Networkx
-        :param m:
+        A method to compute all the paths possible from a given state. This function is called recursively until
+        memory(m) becaome 0. So, technically we rollout m + 1 times. with the first vertex in the path being the vertex
+        from where we begin compute paths
+        :param graph: Graph from which we would like to compute all possible path from a vertex
+        :type graph: @Networkx
+        :param curr_node: Current node
+        :type curr_node: graph.node
+        :param m: memory
         :type m: int
-        :return: a dictionary of strategy
-        :rtype:
+        :param _eve_state: set of states that belong to eve
+        :type _eve_state: list
+        :param _adam_states: set of states that belong to adam
+        :type _adam_states: list
+        :param pathx: path that keeps getting appended with every recursion
+        :type pathx: @Strategy
+        :return: a list of all paths from the given vertex. It includes self-loops as well
+        :rtype: list
         """
-
         if type(m) is not int:
             raise ValueError
 
@@ -408,6 +449,16 @@ class Graph(object):
             paths.append(path)
             return paths
         return paths
+
+    def get_set_of_strategies(self):
+        return self.Strs_dict
+
+    def print_set_of_strategies(self):
+        for k, v in self.Strs_dict.items():
+            print(f"For memory {k} :")
+            for vertex, pths in v.items():
+                print(f"for vertex {vertex}, the number of paths is {len(pths)}")
+            print("")
 
 
 def main():
@@ -453,21 +504,20 @@ def main():
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
     graph_obj.plot_fancy_graph(graph_obj)
 
-    # get eve and adam states
-    eve_states, adam_states = graph_obj.get_eve_adam_states(Gmax)
-    # graph_obj.strategy_synthesis_w_finite_memory(org_graph, None, 2, [])
+    # if you get a particular strategy with say m = 10
+    if print_str_m:
+        eve_states, adam_states = graph_obj.get_eve_adam_states(Gmax)
+        trail = graph_obj.strategy_synthesis_w_finite_memory(graph=Gmin, m=10,
+                                                     _eve_states=eve_states,
+                                                     _adam_states=adam_states)
+        for k, v in trail.items():
+            print(k, [(value.path, value.player)  for value in v])
+            print(f"for vertex {k}, the number of paths are {len(v)}")
 
-    # trail = graph_obj.strategy_synthesis_w_finite_memory(org_graph, 3, _eve_states ,_adam_states)
-    # print(trail)
-    # for k, v in trail.items():
-    #     print(k, [(value.path, value.player)  for value in v])
-    #     print(f"for vertex {k}, the number of paths are {len(v)}")
+    graph_obj.create_set_of_strategies(Gmin, 10)
 
-    strs = graph_obj.create_set_of_strategies(org_graph, 5)
-
-    for k, v in strs.dict.items():
-        # print(k, [(value.path, value.player)  for value in v])
-        print(f"for vertex {k}, the number of paths are {len(v)}")
+    if print_range_str_m:
+        graph_obj.print_set_of_strategies()
 
 if __name__ == "__main__":
     main()

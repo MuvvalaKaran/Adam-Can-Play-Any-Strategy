@@ -23,6 +23,11 @@ print_range_str_m = False
 # set this boolean to true if you want to test Gmin and Gmax construction on a smaller graph
 test_case = False
 
+# test inf payoff function
+test_inf = True
+# test sup payoff function
+test_sup = True
+
 
 class Strategy(object):
     def __init__(self, path, player):
@@ -490,6 +495,78 @@ class Graph(object):
 
         return G_play
 
+    def test_inf_and_liminf_limsup(self, gmin_graph, org_graph):
+        print("Testing inf and LimInf and LimSup payoff for a play on Gmin and the respective play in G")
+
+        # get a strategy from m = 100 for the org_graph
+        eve_states, adam_states = self.get_eve_adam_states(gmin_graph)
+        trail = self.strategy_synthesis_w_finite_memory(graph=gmin_graph, m=10,
+                                                             _eve_states=eve_states,
+                                                             _adam_states=adam_states)
+
+        # compute imf and sup value for a play on graph say m = 10 and from vertex 1
+
+        # get the sequence of edges for the give play
+        w_hat = []
+        w = []
+        # get key with init Flag = True
+        # rn_vertex = random.choice(list(trail.keys()))
+        init_vertex = str((1, 2))
+        rn_play = random.choice(list(trail.get(init_vertex)))
+        # play = trail.get(rn_vertex)[rn_play].path
+        print(rn_play.path)
+        # get the corresponding play in org_graph
+        g_play = self.Gmin_to_G_play(rn_play.path)
+        print(g_play)
+        # return
+        for i in range(len(rn_play.path) - 1):
+            w.append(org_graph.get_edge_data(g_play[i], g_play[i + 1])[0]['weight'])
+            w_hat.append(gmin_graph.get_edge_data(rn_play.path[i], rn_play.path[i + 1])[0]['weight'])
+        val_sup = PayoffFunc.Sup(w)
+        val_inf = PayoffFunc.Inf(w)
+        print(f"val for payoff sup is {val_sup} for the given play: \n {g_play}")
+        print(f"val for payoff inf is {val_inf} for the given play: \n {g_play}")
+
+        val_liminf = PayoffFunc.LimInf(w_hat)
+        val_limsup = PayoffFunc.LimSup(w_hat)
+        print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
+        print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
+
+    def test_sup_and_liminf_limsup(self, gmax_graph, org_graph):
+        # get a strategy from m = 100 for the org_graph
+        eve_states, adam_states = self.get_eve_adam_states(gmax_graph)
+        trail = self.strategy_synthesis_w_finite_memory(graph=gmax_graph, m=10,
+                                                             _eve_states=eve_states,
+                                                             _adam_states=adam_states)
+
+        # compute imf and sup value for a play on graph say m = 10 and from vertex 1
+
+        # get the sequence of edges for the give play
+        w_hat = []
+        w = []
+        # get key with init Flag = True
+        # rn_vertex = random.choice(list(trail.keys()))
+        init_vertex = str((1, 2))
+        rn_play = random.choice(list(trail.get(init_vertex)))
+        # play = trail.get(rn_vertex)[rn_play].path
+        print(rn_play.path)
+        # get the corresponding play in org_graph
+        g_play = self.Gmin_to_G_play(rn_play.path)
+        print(g_play)
+        # return
+        for i in range(len(rn_play.path) - 1):
+            w.append(org_graph.get_edge_data(g_play[i], g_play[i + 1])[0]['weight'])
+            w_hat.append(gmax_graph.get_edge_data(rn_play.path[i], rn_play.path[i + 1])[0]['weight'])
+        val_sup = PayoffFunc.Sup(w)
+        val_inf = PayoffFunc.Inf(w)
+        print(f"val for payoff sup is {val_sup} for the given play: \n {g_play}")
+        print(f"val for payoff inf is {val_inf} for the given play: \n {g_play}")
+
+        val_liminf = PayoffFunc.LimInf(w_hat)
+        val_limsup = PayoffFunc.LimSup(w_hat)
+        print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
+        print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
+
 def main():
     # a main routine to create a the graph and implement the strategy synthesis
     graph_obj = Graph(False)
@@ -533,7 +610,7 @@ def main():
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
     graph_obj.plot_fancy_graph(graph_obj)
 
-    # if you get a particular strategy with say m = 10
+    # if you want to get a particular strategy with memory say m = 10 for a graph
     if print_str_m:
         eve_states, adam_states = graph_obj.get_eve_adam_states(Gmax)
         trail = graph_obj.strategy_synthesis_w_finite_memory(graph=Gmin, m=10,
@@ -548,39 +625,12 @@ def main():
     if print_range_str_m:
         graph_obj.print_set_of_strategies()
 
-    # get a strategy from m = 100 for the org_graph
-    eve_states, adam_states = graph_obj.get_eve_adam_states(Gmin)
-    trail = graph_obj.strategy_synthesis_w_finite_memory(graph=Gmin, m=10,
-                                                         _eve_states=eve_states,
-                                                         _adam_states=adam_states)
+    if test_inf:
+        graph_obj.test_inf_and_liminf_limsup(Gmin, org_graph)
+    if test_sup:
+        graph_obj.test_sup_and_liminf_limsup(Gmax, org_graph)
 
-    # compute imf and sup value for a play on graph say m = 10 and from vertex 1
 
-    # get the sequence of edges for the give play
-    w_hat = []
-    w = []
-    # get key with init Flag = True
-    # rn_vertex = random.choice(list(trail.keys()))
-    init_vertex = str((1,2))
-    rn_play = random.choice(list(trail.get(init_vertex)))
-    # play = trail.get(rn_vertex)[rn_play].path
-    print(rn_play.path)
-    # get the corresponding play in org_graph
-    g_play = graph_obj.Gmin_to_G_play(rn_play.path)
-    print(g_play)
-    # return
-    for i in range(len(rn_play.path) -1):
-        w.append(org_graph.get_edge_data(g_play[i], g_play[i + 1])[0]['weight'])
-        w_hat.append(Gmin.get_edge_data(rn_play.path[i], rn_play.path[i + 1])[0]['weight'])
-    val_sup = PayoffFunc.Sup(w)
-    val_inf = PayoffFunc.Inf(w)
-    print(f"val for payoff sup is {val_sup} for the given play: \n {g_play}")
-    print(f"val for payoff inf is {val_inf} for the given play: \n {g_play}")
-
-    val_liminf = PayoffFunc.LimInf(w_hat)
-    val_limsup = PayoffFunc.LimSup(w_hat)
-    print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
-    print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
 
 if __name__ == "__main__":
     main()

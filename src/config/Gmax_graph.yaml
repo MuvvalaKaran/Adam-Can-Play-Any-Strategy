@@ -56,38 +56,36 @@ graph:
     - *id002
     - &id008 !!python/tuple
       - 4
-      - 1
-    - weight: 1
+      - 2
+    - weight: 2
   - !!python/tuple
     - &id007 !!python/tuple
       - 2
       - -1
-    - *id001
-    - weight: 1
+    - *id003
+    - weight: -1
   - !!python/tuple
     - *id007
     - *id008
-    - weight: 1
+    - weight: 2
   - !!python/tuple
     - *id009
     - *id005
     - weight: 2
   - !!python/tuple
     - *id009
-    - &id015 !!python/tuple
-      - 4
-      - 2
+    - *id008
     - weight: 2
   - !!python/tuple
     - &id010 !!python/tuple
       - 2
       - 0.5
-    - *id001
-    - weight: 1
+    - *id006
+    - weight: 0.5
   - !!python/tuple
     - *id010
     - *id008
-    - weight: 1
+    - weight: 2
   - !!python/tuple
     - *id004
     - *id004
@@ -102,8 +100,10 @@ graph:
     - &id011 !!python/tuple
       - 3
       - -1
-    - *id004
-    - weight: 1
+    - &id014 !!python/tuple
+      - 3
+      - 0.5
+    - weight: 0.5
   - !!python/tuple
     - *id011
     - *id012
@@ -114,40 +114,40 @@ graph:
     - weight: 2
   - !!python/tuple
     - *id013
-    - &id016 !!python/tuple
+    - &id015 !!python/tuple
       - 5
       - 2
     - weight: 2
   - !!python/tuple
-    - &id014 !!python/tuple
-      - 3
-      - 0.5
-    - *id004
-    - weight: 1
+    - *id014
+    - *id014
+    - weight: 0.5
   - !!python/tuple
     - *id014
     - *id012
     - weight: 1
   - !!python/tuple
+    - &id016 !!python/tuple
+      - 4
+      - 1
     - *id008
-    - *id008
-    - weight: 1
+    - weight: 2
   - !!python/tuple
     - &id017 !!python/tuple
       - 4
       - -1
     - *id008
-    - weight: 1
+    - weight: 2
   - !!python/tuple
-    - *id015
-    - *id015
+    - *id008
+    - *id008
     - weight: 2
   - !!python/tuple
     - &id018 !!python/tuple
       - 4
       - 0.5
     - *id008
-    - weight: 1
+    - weight: 2
   - !!python/tuple
     - *id012
     - *id012
@@ -159,8 +159,8 @@ graph:
     - *id012
     - weight: 1
   - !!python/tuple
-    - *id016
-    - *id016
+    - *id015
+    - *id015
     - weight: 2
   - !!python/tuple
     - &id020 !!python/tuple
@@ -207,13 +207,13 @@ graph:
     - *id014
     - player: adam
   - !!python/tuple
-    - *id008
+    - *id016
     - player: eve
   - !!python/tuple
     - *id017
     - player: eve
   - !!python/tuple
-    - *id015
+    - *id008
     - player: eve
   - !!python/tuple
     - *id018
@@ -225,7 +225,7 @@ graph:
     - *id019
     - player: eve
   - !!python/tuple
-    - *id016
+    - *id015
     - player: eve
   - !!python/tuple
     - *id020

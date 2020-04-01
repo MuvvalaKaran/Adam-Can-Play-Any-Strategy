@@ -3,8 +3,12 @@ import matplotlib.pyplot as plt
 import pygraphviz as pgv
 import yaml
 import copy
+import random
 
 from graphviz import Digraph
+from PayoffFunc import PayoffFunc
+# import sys
+# print(sys.path)
 
 print_edge = False
 # use this boolean to print nodes and edges with their respective weights
@@ -257,7 +261,7 @@ class Graph(object):
         for parent in Gmin.nodes:
             for child in Gmin.nodes:
                 if org_graph.has_edge(parent[0], child[0]):
-                    if child[1] == min(parent[1], org_graph.get_edge_data(1, 2)[0]['weight']):
+                    if child[1] == min(parent[1], org_graph.get_edge_data(parent[0], child[0])[0]['weight']):
                         Gmin.add_edge(parent, child, weight=child[1])
 
         if print_Gmin_edges:
@@ -313,7 +317,7 @@ class Graph(object):
         for parent in Gmax.nodes:
             for child in Gmax.nodes:
                 if org_graph.has_edge(parent[0], child[0]):
-                    if child[1] == max(parent[1], org_graph.get_edge_data(1, 2)[0]['weight']):
+                    if child[1] == max(parent[1], org_graph.get_edge_data(parent[0], child[0])[0]['weight']):
                         Gmax.add_edge(parent, child, weight=child[1])
 
         if print_Gmax_edges:
@@ -460,10 +464,20 @@ class Graph(object):
                 print(f"for vertex {vertex}, the number of paths is {len(pths)}")
             print("")
 
+    # helper method to get the corresponding play from Gmin/Gmax to G
+    def Gmin_to_G_play(self, play):
+        # all the leading vertex values belong to the org_graph
+        # here play is a sequence of tuple
+        G_play = []
+
+        for i in play:
+            G_play.append(i[0])
+
+        return G_play
 
 def main():
     # a main routine to create a the graph and implement the strategy synthesis
-    graph_obj = Graph(False)
+    graph_obj = Graph(True)
 
     # create a multigraph
     org_graph = graph_obj.create_multigrpah()
@@ -518,6 +532,38 @@ def main():
 
     if print_range_str_m:
         graph_obj.print_set_of_strategies()
+
+    # get a strategy from m = 100 for the org_graph
+    eve_states, adam_states = graph_obj.get_eve_adam_states(Gmin)
+    trail = graph_obj.strategy_synthesis_w_finite_memory(graph=Gmin, m=10,
+                                                         _eve_states=eve_states,
+                                                         _adam_states=adam_states)
+
+    # compute imf and sup value for a play on graph say m = 10 and from vertex 1
+
+    # get the sequence of edges for the give play
+    w_hat = []
+    w = []
+    rn_vertex = random.choice(list(trail.keys()))
+    rn_play = random.choice(list(trail.get(rn_vertex)))
+    # play = trail.get(rn_vertex)[rn_play].path
+    print(rn_play.path)
+    # get the corresponding play in org_graph
+    g_play = graph_obj.Gmin_to_G_play(rn_play.path)
+    print(g_play)
+    # return
+    for i in range(len(rn_play.path) -1):
+        w.append(org_graph.get_edge_data(g_play[i], g_play[i + 1])[0]['weight'])
+        w_hat.append(Gmin.get_edge_data(rn_play.path[i], rn_play.path[i + 1])[0]['weight'])
+    val_sup = PayoffFunc.Sup(w)
+    val_inf = PayoffFunc.Inf(w)
+    print(f"val for payoff sup is {val_sup} for the given play: \n {g_play}")
+    print(f"val for payoff inf is {val_inf} for the given play: \n {g_play}")
+
+    val_liminf = PayoffFunc.LimInf(w_hat)
+    val_limsup = PayoffFunc.LimSup(w_hat)
+    print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
+    print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
 
 if __name__ == "__main__":
     main()

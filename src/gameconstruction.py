@@ -35,8 +35,19 @@ class Strategy(object):
         """
         self.path = path
         self.player = player
+        self.init = None
         # dictionary of form "m" : "all paths"
         # self.dict = {}
+
+    def setinit(self, init):
+        '''
+        Init flag set to be True for strategies begining from initial vertex
+        :param init: Boolean variable idicating strategies starting from the init vertex
+        :type init: bool
+        :return: None
+        :rtype: None
+        '''
+        self.init = init
 
     def setpath(self, newpath):
         self.path = newpath
@@ -296,7 +307,7 @@ class Graph(object):
         max_edge = max(dict(org_graph.edges).items(), key=lambda x: x[1]['weight'])
         W = max_edge[1].get('weight')
 
-        # assign nodes to Gmin with player as attributes to each node
+        # assign nodes to Gmax with player as attributes to each node
         for n in V_prime:
 
             if n[0][1]['player'] == "eve":
@@ -440,6 +451,10 @@ class Graph(object):
         path.setpath(newpath)
         if not path.player:
             path.setplayer("eve" if path.path[0] in _eve_state else "adam")
+
+        if not path.init:
+            if path.path[0] == 1 or path.path[0] == (1,2):
+                path.setinit(True)
         paths = []
         if m != 0:
             for e in graph.edges(curr_node):
@@ -477,7 +492,7 @@ class Graph(object):
 
 def main():
     # a main routine to create a the graph and implement the strategy synthesis
-    graph_obj = Graph(True)
+    graph_obj = Graph(False)
 
     # create a multigraph
     org_graph = graph_obj.create_multigrpah()
@@ -544,8 +559,10 @@ def main():
     # get the sequence of edges for the give play
     w_hat = []
     w = []
-    rn_vertex = random.choice(list(trail.keys()))
-    rn_play = random.choice(list(trail.get(rn_vertex)))
+    # get key with init Flag = True
+    # rn_vertex = random.choice(list(trail.keys()))
+    init_vertex = str((1,2))
+    rn_play = random.choice(list(trail.get(init_vertex)))
     # play = trail.get(rn_vertex)[rn_play].path
     print(rn_play.path)
     # get the corresponding play in org_graph

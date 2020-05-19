@@ -6,3 +6,4 @@ src/*.gv.pdf
 
 # ignore cache files
 .pytest_cache/
+src/__pycache__/

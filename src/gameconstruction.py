@@ -6,7 +6,7 @@ import copy
 import random
 
 from graphviz import Digraph
-from PayoffFunc import PayoffFunc
+from src.PayoffFunc import PayoffFunc
 # import sys
 # print(sys.path)
 

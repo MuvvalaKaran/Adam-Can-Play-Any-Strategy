@@ -1,0 +1,124 @@
+graph:
+  edges:
+  - !!python/tuple
+    - '0'
+    - '0'
+    - weight: 0
+  - !!python/tuple
+    - '0'
+    - '1'
+    - weight: 0
+  - !!python/tuple
+    - '1'
+    - '1_1'
+    - weight: 0
+  - !!python/tuple
+    - '1'
+    - '1_2'
+    - weight: 0
+  - !!python/tuple
+    - T
+    - T
+    - weight: -5
+  - !!python/tuple
+    - '1_1'
+    - '2_1'
+    - weight: 0
+  - !!python/tuple
+    - '2_1'
+    - '1_1'
+    - weight: -2
+  - !!python/tuple
+    - '2_1'
+    - '4_1'
+    - weight: 1
+  - !!python/tuple
+    - '3_1'
+    - '3_1'
+    - weight: -0.5
+  - !!python/tuple
+    - '3_1'
+    - '5_1'
+    - weight: 0
+  - !!python/tuple
+    - '4_1'
+    - T
+    - weight: 0
+  - !!python/tuple
+    - '5_1'
+    - '5_1'
+    - weight: 0
+  - !!python/tuple
+    - '1_2'
+    - '2_2'
+    - weight: -1
+  - !!python/tuple
+    - '1_2'
+    - '3_2'
+    - weight: 0
+  - !!python/tuple
+    - '2_2'
+    - '1_2'
+    - weight: -3
+  - !!python/tuple
+    - '2_2'
+    - '4_2'
+    - weight: 0
+  - !!python/tuple
+    - '3_2'
+    - '3_2'
+    - weight: -1.5
+  - !!python/tuple
+    - '3_2'
+    - '5_2'
+    - weight: -1
+  - !!python/tuple
+    - '4_2'
+    - '4_2'
+    - weight: 0
+  - !!python/tuple
+    - '5_2'
+    - '5_2'
+    - weight: -1
+  vertices:
+  - !!python/tuple
+    - '0'
+    - player: adam
+  - !!python/tuple
+    - '1'
+    - player: eve
+  - !!python/tuple
+    - T
+    - player: eve
+  - !!python/tuple
+    - '1_1'
+    - init: true
+      player: eve
+  - !!python/tuple
+    - '2_1'
+    - player: adam
+  - !!python/tuple
+    - '3_1'
+    - player: adam
+  - !!python/tuple
+    - '4_1'
+    - player: eve
+  - !!python/tuple
+    - '5_1'
+    - player: eve
+  - !!python/tuple
+    - '1_2'
+    - init: true
+      player: eve
+  - !!python/tuple
+    - '2_2'
+    - player: adam
+  - !!python/tuple
+    - '3_2'
+    - player: adam
+  - !!python/tuple
+    - '4_2'
+    - player: eve
+  - !!python/tuple
+    - '5_2'
+    - player: eve

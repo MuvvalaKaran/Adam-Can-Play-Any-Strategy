@@ -3,7 +3,9 @@
 
 # ignore the graph pdf files being spotaneously produced
 src/*.gv.pdf
+*.gv.pdf
 
 # ignore cache files
 .pytest_cache/
+__pycache__/
 src/__pycache__/

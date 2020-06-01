@@ -139,16 +139,16 @@ class Graph(object):
 
     def save_dot_graph(self, dot_object, graph_name, view=False):
         """
+        A method to save the plotted graph in the respective folder
         :param dot_object: object of @Diagraph
         :type Digraph
         :param view: flag for viewing the object
         :type view: bool
-        :return: a file of pdf format for now
-        :rtype:
         """
         if view:
             dot_object.view(cleanup=True)
 
+        # FIXME: instead of taking absolute path, get the relative path and append this to it
         dot_object.render(f'graph/{graph_name}', view=view, cleanup=True)
 
     # create a sample multigraph

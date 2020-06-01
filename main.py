@@ -1,26 +1,34 @@
 # use this file to construct the game
-# then upass this game to the payoff code to constrcut the finite state machine
+# then pass this game to the payoff code to construct the finite state machine
 import math
 import copy
 import networkx as nx
 import sys
+import re
 
 from src.gameconstruction import Graph
 from src.compute_payoff import payoff_value
 
-# assert that this code runs on linux
+# asserts that this code is tested in linux
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
 
-def construct_graph():
-    # testing imports
-    G = Graph(True)
-    # create the multigraph
-    # FIXME: add code that automatically compute gmin/ gmax based on the payoff function pased by the user
+def construct_graph(payoff_func, *args, **kwargs):
+    G = Graph(False)
+    # create the directed multi-graph
     org_graph = G.create_multigrpah()
-    gmin = G.construct_Gmin(org_graph)
-    G.graph = org_graph
 
+    sup_re = re.compile('^sup$')
+    inf_re = re.compile('^inf$')
+
+    if inf_re.match(payoff_func):
+        gmin = G.construct_Gmin(org_graph)
+        G.graph = gmin
+    elif sup_re.match(payoff_func):
+        gmax = G.construct_Gmax(org_graph)
+        G.graph = gmax
+    else:
+        G.graph = org_graph
     return G
 
 
@@ -30,7 +38,9 @@ def construct_alt_game(graph, edge):
     new_graph.remove_edge(edge[0], edge[1])
     return new_graph
 
+
 def compute_w_prime(payoff_handle, graph):
+    print("*****************Constructing W_prime*****************")
     # compute W prime
     # calculate the loop values
     loop_vals = payoff_handle.cycle_main()
@@ -63,10 +73,12 @@ def compute_w_prime(payoff_handle, graph):
                 payoff_handle.graph = graph.graph
                 payoff_handle.cycle_main()
                 w_prime.update({edge: payoff_handle.compute_cVal(edge[1])})
-                # w_prime.add(max(tmp_cvals))
+    print(f"the value of b are {set(w_prime.values())}")
+
     return w_prime
 
-def construct_g_b(g_hat, org_graph, b, w_prime):
+
+def _construct_g_b(g_hat, org_graph, b, w_prime):
     # G_b = nx.MultiDiGraph(name=f"G_{b}")
     g_hat.add_nodes_from([f"{n}_{b}" for n in org_graph.nodes()])
 
@@ -105,6 +117,7 @@ def get_max_weight(graph):
 
 
 def construct_g_hat(org_graph, w_prime):
+    print("*****************Constructing G_hat*****************")
     # construct new graph according to the pseudocode 3
     G_hat = nx.MultiDiGraph(name="G_hat")
     G_hat.add_nodes_from(['0', '1', 'T'])
@@ -112,19 +125,18 @@ def construct_g_hat(org_graph, w_prime):
     G_hat.nodes['1']['player'] = "eve"
     G_hat.nodes['T']['player'] = "eve"
     # add the edges with the weights
-    G_hat.add_weighted_edges_from([('0', '0', 0), ('T', 'T', -2 * get_max_weight(org_graph) - 1)])
+    G_hat.add_weighted_edges_from([('0', '0', 0), ('0', '1', 0), ('T', 'T', -2 * get_max_weight(org_graph) - 1)])
 
     # compute the range of w_prime function
     w_set = set(w_prime.values()) - {-1 * math.inf}
     # construct g_b
     for b in w_set:
-        construct_g_b(G_hat, org_graph, b, w_prime)
+        _construct_g_b(G_hat, org_graph, b, w_prime)
 
     # add edges between 1 of G_hat and init(1_b) of graph G_b with edge weights 0
     for b in w_set:
         G_hat.add_weighted_edges_from([('1', f"1_{b}", 0)])
 
-    # TODO: replace @w_prime(e) = -inf for e that belong to adam substitution to the org edge value in the org_graph
     def w_hat_b(_org_graph, org_edge, b_value):
         if w_prime[org_edge] != -1 * math.inf:
             return w_prime[org_edge] - b_value
@@ -148,18 +160,54 @@ def construct_g_hat(org_graph, w_prime):
                                                          int(e[1][0])),
                                                          int(e[0][-1]))
 
+    # for nodes that don't have any outgoing edges add a transition to the terminal node i.e 'T' in our case
+    for node in G_hat.nodes():
+        if G_hat.out_degree(node) == 0:
+            # add transition to the terminal node
+            G_hat.add_weighted_edges_from([(node, 'T', 0)])
+
+    return G_hat
+
+
+def plot_graph(graph, file_name ,save_flag=True):
+    # create Graph object
+    plot_handle = Graph(save_flag)
+    plot_handle.graph = graph
+
+    # file to store the yaml for plotting it in graphviz
+    plot_handle.file_name = file_name
+
+    # dump the graph to yaml
+    plot_handle.dump_to_yaml(plot_handle.graph)
+
+    # plot graph
+    plot_handle.graph_yaml = plot_handle.read_yaml_file(plot_handle.file_name)
+    plot_handle.plot_fancy_graph(plot_handle)
+
+def compute_aVal():
+    raise NotImplementedError
+
+
 def main():
 
+    payoff_func = "liminf"
+    print(f"*****************Using {payoff_func}*****************")
     # construct graph
-    graph = construct_graph()
-    p = payoff_value(graph.graph, 'limsup', None)
+    graph = construct_graph(payoff_func)
+    p = payoff_value(graph.graph, payoff_func)
 
+    # FIXME: fails when using inf/sup payoff function
     # construct W prime
     w_prime = compute_w_prime(p, graph)
 
     # construct G_hat
-    construct_g_hat(graph.graph, w_prime)
-    # Compute antaganostic value
+    G_hat = construct_g_hat(graph.graph, w_prime)
+
+    # use methods from the Graph class create a visualization
+    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=True)
+
+    # Compute antagonistic value
+
 
 if __name__ == "__main__":
     main()

@@ -15,7 +15,7 @@ class payoff_value():
     # a collection of different payoff function to construct the finite state machine
 
     # graph is the graph on which we will be computing all the payoff value
-    def __init__(self, graph, payoff_func, vertices):
+    def __init__(self, graph, payoff_func):
         self.graph = graph
         self.__V = self.graph.nodes  # number of vertices
         #  make sure that the string value of payoff match the key value exactly
@@ -30,7 +30,12 @@ class payoff_value():
             'sup': max
         }
 
-        return payoff_dict[payoff_func]
+        try:
+            return payoff_dict[payoff_func]
+        except KeyError as error:
+            print(error)
+            print("Please enter a valid payoff function. NOTE: payoff_func string is case sensitive")
+            print("Make sure you exactly enter: 1.sup 2.inf 3. limsup 4. liminf. ")
 
     @deprecated
     # write a basic code in which we detect cycles
@@ -117,7 +122,7 @@ class payoff_value():
         :return:
         """
         # RFE (request for enhancement): find better alternative than traversing through the whole loop
-        # IDEA: use generators or build methods from the operator library
+        # IDEA: use generators or build methods from the builtin operator library in python
         # find all the values that are True and substitute False in there
         for node, flag in stack.items():
             if flag:

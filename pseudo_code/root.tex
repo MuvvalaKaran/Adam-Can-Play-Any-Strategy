@@ -99,7 +99,7 @@ We then use values($b \in W'$) to construct $G^b$ with the new weight function $
                 }
                 
                 \Else{
-                    $W^{'}(e)$ \longleftarrow max\{cVal$^{v^'}$ \vert (u,$v^'$) \in $E$    \setminus \{e\}\} \\
+                    $W^{'}(e)$ \longleftarrow max\{cVal$^{v^'}$ \vert (u,$v^'$) \in\; $E$ \;\setminus \{e\}\} \\
                 }
             } 
         } \\
@@ -117,23 +117,25 @@ We then use values($b \in W'$) to construct $G^b$ with the new weight function $
         
         \Being{
         
-            Initialize $v_o$ \in $\^{V}$ \setminus $\^{V}_\exists$
+            Initialize $v_0$ \in $\^{V}$ \setminus $\^{V}_\exists$
             
             Initialize $v_1, v_\bot$ \in $\^{V}_\exists $
         
-            \For{b \in $Range(W^{'}) \setminus -\infty $}{
-                construct $G^b = (V^b, V_\exists^b, v_I^b, E^b ,\^{w})$ \vert{}  $G^b$ is copy of $G$ with edges $e$ restricted by $W^{'}(e)$ \leq b
+            \For{$b \in Range(W^{'}) \setminus -\infty $}{
+                construct $G^b = (V^b, V_\exists^b, v_I^b, E^b ,\^{w})$ \vert{}  $G^b$ is a copy of $G$ with edges $e$ restricted by $W^{'}(e) \leq b$
                 \\
+                Initialize weight function $\^{w(e)}$ \longleftarrow w(e) - b \; $\forall\; e \in E $ \\
             }
             
             \For{e in $\^{G}$}{
-                w($v_o$, $v_0$) = 0  
+                w($v_0$, $v_0$) = 0  
                 
                 w($v_\bot$, $v_\bot$) = $-2w_{max} - 1$
                 
+                w($v_0$ , $v_1$) = 0
+                
                 \For{$v_I^b$ in $G^b$}{
                     w($v_1$, $v_I^b$)= 0 \\
-                    Initialize weight function $\^{w(e)}$ \longleftarrow w(e) - b \\
                 }
                   
                 

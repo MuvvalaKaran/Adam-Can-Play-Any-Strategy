@@ -29,6 +29,33 @@ Install anaconda on your os and then run the below moentioned shell commands wit
 
 # Strategy synthesis for eve when Adam can play any strategy
 
+# Result
+
+<!-- ![](src/graph/org_graph.jpg "org_graph") -->
+<p align="center">
+<img src="src/graph/org_graph.jpg" alt="org_graph" width="500" height="500">
+</p>
+
+---
+<p align="center">
+<!-- ![](src/graph/Gmax_graph.jpg "gmax_graph") -->
+<img src="src/graph/Gmax_graph.jpg" alt="gmax_graph" width="500" height="500">
+</p>
+
+---
+<p align="center">
+<!-- ![](src/graph/Gmin_graph.jpg "gmin_graph") -->
+<img src="src/graph/Gmin_graph.jpg" alt="gmin_graph" width="500" height="500">
+</p>
+
+---
+<p align="center">
+<!-- ![](src/graph/G_hat.jpg "g_hat_graph") -->
+<img src="src/graph/G_hat.jpg" alt="g_hat_graph" width="300" height="600">
+</p>
+
+---
+
 
 # References
 

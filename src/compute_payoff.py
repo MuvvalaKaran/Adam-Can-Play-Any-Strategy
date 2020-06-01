@@ -1,6 +1,12 @@
 import unittest
 import copy
+import re
+import operator
+
+# import helper function to depreceate warnings
 from helper_methods import deprecated
+
+
 class payoff_value():
     # a collection of different payoff function to construct the finite state machine
 
@@ -10,6 +16,7 @@ class payoff_value():
         self.V = self.graph.nodes  # number of vertices
         #  make sure that the string value of payoff match the key value exactly
         self.payoff_func = self.choose_payoff(payoff_func)
+        self.loop_vals = None
 
     def choose_payoff(self, payoff_func):
         payoff_dict = {
@@ -98,7 +105,6 @@ class payoff_value():
         """
         # play = [node for node, value in stack.items() if value == True]
         play_str = ''.join([str(ele) for ele in stack])
-
         return play_str
 
     def _reinit_visitStack(self, stack):
@@ -107,11 +113,12 @@ class payoff_value():
         :return:
         """
 
+        # find all the values that are True and substitute False in there
+
+        # index_pos_list = [i for i in range(len(list(stack.values()))) if list(stack.values())[i] == True]
         for node, flag in stack.items():
             if flag:
                 stack[node] = False
-        # new_stack = {k: False for k, v in stack.items() - {k: False}}
-
         return stack
 
     def _compute_loop_value(self, stack):
@@ -146,7 +153,6 @@ class payoff_value():
         return self.payoff_func(map(get_edge_weight, [k for k in loop_edges]))
 
     def cycle_main(self):
-
         visitStack = {}
         edgeStack = {}
         """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
@@ -175,45 +181,69 @@ class payoff_value():
             visitStack[init_node[0]] = True
             nodeStack = []
             nodeStack.append(init_node[0])
-            # nodeStack.append()
-            # edgeStack = self._reinit_visitStack(edgeStack)
-            # edgeStack = []
-            # edgeStack.append((init_node[0], node))
-            # edgeStack[(init_node[0], node)] = True
-            # edgeStack = []
-            # edgeStack.append(self.graph[init_node[0]][node][0]['weight'])
             self.cycle_util(node, visitStack, loop_dict, edgeStack, nodeStack)
 
+        self.loop_vals = loop_dict
         return loop_dict
 
     def cycle_util(self, node, visitStack, loop_dict, edgeStack, nodeStack):
-        # initialize loop flag as False and update the @vistStack with the current node as True
+        # initialize loop flag as False and update the @visitStack with the current node as True
         visitStack = copy.copy(visitStack)
         visitStack[node] = True
         nodeStack = copy.copy((nodeStack))
         nodeStack.append(node)
         for neighbour in self.graph.neighbors(node):
-            # edgeStack[(node, neighbour)] = True
-            # check if the neighbour has been visited before
-            # append edgeStack with the edge value between the current node = node and the next node = neighbour
-            # edgeStack.append(self.graph[node][neighbour][0]['weight'])
             if visitStack[neighbour]:
-                # edgeStack[(node, neighbour)] = True
-                # self.cycle_util(neighbour)
                 nodeStack = copy.copy((nodeStack))
                 nodeStack.append(neighbour)
-                # edgeStack.append((node, neighbour))
                 play_str = self._conver_stack_to_play_str(nodeStack)
                 loop_value = self._compute_loop_value(nodeStack)
                 loop_dict.update({play_str: loop_value})
                 nodeStack.pop()
                 continue
-                # edgeStack[(node, neighbour)] = False
-                # return self.cycle_util(neighbour, visitStack, loop_dict, edgeStack, nodeStack)
             else:
-                # nodeStack.append(neighbour)
-                # edgeStack[(node, neighbour)] = True
-                # edgeStack.append((node, neighbour))
-                # nodeStack.append(neighbour)
                 self.cycle_util(neighbour, visitStack, loop_dict, edgeStack, nodeStack)
+
+    def _find_vertex_in_play(self, v, play):
+        """
+        A helper method to to check is a node is in a player or not
+        :param v: name of the node to search for
+        :type @node of type networkx MG
+        :param play: a sequence of nodes/play on the given graph
+        :type basestring
+        :return: True if the vertex exist in the play else False
+        :type bool
+        """
+
+        # if there is a match then return True
+        # took the long route rather than just re.search({v}, txt) as I could not enter v directly even with
+        # escape sequence characters
+        node_re = re.compile(f'{v}')
+        if re.search(node_re.pattern, play):
+            return True
+        return False
+
+    def compute_cVal(self, vertex):
+        """
+        Method to compute the cVal using  @vertex as the starting node
+        :param vertex: a valid node of the graph
+        :type: @node
+        :return: a single value of the max payoff when both adam and eve play cooperatively
+        :type: int/float
+        """
+        # compute the Val for various loops that exist in the graph and then choose the play with the max Val
+
+        # find all plays in which the vertex exist
+        play_dict = {k: v for k, v in self.loop_vals.items() if self._find_vertex_in_play(vertex, k)}
+
+        # find the max of the value
+        max_play = max(play_dict, key=lambda key: play_dict[key])
+        print(f"The cVal from the node {vertex}") # is {list(play_dict.values())[max_pos_index]} "
+        print(f"for the play {max_play} is {play_dict[max_play]}")
+
+        return play_dict[max_play]
+
+
+    def compute_aVal(self):
+        raise NotImplementedError
 

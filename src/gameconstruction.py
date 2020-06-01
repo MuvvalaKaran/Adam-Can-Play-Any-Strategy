@@ -163,7 +163,7 @@ class Graph(object):
                                         (3, 3, 0.5)
                                         ])
 
-            # assgin each node a player - this is then later used to plot them conveniently
+            # assign each node a player - this is then later used to plot them conveniently
             MG.nodes[1]['player'] = 'eve'
             MG.nodes[2]['player'] = 'adam'
             MG.nodes[3]['player'] = 'adam'

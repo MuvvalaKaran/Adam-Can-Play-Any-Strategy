@@ -80,8 +80,13 @@ class Graph(object):
         graph = None
 
         if config_files is not None:
-            with open(config_files + ".yaml", 'r') as stream:
-                data_loaded = yaml.load(stream, Loader=yaml.Loader)
+            try:
+                with open(config_files + ".yaml", 'r') as stream:
+                    data_loaded = yaml.load(stream, Loader=yaml.Loader)
+            except FileNotFoundError:
+                file_name = config_files + ".yaml"
+                print(FileNotFoundError)
+                print(f"The file {file_name} does not exist")
 
             graph = data_loaded['graph']
 
@@ -234,8 +239,12 @@ class Graph(object):
         )
 
         config_file_name = str(self.file_name + '.yaml')
-        with open(config_file_name, 'w') as outfile:
-            yaml.dump(data, outfile, default_flow_style=False)
+        try:
+            with open(config_file_name, 'w') as outfile:
+                yaml.dump(data, outfile, default_flow_style=False)
+        except FileNotFoundError:
+            print(FileNotFoundError)
+            print(f"The file {config_file_name} could not be found")
 
 
     def construct_Gmin(self, org_graph):

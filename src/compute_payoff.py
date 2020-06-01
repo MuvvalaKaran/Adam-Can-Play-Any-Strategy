@@ -6,17 +6,21 @@ import operator
 # import helper function to depreceate warnings
 from helper_methods import deprecated
 
-
+"""
+formatting notes : _protected variable: This effectively prevents it to be accessed unless, it is within a sub-class
+                   __private variable : This gives a strong indication that this variable should not be touched from 
+                   outside the class. Any attempt to do so will result in an AttributeError. 
+"""
 class payoff_value():
     # a collection of different payoff function to construct the finite state machine
 
     # graph is the graph on which we will be computing all the payoff value
     def __init__(self, graph, payoff_func, vertices):
         self.graph = graph
-        self.V = self.graph.nodes  # number of vertices
+        self.__V = self.graph.nodes  # number of vertices
         #  make sure that the string value of payoff match the key value exactly
-        self.payoff_func = self.choose_payoff(payoff_func)
-        self.loop_vals = None
+        self.__payoff_func = self.choose_payoff(payoff_func)
+        self.__loop_vals = None
 
     def choose_payoff(self, payoff_func):
         payoff_dict = {
@@ -61,7 +65,7 @@ class payoff_value():
             # if cycle exists then return True
             elif recStack[neighbour]:
                 # compute the min/max
-                loop_value = self.payoff_func(edgeStack)
+                loop_value = self.__payoff_func(edgeStack)
                 edgeStack.clear()
                 return recStack, loop_value
                 # return True
@@ -74,8 +78,8 @@ class payoff_value():
     @deprecated
     def is_cyclic(self):
         # initialize visited and recStack as dict mapping each node to its boolean value
-        # visited = [False] * len(self.V)
-        # recStack = [False] * len(self.V)
+        # visited = [False] * len(self.__V)
+        # recStack = [False] * len(self.__V)
         # visited keeps track of nodes visited
         visited = {}
         # recStack keeps track of a loop
@@ -83,11 +87,11 @@ class payoff_value():
         loopStack = {}
         # edgeStack keeps track of the edge weights in the recStack
         edgeStack = []
-        for node in self.V:
+        for node in self.__V:
             visited.update({node: False})
             recStack.update({node: False})
 
-        for node in self.V:
+        for node in self.__V:
             if not visited[node]:
                 play, weight = self.is_cyclic_util(node, visited, recStack, edgeStack)
                 play = [node for node, value in recStack.items() if value == True]
@@ -112,10 +116,9 @@ class payoff_value():
         helper method to re_initalize visit stack
         :return:
         """
-
+        # RFE (request for enhancement): find better alternative than traversing through the whole loop
+        # IDEA: use generators or build methods from the operator library
         # find all the values that are True and substitute False in there
-
-        # index_pos_list = [i for i in range(len(list(stack.values()))) if list(stack.values())[i] == True]
         for node, flag in stack.items():
             if flag:
                 stack[node] = False
@@ -150,7 +153,7 @@ class payoff_value():
             # create the edge tuple upto the very last element
             loop_edges.append((stack[i], stack[i + 1]))
 
-        return self.payoff_func(map(get_edge_weight, [k for k in loop_edges]))
+        return self.__payoff_func(map(get_edge_weight, [k for k in loop_edges]))
 
     def cycle_main(self):
         visitStack = {}
@@ -183,7 +186,7 @@ class payoff_value():
             nodeStack.append(init_node[0])
             self.cycle_util(node, visitStack, loop_dict, edgeStack, nodeStack)
 
-        self.loop_vals = loop_dict
+        self.__loop_vals = loop_dict
         return loop_dict
 
     def cycle_util(self, node, visitStack, loop_dict, edgeStack, nodeStack):
@@ -234,7 +237,7 @@ class payoff_value():
         # compute the Val for various loops that exist in the graph and then choose the play with the max Val
 
         # find all plays in which the vertex exist
-        play_dict = {k: v for k, v in self.loop_vals.items() if self._find_vertex_in_play(vertex, k)}
+        play_dict = {k: v for k, v in self.__loop_vals.items() if self._find_vertex_in_play(vertex, k)}
 
         # find the max of the value
         max_play = max(play_dict, key=lambda key: play_dict[key])

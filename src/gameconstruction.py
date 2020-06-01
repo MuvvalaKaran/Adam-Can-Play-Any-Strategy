@@ -173,10 +173,13 @@ class Graph(object):
             MG.add_weighted_edges_from([(1, 2, 1),
                                         (2, 1, -1),
                                         (1, 3, 1),
+                                        # (2, 3, 1),
                                         (3, 3, 0.5),
                                         (3, 5, 1),
                                         (2, 4, 2),
                                         (4, 4, 2),
+                                        # (4, 1, 0),
+                                        # (5, 4, 6),
                                         (5, 5, 1)
                                         ])
 
@@ -186,6 +189,10 @@ class Graph(object):
             MG.nodes[3]['player'] = 'adam'
             MG.nodes[4]['player'] = 'eve'
             MG.nodes[5]['player'] = 'eve'
+
+        """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
+         you have to first access the data as graph.nodes.data() and loop over the list
+         each element in that list is a tuple (NOT A DICT) of the form (node_name, {key: value})"""
 
         # add node 1 as the initial node
         MG.nodes[1]['init'] = True

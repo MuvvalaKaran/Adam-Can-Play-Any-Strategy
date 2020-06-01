@@ -2,23 +2,28 @@
 # then upass this game to the payoff code to constrcut the finite state machine
 
 from src.gameconstruction import Graph
-from src.compute_payoff import pyaoff_value
+from src.compute_payoff import payoff_value
 
 def construct_graph():
     # testing imports
     G = Graph(True)
     # create the multigraph
     org_graph = G.create_multigrpah()
-    G.graph = org_graph
+    gmin = G.construct_Gmin(org_graph)
+    G.graph = gmin
 
     return G
 
 def main():
     # construct graph
     graph = construct_graph()
-    p = pyaoff_value(graph.graph, None, None)
-    if p.is_cyclic() == True:
-        print("There exists cycles")
+    p = payoff_value(graph.graph, 'liminf', None)
+    loop_vals = p.cycle_main()
+
+    for k, v in loop_vals.items():
+        print(f"Play: {k} : val: {v} ")
+    # if p.is_cyclic() == True:
+    #     print("There exists cycles")
 
 if __name__ == "__main__":
     main()

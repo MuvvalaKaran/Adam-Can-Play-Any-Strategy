@@ -5,6 +5,7 @@ import operator
 
 # import helper function to depreceate warnings
 from helper_methods import deprecated
+from src.gameconstruction import Graph
 
 """
 formatting notes : _protected variable: This effectively prevents it to be accessed unless, it is within a sub-class
@@ -251,7 +252,18 @@ class payoff_value():
 
         return play_dict[max_play]
 
-
     def compute_aVal(self):
         raise NotImplementedError
+
+if __name__ == "__main__":
+    payoff_func = "liminf"
+    print(f"*****************Using {payoff_func}*****************")
+    # construct graph
+    G = Graph(False)
+    # create the directed multi-graph
+    org_graph = G.create_multigrpah()
+    p = payoff_value(org_graph, payoff_func)
+    loop_vals = p.cycle_main()
+    for k, v in loop_vals.items():
+        print(f"Play: {k} : val: {v} ")
 

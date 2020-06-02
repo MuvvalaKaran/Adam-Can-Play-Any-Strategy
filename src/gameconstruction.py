@@ -141,7 +141,7 @@ class Graph(object):
         """
         A method to save the plotted graph in the respective folder
         :param dot_object: object of @Diagraph
-        :type Digraph
+        :type @Digraph
         :param view: flag for viewing the object
         :type view: bool
         """
@@ -156,7 +156,7 @@ class Graph(object):
         """
         Method to create a multigraph
         :return: Multigraph constructed in networkx
-        :rtype: graph
+        :rtype: @Digraph
         """
         MG = nx.MultiDiGraph(name="org_graph")
 
@@ -211,7 +211,6 @@ class Graph(object):
             print(f"({u}, {v}, {wt})")
 
     def dump_to_yaml(self, graph):
-
         """
         A method to dump the contents of the grpah in to yaml document which the Graph() class reads to visualize it
 
@@ -383,7 +382,7 @@ class Graph(object):
     # use this method to create a range of strategies
     def create_set_of_strategies(self, graph, bound):
         """
-        Hypothetically G for eve and adam should be infinte. But technically we done have infinte memory to compute
+        Hypothetically G for eve and adam should be infinite. But technically we don't have infinite memory to compute
         strategies with infinite memory. Also we implement recursion to compute all possible paths. The max depth of
         recursion in python is (~1000). So m < 1000 is a must.
 
@@ -395,6 +394,8 @@ class Graph(object):
         :return: a dictionary of form {{m:set of strategies from each vertex }}
         :rtype: dict
         """
+
+        assert (bound < 1000), "Please enter bound to be less than 1000 as it is max recursion depth"
         # trim all non-essential stuff
         states = self.get_eve_adam_states(graph)
 
@@ -517,8 +518,8 @@ class Graph(object):
         # get a strategy from m = 100 for the org_graph
         eve_states, adam_states = self.get_eve_adam_states(gmin_graph)
         trail = self.strategy_synthesis_w_finite_memory(graph=gmin_graph, m=10,
-                                                             _eve_states=eve_states,
-                                                             _adam_states=adam_states)
+                                                            eve_states=eve_states,
+                                                            adam_states=adam_states)
 
         # compute imf and sup value for a play on graph say m = 10 and from vertex 1
 

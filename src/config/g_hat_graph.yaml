@@ -83,7 +83,8 @@ graph:
   vertices:
   - !!python/tuple
     - '0'
-    - player: adam
+    - init: true
+      player: adam
   - !!python/tuple
     - '1'
     - player: eve

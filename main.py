@@ -5,6 +5,8 @@ import copy
 import networkx as nx
 import sys
 import re
+import warnings
+import operator
 
 from src.gameconstruction import Graph
 from src.compute_payoff import payoff_value
@@ -43,8 +45,8 @@ def compute_w_prime(payoff_handle, graph):
     print("*****************Constructing W_prime*****************")
     # compute W prime
     # calculate the loop values
-    loop_vals = payoff_handle.cycle_main()
-    for k, v in loop_vals.items():
+    _loop_vals = payoff_handle.cycle_main()
+    for k, v in _loop_vals.items():
         print(f"Play: {k} : val: {v} ")
 
     # # compute the cVal/aVal
@@ -75,7 +77,7 @@ def compute_w_prime(payoff_handle, graph):
                 w_prime.update({edge: payoff_handle.compute_cVal(edge[1])})
     print(f"the value of b are {set(w_prime.values())}")
 
-    return w_prime
+    return w_prime, _loop_vals
 
 
 def _construct_g_b(g_hat, org_graph, b, w_prime):
@@ -124,6 +126,9 @@ def construct_g_hat(org_graph, w_prime):
     G_hat.nodes['0']['player'] = "adam"
     G_hat.nodes['1']['player'] = "eve"
     G_hat.nodes['T']['player'] = "eve"
+
+    # add v0 as the initial node
+    G_hat.nodes['0']['init'] = True
     # add the edges with the weights
     G_hat.add_weighted_edges_from([('0', '0', 0), ('0', '1', 0), ('T', 'T', -2 * get_max_weight(org_graph) - 1)])
 
@@ -169,7 +174,8 @@ def construct_g_hat(org_graph, w_prime):
     return G_hat
 
 
-def plot_graph(graph, file_name ,save_flag=True):
+def plot_graph(graph, file_name, save_flag=True):
+    print(f"*****************Plotting graph with save_flag = {save_flag}*****************")
     # create Graph object
     plot_handle = Graph(save_flag)
     plot_handle.graph = graph
@@ -184,13 +190,170 @@ def plot_graph(graph, file_name ,save_flag=True):
     plot_handle.graph_yaml = plot_handle.read_yaml_file(plot_handle.file_name)
     plot_handle.plot_fancy_graph(plot_handle)
 
-def compute_aVal():
-    raise NotImplementedError
+
+def compute_aVal(g_hat, meta_b, _Val_func, w_prime, _loop_vals):
+    """
+    A function to compute the regret value according to algorithm 4 : Reg = -1 * Val(.,.) on g_hat
+    :param g_hat: a directed multi-graph constructed using construct_g_hat()
+    :type @Digraph
+    :param meta_b: a real valued number that belong to set(w_prime)
+    :type float
+    :param Val: a payoff function handle that belong {limsup, liminf, sup, inf}
+    :type function
+    :return: a dict consisting of the reg value and strategy for eve and adam respectively
+    :type dict
+    """
+    print(f"*****************Computing regret and strategies for eve and adam*****************")
+    assert (meta_b in set(w_prime.values()) - {-1*math.inf}), "make sure that the b value manually entered belongs " \
+                                                              "to w_prime i.e {}.".format(w_prime)
+
+    # create a dict which will be update once we find the reg value and strategies for eve and adam
+    str_dict = {
+        'reg': None,
+        'eve': None,
+        'adam': None
+    }
+
+    # create a empty dict to hold the strategy for eve and adam
+    eve_str = {}
+    adam_str = {}
+
+    # update 0 to 1 transition in g_hat and 1 to 1_b depending on the value of b - hyper-paramter chosen by the user
+    # NOTE: here the strategy is a dict; key is the current node while the value is the next node.
+    #  This would NOT work in condition where there are more than one edge between the same nodes i.e 0-1 with multiple
+    #  weights. If that is the case then we need to change the implementation to store the whole edge instead of just
+    #  the next node.
+    adam_str.update({'0': "1"})
+    _max_accepted_b = []
+    for b in set(w_prime.values()) - {-1*math.inf}:
+        if b <= meta_b:
+            # add all those transition that satisfy the condition
+            _max_accepted_b.append(b)
+
+    # get the max_b below the accepted val (meta_b)
+    allowed_b = max(_max_accepted_b)
+    eve_str.update({"1": f"1_{allowed_b}"})
+
+    for node in g_hat.nodes():
+        # I manually add the initial transitions of node 0 and 1 of g_hat graph
+        # TODO: change the second condition to <= if you want to compute all the str for all nodes <= @allowed_b
+        if len(node) > 1 and int(node[-1]) == allowed_b:
+            # if the node belongs to adam
+            if g_hat.nodes[node]['player'] == 'adam':
+                # get the next node and update
+                adam_str.update({node: _get_next_node(g_hat, node, min)})
+            # if node belongs to eve
+            elif g_hat.nodes[node]['player'] == 'eve':
+                eve_str.update({node: _get_next_node(g_hat, node, max)})
+            else:
+                raise warnings.warn(f"The node {node} does not belong either to eve or adam. This should have "
+                                    f"never happened")
+
+    # now given the strategy compute the regret using the Val function
+    # 1. find a loop
+    # 2. pass it to _Val function which is the value of that loop for the corresponding value function
+    # 3. update the str_dict['reg'] value
+    # merging both the dictionaries
+    a_val = _play_loop(g_hat, {**eve_str, **adam_str})
+    # a_val = _Val(_loop_vals, loop_str)
+    str_dict['reg'] = -1*a_val
+
+    # update eve and adam str and return it
+    str_dict['adam'] = adam_str
+    str_dict['eve'] = eve_str
+
+    return str_dict
+
+def _get_init_node(graph):
+    """
+    A helper method to get the initial node of a given graph
+    :param graph:
+    :return:
+    """
+    init_node = [node[0] for node in graph.nodes.data() if node[1].get('init') == True]
+
+    return init_node[0]
+
+def _play_loop(graph, strategy):
+    """
+    helper method to find a loop while following str on g_hat and return a corresponding str sequence of nodes
+    :param graph:
+    :type @ Digraph
+    :param strategy:
+    :type dict
+    :return: sequence of nodes e.g '0121'
+    :type basestring
+    """
+    # add nodes to this stack and as soon as a loop is found we break
+    play = [_get_init_node(graph)]
+    # weigth = []
+    # for node in graph.nodes():
+    while 1:
+        # NOTE: This is assuming that a strategy is deterministic i.e the next node is only 1
+        # play.append(node)
+        play.append(strategy[play[-1]])
+        # weigth.append(graph[play[-1]][strategy[play[-1]]][0]['weight'])
+
+        if play.count(play[-1]) == 2:
+            play_str = ''.join([str(ele) for ele in play])
+            # pop the very last element as it is repeated twice
+            # play.pop()
+
+            # create a tmp graph with the current node with their respective edges, compute the val and return it
+            str_graph = nx.MultiDiGraph(name="str_graph")
+            str_graph.add_nodes_from(play)
+            for i in range(0, len(play) - 1):
+                str_graph.add_weighted_edges_from([(play[i],
+                                                    play[i+1],
+                                                    graph[play[i]][play[i+1]][0].get('weight'))
+                                                   ]
+                                                  )
+
+            # manually add an edge from last to last -1 to complete the cycle
+            str_graph.add_weighted_edges_from([(play[-1],
+                                                play[-2],
+                                                graph[play[-1]][play[-2]][0].get('weight'))])
+
+            # add init node
+            str_graph.nodes[play[0]]['init'] = True
+            # add this graph to compute_payoff class
+            # TODO: In future replace hardcoded value with value passed through function
+            tmp_p_handle = payoff_value(str_graph, 'limsup')
+            _loop_vals = tmp_p_handle.cycle_main()
+
+            return _loop_vals[play_str]
+        # else:
+        #     return False
+
+def _Val(loop_dict, play):
+    # just a helper function mapping a play to its real value.
+    try:
+        return loop_dict[play]
+    except KeyError as error:
+        print(error)
+        print(f"The play {play} does not exist. This might be due to the fact that this is a not a val loop or or "
+              f"the play for some reason is missing from the computation in w_prime() method")
+
+def _get_next_node(graph, curr_node, func):
+    # return the next node for eve and adam on g_hat game
+    # func - either max or min
+    assert (func == max or func == min), "Please make sure the deciding function for transitions on the game g_hat for " \
+                                         "eve and adam is either max or min"
+
+    wt_list = {}
+    for adj_edge in graph.edges(curr_node):
+        # get the edge weight, store it in a list and find the max/min and return the next_node
+        # G_hat[e[0]][e[1]][0].get('weight')
+        wt_list.update({adj_edge : graph[adj_edge[0]][adj_edge[1]][0].get('weight')} )
+        # wt_list.append(graph[adj_edge[0]][adj_edge[1]][0].get('weight'))
+
+    next_node = func(wt_list.items(), key=operator.itemgetter(1))[0]
+
+    return next_node[1]
 
 
 def main():
-
-    payoff_func = "liminf"
+    payoff_func = "limsup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)
@@ -198,16 +361,21 @@ def main():
 
     # FIXME: fails when using inf/sup payoff function
     # construct W prime
-    w_prime = compute_w_prime(p, graph)
+    w_prime, loop_vals = compute_w_prime(p, graph)
 
     # construct G_hat
+    # TODO: While constructing G_hat remove the "init" attribute from g_b graphs and add v0 of G_hat as the init node
     G_hat = construct_g_hat(graph.graph, w_prime)
 
     # use methods from the Graph class create a visualization
-    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=True)
+    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=False)
 
     # Compute antagonistic value
+    personal_b_val = 2
+    reg_dict = compute_aVal(G_hat, personal_b_val, _Val, w_prime, loop_vals)
 
+    for k, v in reg_dict.items():
+        print(f"{k}: {v}")
 
 if __name__ == "__main__":
     main()

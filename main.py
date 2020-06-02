@@ -10,6 +10,7 @@ import operator
 
 from src.gameconstruction import Graph
 from src.compute_payoff import payoff_value
+from helper_methods import deprecated
 
 # asserts that this code is tested in linux
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
@@ -49,32 +50,60 @@ def compute_w_prime(payoff_handle, graph):
     for k, v in _loop_vals.items():
         print(f"Play: {k} : val: {v} ")
 
-    # # compute the cVal/aVal
-    # cval = payoff_handle.compute_cVal(1)
+    # compute the cVal/aVal
     w_prime = {}
     for edge in graph.graph.edges():
         if graph.graph.nodes(data='player')[edge[0]] == 'adam':
             # w_prime.add(-1 * math.inf)
             w_prime.update({edge: -1 * math.inf})
         else:
-
             # get a list of all the cVal for all the alternate edges
+            # TODO: check if this is necessary as @tmp_graph is already a copy and I am making a deepcopy of a deepcopy.
+            #  Seems redundant but safety over everything.
             tmp_graph = construct_alt_game(graph.graph, edge)
-            # costruct the game without the org edge and find the max from each alternate play
+            # construct the game without the org edge and find the max from each alternate play
             tmp_cvals = []
             payoff_handle.graph = tmp_graph
             payoff_handle.cycle_main()
 
             for e in tmp_graph.out_edges(edge[0]):
+                # just to be safe, we will work with a copy
+                tmp_copied_graph = copy.deepcopy(tmp_graph)
+                # construct a new graph with e[1] as the initial vertex and compute loop_vals again and then
+                # proceed ahead in this method
+                # 1. remove the current init node of the graph
+                # 2. add e[1] as the new init vertex
+                # 3. compute the loop vals for this new graph
+                tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
+                # tmp_payoff_handle.graph = tmp_copied_graph
+                tmp_init_node = tmp_payoff_handle.get_init_node()
+                # we should ideally only have one init node
+                for _n in tmp_init_node:
+                    tmp_payoff_handle.remove_attribute(_n, 'init')
+                tmp_payoff_handle.set_init_node(e[1])
+                tmp_payoff_handle.cycle_main()
+
                 # get all the edges from the give node
-                tmp_cvals.append(payoff_handle.compute_cVal(e[1]))
+                tmp_cvals.append(tmp_payoff_handle.compute_cVal(e[1]))
             if len(tmp_cvals) != 0:
                 w_prime.update({edge: max(tmp_cvals)})
             else:
                 # TODO: check if this correct or not?!
-                payoff_handle.graph = graph.graph
-                payoff_handle.cycle_main()
-                w_prime.update({edge: payoff_handle.compute_cVal(edge[1])})
+                # make a copy of the org_graph and a another tmp_payoff_handle and compute loop vals
+                # payoff_handle.graph = graph.graph
+                tmp_copied_graph = copy.deepcopy(graph.graph)
+                tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
+                tmp_init_node = tmp_payoff_handle.get_init_node()
+                # we should ideally only have one init node
+                for _n in tmp_init_node:
+                    tmp_payoff_handle.remove_attribute(_n, 'init')
+                tmp_payoff_handle.set_init_node(edge[1])
+                tmp_payoff_handle.cycle_main()
+                w_prime({edge: tmp_payoff_handle.compute_cVal(edge[1])})
+                # payoff_handle.cycle_main()
+                # w_prime.update({edge: payoff_handle.compute_cVal(edge[1])})
+                # tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
+
     print(f"the value of b are {set(w_prime.values())}")
 
     return w_prime, _loop_vals
@@ -142,6 +171,18 @@ def construct_g_hat(org_graph, w_prime):
     for b in w_set:
         G_hat.add_weighted_edges_from([('1', f"1_{b}", 0)])
 
+    def remove_attribute(G, tnode, attr):
+        G.nodes[tnode].pop(attr, None)
+
+    # TODO: looks like a tmp patch; this may or may not work when using sup/inf payoff function.
+    #  Need to verify it
+    # remove nodes from g_b which has init nodes
+    _init_node = [node[0] for node in G_hat.nodes.data() if node[1].get('init') == True]
+    g_b_node_pattern = re.compile('_')
+    for duplicate_init_node in _init_node:
+        if g_b_node_pattern.search(duplicate_init_node) is not None:
+            remove_attribute(G_hat, duplicate_init_node, 'init')
+
     def w_hat_b(_org_graph, org_edge, b_value):
         if w_prime[org_edge] != -1 * math.inf:
             return w_prime[org_edge] - b_value
@@ -198,8 +239,8 @@ def compute_aVal(g_hat, meta_b, _Val_func, w_prime, _loop_vals):
     :type @Digraph
     :param meta_b: a real valued number that belong to set(w_prime)
     :type float
-    :param Val: a payoff function handle that belong {limsup, liminf, sup, inf}
-    :type function
+    :param Val: a payoff function that belong to {limsup, liminf, sup, inf}
+    :type basestring
     :return: a dict consisting of the reg value and strategy for eve and adam respectively
     :type dict
     """
@@ -254,7 +295,7 @@ def compute_aVal(g_hat, meta_b, _Val_func, w_prime, _loop_vals):
     # 2. pass it to _Val function which is the value of that loop for the corresponding value function
     # 3. update the str_dict['reg'] value
     # merging both the dictionaries
-    a_val = _play_loop(g_hat, {**eve_str, **adam_str})
+    a_val = _play_loop(g_hat, {**eve_str, **adam_str}, _Val_func)
     # a_val = _Val(_loop_vals, loop_str)
     str_dict['reg'] = -1*a_val
 
@@ -263,6 +304,7 @@ def compute_aVal(g_hat, meta_b, _Val_func, w_prime, _loop_vals):
     str_dict['eve'] = eve_str
 
     return str_dict
+
 
 def _get_init_node(graph):
     """
@@ -274,7 +316,8 @@ def _get_init_node(graph):
 
     return init_node[0]
 
-def _play_loop(graph, strategy):
+
+def _play_loop(graph, strategy, payoff_func):
     """
     helper method to find a loop while following str on g_hat and return a corresponding str sequence of nodes
     :param graph:
@@ -317,14 +360,13 @@ def _play_loop(graph, strategy):
             # add init node
             str_graph.nodes[play[0]]['init'] = True
             # add this graph to compute_payoff class
-            # TODO: In future replace hardcoded value with value passed through function
-            tmp_p_handle = payoff_value(str_graph, 'limsup')
+            tmp_p_handle = payoff_value(str_graph, payoff_func)
             _loop_vals = tmp_p_handle.cycle_main()
 
             return _loop_vals[play_str]
-        # else:
-        #     return False
 
+
+@deprecated
 def _Val(loop_dict, play):
     # just a helper function mapping a play to its real value.
     try:
@@ -353,7 +395,7 @@ def _get_next_node(graph, curr_node, func):
 
 
 def main():
-    payoff_func = "limsup"
+    payoff_func = "inf"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)
@@ -364,7 +406,6 @@ def main():
     w_prime, loop_vals = compute_w_prime(p, graph)
 
     # construct G_hat
-    # TODO: While constructing G_hat remove the "init" attribute from g_b graphs and add v0 of G_hat as the init node
     G_hat = construct_g_hat(graph.graph, w_prime)
 
     # use methods from the Graph class create a visualization
@@ -372,7 +413,7 @@ def main():
 
     # Compute antagonistic value
     personal_b_val = 2
-    reg_dict = compute_aVal(G_hat, personal_b_val, _Val, w_prime, loop_vals)
+    reg_dict = compute_aVal(G_hat, personal_b_val, payoff_func, w_prime, loop_vals)
 
     for k, v in reg_dict.items():
         print(f"{k}: {v}")

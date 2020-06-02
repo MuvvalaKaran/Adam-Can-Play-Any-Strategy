@@ -93,8 +93,7 @@ graph:
     - player: eve
   - !!python/tuple
     - '1_1'
-    - init: true
-      player: eve
+    - player: eve
   - !!python/tuple
     - '2_1'
     - player: adam
@@ -109,8 +108,7 @@ graph:
     - player: eve
   - !!python/tuple
     - '1_2'
-    - init: true
-      player: eve
+    - player: eve
   - !!python/tuple
     - '2_2'
     - player: adam

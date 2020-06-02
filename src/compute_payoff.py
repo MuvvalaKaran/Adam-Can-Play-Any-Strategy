@@ -20,7 +20,8 @@ class payoff_value():
         self.graph = graph
         self.__V = self.graph.nodes  # number of vertices
         #  make sure that the string value of payoff match the key value exactly
-        self.__payoff_func = self.choose_payoff(payoff_func)
+        self._raw_payoff_value = payoff_func
+        self.__payoff_func = self.choose_payoff(self._raw_payoff_value)
         self.__loop_vals = None
 
     def choose_payoff(self, payoff_func):
@@ -107,7 +108,44 @@ class payoff_value():
                 loopStack.update({play_str: weight})
         return False
 
-    def _conver_stack_to_play_str(self, stack):
+    def get_init_node(self):
+        """
+        A helper method to get the initial node of a given graph
+        :return: node
+        """
+        init_node = [node[0] for node in self.graph.nodes.data() if node[1].get('init') == True]
+
+        return init_node
+
+    def set_init_node(self, node):
+        """
+        A method to set a node as the init node
+        :param node: a valid node of the graph
+        :return:
+        """
+        # init_node = self.get_init_node()
+        # self._remove_attribute(init_node, 'init')
+        # not set the new node as init node
+        self.graph.nodes[node]['init'] = True
+
+    def remove_attribute(self, tnode, attr):
+        """
+        A method to remove a attribute associated with a node. e.g weights, init are stored as dict keys and can be
+        removed using the del operator or alternatively using this method
+        :param tnode:
+        :param attr:
+        :return:
+        """
+        self.graph.nodes[tnode].pop(attr, None)
+
+    def get_payoff_func(self):
+        """
+        a getter method to safely access the payoff function string
+        :return: self.__payoff_func
+        """
+        return self._raw_payoff_value
+
+    def _convert_stack_to_play_str(self, stack):
         """
         Helper method to convert a play to its corresponding str representation
         :param stack: a dict of type {node: boolean_value}
@@ -149,7 +187,7 @@ class payoff_value():
         #     loop_edges.append(get_edge_weight(k))
         # [1,3,3]
         # find the element which is repeated twice in the list - which has to be the very last element of the list
-        assert stack.count(stack[-1]) == 2, "The count of the repeated elements in a loops should be exactly 2"
+        assert stack.count(stack[-1]) >= 2, "The count of the repeated elements in a loops should be exactly 2"
 
         # get the index of the repeated node when it first appeared
         initial_index = stack.index(stack[-1])
@@ -205,7 +243,7 @@ class payoff_value():
             if visitStack[neighbour]:
                 nodeStack = copy.copy((nodeStack))
                 nodeStack.append(neighbour)
-                play_str = self._conver_stack_to_play_str(nodeStack)
+                play_str = self._convert_stack_to_play_str(nodeStack)
                 loop_value = self._compute_loop_value(nodeStack)
                 loop_dict.update({play_str: loop_value})
                 nodeStack.pop()
@@ -247,7 +285,7 @@ class payoff_value():
 
         # find the max of the value
         max_play = max(play_dict, key=lambda key: play_dict[key])
-        print(f"The cVal from the node {vertex}") # is {list(play_dict.values())[max_pos_index]} "
+        print(f"The cVal from the node {vertex}")
         print(f"for the play {max_play} is {play_dict[max_play]}")
 
         return play_dict[max_play]

@@ -30,7 +30,7 @@ test_sup = True
 
 
 class Strategy(object):
-    def __init__(self, path, player):
+    def __init__(self, path, player) -> None:
         """
         A class to hold all the strategies
         :param path:
@@ -44,7 +44,7 @@ class Strategy(object):
         # dictionary of form "m" : "all paths"
         # self.dict = {}
 
-    def setinit(self, init):
+    def setinit(self, init: bool):
         '''
         Init flag set to be True for strategies begining from initial vertex
         :param init: Boolean variable idicating strategies starting from the init vertex
@@ -65,7 +65,7 @@ class Strategy(object):
 
 class Graph(object):
 
-    def __init__(self, save_flag=True):
+    def __init__(self, save_flag: bool = True) -> None:
         self.file_name = None
         self.graph_yaml = self.read_yaml_file(self.file_name)
         self.save_flag = save_flag
@@ -73,7 +73,7 @@ class Graph(object):
         self.Strs_dict = {}
 
     @staticmethod
-    def read_yaml_file(config_files):
+    def read_yaml_file(config_files: str):
         """
             reads the yaml file data and stores them in appropriate variables
         """
@@ -93,7 +93,7 @@ class Graph(object):
         return graph
 
     @staticmethod
-    def plot_fancy_graph(graph):
+    def plot_fancy_graph(graph) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
@@ -136,8 +136,7 @@ class Graph(object):
             graph_name = str(graph.graph.__getattribute__('name'))
             graph.save_dot_graph(dot, graph_name, True)
 
-
-    def save_dot_graph(self, dot_object, graph_name, view=False):
+    def save_dot_graph(self, dot_object, graph_name, view: bool = False):
         """
         A method to save the plotted graph in the respective folder
         :param dot_object: object of @Diagraph
@@ -152,13 +151,13 @@ class Graph(object):
         dot_object.render(f'graph/{graph_name}', view=view, cleanup=True)
 
     # create a sample multigraph
-    def create_multigrpah(self):
+    def create_multigrpah(self) -> nx.MultiDiGraph:
         """
         Method to create a multigraph
         :return: Multigraph constructed in networkx
         :rtype: @Digraph
         """
-        MG = nx.MultiDiGraph(name="org_graph")
+        MG: nx.MultiDiGraph = nx.MultiDiGraph(name="org_graph")
 
         if test_case:
             MG.add_nodes_from([1, 2, 3])
@@ -206,11 +205,11 @@ class Graph(object):
 
         return MG
 
-    def print_edges(self):
+    def print_edges(self) -> None:
         for (u, v, wt) in self.graph.edges.data('weight'):
             print(f"({u}, {v}, {wt})")
 
-    def dump_to_yaml(self, graph):
+    def dump_to_yaml(self) -> None:
         """
         A method to dump the contents of the grpah in to yaml document which the Graph() class reads to visualize it
 
@@ -232,8 +231,8 @@ class Graph(object):
 
         data = dict(
             graph=dict(
-                vertices=[node for node in graph.nodes.data()],
-                edges=[edge for edge in graph.edges.data()]
+                vertices=[node for node in self.graph.nodes.data()],
+                edges=[edge for edge in self.graph.edges.data()]
             )
         )
 
@@ -244,7 +243,6 @@ class Graph(object):
         except FileNotFoundError:
             print(FileNotFoundError)
             print(f"The file {config_file_name} could not be found")
-
 
     def construct_Gmin(self, org_graph):
         """
@@ -359,7 +357,7 @@ class Graph(object):
         return Gmax
 
     # helper method to get states that belong to eve and adam respectively
-    def get_eve_adam_states(self, graph):
+    def get_eve_adam_states(self, graph) -> tuple([list, list]):
         """
         A method to retrieve the states that belong to eve and adam
         :param graph:
@@ -380,7 +378,7 @@ class Graph(object):
         return eve_states, adam_states
 
     # use this method to create a range of strategies
-    def create_set_of_strategies(self, graph, bound):
+    def create_set_of_strategies(self, graph, bound: int) -> dict:
         """
         Hypothetically G for eve and adam should be infinite. But technically we don't have infinite memory to compute
         strategies with infinite memory. Also we implement recursion to compute all possible paths. The max depth of
@@ -416,7 +414,7 @@ class Graph(object):
 
         return self.Strs_dict
 
-    def strategy_synthesis_w_finite_memory(self, graph, m, _eve_states, _adam_states):
+    def strategy_synthesis_w_finite_memory(self, graph, m: int, _eve_states: list, _adam_states: list) -> dict:
         """
         A method to compute a set of strategies for a given graph. This method calls @compute_all_paths() to compute
         all possible paths from a give vertex. While doing so each path is assigned which player that strategy belongs
@@ -431,8 +429,8 @@ class Graph(object):
         :param _eve_states:
         :type _eve_states: list
         :param _adam_states:
-        :type _adam_states: lisy
-        :return:a dictonary of all paths computes from each states with memory m {{vertex_label: paths} }
+        :type _adam_states: list
+        :return:a dictionary of all paths computes from each states with memory m {{vertex_label: paths} }
         :rtype: dict
         """
         paths = {}
@@ -444,7 +442,7 @@ class Graph(object):
                                                         pathx=Strategy([], None))})
         return paths
 
-    def compute_all_path(self, graph, curr_node, m, _eve_state, _adam_states, pathx):
+    def compute_all_path(self, graph, curr_node, m: int, _eve_state: list, _adam_states: list, pathx) -> list:
         """
         A method to compute all the paths possible from a given state. This function is called recursively until
         memory(m) becaome 0. So, technically we rollout m + 1 times. with the first vertex in the path being the vertex
@@ -491,10 +489,10 @@ class Graph(object):
             return paths
         return paths
 
-    def get_set_of_strategies(self):
+    def get_set_of_strategies(self) -> dict:
         return self.Strs_dict
 
-    def print_set_of_strategies(self):
+    def print_set_of_strategies(self) -> None:
         for k, v in self.Strs_dict.items():
             print(f"For memory {k} :")
             for vertex, pths in v.items():
@@ -512,7 +510,7 @@ class Graph(object):
 
         return G_play
 
-    def test_inf_and_liminf_limsup(self, gmin_graph, org_graph):
+    def test_inf_and_liminf_limsup(self, gmin_graph, org_graph) -> None:
         print("Testing inf and LimInf and LimSup payoff for a play on Gmin and the respective play in G")
 
         # get a strategy from m = 100 for the org_graph
@@ -550,7 +548,7 @@ class Graph(object):
         print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
         print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
 
-    def test_sup_and_liminf_limsup(self, gmax_graph, org_graph):
+    def test_sup_and_liminf_limsup(self, gmax_graph, org_graph) -> None:
         # get a strategy from m = 100 for the org_graph
         eve_states, adam_states = self.get_eve_adam_states(gmax_graph)
         trail = self.strategy_synthesis_w_finite_memory(graph=gmax_graph, m=10,
@@ -588,7 +586,7 @@ class Graph(object):
 
 def main():
     # a main routine to create a the graph and implement the strategy synthesis
-    graph_obj = Graph(True)
+    graph_obj: Graph = Graph(True)
 
     # create a multigraph
     org_graph = graph_obj.create_multigrpah()
@@ -601,7 +599,7 @@ def main():
     graph_obj.file_name = 'config/org_graph'
 
     # dump the graph to yaml
-    graph_obj.dump_to_yaml(graph_obj.graph)
+    graph_obj.dump_to_yaml()
 
     # read the yaml file
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
@@ -614,7 +612,7 @@ def main():
 
     graph_obj.file_name = 'config/Gmin_graph'
     # dump to yaml file and plot it
-    graph_obj.dump_to_yaml(graph_obj.graph)
+    graph_obj.dump_to_yaml()
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
     graph_obj.plot_fancy_graph(graph_obj)
 
@@ -625,7 +623,7 @@ def main():
 
     graph_obj.file_name = 'config/Gmax_graph'
     # dump to yaml file and plot it
-    graph_obj.dump_to_yaml(graph_obj.graph)
+    graph_obj.dump_to_yaml()
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
     graph_obj.plot_fancy_graph(graph_obj)
 

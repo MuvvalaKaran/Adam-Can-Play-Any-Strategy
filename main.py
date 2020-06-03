@@ -215,7 +215,7 @@ def construct_g_hat(org_graph, w_prime):
     return G_hat
 
 
-def plot_graph(graph, file_name, save_flag=True):
+def plot_graph(graph, file_name, save_flag: bool = True):
     print(f"*****************Plotting graph with save_flag = {save_flag}*****************")
     # create Graph object
     plot_handle = Graph(save_flag)

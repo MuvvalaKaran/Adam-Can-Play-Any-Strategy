@@ -16,7 +16,7 @@ class payoff_value():
     # a collection of different payoff function to construct the finite state machine
 
     # graph is the graph on which we will be computing all the payoff value
-    def __init__(self, graph, payoff_func):
+    def __init__(self, graph, payoff_func: str) -> None:
         self.graph = graph
         self.__V = self.graph.nodes  # number of vertices
         #  make sure that the string value of payoff match the key value exactly
@@ -24,7 +24,7 @@ class payoff_value():
         self.__payoff_func = self.choose_payoff(self._raw_payoff_value)
         self.__loop_vals = None
 
-    def choose_payoff(self, payoff_func):
+    def choose_payoff(self, payoff_func: str):
         payoff_dict = {
             'limsup': max,
             'liminf': min,
@@ -117,7 +117,7 @@ class payoff_value():
 
         return init_node
 
-    def set_init_node(self, node):
+    def set_init_node(self, node) -> None:
         """
         A method to set a node as the init node
         :param node: a valid node of the graph
@@ -128,7 +128,7 @@ class payoff_value():
         # not set the new node as init node
         self.graph.nodes[node]['init'] = True
 
-    def remove_attribute(self, tnode, attr):
+    def remove_attribute(self, tnode, attr) -> None:
         """
         A method to remove a attribute associated with a node. e.g weights, init are stored as dict keys and can be
         removed using the del operator or alternatively using this method
@@ -145,7 +145,7 @@ class payoff_value():
         """
         return self._raw_payoff_value
 
-    def _convert_stack_to_play_str(self, stack):
+    def _convert_stack_to_play_str(self, stack) -> str:
         """
         Helper method to convert a play to its corresponding str representation
         :param stack: a dict of type {node: boolean_value}
@@ -155,9 +155,9 @@ class payoff_value():
         play_str = ''.join([str(ele) for ele in stack])
         return play_str
 
-    def _reinit_visitStack(self, stack):
+    def _reinit_visitStack(self, stack: dict) -> dict:
         """
-        helper method to re_initalize visit stack
+        helper method to re_initialize visit stack
         :return:
         """
         # RFE (request for enhancement): find better alternative than traversing through the whole loop
@@ -168,7 +168,7 @@ class payoff_value():
                 stack[node] = False
         return stack
 
-    def _compute_loop_value(self, stack):
+    def _compute_loop_value(self, stack: list):
         """
         helper method to compute the value of a loop
         :param stack:
@@ -199,7 +199,7 @@ class payoff_value():
 
         return self.__payoff_func(map(get_edge_weight, [k for k in loop_edges]))
 
-    def cycle_main(self):
+    def cycle_main(self) -> dict:
         visitStack = {}
         edgeStack = {}
         """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
@@ -233,7 +233,7 @@ class payoff_value():
         self.__loop_vals = loop_dict
         return loop_dict
 
-    def cycle_util(self, node, visitStack, loop_dict, edgeStack, nodeStack):
+    def cycle_util(self, node, visitStack, loop_dict, edgeStack, nodeStack) -> None:
         # initialize loop flag as False and update the @visitStack with the current node as True
         visitStack = copy.copy(visitStack)
         visitStack[node] = True
@@ -251,7 +251,7 @@ class payoff_value():
             else:
                 self.cycle_util(neighbour, visitStack, loop_dict, edgeStack, nodeStack)
 
-    def _find_vertex_in_play(self, v, play):
+    def _find_vertex_in_play(self, v, play: str) -> bool:
         """
         A helper method to to check is a node is in a player or not
         :param v: name of the node to search for
@@ -270,7 +270,7 @@ class payoff_value():
             return True
         return False
 
-    def compute_cVal(self, vertex):
+    def compute_cVal(self, vertex: int) -> dict:
         """
         Method to compute the cVal using  @vertex as the starting node
         :param vertex: a valid node of the graph
@@ -290,7 +290,7 @@ class payoff_value():
 
         return play_dict[max_play]
 
-    def compute_aVal(self):
+    def compute_aVal(self) -> None:
         raise NotImplementedError
 
 if __name__ == "__main__":

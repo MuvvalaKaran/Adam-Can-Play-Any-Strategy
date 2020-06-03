@@ -2,7 +2,9 @@ import unittest
 import copy
 import re
 import operator
+import networkx as nx
 
+from typing import List, Tuple, Dict
 # import helper function to depreceate warnings
 from helper_methods import deprecated
 from src.gameconstruction import Graph
@@ -16,11 +18,11 @@ class payoff_value():
     # a collection of different payoff function to construct the finite state machine
 
     # graph is the graph on which we will be computing all the payoff value
-    def __init__(self, graph, payoff_func: str) -> None:
+    def __init__(self, graph: nx.MultiDiGraph, payoff_func: str) -> None:
         self.graph = graph
-        self.__V = self.graph.nodes  # number of vertices
+        self.__V = self.graph.nodes
         #  make sure that the string value of payoff match the key value exactly
-        self._raw_payoff_value = payoff_func
+        self._raw_payoff_value: str = payoff_func
         self.__payoff_func = self.choose_payoff(self._raw_payoff_value)
         self.__loop_vals = None
 
@@ -41,7 +43,7 @@ class payoff_value():
 
     @deprecated
     # write a basic code in which we detect cycles
-    def is_cyclic_util(self, v, visited, recStack, edgeStack):
+    def is_cyclic_util(self, v, visited, recStack, edgeStack) -> bool:
 
         # Mark the current node as visited and
         # adds to recursion stack
@@ -83,7 +85,7 @@ class payoff_value():
         return False
 
     @deprecated
-    def is_cyclic(self):
+    def is_cyclic(self) -> bool:
         # initialize visited and recStack as dict mapping each node to its boolean value
         # visited = [False] * len(self.__V)
         # recStack = [False] * len(self.__V)
@@ -108,7 +110,7 @@ class payoff_value():
                 loopStack.update({play_str: weight})
         return False
 
-    def get_init_node(self):
+    def get_init_node(self) -> Tuple:
         """
         A helper method to get the initial node of a given graph
         :return: node
@@ -128,7 +130,7 @@ class payoff_value():
         # not set the new node as init node
         self.graph.nodes[node]['init'] = True
 
-    def remove_attribute(self, tnode, attr) -> None:
+    def remove_attribute(self, tnode: str, attr: str) -> None:
         """
         A method to remove a attribute associated with a node. e.g weights, init are stored as dict keys and can be
         removed using the del operator or alternatively using this method
@@ -138,14 +140,14 @@ class payoff_value():
         """
         self.graph.nodes[tnode].pop(attr, None)
 
-    def get_payoff_func(self):
+    def get_payoff_func(self) -> str:
         """
         a getter method to safely access the payoff function string
         :return: self.__payoff_func
         """
         return self._raw_payoff_value
 
-    def _convert_stack_to_play_str(self, stack) -> str:
+    def _convert_stack_to_play_str(self, stack: Dict[str, bool]) -> str:
         """
         Helper method to convert a play to its corresponding str representation
         :param stack: a dict of type {node: boolean_value}
@@ -155,7 +157,7 @@ class payoff_value():
         play_str = ''.join([str(ele) for ele in stack])
         return play_str
 
-    def _reinit_visitStack(self, stack: dict) -> dict:
+    def _reinit_visitStack(self, stack: Dict) -> Dict:
         """
         helper method to re_initialize visit stack
         :return:
@@ -168,14 +170,14 @@ class payoff_value():
                 stack[node] = False
         return stack
 
-    def _compute_loop_value(self, stack: list):
+    def _compute_loop_value(self, stack: List):
         """
         helper method to compute the value of a loop
         :param stack:
         :return:
         """
 
-        def get_edge_weight(k):
+        def get_edge_weight(k: Tuple[str, str]):
             # k is a tuple of format (curr_node, adj_node)
             # getter method for edge weights
             return self.graph[k[0]][k[1]][0]['weight']
@@ -199,9 +201,9 @@ class payoff_value():
 
         return self.__payoff_func(map(get_edge_weight, [k for k in loop_edges]))
 
-    def cycle_main(self) -> dict:
-        visitStack = {}
-        edgeStack = {}
+    def cycle_main(self) -> Dict:
+        visitStack: Dict[str, bool] = {}
+        edgeStack: Dict[str, bool] = {}
         """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
             you have to first access the data as graph.nodes.data() and loop over the list
             each element in that list is a tuple (NOT A DICT) of the form (node_name, {key: value})"""
@@ -226,14 +228,15 @@ class payoff_value():
             # reset all the flags except the init node flag to be False
             visitStack = self._reinit_visitStack(visitStack)
             visitStack[init_node[0]] = True
-            nodeStack = []
+            nodeStack: List[str] = []
             nodeStack.append(init_node[0])
             self.cycle_util(node, visitStack, loop_dict, edgeStack, nodeStack)
 
         self.__loop_vals = loop_dict
         return loop_dict
 
-    def cycle_util(self, node, visitStack, loop_dict, edgeStack, nodeStack) -> None:
+    def cycle_util(self, node, visitStack: Dict[str, bool], loop_dict: Dict[str, float], edgeStack: Dict[str, bool],
+                   nodeStack: List[str]) -> None:
         # initialize loop flag as False and update the @visitStack with the current node as True
         visitStack = copy.copy(visitStack)
         visitStack[node] = True
@@ -251,7 +254,7 @@ class payoff_value():
             else:
                 self.cycle_util(neighbour, visitStack, loop_dict, edgeStack, nodeStack)
 
-    def _find_vertex_in_play(self, v, play: str) -> bool:
+    def _find_vertex_in_play(self, v: str, play: str) -> bool:
         """
         A helper method to to check is a node is in a player or not
         :param v: name of the node to search for
@@ -270,7 +273,7 @@ class payoff_value():
             return True
         return False
 
-    def compute_cVal(self, vertex: int) -> dict:
+    def compute_cVal(self, vertex: str) -> Dict:
         """
         Method to compute the cVal using  @vertex as the starting node
         :param vertex: a valid node of the graph

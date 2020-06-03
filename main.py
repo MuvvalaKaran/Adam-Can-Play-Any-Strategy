@@ -8,6 +8,7 @@ import re
 import warnings
 import operator
 
+from typing import List, Tuple
 from src.gameconstruction import Graph
 from src.compute_payoff import payoff_value
 from helper_methods import deprecated
@@ -16,8 +17,8 @@ from helper_methods import deprecated
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
 
-def construct_graph(payoff_func, *args, **kwargs):
-    G = Graph(False)
+def construct_graph(payoff_func: str, *args, **kwargs) -> Graph:
+    G: Graph = Graph(False)
     # create the directed multi-graph
     org_graph = G.create_multigrpah()
 
@@ -225,11 +226,11 @@ def plot_graph(graph, file_name, save_flag: bool = True):
     plot_handle.file_name = file_name
 
     # dump the graph to yaml
-    plot_handle.dump_to_yaml(plot_handle.graph)
+    plot_handle.dump_to_yaml()
 
     # plot graph
     plot_handle.graph_yaml = plot_handle.read_yaml_file(plot_handle.file_name)
-    plot_handle.plot_fancy_graph(plot_handle)
+    plot_handle.plot_fancy_graph()
 
 
 def compute_aVal(g_hat, meta_b, _Val_func, w_prime, _loop_vals):

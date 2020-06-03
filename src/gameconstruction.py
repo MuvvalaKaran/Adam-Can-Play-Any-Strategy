@@ -5,6 +5,7 @@ import yaml
 import copy
 import random
 
+from typing import List, Tuple
 from graphviz import Digraph
 from src.PayoffFunc import PayoffFunc
 # import sys
@@ -30,7 +31,7 @@ test_sup = True
 
 
 class Strategy(object):
-    def __init__(self, path, player) -> None:
+    def __init__(self, path: List, player: str) -> None:
         """
         A class to hold all the strategies
         :param path:
@@ -44,7 +45,7 @@ class Strategy(object):
         # dictionary of form "m" : "all paths"
         # self.dict = {}
 
-    def setinit(self, init: bool):
+    def setinit(self, init: bool) -> None:
         '''
         Init flag set to be True for strategies begining from initial vertex
         :param init: Boolean variable idicating strategies starting from the init vertex
@@ -54,10 +55,10 @@ class Strategy(object):
         '''
         self.init = init
 
-    def setpath(self, newpath):
+    def setpath(self, newpath: List) -> None:
         self.path = newpath
 
-    def setplayer(self, player):
+    def setplayer(self, player: List) -> None:
         self.player = player
 
     # def updatedict(self, key, value):
@@ -92,15 +93,15 @@ class Graph(object):
 
         return graph
 
-    @staticmethod
-    def plot_fancy_graph(graph) -> None:
+    # @staticmethod
+    def plot_fancy_graph(self) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
         :rtype:
         """
-        dot = Digraph(name="graph")
-        nodes = graph.graph_yaml["vertices"]
+        dot: Digraph = Digraph(name="graph")
+        nodes = self.graph_yaml["vertices"]
         for n in nodes:
             if n[1]['player'] == 'eve':
                 if n[1].get('init'):
@@ -120,7 +121,7 @@ class Graph(object):
                 dot.node(str(f"v{n[0]}"))
 
         # add all the edges
-        edges = graph.graph_yaml["edges"]
+        edges = self.graph_yaml["edges"]
 
         # load the weights to illustrate on the graph
         # weight = graph["weights"]
@@ -132,11 +133,11 @@ class Graph(object):
         dot.node_attr['fixedsize'] = 'False'
         dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
 
-        if graph.save_flag:
-            graph_name = str(graph.graph.__getattribute__('name'))
-            graph.save_dot_graph(dot, graph_name, True)
+        if self.save_flag:
+            graph_name = str(self.graph.__getattribute__('name'))
+            self.save_dot_graph(dot, graph_name, True)
 
-    def save_dot_graph(self, dot_object, graph_name, view: bool = False):
+    def save_dot_graph(self, dot_object: Digraph, graph_name: str, view: bool = False) -> None:
         """
         A method to save the plotted graph in the respective folder
         :param dot_object: object of @Diagraph
@@ -244,7 +245,7 @@ class Graph(object):
             print(FileNotFoundError)
             print(f"The file {config_file_name} could not be found")
 
-    def construct_Gmin(self, org_graph):
+    def construct_Gmin(self, org_graph: nx.MultiDiGraph) -> nx.MultiDiGraph:
         """
         Method to construct a Gmin graph such that for payoff function Sup : Reg(G) = Reg(Gmin)
 
@@ -258,7 +259,7 @@ class Graph(object):
         """
 
         # create a new MG graph
-        Gmin = nx.MultiDiGraph(name="Gmin_graph")
+        Gmin: nx.MultiDiGraph = nx.MultiDiGraph(name="Gmin_graph")
 
         # construct new set of states V'
         V_prime = [(v, w) for v in org_graph.nodes.data() for _, _, w in org_graph.edges.data('weight')]
@@ -300,7 +301,7 @@ class Graph(object):
 
         return Gmin
 
-    def construct_Gmax(self, org_graph):
+    def construct_Gmax(self, org_graph: nx.MultiDiGraph) -> nx.MultiDiGraph:
         """
         Method to construct a Gmax graph such that for payoff function Sup : Reg(G) = Reg(Gmax)
 
@@ -314,7 +315,7 @@ class Graph(object):
         """
 
         # create a new MG graph
-        Gmax = nx.MultiDiGraph(name="Gmax_graph")
+        Gmax: nx.MultiDiGraph = nx.MultiDiGraph(name="Gmax_graph")
 
         # construct new set of states V'
         V_prime = [(v, w) for v in org_graph.nodes.data() for _, _, w in org_graph.edges.data('weight')]
@@ -357,17 +358,17 @@ class Graph(object):
         return Gmax
 
     # helper method to get states that belong to eve and adam respectively
-    def get_eve_adam_states(self, graph) -> tuple([list, list]):
+    def get_eve_adam_states(self, graph: nx.MultiDiGraph) -> Tuple[list, list]:
         """
         A method to retrieve the states that belong to eve and adam
         :param graph:
         :type graph: netowkrx
         :return: (eve_states, adam_state)
-        :rtype: tuple
+        :rtype: tuple([list, list])
         """
 
-        eve_states = []
-        adam_states = []
+        eve_states: List = []
+        adam_states: List = []
 
         for n in graph.nodes.data():
             if n[1]['player'] == 'eve':
@@ -378,7 +379,7 @@ class Graph(object):
         return eve_states, adam_states
 
     # use this method to create a range of strategies
-    def create_set_of_strategies(self, graph, bound: int) -> dict:
+    def create_set_of_strategies(self, graph: nx.MultiDiGraph, bound: int) -> dict:
         """
         Hypothetically G for eve and adam should be infinite. But technically we don't have infinite memory to compute
         strategies with infinite memory. Also we implement recursion to compute all possible paths. The max depth of
@@ -395,11 +396,11 @@ class Graph(object):
 
         assert (bound < 1000), "Please enter bound to be less than 1000 as it is max recursion depth"
         # trim all non-essential stuff
-        states = self.get_eve_adam_states(graph)
+        states: Tuple[list, list] = self.get_eve_adam_states(graph)
 
         # create eve and adam list to hold the vertex labels
-        _eve_states = []
-        _adam_states = []
+        _eve_states: List = []
+        _adam_states: List = []
 
         # states[0] belong to eve and state[1] belong to adam
         for e in states[0]:
@@ -414,7 +415,8 @@ class Graph(object):
 
         return self.Strs_dict
 
-    def strategy_synthesis_w_finite_memory(self, graph, m: int, _eve_states: list, _adam_states: list) -> dict:
+    def strategy_synthesis_w_finite_memory(self, graph: nx.MultiDiGraph, m: int, _eve_states: List, _adam_states: List)\
+            -> dict:
         """
         A method to compute a set of strategies for a given graph. This method calls @compute_all_paths() to compute
         all possible paths from a give vertex. While doing so each path is assigned which player that strategy belongs
@@ -442,7 +444,8 @@ class Graph(object):
                                                         pathx=Strategy([], None))})
         return paths
 
-    def compute_all_path(self, graph, curr_node, m: int, _eve_state: list, _adam_states: list, pathx) -> list:
+    def compute_all_path(self, graph: nx.MultiDiGraph, curr_node: Tuple, m: int, _eve_state: List, _adam_states: List, pathx) \
+            -> List:
         """
         A method to compute all the paths possible from a given state. This function is called recursively until
         memory(m) becaome 0. So, technically we rollout m + 1 times. with the first vertex in the path being the vertex
@@ -500,7 +503,7 @@ class Graph(object):
             print("")
 
     # helper method to get the corresponding play from Gmin/Gmax to G
-    def Gmin_to_G_play(self, play):
+    def Gmin_to_G_play(self, play: List[Tuple[int, int]]) -> List:
         # all the leading vertex values belong to the org_graph
         # here play is a sequence of tuple
         G_play = []
@@ -510,7 +513,7 @@ class Graph(object):
 
         return G_play
 
-    def test_inf_and_liminf_limsup(self, gmin_graph, org_graph) -> None:
+    def test_inf_and_liminf_limsup(self, gmin_graph: nx.MultiDiGraph, org_graph: nx.MultiDiGraph) -> None:
         print("Testing inf and LimInf and LimSup payoff for a play on Gmin and the respective play in G")
 
         # get a strategy from m = 100 for the org_graph
@@ -548,7 +551,7 @@ class Graph(object):
         print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
         print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
 
-    def test_sup_and_liminf_limsup(self, gmax_graph, org_graph) -> None:
+    def test_sup_and_liminf_limsup(self, gmax_graph: nx.MultiDiGraph, org_graph: nx.MultiDiGraph) -> None:
         # get a strategy from m = 100 for the org_graph
         eve_states, adam_states = self.get_eve_adam_states(gmax_graph)
         trail = self.strategy_synthesis_w_finite_memory(graph=gmax_graph, m=10,
@@ -584,7 +587,7 @@ class Graph(object):
         print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
         print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
 
-def main():
+def main() -> None:
     # a main routine to create a the graph and implement the strategy synthesis
     graph_obj: Graph = Graph(True)
 
@@ -603,7 +606,7 @@ def main():
 
     # read the yaml file
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
-    graph_obj.plot_fancy_graph(graph_obj)
+    graph_obj.plot_fancy_graph()
 
     # test Gmin construction
     # construct Gmin
@@ -614,7 +617,7 @@ def main():
     # dump to yaml file and plot it
     graph_obj.dump_to_yaml()
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
-    graph_obj.plot_fancy_graph(graph_obj)
+    graph_obj.plot_fancy_graph()
 
     # test Gmax construction
     # construct Gmin
@@ -625,7 +628,7 @@ def main():
     # dump to yaml file and plot it
     graph_obj.dump_to_yaml()
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
-    graph_obj.plot_fancy_graph(graph_obj)
+    graph_obj.plot_fancy_graph()
 
     # if you want to get a particular strategy with memory say m = 10 for a graph
     if print_str_m:

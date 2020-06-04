@@ -170,7 +170,7 @@ class payoff_value():
                 stack[node] = False
         return stack
 
-    def _compute_loop_value(self, stack: List):
+    def _compute_loop_value(self, stack: List) -> str:
         """
         helper method to compute the value of a loop
         :param stack:
@@ -199,9 +199,15 @@ class payoff_value():
             # create the edge tuple upto the very last element
             loop_edges.append((stack[i], stack[i + 1]))
 
+        # NOTE: here the weight are str and we can compare '1'and '2' and '-1'. But we cannot compare '1' with 2.
         return self.__payoff_func(map(get_edge_weight, [k for k in loop_edges]))
 
-    def cycle_main(self) -> Dict:
+    def cycle_main(self) -> Dict[str, str]:
+        """
+        A method to compute the all the possible loop values for a given graph with an init node. Before calling this
+        function make sure you have already updated the init node and then call this function.
+        :return:
+        """
         visitStack: Dict[str, bool] = {}
         edgeStack: Dict[str, bool] = {}
         """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
@@ -220,8 +226,8 @@ class payoff_value():
             # the keys are stored in the format of a tuple (curr_node, adj_node)
             edgeStack.update({edge: False})
 
-        # create a dict to hold values of the loops
-        loop_dict = {}
+        # create a dict to hold values of the loops as str for a corresponding play which is a str too
+        loop_dict: Dict[str, str] = {}
 
         # visit each neighbour of the init node
         for node in self.graph.neighbors(init_node[0]):
@@ -235,7 +241,7 @@ class payoff_value():
         self.__loop_vals = loop_dict
         return loop_dict
 
-    def cycle_util(self, node, visitStack: Dict[str, bool], loop_dict: Dict[str, float], edgeStack: Dict[str, bool],
+    def cycle_util(self, node, visitStack: Dict[str, bool], loop_dict: Dict[str, str], edgeStack: Dict[str, bool],
                    nodeStack: List[str]) -> None:
         # initialize loop flag as False and update the @visitStack with the current node as True
         visitStack = copy.copy(visitStack)
@@ -247,7 +253,7 @@ class payoff_value():
                 nodeStack = copy.copy((nodeStack))
                 nodeStack.append(neighbour)
                 play_str = self._convert_stack_to_play_str(nodeStack)
-                loop_value = self._compute_loop_value(nodeStack)
+                loop_value: str = self._compute_loop_value(nodeStack)
                 loop_dict.update({play_str: loop_value})
                 nodeStack.pop()
                 continue
@@ -297,7 +303,7 @@ class payoff_value():
         raise NotImplementedError
 
 if __name__ == "__main__":
-    payoff_func = "liminf"
+    payoff_func = "limsup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     G = Graph(False)

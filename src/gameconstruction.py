@@ -5,6 +5,7 @@ import yaml
 import copy
 import random
 
+from helper_methods import deprecated
 from typing import List, Tuple
 from graphviz import Digraph
 from src.PayoffFunc import PayoffFunc
@@ -25,9 +26,9 @@ print_range_str_m = False
 test_case = False
 
 # test inf payoff function
-test_inf = False
+test_inf = True
 # test sup payoff function
-test_sup = True
+test_sup = False
 
 
 class Strategy(object):
@@ -110,7 +111,7 @@ class Graph(object):
                     dot.attr('node', style='filled', fillcolor='lightgrey')
                 dot.attr('node', shape='rectangle')
                 # dot.node('eve_{}'.format(n[0]))
-                dot.node(str(f"v{n[0]}"))
+                dot.node(str(n[0]))
             else:
                 if n[1].get('init'):
                     dot.attr('node', style='filled', fillcolor='red')
@@ -118,7 +119,7 @@ class Graph(object):
                     dot.attr('node', style='filled', fillcolor='lightgrey')
                 dot.attr('node', shape='circle')
                 # dot.node('adam_{}'.format(n[0]))
-                dot.node(str(f"v{n[0]}"))
+                dot.node(str(n[0]))
 
         # add all the edges
         edges = self.graph_yaml["edges"]
@@ -126,7 +127,7 @@ class Graph(object):
         # load the weights to illustrate on the graph
         # weight = graph["weights"]
         for counter, edge in enumerate(edges):
-            dot.edge(str(f"v{edge[0]}"), str(f"v{edge[1]}"), label=str(edge[2]['weight']))
+            dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']))
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
@@ -161,11 +162,11 @@ class Graph(object):
         MG: nx.MultiDiGraph = nx.MultiDiGraph(name="org_graph")
 
         if test_case:
-            MG.add_nodes_from([1, 2, 3])
-            MG.add_weighted_edges_from([(1, 2, 1),
-                                        (2, 1, 2),
-                                        (1, 3, 1),
-                                        (3, 3, 0.5)
+            MG.add_nodes_from(['v1', 'v2', 'v3'])
+            MG.add_weighted_edges_from([('v1', 'v2', '1'),
+                                        ('v2', 'v1', '2'),
+                                        ('v1', 'v3', '1'),
+                                        ('v3', 'v3', '0.5')
                                         ])
 
             # assign each node a player - this is then later used to plot them conveniently
@@ -174,33 +175,33 @@ class Graph(object):
             MG.nodes[3]['player'] = 'adam'
 
         else:
-            MG.add_nodes_from([1, 2, 3, 4, 5])
-            MG.add_weighted_edges_from([(1, 2, 1),
-                                        (2, 1, -1),
-                                        (1, 3, 1),
-                                        # (2, 3, 1),
-                                        (3, 3, 0.5),
-                                        (3, 5, 1),
-                                        (2, 4, 2),
-                                        (4, 4, 2),
-                                        # (4, 1, 0),
-                                        # (5, 4, 6),
-                                        (5, 5, 1)
+            MG.add_nodes_from(['v1', 'v2', 'v3', 'v4', 'v5'])
+            MG.add_weighted_edges_from([('v1', 'v2', '1'),
+                                        ('v2', 'v1', '-1'),
+                                        ('v1', 'v3', '1'),
+                                        # ('v2', 'v3', '1'),
+                                        ('v3', 'v3', '0.5'),
+                                        ('v3', 'v5', '1'),
+                                        ('v2', 'v4', '2'),
+                                        ('v4', 'v4', '2'),
+                                        # ('v4', 'v1', '0'),
+                                        # ('v5', 'v4', '6'),
+                                        ('v5', 'v5', '1')
                                         ])
 
             # assgin each node a player - this is then later used to plot them conveniently
-            MG.nodes[1]['player'] = 'eve'
-            MG.nodes[2]['player'] = 'adam'
-            MG.nodes[3]['player'] = 'adam'
-            MG.nodes[4]['player'] = 'eve'
-            MG.nodes[5]['player'] = 'eve'
+            MG.nodes['v1']['player'] = 'eve'
+            MG.nodes['v2']['player'] = 'adam'
+            MG.nodes['v3']['player'] = 'adam'
+            MG.nodes['v4']['player'] = 'eve'
+            MG.nodes['v5']['player'] = 'eve'
 
         """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
          you have to first access the data as graph.nodes.data() and loop over the list
          each element in that list is a tuple (NOT A DICT) of the form (node_name, {key: value})"""
 
         # add node 1 as the initial node
-        MG.nodes[1]['init'] = True
+        MG.nodes['v1']['init'] = True
 
         self.graph = MG
 
@@ -237,7 +238,7 @@ class Graph(object):
             )
         )
 
-        config_file_name = str(self.file_name + '.yaml')
+        config_file_name: str = str(self.file_name + '.yaml')
         try:
             with open(config_file_name, 'w') as outfile:
                 yaml.dump(data, outfile, default_flow_style=False)
@@ -254,21 +255,21 @@ class Graph(object):
         v'i = (vi, W) where W is the maximum weight value in G
         An edge exists ((u, n), (v, m)) iff (u, v) belong to E and m = min{n, w(u, v)}
         w'((u, n), (v, m)) = m
-        :return:
-        :rtype: Gmin
+        :return: Grapg Gmin
+        :rtype:
         """
 
         # create a new MG graph
         Gmin: nx.MultiDiGraph = nx.MultiDiGraph(name="Gmin_graph")
 
         # construct new set of states V'
-        V_prime = [(v, w) for v in org_graph.nodes.data() for _, _, w in org_graph.edges.data('weight')]
+        V_prime = [(v, str(w)) for v in org_graph.nodes.data() for _, _, w in org_graph.edges.data('weight')]
 
         # find the maximum weight in the og graph(G)
         # specifically adding self.graph.edges.data('weight') to a create to tuple where the
         # third element is the weight value
         max_edge = max(dict(org_graph.edges).items(), key=lambda x: x[1]['weight'])
-        W = max_edge[1].get('weight')
+        W: str = max_edge[1].get('weight')
 
         # assign nodes to Gmin with player as attributes to each node
         for n in V_prime:
@@ -291,7 +292,7 @@ class Graph(object):
         for parent in Gmin.nodes:
             for child in Gmin.nodes:
                 if org_graph.has_edge(parent[0], child[0]):
-                    if child[1] == min(parent[1], org_graph.get_edge_data(parent[0], child[0])[0]['weight']):
+                    if float(child[1]) == min(float(parent[1]), float(org_graph.get_edge_data(parent[0], child[0])[0]['weight'])):
                         Gmin.add_edge(parent, child, weight=child[1])
 
         if print_Gmin_edges:
@@ -318,13 +319,13 @@ class Graph(object):
         Gmax: nx.MultiDiGraph = nx.MultiDiGraph(name="Gmax_graph")
 
         # construct new set of states V'
-        V_prime = [(v, w) for v in org_graph.nodes.data() for _, _, w in org_graph.edges.data('weight')]
+        V_prime = [(v, str(w)) for v in org_graph.nodes.data() for _, _, w in org_graph.edges.data('weight')]
 
         # find the maximum weight in the og graph(G)
         # specifically adding self.graph.edges.data('weight') to a create to tuple where the
         # third element is the weight value
         max_edge = max(dict(org_graph.edges).items(), key=lambda x: x[1]['weight'])
-        W = max_edge[1].get('weight')
+        W: str = max_edge[1].get('weight')
 
         # assign nodes to Gmax with player as attributes to each node
         for n in V_prime:
@@ -347,7 +348,7 @@ class Graph(object):
         for parent in Gmax.nodes:
             for child in Gmax.nodes:
                 if org_graph.has_edge(parent[0], child[0]):
-                    if child[1] == max(parent[1], org_graph.get_edge_data(parent[0], child[0])[0]['weight']):
+                    if float(child[1]) == max(float(parent[1]), float(org_graph.get_edge_data(parent[0], child[0])[0]['weight'])):
                         Gmax.add_edge(parent, child, weight=child[1])
 
         if print_Gmax_edges:
@@ -513,14 +514,15 @@ class Graph(object):
 
         return G_play
 
+    @deprecated
     def test_inf_and_liminf_limsup(self, gmin_graph: nx.MultiDiGraph, org_graph: nx.MultiDiGraph) -> None:
         print("Testing inf and LimInf and LimSup payoff for a play on Gmin and the respective play in G")
 
         # get a strategy from m = 100 for the org_graph
         eve_states, adam_states = self.get_eve_adam_states(gmin_graph)
         trail = self.strategy_synthesis_w_finite_memory(graph=gmin_graph, m=10,
-                                                            eve_states=eve_states,
-                                                            adam_states=adam_states)
+                                                            _eve_states=eve_states,
+                                                            _adam_states=adam_states)
 
         # compute imf and sup value for a play on graph say m = 10 and from vertex 1
 
@@ -529,7 +531,7 @@ class Graph(object):
         w = []
         # get key with init Flag = True
         # rn_vertex = random.choice(list(trail.keys()))
-        init_vertex = str((1, 2))
+        init_vertex = str(('v1', '2'))
         rn_play = random.choice(list(trail.get(init_vertex)))
         # play = trail.get(rn_vertex)[rn_play].path
         print(rn_play.path)
@@ -551,6 +553,7 @@ class Graph(object):
         print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
         print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
 
+    @deprecated
     def test_sup_and_liminf_limsup(self, gmax_graph: nx.MultiDiGraph, org_graph: nx.MultiDiGraph) -> None:
         # get a strategy from m = 100 for the org_graph
         eve_states, adam_states = self.get_eve_adam_states(gmax_graph)
@@ -565,7 +568,7 @@ class Graph(object):
         w = []
         # get key with init Flag = True
         # rn_vertex = random.choice(list(trail.keys()))
-        init_vertex = str((1, 2))
+        init_vertex = str(('v1', '2'))
         rn_play = random.choice(list(trail.get(init_vertex)))
         # play = trail.get(rn_vertex)[rn_play].path
         print(rn_play.path)
@@ -630,25 +633,26 @@ def main() -> None:
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
     graph_obj.plot_fancy_graph()
 
+    # TODO: In future stable releases remove these as they are fundamentally wrong.
     # if you want to get a particular strategy with memory say m = 10 for a graph
-    if print_str_m:
-        eve_states, adam_states = graph_obj.get_eve_adam_states(Gmax)
-        trail = graph_obj.strategy_synthesis_w_finite_memory(graph=Gmin, m=10,
-                                                     _eve_states=eve_states,
-                                                     _adam_states=adam_states)
-        for k, v in trail.items():
-            print(k, [(value.path, value.player)  for value in v])
-            print(f"for vertex {k}, the number of paths are {len(v)}")
-
-    graph_obj.create_set_of_strategies(Gmin, 10)
-
-    if print_range_str_m:
-        graph_obj.print_set_of_strategies()
-
-    if test_inf:
-        graph_obj.test_inf_and_liminf_limsup(Gmin, org_graph)
-    if test_sup:
-        graph_obj.test_sup_and_liminf_limsup(Gmax, org_graph)
+    # if print_str_m:
+    #     eve_states, adam_states = graph_obj.get_eve_adam_states(Gmax)
+    #     trail = graph_obj.strategy_synthesis_w_finite_memory(graph=Gmin, m=10,
+    #                                                  _eve_states=eve_states,
+    #                                                  _adam_states=adam_states)
+    #     for k, v in trail.items():
+    #         print(k, [(value.path, value.player)  for value in v])
+    #         print(f"for vertex {k}, the number of paths are {len(v)}")
+    #
+    # graph_obj.create_set_of_strategies(Gmin, 10)
+    #
+    # if print_range_str_m:
+    #     graph_obj.print_set_of_strategies()
+    #
+    # if test_inf:
+    #     graph_obj.test_inf_and_liminf_limsup(Gmin, org_graph)
+    # if test_sup:
+    #     graph_obj.test_sup_and_liminf_limsup(Gmax, org_graph)
 
 
 

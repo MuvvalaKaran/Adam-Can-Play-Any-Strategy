@@ -8,7 +8,7 @@ import re
 import warnings
 import operator
 
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Set
 from src.gameconstruction import Graph
 from src.compute_payoff import payoff_value
 from helper_methods import deprecated
@@ -38,19 +38,19 @@ def construct_graph(payoff_func: str, *args, **kwargs) -> Graph:
     return G
 
 
-def construct_alt_game(graph: nx.MultiDiGraph, edge: Tuple[str, str]) -> nx.MultiDiGraph:
+def construct_alt_game(graph: nx.MultiDiGraph, edge: Tuple[Tuple, Tuple]) -> nx.MultiDiGraph:
     """
     A helper method to construct an temporary alternate game without the org edge @edge
-    :param graph:
-    :param edge:
-    :return: A new game graph
+    :param graph: graph org_graph
+    :param edge: a tuple of nodes of the form (u, v)
+    :return: A new game graph without the edge (u, v)
     """
-    # remove the edge of the form (u, v) from the graph
+    # remove the edge (u, v) from the graph
     new_graph = copy.deepcopy(graph)
     new_graph.remove_edge(edge[0], edge[1])
     return new_graph
 
-
+@deprecated
 def compute_w_prime(payoff_handle: payoff_value, org_graph: Graph) -> Dict[str, str]:
     print("*****************Constructing W_prime*****************")
     # compute W prime
@@ -126,6 +126,23 @@ def compute_w_prime(payoff_handle: payoff_value, org_graph: Graph) -> Dict[str, 
 
     return w_prime
 
+def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle : payoff_value, node: Tuple):
+    tmp_copied_graph = copy.deepcopy(graph)
+    # construct a new graph with node as the initial vertex and compute loop_vals again
+    # 1. remove the current init node of the graph
+    # 2. add @node as the new init vertex
+    # 3. compute the loop-vals for this new graph
+    tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
+    # FIXME: even if you are not dealing with a new init node, this process finds the current init node, deletes it and
+    #  adds the same thing again. Looks redundant!
+    tmp_init_node = tmp_payoff_handle.get_init_node()
+    # we should ideally only have one init node
+    for _n in tmp_init_node:
+        tmp_payoff_handle.remove_attribute(_n, 'init')
+    tmp_payoff_handle.set_init_node(node)
+    tmp_payoff_handle.cycle_main()
+
+    return tmp_payoff_handle.compute_cVal(node)
 
 def new_compute_w_prime_for_g_m(payoff_handle: payoff_value, org_graph: Graph) \
         -> Dict[Tuple[Tuple[str, str], Tuple[str, str]], str]:
@@ -150,66 +167,35 @@ def new_compute_w_prime_for_g_m(payoff_handle: payoff_value, org_graph: Graph) \
             tmp_cvals = []
             # step 2. get all the alt edges (u, v')
             for alt_e in tmp_graph.out_edges(edge[0]):
-                # just to be safe, we will work with a copy
-                tmp_copied_graph = copy.deepcopy(tmp_graph)
-                # construct a new graph with alt_e[1] as the initial vertex and compute loop_vals again and then
-                # proceed ahead in this method
-                # 1. remove the current init node of the graph
-                # 2. add e[1] as the new init vertex
-                # 3. compute the loop vals for this new graph
-                tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
-                tmp_init_node = tmp_payoff_handle.get_init_node()
-                # we should ideally only have one init node
-                for _n in tmp_init_node:
-                    tmp_payoff_handle.remove_attribute(_n, 'init')
-                tmp_payoff_handle.set_init_node(alt_e[1])
-                tmp_payoff_handle.cycle_main()
-
                 # get all cVal from all the alt edges(v') from a given node (u)
-                tmp_cvals.append(tmp_payoff_handle.compute_cVal(alt_e[1]))
-            # after going throw all the edges
+                tmp_cvals.append(_compute_max_cval_from_v(tmp_graph, payoff_handle, alt_e[1]))
+            # after going throw all the alternate edges
             if len(tmp_cvals) != 0:
                 w_prime.update({edge: max(tmp_cvals)})
-            # if no edges exist then just compute the cVal from v of the org edge
+            # if no alternate edges exist then just compute the cVal from v of the org edge
             else:
-                # TODO: check if this correct or not?!
                 # make a copy of the org_graph and a another tmp_payoff_handle and compute loop vals
-                # payoff_handle.graph = graph.graph
-                tmp_copied_graph = copy.deepcopy(org_graph.graph)
-                tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
-                tmp_init_node = tmp_payoff_handle.get_init_node()
-                # we should ideally only have one init node
-                for _n in tmp_init_node:
-                    tmp_payoff_handle.remove_attribute(_n, 'init')
-                tmp_payoff_handle.set_init_node(edge[1])
-                tmp_payoff_handle.cycle_main()
-                w_prime.update({edge: tmp_payoff_handle.compute_cVal(edge[1])})
-                # payoff_handle.cycle_main()
-                # w_prime.update({edge: payoff_handle.compute_cVal(edge[1])})
-                # tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
+                w_prime.update({edge: _compute_max_cval_from_v(org_graph.graph, payoff_handle, edge[1])})
 
     print(f"the value of b are {set(w_prime.values())}")
 
     return w_prime
 
-def _construct_g_b_from_g_m(g_hat, org_graph, b, w_prime):
+def _construct_g_b_from_g_m(g_hat, org_graph, b, w_prime: Dict):
     # each node is dict with the node name as key and 'b' as its value
     g_hat.add_nodes_from([((n), b) for n in org_graph.nodes()])
-    # g_hat_node_pattern = re.compile('_')
 
     # get the init nodes (ideally should only be one) of the org_graph
     init_node = new_get_init_node(org_graph)
 
-    # TODO: In future code add more info to this warning
-    assert (len(init_node) == 1), "Detected multiple init nodes in the org graph. This should not be the case"
+    assert (len(init_node) == 1), f"Detected multiple init nodes in the org graph: {[n for n in init_node]}. " \
+                                  f"This should not be the case"
     # assign each node a player if it hasn't been initialized yet
     for n in g_hat.nodes():
         # assign the nodes of G_b with v1 in it at n[0] to have a 'init' attribute
         if len(n) == 2 and n[0] == init_node[0][0]:
             g_hat.nodes[n]['init'] = True
         if g_hat.nodes(data='player')[n] is None:
-            # get the node literal all the way up to "_"
-            # start_pos_index_of_underscore = g_hat_node_pattern.search(n).regs[0][0]
             if org_graph.nodes(data='player')[n[0]] == "adam":
                 g_hat.nodes[n]['player'] = "adam"
             else:
@@ -291,28 +277,18 @@ def construct_g_hat_from_g_m(org_graph, w_prime):
     for b in w_set:
         _construct_g_b_from_g_m(G_hat, org_graph, b, w_prime)
 
-    # add edges between 1 of G_hat and init(1_b) of graph G_b with edge weights 0
+    # add edges between v1 of G_hat and init nodes(v1_b/ ((v1, 1), b) of graph G_b with edge weights 0
     # get init node of the org graph
-    init_node_list: List = new_get_init_node(graph=G_hat)
+    init_node_list: List[Tuple] = new_get_init_node(graph=G_hat)
 
     def remove_attribute(G, tnode, attr):
         G.nodes[tnode].pop(attr, None)
 
     # add edge with weigh 0 from v1 to all the init nodes of g_b as (('v1', '1'), '1'); (('v1', '1'), '2'); ....
     for _init_n in init_node_list:
-        G_hat.add_weighted_edges_from([('v1', _init_n[0], 0)])
-        # remove the init nodes from g_b graph
         if isinstance(_init_n[0], tuple):
+            G_hat.add_weighted_edges_from([('v1', _init_n[0], 0)])
             remove_attribute(G_hat, _init_n[0], "init")
-
-    # TODO: looks like a tmp patch; this may or may not work when using sup/inf payoff function.
-    #  Need to verify it
-    # remove nodes from g_b which has init nodes
-    # _init_node = [node[0] for node in G_hat.nodes.data() if node[1].get('init') == True]
-    # g_b_node_pattern = re.compile('_')
-    # for duplicate_init_node in _init_node:
-    #     if g_b_node_pattern.search(duplicate_init_node) is not None:
-    #         remove_attribute(G_hat, duplicate_init_node, 'init')
 
     def w_hat_b(_org_graph: nx.MultiDiGraph, org_edge: Tuple[Tuple[str, str], Tuple[str, str]], b_value: str) -> str:
         """
@@ -332,24 +308,12 @@ def construct_g_hat_from_g_m(org_graph, w_prime):
                 print("The code should have never thrown this error. The error strongly indicates that the edges of the"
                       "original graph has been modified and the edge {} does not exist".format(org_edge))
 
-    def find_node_before_underscore(_node: str) -> str:
-        # start_index = g_b_node_pattern.search(_node).regs[0][0]
-        # return _node[:start_index]
-        return "comment this"
-
-    def find_b_after_underscore(_node: str) -> str:
-        last_index = re.search("_+", _node).regs[0][1]
-        return _node[last_index:]
-
-    # add edges with their respective weights; a sample edge ((".","."),"."),((".","."),".")
+    # add edges with their respective weights; a sample edge ((".","."),"."),((".","."),".") for with gmin/gmax and
+    # with ((".","."),(".", "."))
     for e in G_hat.edges():
         # only add weights if hasn't been initialized
         if G_hat[e[0]][e[1]][0].get('weight') is None:
-            # initialize_weights
-            # the nodes are stored as string in format "1_1" so we need only the first element
-            # condition to check if the node belongs to g_b or not
-            # if len(e[0]) > 1:
-            # an edge can only exist within a g_b
+            # an edge can only exist within a graph g_b
             assert (e[0][1] == e[1][1]), "Make sure that there only exist edge betwen nodes that belong to the same g_b"
             G_hat[e[0]][e[1]][0]['weight'] = w_hat_b(org_graph, (e[0][0], e[1][0]), e[0][1])
 
@@ -361,91 +325,91 @@ def construct_g_hat_from_g_m(org_graph, w_prime):
 
     return G_hat
 
+@deprecated
+# def construct_g_hat(org_graph, w_prime):
+#     print("*****************Constructing G_hat*****************")
+#     # construct new graph according to the pseudocode 3
+#     G_hat = nx.MultiDiGraph(name="G_hat")
+#     G_hat.add_nodes_from(['v0', 'v1', 'vT'])
+#     G_hat.nodes['v0']['player'] = "adam"
+#     G_hat.nodes['v1']['player'] = "eve"
+#     G_hat.nodes['vT']['player'] = "eve"
+#
+#     # add v0 as the initial node
+#     G_hat.nodes['v0']['init'] = True
+#     # add the edges with the weights
+#     G_hat.add_weighted_edges_from([('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
+#
+#     # compute the range of w_prime function
+#     w_set = set(w_prime.values()) - {str(-1 * math.inf)}
+#     # construct g_b
+#     for b in w_set:
+#         _construct_g_b(G_hat, org_graph, b, w_prime)
+#
+#     # add edges between 1 of G_hat and init(1_b) of graph G_b with edge weights 0
+#     for b in w_set:
+#         G_hat.add_weighted_edges_from([('v1', f"v1_{b}", 0)])
+#
+#     def remove_attribute(G, tnode, attr):
+#         G.nodes[tnode].pop(attr, None)
+#
+#     # TODO: looks like a tmp patch; this may or may not work when using sup/inf payoff function.
+#     #  Need to verify it
+#     # remove nodes from g_b which has init nodes
+#     _init_node = [node[0] for node in G_hat.nodes.data() if node[1].get('init') == True]
+#     g_b_node_pattern = re.compile('_')
+#     for duplicate_init_node in _init_node:
+#         if g_b_node_pattern.search(duplicate_init_node) is not None:
+#             remove_attribute(G_hat, duplicate_init_node, 'init')
+#
+#     def w_hat_b(_org_graph: nx.MultiDiGraph, org_edge: Tuple[str, str], b_value) -> str:
+#         """
+#         an inline function to find the w_prime valued for a g_b graph
+#         :param _org_graph:
+#         :param org_edge: edges of the format "("v1", "v2")"
+#         :param b_value:
+#         :return:
+#         """
+#         if float(w_prime[str(org_edge)]) != -1 * math.inf:
+#             return str(float(w_prime[str(org_edge)]) - float(b_value))
+#         else:
+#             try:
+#                 return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
+#             except KeyError:
+#                 print(KeyError)
+#                 print("The code should have never thrown this error. The error strongly indicates that the edges of the"
+#                       "original graph has been modified and the edge {} does not exist".format(org_edge))
+#
+#     def find_node_before_underscore(_node: str) -> str:
+#         start_index = g_b_node_pattern.search(_node).regs[0][0]
+#         return _node[:start_index]
+#
+#     def find_b_after_underscore(_node: str) -> str:
+#         last_index = re.search("_+", _node).regs[0][1]
+#         return _node[last_index:]
+#
+#     # add edges with their respective weights
+#     for e in G_hat.edges():
+#         # only add weights if hasn't been initialized
+#         if G_hat[e[0]][e[1]][0].get('weight') is None:
+#             # initialize_weights
+#             # the nodes are stored as string in format "1_1" so we need only the first element
+#             # condition to check if the node belongs to g_b or not
+#             if len(e[0]) > 1:
+#                 G_hat[e[0]][e[1]][0]['weight'] = w_hat_b(org_graph, (find_node_before_underscore(e[0]),
+#                                                                      find_node_before_underscore(e[1])),
+#                                                          find_b_after_underscore(e[0]))
+#
+#     # for nodes that don't have any outgoing edges add a transition to the terminal node i.e 'T' in our case
+#     for node in G_hat.nodes():
+#         if G_hat.out_degree(node) == 0:
+#             # add transition to the terminal node
+#             G_hat.add_weighted_edges_from([(node, 'vT', 0)])
+#
+#     return G_hat
 
-def construct_g_hat(org_graph, w_prime):
-    print("*****************Constructing G_hat*****************")
-    # construct new graph according to the pseudocode 3
-    G_hat = nx.MultiDiGraph(name="G_hat")
-    G_hat.add_nodes_from(['v0', 'v1', 'vT'])
-    G_hat.nodes['v0']['player'] = "adam"
-    G_hat.nodes['v1']['player'] = "eve"
-    G_hat.nodes['vT']['player'] = "eve"
 
-    # add v0 as the initial node
-    G_hat.nodes['v0']['init'] = True
-    # add the edges with the weights
-    G_hat.add_weighted_edges_from([('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
-
-    # compute the range of w_prime function
-    w_set = set(w_prime.values()) - {str(-1 * math.inf)}
-    # construct g_b
-    for b in w_set:
-        _construct_g_b_from_g_m(G_hat, org_graph, b, w_prime)
-
-    # add edges between 1 of G_hat and init(1_b) of graph G_b with edge weights 0
-    for b in w_set:
-        G_hat.add_weighted_edges_from([('v1', f"v1_{b}", 0)])
-
-    def remove_attribute(G, tnode, attr):
-        G.nodes[tnode].pop(attr, None)
-
-    # TODO: looks like a tmp patch; this may or may not work when using sup/inf payoff function.
-    #  Need to verify it
-    # remove nodes from g_b which has init nodes
-    _init_node = [node[0] for node in G_hat.nodes.data() if node[1].get('init') == True]
-    g_b_node_pattern = re.compile('_')
-    for duplicate_init_node in _init_node:
-        if g_b_node_pattern.search(duplicate_init_node) is not None:
-            remove_attribute(G_hat, duplicate_init_node, 'init')
-
-    def w_hat_b(_org_graph: nx.MultiDiGraph, org_edge: Tuple[str, str], b_value) -> str:
-        """
-        an inline function to find the w_prime valued for a g_b graph
-        :param _org_graph:
-        :param org_edge: edges of the format "("v1", "v2")"
-        :param b_value:
-        :return:
-        """
-        if float(w_prime[str(org_edge)]) != -1 * math.inf:
-            return str(float(w_prime[str(org_edge)]) - float(b_value))
-        else:
-            try:
-                return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
-            except KeyError:
-                print(KeyError)
-                print("The code should have never thrown this error. The error strongly indicates that the edges of the"
-                      "original graph has been modified and the edge {} does not exist".format(org_edge))
-
-    def find_node_before_underscore(_node: str) -> str:
-        start_index = g_b_node_pattern.search(_node).regs[0][0]
-        return _node[:start_index]
-
-    def find_b_after_underscore(_node: str) -> str:
-        last_index = re.search("_+", _node).regs[0][1]
-        return _node[last_index:]
-
-    # add edges with their respective weights
-    for e in G_hat.edges():
-        # only add weights if hasn't been initialized
-        if G_hat[e[0]][e[1]][0].get('weight') is None:
-            # initialize_weights
-            # the nodes are stored as string in format "1_1" so we need only the first element
-            # condition to check if the node belongs to g_b or not
-            if len(e[0]) > 1:
-                G_hat[e[0]][e[1]][0]['weight'] = w_hat_b(org_graph, (find_node_before_underscore(e[0]),
-                                                                     find_node_before_underscore(e[1])),
-                                                         find_b_after_underscore(e[0]))
-
-    # for nodes that don't have any outgoing edges add a transition to the terminal node i.e 'T' in our case
-    for node in G_hat.nodes():
-        if G_hat.out_degree(node) == 0:
-            # add transition to the terminal node
-            G_hat.add_weighted_edges_from([(node, 'vT', 0)])
-
-    return G_hat
-
-
-def plot_graph(graph, file_name, save_flag: bool = True):
+def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True):
     print(f"*****************Plotting graph with save_flag = {save_flag}*****************")
     # create Graph object
     plot_handle = Graph(save_flag)
@@ -487,8 +451,10 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: st
     }
 
     # create a empty dict to hold the strategy for eve and adam
-    eve_str: Dict[Tuple[Tuple[str, str], str], Tuple[Tuple[str, str], str]] = {}
-    adam_str: Dict[Tuple[Tuple[str, str], str], Tuple[Tuple[str, str], str]] = {}
+    # a key is an edge which is a tuple of nodes(tuple): Tuple(Tuple(), Tuple())
+    # a value is the next node to transit to : Tuple()
+    eve_str: Dict[Tuple[Tuple, Tuple], Tuple] = {}
+    adam_str: Dict[Tuple[Tuple, Tuple], Tuple] = {}
 
     # update 0 to 1 transition in g_hat and 1 to 1_b depending on the value of b - hyper-paramter chosen by the user
     # NOTE: here the strategy is a dict; key is the current node while the value is the next node.
@@ -504,27 +470,12 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: st
 
     # get the max_b below the accepted val (meta_b)
     allowed_b: str = max(_max_accepted_b)
-    # get the init node
     # get the init nodes (ideally should only be one) of the org_graph
     init_node = new_get_init_node(org_graph)
+    assert (len(init_node) == 1), f"Detected multiple init nodes in the org graph: {[n for n in init_node]}. " \
+                                  f"This should not be the case"
 
-    # TODO: In future code add more info to this warning
-    assert (len(init_node) == 1), "Detected multiple init nodes in the org graph. This should not be the case"
     eve_str.update({"v1": ((init_node[0][0]), allowed_b)})
-
-    def check_node_owner(_node: str) -> bool:
-        """
-        an inline helper method to check if the node belong to g_b (has "_" in it) or g_hat (no "_" in it)
-        :param _node:
-        :return: return False if it belongs to g_hat and True if it belongs to g_b
-        """
-        if re.search("_", _node) is not None:
-            return True
-        return False
-
-    def find_b_after_underscore(_node: str) -> str:
-        last_index = re.search("_+", _node).regs[0][1]
-        return _node[last_index:]
 
     # update strategy for each node
     # 1. adam picks the edge with the min value
@@ -550,7 +501,6 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: st
     # 3. update the str_dict['reg'] value
     # merging both the dictionaries
     a_val = _play_loop(g_hat, {**eve_str, **adam_str}, _Val_func)
-    # a_val = _Val(_loop_vals, loop_str)
     str_dict['reg'] = -1*float(a_val)
 
     # update eve and adam str and return it
@@ -560,7 +510,7 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: st
     return str_dict
 
 
-
+@deprecated
 def compute_aVal(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: str, w_prime: Dict) -> Dict[str, Dict]:
     """
     A function to compute the regret value according to algorithm 4 : Reg = -1 * Val(.,.) on g_hat
@@ -651,7 +601,7 @@ def compute_aVal(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: str, w_prime: D
 
     return str_dict
 
-
+@deprecated
 def _get_init_node(graph):
     """
     A helper method to get the initial node of a given graph
@@ -663,15 +613,12 @@ def _get_init_node(graph):
     return init_node[0]
 
 
-def _play_loop(graph, strategy, payoff_func):
+def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple[Tuple, Tuple], Tuple], payoff_func: str) -> str:
     """
-    helper method to find a loop while following str on g_hat and return a corresponding str sequence of nodes
-    :param graph:
-    :type @ Digraph
-    :param strategy:
-    :type dict
-    :return: sequence of nodes e.g '0121'
-    :type basestring
+    helper method to compute the loop value for a given payoff function
+    :param graph: graph g_hat
+    :param strategy: A mapping from a each node of g_hat to the next node
+    :return: The value of the loop when follwing the strategy @strategy
     """
     # add nodes to this stack and as soon as a loop is found we break
     play = [new_get_init_node(graph)[0][0]]
@@ -681,12 +628,9 @@ def _play_loop(graph, strategy, payoff_func):
         # NOTE: This is assuming that a strategy is deterministic i.e the cardinality of next node is 1
         # play.append(node)
         play.append(strategy[play[-1]])
-        # weigth.append(graph[play[-1]][strategy[play[-1]]][0]['weight'])
 
         if play.count(play[-1]) == 2:
-            play_str = ''.join([str(ele) for ele in play])
-            # pop the very last element as it is repeated twice
-            # play.pop()
+            # play_str = ''.join([str(ele) for ele in play])
 
             # create a tmp graph with the current node with their respective edges, compute the val and return it
             str_graph = nx.MultiDiGraph(name="str_graph")
@@ -708,21 +652,12 @@ def _play_loop(graph, strategy, payoff_func):
             # add this graph to compute_payoff class
             tmp_p_handle = payoff_value(str_graph, payoff_func)
             _loop_vals = tmp_p_handle.cycle_main()
+            play_key = tuple(tmp_p_handle._convert_stack_to_play_str(play))
 
-            return _loop_vals[play_str]
+            return _loop_vals[play_key]
 
 
-@deprecated
-def _Val(loop_dict, play):
-    # just a helper function mapping a play to its real value.
-    try:
-        return loop_dict[play]
-    except KeyError as error:
-        print(error)
-        print(f"The play {play} does not exist. This might be due to the fact that this is a not a val loop or or "
-              f"the play for some reason is missing from the computation in w_prime() method")
-
-def _get_next_node(graph: nx.MultiDiGraph, curr_node: str, func) -> str:
+def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
     # return the next node for eve and adam on g_hat game
     # func - either max or min
     assert (func == max or func == min), "Please make sure the deciding function for transitions on the game g_hat for " \
@@ -731,23 +666,20 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: str, func) -> str:
     wt_list = {}
     for adj_edge in graph.edges(curr_node):
         # get the edge weight, store it in a list and find the max/min and return the next_node
-        # G_hat[e[0]][e[1]][0].get('weight')
         wt_list.update({adj_edge: float(graph[adj_edge[0]][adj_edge[1]][0].get('weight'))})
-        # wt_list.append(graph[adj_edge[0]][adj_edge[1]][0].get('weight'))
 
-    next_node: str = func(wt_list.items(), key=operator.itemgetter(1))[0]
+    next_node: Tuple = func(wt_list.items(), key=operator.itemgetter(1))[0]
 
     return next_node[1]
 
 
 def main():
-    payoff_func = "sup"
+    payoff_func = "limsup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)
     p = payoff_value(graph.graph, payoff_func)
 
-    # FIXME: fails when using inf/sup payoff function
     # construct W prime
     w_prime = new_compute_w_prime_for_g_m(p, graph)
 
@@ -755,7 +687,7 @@ def main():
     G_hat = construct_g_hat_from_g_m(graph.graph, w_prime)
 
     # use methods from the Graph class create a visualization
-    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=False)
+    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=True)
 
     # Compute antagonistic value
     personal_b_val = '2'

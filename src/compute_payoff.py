@@ -115,6 +115,9 @@ class payoff_value():
         A helper method to get the initial node of a given graph
         :return: node
         """
+        # TODO: This methods loops through every element even after detecting a node which is a waste of time.
+        #  Maybe I should break after I find an init node.
+        # NOTE: if we assume to have only one init node then we can break immediately after we find it
         init_node = [node[0] for node in self.graph.nodes.data() if node[1].get('init') == True]
 
         return init_node
@@ -147,15 +150,17 @@ class payoff_value():
         """
         return self._raw_payoff_value
 
-    def _convert_stack_to_play_str(self, stack: Dict[str, bool]) -> str:
+    def _convert_stack_to_play_str(self, stack: List[Tuple]) -> List[Tuple]:
         """
         Helper method to convert a play to its corresponding str representation
         :param stack: a dict of type {node: boolean_value}
         :return: basestring
         """
         # play = [node for node, value in stack.items() if value == True]
-        play_str = ''.join([str(ele) for ele in stack])
-        return play_str
+        # play_str = ''.join([ele for ele in stack])
+        # lets create a list of tuple
+        play_list: List[Tuple] = [node for node in stack]
+        return play_list
 
     def _reinit_visitStack(self, stack: Dict) -> Dict:
         """
@@ -181,14 +186,9 @@ class payoff_value():
             # k is a tuple of format (curr_node, adj_node)
             # getter method for edge weights
             return self.graph[k[0]][k[1]][0]['weight']
-        # loop_edges = []
-        #
-        # visited_edges = dict(filter(lambda elem: elem[1] == True, stack.items()))
-        # for k in visited_edges.keys():
-        #     # if v == True:
-        #     loop_edges.append(get_edge_weight(k))
-        # [1,3,3]
-        # find the element which is repeated twice in the list - which has to be the very last element of the list
+
+        # find the element which is repeated twice or more in the list -
+        # which has to be the very last element of the list
         assert stack.count(stack[-1]) >= 2, "The count of the repeated elements in a loops should be exactly 2"
 
         # get the index of the repeated node when it first appeared
@@ -202,14 +202,14 @@ class payoff_value():
         # NOTE: here the weight are str and we can compare '1'and '2' and '-1'. But we cannot compare '1' with 2.
         return self.__payoff_func(map(get_edge_weight, [k for k in loop_edges]))
 
-    def cycle_main(self) -> Dict[str, str]:
+    def cycle_main(self) -> Dict[Tuple, str]:
         """
         A method to compute the all the possible loop values for a given graph with an init node. Before calling this
         function make sure you have already updated the init node and then call this function.
         :return:
         """
-        visitStack: Dict[str, bool] = {}
-        edgeStack: Dict[str, bool] = {}
+        visitStack: Dict[Tuple, bool] = {}
+        edgeStack: Dict[Tuple, bool] = {}
         """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
             you have to first access the data as graph.nodes.data() and loop over the list
             each element in that list is a tuple (NOT A DICT) of the form (node_name, {key: value})"""
@@ -227,22 +227,22 @@ class payoff_value():
             edgeStack.update({edge: False})
 
         # create a dict to hold values of the loops as str for a corresponding play which is a str too
-        loop_dict: Dict[str, str] = {}
+        loop_dict: Dict[Tuple, str] = {}
 
         # visit each neighbour of the init node
         for node in self.graph.neighbors(init_node[0]):
             # reset all the flags except the init node flag to be False
             visitStack = self._reinit_visitStack(visitStack)
             visitStack[init_node[0]] = True
-            nodeStack: List[str] = []
+            nodeStack: List[Tuple] = []
             nodeStack.append(init_node[0])
             self.cycle_util(node, visitStack, loop_dict, edgeStack, nodeStack)
 
         self.__loop_vals = loop_dict
         return loop_dict
 
-    def cycle_util(self, node, visitStack: Dict[str, bool], loop_dict: Dict[str, str], edgeStack: Dict[str, bool],
-                   nodeStack: List[str]) -> None:
+    def cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, str], edgeStack: Dict[Tuple, bool],
+                   nodeStack: List[Tuple]) -> None:
         # initialize loop flag as False and update the @visitStack with the current node as True
         visitStack = copy.copy(visitStack)
         visitStack[node] = True
@@ -252,15 +252,15 @@ class payoff_value():
             if visitStack[neighbour]:
                 nodeStack = copy.copy((nodeStack))
                 nodeStack.append(neighbour)
-                play_str = self._convert_stack_to_play_str(nodeStack)
+                play_tuple = tuple(self._convert_stack_to_play_str(nodeStack))
                 loop_value: str = self._compute_loop_value(nodeStack)
-                loop_dict.update({play_str: loop_value})
+                loop_dict.update({play_tuple: loop_value})
                 nodeStack.pop()
                 continue
             else:
                 self.cycle_util(neighbour, visitStack, loop_dict, edgeStack, nodeStack)
 
-    def _find_vertex_in_play(self, v: str, play: str) -> bool:
+    def _find_vertex_in_play(self, v: Tuple, play: Tuple) -> bool:
         """
         A helper method to to check is a node is in a player or not
         :param v: name of the node to search for
@@ -272,14 +272,12 @@ class payoff_value():
         """
 
         # if there is a match then return True
-        # took the long route rather than just re.search({v}, txt) as I could not enter v directly even with
-        # escape sequence characters
-        node_re = re.compile(f'{v}')
-        if re.search(node_re.pattern, play):
+        # node_re = re.compile(f'{v}')
+        if v in play:
             return True
         return False
 
-    def compute_cVal(self, vertex: str) -> Dict:
+    def compute_cVal(self, vertex: Tuple) -> str:
         """
         Method to compute the cVal using  @vertex as the starting node
         :param vertex: a valid node of the graph

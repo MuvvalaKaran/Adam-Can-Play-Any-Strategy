@@ -1,16 +1,13 @@
 import networkx as nx
-import matplotlib.pyplot as plt
-import pygraphviz as pgv
 import yaml
 import copy
 import random
+import os
 
 from helper_methods import deprecated
-from typing import List, Tuple
+from typing import List, Tuple, AnyStr
 from graphviz import Digraph
 from src.PayoffFunc import PayoffFunc
-# import sys
-# print(sys.path)
 
 print_edge = False
 # use this boolean to print nodes and edges with their respective weights
@@ -29,6 +26,10 @@ test_case = False
 test_inf = True
 # test sup payoff function
 test_sup = False
+
+
+def get_cwd_path() -> AnyStr:
+    return os.path.dirname(os.path.realpath(__file__))
 
 
 class Strategy(object):
@@ -68,14 +69,14 @@ class Strategy(object):
 class Graph(object):
 
     def __init__(self, save_flag: bool = True) -> None:
-        self.file_name = None
+        self.file_name: str = None
         self.graph_yaml = self.read_yaml_file(self.file_name)
         self.save_flag = save_flag
         self.graph = None
         self.Strs_dict = {}
 
     @staticmethod
-    def read_yaml_file(config_files: str):
+    def read_yaml_file(config_files: str) -> nx:
         """
             reads the yaml file data and stores them in appropriate variables
         """
@@ -94,7 +95,6 @@ class Graph(object):
 
         return graph
 
-    # @staticmethod
     def plot_fancy_graph(self) -> None:
         """
         Method to create a illustration of the graph
@@ -149,8 +149,7 @@ class Graph(object):
         if view:
             dot_object.view(cleanup=True)
 
-        # FIXME: instead of taking absolute path, get the relative path and append this to it
-        dot_object.render(f'graph/{graph_name}', view=view, cleanup=True)
+        dot_object.render(get_cwd_path() + f'/graph/{graph_name}', view=view, cleanup=True)
 
     # create a sample multigraph
     def create_multigrpah(self) -> nx.MultiDiGraph:
@@ -632,29 +631,6 @@ def main() -> None:
     graph_obj.dump_to_yaml()
     graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
     graph_obj.plot_fancy_graph()
-
-    # TODO: In future stable releases remove these as they are fundamentally wrong.
-    # if you want to get a particular strategy with memory say m = 10 for a graph
-    # if print_str_m:
-    #     eve_states, adam_states = graph_obj.get_eve_adam_states(Gmax)
-    #     trail = graph_obj.strategy_synthesis_w_finite_memory(graph=Gmin, m=10,
-    #                                                  _eve_states=eve_states,
-    #                                                  _adam_states=adam_states)
-    #     for k, v in trail.items():
-    #         print(k, [(value.path, value.player)  for value in v])
-    #         print(f"for vertex {k}, the number of paths are {len(v)}")
-    #
-    # graph_obj.create_set_of_strategies(Gmin, 10)
-    #
-    # if print_range_str_m:
-    #     graph_obj.print_set_of_strategies()
-    #
-    # if test_inf:
-    #     graph_obj.test_inf_and_liminf_limsup(Gmin, org_graph)
-    # if test_sup:
-    #     graph_obj.test_sup_and_liminf_limsup(Gmax, org_graph)
-
-
 
 if __name__ == "__main__":
     main()

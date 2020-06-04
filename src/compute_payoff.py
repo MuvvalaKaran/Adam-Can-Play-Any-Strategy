@@ -41,76 +41,7 @@ class payoff_value():
             print("Please enter a valid payoff function. NOTE: payoff_func string is case sensitive")
             print("Make sure you exactly enter: 1.sup 2.inf 3. limsup 4. liminf. ")
 
-    @deprecated
-    # write a basic code in which we detect cycles
-    def is_cyclic_util(self, v, visited, recStack, edgeStack) -> bool:
-
-        # Mark the current node as visited and
-        # adds to recursion stack
-        visited[v] = True
-        recStack[v] = True
-        # edgeStack = []
-        # Recur for all neighbours
-        # if any neighbour is visited and in
-        # in recStack then graph is cyclic
-        for neighbour in self.graph[v]:
-            # update the edgeStack
-            edgeStack.append(self.graph[v][neighbour][0]['weight'])
-
-            # if the neighbour hasn't been visited then mark that as visited and then look at its
-            # neighbours
-            if not visited[neighbour]:
-                recStack, loop_value = self.is_cyclic_util(neighbour, visited, recStack, edgeStack)
-                return recStack, loop_value
-                    # the sequence of nodes
-                    # play = [node for node, value in recStack.items() if value == True]
-                    # # convert it into a str so that it can stored are a dect key
-                    # play_str = ''.join([str(ele) for ele in play])
-                    # loop_value = self.payoff_func(edgeStack)
-                    # edgeStack.clear()
-                    # return recStack, loop_value
-                    # return True
-
-            # if cycle exists then return True
-            elif recStack[neighbour]:
-                # compute the min/max
-                loop_value = self.__payoff_func(edgeStack)
-                edgeStack.clear()
-                return recStack, loop_value
-                # return True
-
-        # The node needs to be poped from
-        # recursion stack before function ends
-        recStack[v] = False
-        return False
-
-    @deprecated
-    def is_cyclic(self) -> bool:
-        # initialize visited and recStack as dict mapping each node to its boolean value
-        # visited = [False] * len(self.__V)
-        # recStack = [False] * len(self.__V)
-        # visited keeps track of nodes visited
-        visited = {}
-        # recStack keeps track of a loop
-        recStack = {}
-        loopStack = {}
-        # edgeStack keeps track of the edge weights in the recStack
-        edgeStack = []
-        for node in self.__V:
-            visited.update({node: False})
-            recStack.update({node: False})
-
-        for node in self.__V:
-            if not visited[node]:
-                play, weight = self.is_cyclic_util(node, visited, recStack, edgeStack)
-                play = [node for node, value in recStack.items() if value == True]
-                # convert it into a str so that it can be stored as a dict key
-                play_str = ''.join([str(ele) for ele in play])
-                # update loopStack
-                loopStack.update({play_str: weight})
-        return False
-
-    def get_init_node(self) -> Tuple:
+    def get_init_node(self) -> List[Tuple]:
         """
         A helper method to get the initial node of a given graph
         :return: node
@@ -128,9 +59,7 @@ class payoff_value():
         :param node: a valid node of the graph
         :return:
         """
-        # init_node = self.get_init_node()
-        # self._remove_attribute(init_node, 'init')
-        # not set the new node as init node
+        # set the new node as init node
         self.graph.nodes[node]['init'] = True
 
     def remove_attribute(self, tnode: str, attr: str) -> None:
@@ -167,7 +96,7 @@ class payoff_value():
         helper method to re_initialize visit stack
         :return:
         """
-        # RFE (request for enhancement): find better alternative than traversing through the whole loop
+        # RFE (request for enhancement): find better alternatives than traversing through the whole stack
         # IDEA: use generators or build methods from the builtin operator library in python
         # find all the values that are True and substitute False in there
         for node, flag in stack.items():
@@ -301,7 +230,7 @@ class payoff_value():
         raise NotImplementedError
 
 if __name__ == "__main__":
-    payoff_func = "sup"
+    payoff_func = "limsup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     G = Graph(False)

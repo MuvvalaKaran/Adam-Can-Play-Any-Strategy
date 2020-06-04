@@ -1,51 +1,51 @@
 graph:
   edges:
   - !!python/tuple
-    - 1
-    - 2
-    - weight: 1
+    - v1
+    - v2
+    - weight: '1'
   - !!python/tuple
-    - 1
-    - 3
-    - weight: 1
+    - v1
+    - v3
+    - weight: '1'
   - !!python/tuple
-    - 2
-    - 1
-    - weight: -1
+    - v2
+    - v1
+    - weight: '-1'
   - !!python/tuple
-    - 2
-    - 4
-    - weight: 2
+    - v2
+    - v4
+    - weight: '2'
   - !!python/tuple
-    - 3
-    - 3
-    - weight: 0.5
+    - v3
+    - v3
+    - weight: '0.5'
   - !!python/tuple
-    - 3
-    - 5
-    - weight: 1
+    - v3
+    - v5
+    - weight: '1'
   - !!python/tuple
-    - 4
-    - 4
-    - weight: 2
+    - v4
+    - v4
+    - weight: '2'
   - !!python/tuple
-    - 5
-    - 5
-    - weight: 1
+    - v5
+    - v5
+    - weight: '1'
   vertices:
   - !!python/tuple
-    - 1
+    - v1
     - init: true
       player: eve
   - !!python/tuple
-    - 2
+    - v2
     - player: adam
   - !!python/tuple
-    - 3
+    - v3
     - player: adam
   - !!python/tuple
-    - 4
+    - v4
     - player: eve
   - !!python/tuple
-    - 5
+    - v5
     - player: eve

@@ -303,13 +303,22 @@ class payoff_value():
         raise NotImplementedError
 
 if __name__ == "__main__":
-    payoff_func = "limsup"
+    payoff_func = "sup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     G = Graph(False)
-    # create the directed multi-graph
     org_graph = G.create_multigrpah()
-    p = payoff_value(org_graph, payoff_func)
+
+    if payoff_func == "sup":
+        gmax = G.construct_Gmax(org_graph)
+        p = payoff_value(gmax, payoff_func)
+    elif payoff_func == "inf":
+        # create the directed multi-graph
+        gmin = G.construct_Gmin(org_graph)
+        p = payoff_value(gmin, payoff_func)
+    else:
+        p = payoff_value(org_graph, payoff_func)
+
     loop_vals = p.cycle_main()
     for k, v in loop_vals.items():
         print(f"Play: {k} : val: {v} ")

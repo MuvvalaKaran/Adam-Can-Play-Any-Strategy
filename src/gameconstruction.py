@@ -37,9 +37,7 @@ class Strategy(object):
         """
         A class to hold all the strategies
         :param path:
-        :type path:
         :param player:
-        :type player:
         """
         self.path = path
         self.player = player
@@ -51,9 +49,7 @@ class Strategy(object):
         '''
         Init flag set to be True for strategies begining from initial vertex
         :param init: Boolean variable idicating strategies starting from the init vertex
-        :type init: bool
         :return: None
-        :rtype: None
         '''
         self.init = init
 
@@ -99,7 +95,6 @@ class Graph(object):
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
-        :rtype:
         """
         dot: Digraph = Digraph(name="graph")
         nodes = self.graph_yaml["vertices"]
@@ -142,16 +137,13 @@ class Graph(object):
         """
         A method to save the plotted graph in the respective folder
         :param dot_object: object of @Diagraph
-        :type @Digraph
         :param view: flag for viewing the object
-        :type view: bool
         """
         if view:
             dot_object.view(cleanup=True)
 
         dot_object.render(get_cwd_path() + f'/graph/{graph_name}', view=view, cleanup=True)
 
-    # create a sample multigraph
     def create_multigrpah(self) -> nx.MultiDiGraph:
         """
         Method to create a multigraph
@@ -188,16 +180,16 @@ class Graph(object):
                                         ('v5', 'v5', '1')
                                         ])
 
-            # assgin each node a player - this is then later used to plot them conveniently
+            # assign each node a player - this is then later used to plot them conveniently
             MG.nodes['v1']['player'] = 'eve'
             MG.nodes['v2']['player'] = 'adam'
             MG.nodes['v3']['player'] = 'adam'
             MG.nodes['v4']['player'] = 'eve'
             MG.nodes['v5']['player'] = 'eve'
 
-        """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
-         you have to first access the data as graph.nodes.data() and loop over the list
-         each element in that list is a tuple (NOT A DICT) of the form (node_name, {key: value})"""
+        # NOTE: the data player and the init flag cannot be accessed as graph[node]['init'/ 'player'] you have to
+        #  first access the data as graph.nodes.data() and loop over the list each element in that list is a tuple
+        #  (NOT A DICT) of the form (node_name, {key: value})
 
         # add node 1 as the initial node
         MG.nodes['v1']['init'] = True
@@ -224,9 +216,7 @@ class Graph(object):
                 (parent node, child node, edge weight)
 
         :param graph:
-        :type graph: graph of networkx
         :param file_name: Name of the original graph yaml
-        :type : str
         :return: None
         """
 
@@ -254,8 +244,7 @@ class Graph(object):
         v'i = (vi, W) where W is the maximum weight value in G
         An edge exists ((u, n), (v, m)) iff (u, v) belong to E and m = min{n, w(u, v)}
         w'((u, n), (v, m)) = m
-        :return: Grapg Gmin
-        :rtype:
+        :return: Graph Gmin
         """
 
         # create a new MG graph
@@ -311,7 +300,6 @@ class Graph(object):
         An edge exists ((u, n), (v, m)) iff (u, v) belong to E and m = max{n, w(u, v)}
         w'((u, n), (v, m)) = m
         :return:
-        :rtype: Gmax
         """
 
         # create a new MG graph
@@ -364,7 +352,6 @@ class Graph(object):
         :param graph:
         :type graph: netowkrx
         :return: (eve_states, adam_state)
-        :rtype: tuple([list, list])
         """
 
         eve_states: List = []
@@ -387,11 +374,8 @@ class Graph(object):
 
         This method is used to compute strategies for a given range of m.
         :param graph: Graph from which we would like to compute strategies for a range of m values
-        :type graph: @Networkx
         :param bound: Upper Bound on the memory
-        :type bound: int
         :return: a dictionary of form {{m:set of strategies from each vertex }}
-        :rtype: dict
         """
 
         assert (bound < 1000), "Please enter bound to be less than 1000 as it is max recursion depth"
@@ -425,15 +409,10 @@ class Graph(object):
 
         We can employ this method to create a set of strategies for a given memory(m) value
         :param graph: Graph from which we would like to compute strategies
-        :type graph: @Networkx
         :param m:memory of the strategy
-        :type m:int
         :param _eve_states:
-        :type _eve_states: list
         :param _adam_states:
-        :type _adam_states: list
         :return:a dictionary of all paths computes from each states with memory m {{vertex_label: paths} }
-        :rtype: dict
         """
         paths = {}
 
@@ -451,19 +430,12 @@ class Graph(object):
         memory(m) becaome 0. So, technically we rollout m + 1 times. with the first vertex in the path being the vertex
         from where we begin compute paths
         :param graph: Graph from which we would like to compute all possible path from a vertex
-        :type graph: @Networkx
         :param curr_node: Current node
-        :type curr_node: graph.node
         :param m: memory
-        :type m: int
         :param _eve_state: set of states that belong to eve
-        :type _eve_state: list
         :param _adam_states: set of states that belong to adam
-        :type _adam_states: list
         :param pathx: path that keeps getting appended with every recursion
-        :type pathx: @Strategy
         :return: a list of all paths from the given vertex. It includes self-loops as well
-        :rtype: list
         """
         if type(m) is not int:
             raise ValueError
@@ -493,24 +465,33 @@ class Graph(object):
         return paths
 
     def get_set_of_strategies(self) -> dict:
+        """
+        A getter method to get all the computed strategies for different memory values
+        :return: The dict with key as  m (memory) and value all the possible plays
+        """
         return self.Strs_dict
 
     def print_set_of_strategies(self) -> None:
+        """
+        A helper method to print all the strategies with the corresponding memory value
+        """
         for k, v in self.Strs_dict.items():
             print(f"For memory {k} :")
             for vertex, pths in v.items():
                 print(f"for vertex {vertex}, the number of paths is {len(pths)}")
             print("")
 
-    # helper method to get the corresponding play from Gmin/Gmax to G
-    def Gmin_to_G_play(self, play: List[Tuple[int, int]]) -> List:
-        # all the leading vertex values belong to the org_graph
-        # here play is a sequence of tuple
+
+    def Gmin_to_G_play(self, play: List[Tuple]) -> List:
+        """
+        A helper method to get the corresponding play on the Gmin/Gmax grpah to G
+        :param play:
+        :return:
+        """
         G_play = []
 
         for i in play:
             G_play.append(i[0])
-
         return G_play
 
     @deprecated

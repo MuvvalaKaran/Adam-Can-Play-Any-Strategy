@@ -16,17 +16,24 @@ formatting notes : _protected variable: This effectively prevents it to be acces
 """
 class payoff_value():
     # a collection of different payoff function to construct the finite state machine
-
-    # graph is the graph on which we will be computing all the payoff value
     def __init__(self, graph: nx.MultiDiGraph, payoff_func: str) -> None:
+        """
+        A method to compute the value of an infinite loop on a given graph for a given payoff function.
+        :param graph: Graph on which we would like to determine the values of a given play
+        :param payoff_func: A function to efficiently quantify the value of a loop
+        """
         self.graph = graph
         self.__V = self.graph.nodes
-        #  make sure that the string value of payoff match the key value exactly
         self._raw_payoff_value: str = payoff_func
-        self.__payoff_func = self.choose_payoff(self._raw_payoff_value)
+        self.__payoff_func = self._choose_payoff(self._raw_payoff_value)
         self.__loop_vals = None
 
-    def choose_payoff(self, payoff_func: str):
+    def _choose_payoff(self, payoff_func: str):
+        """
+        A method to return the appropriate max/min function depending on the payoff function
+        :param payoff_func: A function used to quantify the value of a loop
+        :return: Callable - max or min
+        """
         payoff_dict = {
             'limsup': max,
             'liminf': min,
@@ -43,7 +50,7 @@ class payoff_value():
 
     def get_init_node(self) -> List[Tuple]:
         """
-        A helper method to get the initial node of a given graph
+        A helper method to get the initial node(s) of a given graph stored in self.graph
         :return: node
         """
         # TODO: This methods loops through every element even after detecting a node which is a waste of time.
@@ -55,22 +62,23 @@ class payoff_value():
 
     def set_init_node(self, node) -> None:
         """
-        A method to set a node as the init node
+        A setter method to set a node as the init node
         :param node: a valid node of the graph
-        :return:
         """
-        # set the new node as init node
         self.graph.nodes[node]['init'] = True
 
-    def remove_attribute(self, tnode: str, attr: str) -> None:
+    def remove_attribute(self, tnode: Tuple, attr: str) -> None:
         """
-        A method to remove a attribute associated with a node. e.g weights, init are stored as dict keys and can be
-        removed using the del operator or alternatively using this method
-        :param tnode:
-        :param attr:
-        :return:
+        A method to remove a attribute @attr associated with a node @tnode. e.g weights, init are stored as dict keys
+        and thus can be removed using the del operator or alternatively using this method
+        :param tnode: the target node from which we would like to remove the corresponding attribute
+        :param attr: a str/ name of the attribute that you would like to remove
         """
-        self.graph.nodes[tnode].pop(attr, None)
+        try:
+            self.graph.nodes[tnode].pop(attr)
+        except KeyError as error:
+            print(error)
+            print(f"The node: {tnode} has no attribute : {attr}. Make sure the attribute is spelled correctly")
 
     def get_payoff_func(self) -> str:
         """
@@ -91,10 +99,10 @@ class payoff_value():
         play_list: List[Tuple] = [node for node in stack]
         return play_list
 
-    def _reinit_visitStack(self, stack: Dict) -> Dict:
+    def _reinit_visitStack(self, stack: Dict[Tuple, bool]) -> Dict[Tuple, bool]:
         """
-        helper method to re_initialize visit stack
-        :return:
+        helper method to re_initialize visit stack. For all nodes we re_initialize the value to be False
+        :return: Dict of node with all the values as False Stack[node] = False
         """
         # RFE (request for enhancement): find better alternatives than traversing through the whole stack
         # IDEA: use generators or build methods from the builtin operator library in python
@@ -106,17 +114,15 @@ class payoff_value():
 
     def _compute_loop_value(self, stack: List) -> str:
         """
-        helper method to compute the value of a loop
-        :param stack:
-        :return:
+        A helper method to compute the value of a loop
+        :param stack: a List of nodes (of type tuple)
+        :return: The value associate with a play (nodes in stack) given a payoff function
         """
 
-        def get_edge_weight(k: Tuple[str, str]):
-            # k is a tuple of format (curr_node, adj_node)
-            # getter method for edge weights
-            return self.graph[k[0]][k[1]][0]['weight']
+        def get_edge_weight(k: Tuple) -> float:
+            return float(self.graph[k[0]][k[1]][0]['weight'])
 
-        # find the element which is repeated twice or more in the list -
+        # find the element which is repeated twice or more in the list
         # which has to be the very last element of the list
         assert stack.count(stack[-1]) >= 2, "The count of the repeated elements in a loops should be exactly 2"
 
@@ -125,23 +131,22 @@ class payoff_value():
         loop_edges = []
         # get the edge weights between the repeated nodes
         for i in range(initial_index, len(stack) - 1):
-            # create the edge tuple upto the very last element
+            # create the edge tuple up to the very last element
             loop_edges.append((stack[i], stack[i + 1]))
 
-        # NOTE: here the weight are str and we can compare '1'and '2' and '-1'. But we cannot compare '1' with 2.
         return self.__payoff_func(map(get_edge_weight, [k for k in loop_edges]))
 
     def cycle_main(self) -> Dict[Tuple, str]:
         """
         A method to compute the all the possible loop values for a given graph with an init node. Before calling this
         function make sure you have already updated the init node and then call this function.
-        :return:
+        :return: A dict consisting all the loops that exist in a graph with a given init node and its corresponding
+        values for a given payoff function
         """
         visitStack: Dict[Tuple, bool] = {}
-        edgeStack: Dict[Tuple, bool] = {}
-        """the data player and the init flag cannot be accessed as graph[node]['init'/ 'player']
-            you have to first access the data as graph.nodes.data() and loop over the list
-            each element in that list is a tuple (NOT A DICT) of the form (node_name, {key: value})"""
+        # NOTE: the data player and the init flag cannot be accessed as graph[node]['init'/ 'player'] you have to first
+        #  access the data as graph.nodes.data() and loop over the list each element in that list is a tuple
+        #  (NOT A DICT) of the form (node_name, {key: value})
 
         # get all the info regarding the node of type tuple, format (node_name, {'player': value, 'init': True})
         init_node = [node[0] for node in self.graph.nodes.data() if node[1].get('init') == True]
@@ -149,11 +154,6 @@ class payoff_value():
         # initialize visitStack
         for node in self.graph.nodes:
             visitStack.update({node: False})
-
-        # initialize edgeStack
-        for edge in self.graph.edges():
-            # the keys are stored in the format of a tuple (curr_node, adj_node)
-            edgeStack.update({edge: False})
 
         # create a dict to hold values of the loops as str for a corresponding play which is a str too
         loop_dict: Dict[Tuple, str] = {}
@@ -165,14 +165,24 @@ class payoff_value():
             visitStack[init_node[0]] = True
             nodeStack: List[Tuple] = []
             nodeStack.append(init_node[0])
-            self.cycle_util(node, visitStack, loop_dict, edgeStack, nodeStack)
+            self._cycle_util(node, visitStack, loop_dict, nodeStack)
 
         self.__loop_vals = loop_dict
         return loop_dict
 
-    def cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, str], edgeStack: Dict[Tuple, bool],
-                   nodeStack: List[Tuple]) -> None:
-        # initialize loop flag as False and update the @visitStack with the current node as True
+    def _cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, str],
+                    nodeStack: List[Tuple]) -> None:
+        """
+        A method to help with detecting loop and updating the loop dict accordingly.
+        :param node: Tuple which is a node that belong to the self.graph
+        :param visitStack: A dict that keeps track of all the nodes visited and updates the flag to True if so
+        :param loop_dict: A dict that holds values to all possible loops that can be computed for a given graph and for
+        a given payoff function
+        :param nodeStack: A list that holds all the nodes we visit along a play (nodes can and do repeat in this
+        "stack")
+        :return: A dict @loop_dict that holds the values of all the possible loops that can be computed for a given
+        payoff function @ self.__payoff_func.
+        """
         visitStack = copy.copy(visitStack)
         visitStack[node] = True
         nodeStack = copy.copy((nodeStack))
@@ -187,42 +197,34 @@ class payoff_value():
                 nodeStack.pop()
                 continue
             else:
-                self.cycle_util(neighbour, visitStack, loop_dict, edgeStack, nodeStack)
+                self._cycle_util(neighbour, visitStack, loop_dict, nodeStack)
 
     def _find_vertex_in_play(self, v: Tuple, play: Tuple) -> bool:
         """
-        A helper method to to check is a node is in a player or not
-        :param v: name of the node to search for
-        :type @node of type networkx MG
-        :param play: a sequence of nodes/play on the given graph
-        :type basestring
-        :return: True if the vertex exist in the play else False
-        :type bool
+        A helper method to check if a node exists in a corresponding play or not
+        :param v: Node to search for in the given play @play
+        :param play: a sequence of nodes on the given graph
+        :return: True if the vertex exist in the @play else False
         """
-
-        # if there is a match then return True
-        # node_re = re.compile(f'{v}')
         if v in play:
             return True
         return False
 
-    def compute_cVal(self, vertex: Tuple) -> str:
+    def compute_cVal(self, vertex: Tuple, debug:bool = False) -> str:
         """
-        Method to compute the cVal using  @vertex as the starting node
+        A Method to compute the cVal using  @vertex as the starting node
         :param vertex: a valid node of the graph
-        :type: @node
+        :param debug: flag to print to print the max cooperative value from a given vertex
         :return: a single value of the max payoff when both adam and eve play cooperatively
-        :type: int/float
         """
-        # compute the Val for various loops that exist in the graph and then choose the play with the max Val
-
         # find all plays in which the vertex exist
         play_dict = {k: v for k, v in self.__loop_vals.items() if self._find_vertex_in_play(vertex, k)}
 
         # find the max of the value
         max_play = max(play_dict, key=lambda key: play_dict[key])
-        print(f"The cVal from the node {vertex}")
-        print(f"for the play {max_play} is {play_dict[max_play]}")
+        if debug:
+            print(f"The cVal from the node {vertex}")
+            print(f"for the play {max_play} is {play_dict[max_play]}")
 
         return play_dict[max_play]
 
@@ -230,7 +232,7 @@ class payoff_value():
         raise NotImplementedError
 
 if __name__ == "__main__":
-    payoff_func = "limsup"
+    payoff_func = "sup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     G = Graph(False)
@@ -240,7 +242,6 @@ if __name__ == "__main__":
         gmax = G.construct_Gmax(org_graph)
         p = payoff_value(gmax, payoff_func)
     elif payoff_func == "inf":
-        # create the directed multi-graph
         gmin = G.construct_Gmin(org_graph)
         p = payoff_value(gmin, payoff_func)
     else:

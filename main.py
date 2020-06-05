@@ -18,6 +18,11 @@ assert ('linux' in sys.platform), "This code has been successfully tested in Lin
 
 
 def construct_graph(payoff_func: str, *args, **kwargs) -> Graph:
+    """
+    A helper method to construct a graph
+    :param payoff_func: A payoff function
+    :return: Return graph G or Gmin/Gmax if payoff function is inf/sup respectively.
+    """
     G: Graph = Graph(False)
     # create the directed multi-graph
     org_graph = G.create_multigrpah()
@@ -51,7 +56,14 @@ def construct_alt_game(graph: nx.MultiDiGraph, edge: Tuple[Tuple, Tuple]) -> nx.
     return new_graph
 
 
-def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle : payoff_value, node: Tuple):
+def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle: payoff_value, node: Tuple):
+    """
+    A helper method to compute the cVal from a given vertex (@node) for a give graph @graph
+    :param graph: The graph on which would like to compute the cVal
+    :param payoff_handle: instance of the @compute_value() to compute the cVal
+    :param node: The node from which we would like to compute the cVal
+    :return: returns a single max value. If multiple plays have the max_value then the very first occurance is returned
+    """
     tmp_copied_graph = copy.deepcopy(graph)
     # construct a new graph with node as the initial vertex and compute loop_vals again
     # 1. remove the current init node of the graph
@@ -70,10 +82,17 @@ def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle : payoff_valu
     return tmp_payoff_handle.compute_cVal(node)
 
 def new_compute_w_prime_for_g_m(payoff_handle: payoff_value, org_graph: Graph) \
-        -> Dict[Tuple[Tuple[str, str], Tuple[str, str]], str]:
+        -> Dict[Tuple, str]:
+    """
+    A method to compute w_prime function based on Algo 2. pseudocode. This function is a mapping from each edge to a
+    real valued number.
+    :param payoff_handle: instance of the @compute_value() to compute the cVal
+    :param org_graph: The orginal graph from which we compute the mapping for all the edges in this graph.
+    :return: A dict mapping each edge (tuple of nodes(tuple)) to a finite value
+    """
     print("*****************Constructing W_prime*****************")
     # compute the cVal from each node
-    w_prime: Dict[Tuple[Tuple[str, str], Tuple[str, str]], str] = {}
+    w_prime: Dict[Tuple, str] = {}
     for edge in org_graph.graph.edges():
         # if the node belongs to adam, then the corresponding edge is assigned -inf
         if org_graph.graph.nodes(data='player')[edge[0]] == 'adam':
@@ -106,7 +125,8 @@ def new_compute_w_prime_for_g_m(payoff_handle: payoff_value, org_graph: Graph) \
 
     return w_prime
 
-def _construct_g_b_from_g_m(g_hat, org_graph, b, w_prime: Dict):
+
+def _construct_g_b_from_g_m(g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph, b, w_prime: Dict) -> None:
     # each node is dict with the node name as key and 'b' as its value
     g_hat.add_nodes_from([((n), b) for n in org_graph.nodes()])
 
@@ -132,7 +152,8 @@ def _construct_g_b_from_g_m(g_hat, org_graph, b, w_prime: Dict):
         if float(w_prime[e]) <= float(b):
             g_hat.add_edge(((e[0]), b), ((e[1]), b))
 
-def get_max_weight(graph) -> float:
+
+def get_max_weight(graph: nx.MultiDiGraph) -> float:
     """
     A helper method to compute the max weight in a given graph
     :param graph:
@@ -146,7 +167,7 @@ def get_max_weight(graph) -> float:
     return float(max(weight_list))
 
 
-def new_get_init_node(graph: nx.MultiDiGraph) -> List[Tuple[str, str]]:
+def new_get_init_node(graph: nx.MultiDiGraph) -> List[Tuple]:
     # a helper method to find the init node and return
     init_node: List[Tuple[str, str]] = []
     for n in graph.nodes.data("init"):
@@ -155,10 +176,10 @@ def new_get_init_node(graph: nx.MultiDiGraph) -> List[Tuple[str, str]]:
     return init_node
 
 
-def construct_g_hat_from_g_m(org_graph, w_prime):
+def construct_g_hat_from_g_m(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx.MultiDiGraph:
     print("*****************Constructing G_hat*****************")
     # construct new graph according to the pseudocode 3
-    G_hat = nx.MultiDiGraph(name="G_hat")
+    G_hat: nx.MultiDiGraph = nx.MultiDiGraph(name="G_hat")
     G_hat.add_nodes_from(['v0', 'v1', 'vT'])
     # nodes will be nested tuple from now onwards for ease of implementation
     G_hat.nodes['v0']['player'] = "adam"
@@ -226,7 +247,14 @@ def construct_g_hat_from_g_m(org_graph, w_prime):
     return G_hat
 
 
-def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True):
+def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True) -> None:
+    """
+    A helper method to plot a given graph and save it if the @save_flag is True.
+    :param graph: The graph to be plotted
+    :param file_name: The name of the yaml file to be dumped in the /config directory. The graph is saved as a plot
+    based on the name of the graph (graph.name attribute) in the /graph directory.
+    :param save_flag: flag to save the plot. If False then the plots don't show up and are not saved  as well.
+    """
     print(f"*****************Plotting graph with save_flag = {save_flag}*****************")
     # create Graph object
     plot_handle = Graph(save_flag)
@@ -329,7 +357,7 @@ def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple[Tuple, Tuple], Tuple
     helper method to compute the loop value for a given payoff function
     :param graph: graph g_hat
     :param strategy: A mapping from a each node of g_hat to the next node
-    :return: The value of the loop when follwing the strategy @strategy
+    :return: The value of the loop when following the strategy @strategy
     """
     # add nodes to this stack and as soon as a loop is found we break
     play = [new_get_init_node(graph)[0][0]]
@@ -369,8 +397,6 @@ def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple[Tuple, Tuple], Tuple
 
 
 def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
-    # return the next node for eve and adam on g_hat game
-    # func - either max or min
     assert (func == max or func == min), "Please make sure the deciding function for transitions on the game g_hat for " \
                                          "eve and adam is either max or min"
 

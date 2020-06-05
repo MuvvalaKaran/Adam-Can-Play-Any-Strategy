@@ -122,7 +122,10 @@ class Graph(object):
         # load the weights to illustrate on the graph
         # weight = graph["weights"]
         for counter, edge in enumerate(edges):
-            dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']))
+            if edge[2].get('strategy') is True:
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']), _attributes={'color': 'red'})
+            else:
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']))
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'

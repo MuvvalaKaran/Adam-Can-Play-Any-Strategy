@@ -247,7 +247,8 @@ def construct_g_hat_from_g_m(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, st
     return G_hat
 
 
-def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True) -> None:
+def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, visualize_str: bool = False,
+               combined_strategy: Dict[Tuple, Tuple] = None) -> None:
     """
     A helper method to plot a given graph and save it if the @save_flag is True.
     :param graph: The graph to be plotted
@@ -256,6 +257,9 @@ def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True) -
     :param save_flag: flag to save the plot. If False then the plots don't show up and are not saved  as well.
     """
     print(f"*****************Plotting graph with save_flag = {save_flag}*****************")
+    if visualize_str:
+        _add_strategy_flag(graph, combined_strategy)
+
     # create Graph object
     plot_handle = Graph(save_flag)
     plot_handle.graph = graph
@@ -271,7 +275,7 @@ def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True) -
     plot_handle.plot_fancy_graph()
 
 
-def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: str, w_prime: Dict,
+def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: float, _Val_func: str, w_prime: Dict,
                               org_graph: nx.MultiDiGraph) -> Dict[str, Dict]:
     """
     A function to compute the regret value according to algorithm 4 : Reg = -1 * Val(.,.) on g_hat
@@ -281,7 +285,7 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: st
     :return: a dict consisting of the reg value and strategy for eve and adam respectively
     """
     print(f"*****************Computing regret and strategies for eve and adam*****************")
-    assert (meta_b in set(w_prime.values()) - {-1*math.inf}), "make sure that the b value manually entered belongs " \
+    assert (float(meta_b) in set(w_prime.values()) - {-1*math.inf}), "make sure that the b value manually entered belongs " \
                                                               "to w_prime i.e {}.".format(set(w_prime.values()))
 
     # create a dict which will be update once we find the reg value and strategies for eve and adam
@@ -351,8 +355,19 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: str, _Val_func: st
 
     return str_dict
 
+def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple]) -> None:
+    """
+    A helper method to add an attribute/flag which makes it easier to visualize the
+    :param graph:
+    :param strategy:
+    """
+    # add strategy as an attribute for plotting the final strategy
+    nx.set_edge_attributes(graph, False, 'strategy')
 
-def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple[Tuple, Tuple], Tuple], payoff_func: str) -> str:
+    for curr_node, next_node in strategy.items():
+        graph.edges[curr_node, next_node, 0]['strategy'] = True
+
+def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], payoff_func: str) -> str:
     """
     helper method to compute the loop value for a given payoff function
     :param graph: graph g_hat
@@ -392,6 +407,7 @@ def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple[Tuple, Tuple], Tuple
             tmp_p_handle = payoff_value(str_graph, payoff_func)
             _loop_vals = tmp_p_handle.cycle_main()
             play_key = tuple(tmp_p_handle._convert_stack_to_play_str(play))
+            play_key = tuple(tmp_p_handle._convert_stack_to_play_str(play))
 
             return _loop_vals[play_key]
 
@@ -411,7 +427,7 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
 
 
 def main():
-    payoff_func = "sup"
+    payoff_func = "limsup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)
@@ -424,15 +440,21 @@ def main():
     G_hat = construct_g_hat_from_g_m(graph.graph, w_prime)
 
     # use methods from the Graph class create a visualization
-    plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=True)
-    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=True)
+    plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=False)
+    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=False)
 
     # Compute antagonistic value
     personal_b_val = input("Enter a value of b: \n")
-    reg_dict = new_compute_aVal_from_g_m(G_hat, personal_b_val, payoff_func, w_prime, graph.graph)
+    reg_dict = new_compute_aVal_from_g_m(G_hat, float(personal_b_val), payoff_func, w_prime, graph.graph)
 
     for k, v in reg_dict.items():
         print(f"{k}: {v}")
+
+    # visualize the strategy
+    plot_graph(G_hat, file_name='src/config/g_hat_graph',
+               save_flag=True,
+               visualize_str=True,
+               combined_strategy={**reg_dict['eve'], **reg_dict['adam']})
 
 if __name__ == "__main__":
     main()

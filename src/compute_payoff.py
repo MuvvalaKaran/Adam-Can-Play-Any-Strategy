@@ -5,7 +5,7 @@ import operator
 import networkx as nx
 
 from typing import List, Tuple, Dict
-# import helper function to depreceate warnings
+# import helper function to deprecate warnings
 from helper_methods import deprecated
 from src.gameconstruction import Graph
 
@@ -231,8 +231,89 @@ class payoff_value():
     def compute_aVal(self) -> None:
         raise NotImplementedError
 
+    @deprecated
+    def dump_mpg_data_file(self) -> None:
+        """
+        The format of the file should be <NODE> <MIN/MAX> <ADJ_NODE>:<EDGE_WEIGHT>...;
+        :return:
+        """
+
+        # open the file and overwrite the context
+        f = open("config/sample.mpg", "w")
+
+        # helper function to print nodes
+        def __print_nodes(_node):
+            for n in _node:
+                if 'v' in n:
+                    f.write(f"{n[1:]}")
+                else:
+                    f.write(f"{n}")
+
+        for node in self.graph.nodes():
+            if self.graph.nodes[node]["player"] == "adam":
+                player = "MIN"
+            else:
+                player = "MAX"
+
+            # create the line
+
+            # for curr_node in node:
+            #     if 'v' in curr_node:
+            #         f.write(f"{curr_node[1:]}")
+            #     else:
+            #         f.write(f"{curr_node} ")
+            __print_nodes(node)
+            f.write(f" {player} ")
+            # create an edge list which will later be added to the line
+            edge_list: List[Tuple] = []
+            # get outgoing edges of a graph
+            for e in self.graph.edges(node):
+                edge_list.append((e[1], self.graph[e[0]][e[1]][0]['weight']))
+
+            for ix, (k, v) in enumerate(edge_list):
+                __print_nodes(k)
+                if ix == len(edge_list) - 1:
+                    f.write(f":{int(float(v))}; \n")
+                else:
+                    f.write(f":{int(float(v))}, ")
+
+    def alt_dump_mpg_data_file(self) -> None:
+        """
+        The format of the file should be <NODE> <MIN/MAX> <ADJ_NODE>:<EDGE_WEIGHT>...;
+        :return:
+        """
+
+        # open the file and overwrite the context
+        f = open("config/sample.mpg", "w")
+
+
+        for inode, node in enumerate(self.graph.nodes()):
+            self.graph.nodes[node]['map'] = inode
+
+        for node in self.graph.nodes():
+            if self.graph.nodes[node]["player"] == "adam":
+                player = "MIN"
+            else:
+                player = "MAX"
+
+            # create the line
+            f.write(f"{self.graph.nodes[node]['map']} {player} ")
+            # create an edge list which will later be added to the line
+            edge_list: List[Tuple] = []
+            # get outgoing edges of a graph
+            for ie, e in enumerate(self.graph.edges(node)):
+                # mapped_curr_node = self.graph.nodes[e[0]]['map']
+                mapped_next_node = self.graph.nodes[e[1]]['map']
+                # edge_list.append((, self.graph[e[0]][e[1]][0]['weight']))
+                edge_weight = float(self.graph[e[0]][e[1]][0]['weight'])
+                if ie == len(self.graph.edges(node)) - 1:
+                    f.write(f"{mapped_next_node}:{int(edge_weight)}; \n")
+                else:
+                    f.write(f"{mapped_next_node}:{int(edge_weight)}, ")
+
+
 if __name__ == "__main__":
-    payoff_func = "sup"
+    payoff_func = "liminf"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     G = Graph(False)
@@ -250,4 +331,6 @@ if __name__ == "__main__":
     loop_vals = p.cycle_main()
     for k, v in loop_vals.items():
         print(f"Play: {k} : val: {v} ")
+
+    p.alt_dump_mpg_data_file()
 

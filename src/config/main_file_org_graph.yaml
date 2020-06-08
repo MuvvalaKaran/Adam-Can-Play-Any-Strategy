@@ -14,6 +14,10 @@ graph:
     - weight: '-1'
   - !!python/tuple
     - v2
+    - v3
+    - weight: '1'
+  - !!python/tuple
+    - v2
     - v4
     - weight: '2'
   - !!python/tuple
@@ -28,6 +32,14 @@ graph:
     - v4
     - v4
     - weight: '2'
+  - !!python/tuple
+    - v4
+    - v1
+    - weight: '0'
+  - !!python/tuple
+    - v5
+    - v4
+    - weight: '6'
   - !!python/tuple
     - v5
     - v5

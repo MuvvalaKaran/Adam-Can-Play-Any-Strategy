@@ -275,85 +275,148 @@ def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, v
     plot_handle.plot_fancy_graph()
 
 
-def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, meta_b: float, _Val_func: str, w_prime: Dict,
-                              org_graph: nx.MultiDiGraph) -> Dict[str, Dict]:
+def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph,  w_prime, value_func,
+                           str_dict) -> Tuple[Dict[float, Dict], bool]:
+    """
+    A helper method to check if there exist non-zero regret in the game g_hat. If yes return true else False
+    :param graph_g_hat: graph g_hat on which we would like to compute the regret value
+    :param w_prime: the set of bs
+    :return: A Tuple cflag; True if Reg > 0 else False
+    """
+
+    # get init_node of the original graph
+    init_node = new_get_init_node(org_graph)
+
+    for b in set(w_prime.values()) - {str(-1 * math.inf)}:
+        _eve_str: Dict[Tuple, Tuple] = {}
+        _adam_str: Dict[Tuple, Tuple] = {}
+        # assume adam takes v0 to v1 edge - accordingly update the strategy
+        _adam_str.update({"v0": "v1"})
+        # add this transition to the strategy of eve and then play in the respective copy of G_b
+        _eve_str.update({'v1': ((init_node[0][0]), b)})
+        _eve_str.update({'vT': 'vT'})
+        for node in graph_g_hat.nodes():
+            # I manually add the initial transitions of node 0 and 1 of g_hat graph
+            if isinstance(node, tuple) and float(node[1]) == float(b):
+                # if the node belongs to adam
+                if graph_g_hat.nodes[node]['player'] == 'adam':
+                    # get the next node and update
+                    _adam_str.update({node: _get_next_node(graph_g_hat, node, min)})
+                # if node belongs to eve
+                elif graph_g_hat.nodes[node]['player'] == 'eve':
+                    _eve_str.update({node: _get_next_node(graph_g_hat, node, max)})
+                else:
+                    raise warnings.warn(f"The node {node} does not belong either to eve or adam. This should have "
+                                        f"never happened")
+
+        # update the parent str dict with b as the key and the value and str for that graph
+        # _eve_str.update({b: _eve_str_b})
+        # _adam_str.update({b: _adam_str_b})
+
+        # update str_dict
+        str_dict.update({b: {'eve': _eve_str}})
+        str_dict[b].update({'adam': _adam_str})
+        # compute the regret value for this b
+        reg = -1 * float(_play_loop(graph_g_hat, {**_eve_str, **_adam_str}, value_func))
+        str_dict[b].update({'reg': reg})
+        if reg > 0:
+            return str_dict, True
+
+    return str_dict, False
+
+
+def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_graph: nx.MultiDiGraph) \
+        -> Dict[str, Dict]:
     """
     A function to compute the regret value according to algorithm 4 : Reg = -1 * Val(.,.) on g_hat
     :param g_hat: a directed multi-graph constructed using construct_g_hat()
-    :param meta_b: a real valued number that belong to set(w_prime)
     :param Val: a payoff function that belong to {limsup, liminf, sup, inf}
     :return: a dict consisting of the reg value and strategy for eve and adam respectively
     """
     print(f"*****************Computing regret and strategies for eve and adam*****************")
-    assert (float(meta_b) in set(w_prime.values()) - {-1*math.inf}), "make sure that the b value manually entered belongs " \
-                                                              "to w_prime i.e {}.".format(set(w_prime.values()))
-
+    # assert (float(meta_b) in set(w_prime.values()) - {-1*math.inf}), "make sure that the b value manually
+    # entered belongs to w_prime i.e {}.".format(set(w_prime.values()))
     # create a dict which will be update once we find the reg value and strategies for eve and adam
+    # The str dict looks like this
+    """
     str_dict = {
-        'reg': None,
-        'eve': None,
-        'adam': None
+        'b': {
+            'reg': None,
+            'eve': None,
+            'adam': None,
+        }
     }
+    """
+    final_str_dict = {}
+    str_dict = {}
 
-    # create a empty dict to hold the strategy for eve and adam
-    # a key is an edge which is a tuple of nodes(tuple): Tuple(Tuple(), Tuple())
-    # a value is the next node to transit to : Tuple()
-    eve_str: Dict[Tuple[Tuple, Tuple], Tuple] = {}
-    adam_str: Dict[Tuple[Tuple, Tuple], Tuple] = {}
+    # check if you adam can ensure non-zero regret
+    str_dict, reg_flag = _check_non_zero_regret(graph_g_hat=g_hat, org_graph=org_graph, w_prime=w_prime, 
+                                                value_func=_Val_func, str_dict=str_dict)
+    if reg_flag:
+        print("A non-zero regret exists and thus adam will play from v0 to v1 in g_hat")
+    else:
+        print("A non-zero regret does NOT exist and thus adam will play v0 to v0")
+        return
 
     # update 0 to 1 transition in g_hat and 1 to 1_b depending on the value of b - hyper-paramter chosen by the user
     # NOTE: here the strategy is a dict; key is the current node while the value is the next node.
     #  This would NOT work in condition where there are more than one edge between the same nodes i.e 0-1 with multiple
     #  weights. If that is the case then we need to change the implementation to store the whole edge instead of just
     #  the next node.
-    adam_str.update({'v0': "v1"})
-    _max_accepted_b: List[str] = []
-    for b in set(w_prime.values()) - {str(-1*math.inf)}:
-        if b <= meta_b:
-            # add all those transition that satisfy the condition
-            _max_accepted_b.append(b)
+    # adam_str.update({'v0': "v1"})
 
-    # get the max_b below the accepted val (meta_b)
-    allowed_b: str = max(_max_accepted_b)
     # get the init nodes (ideally should only be one) of the org_graph
     init_node = new_get_init_node(org_graph)
     assert (len(init_node) == 1), f"Detected multiple init nodes in the org graph: {[n for n in init_node]}. " \
                                   f"This should not be the case"
 
-    eve_str.update({"v1": ((init_node[0][0]), allowed_b)})
-    eve_str.update({"vT": "vT"})
+    # eve_str.update({"v1": ((init_node[0][0]), allowed_b)})
+    # eve_str.update({"vT": "vT"})
 
     # update strategy for each node
     # 1. adam picks the edge with the min value
     # 2. eve picks the edge with the max value
-    for node in g_hat.nodes():
-        # I manually add the initial transitions of node 0 and 1 of g_hat graph
-        # TODO: change the second condition to <= if you want to compute all the str for all nodes <= @allowed_b
-        if isinstance(node, tuple) and float(node[1]) == float(allowed_b):
-            # if the node belongs to adam
-            if g_hat.nodes[node]['player'] == 'adam':
-                # get the next node and update
-                adam_str.update({node: _get_next_node(g_hat, node, min)})
-            # if node belongs to eve
-            elif g_hat.nodes[node]['player'] == 'eve':
-                eve_str.update({node: _get_next_node(g_hat, node, max)})
-            else:
-                raise warnings.warn(f"The node {node} does not belong either to eve or adam. This should have "
-                                    f"never happened")
+    for b in set(w_prime.values()) - {str(-1 * math.inf)}:
+        # if we haven't computed a strategy for this b value then proceed ahead
+        if str_dict.get(b) is None:
+            eve_str: Dict[Tuple, Tuple] = {}
+            adam_str: Dict[Tuple, Tuple] = {}
+            # update adam's strategy from v0 to v1 and eve's strategy from v1 to (vI, ,b)
+            adam_str.update({"v0": "v1"})
+            eve_str.update({'v1': ((init_node[0][0]), b)})
+            eve_str.update({'vT': 'vT'})
+            for node in g_hat.nodes():
+                # I manually add the initial transitions of node 0 and 1 of g_hat graph
+                if isinstance(node, tuple) and float(node[1]) == float(b):
+                    # if the node belongs to adam
+                    if g_hat.nodes[node]['player'] == 'adam':
+                        # get the next node and update
+                        adam_str.update({node: _get_next_node(g_hat, node, min)})
+                    # if node belongs to eve
+                    elif g_hat.nodes[node]['player'] == 'eve':
+                        eve_str.update({node: _get_next_node(g_hat, node, max)})
+                    else:
+                        raise warnings.warn(f"The node {node} does not belong either to eve or adam. This should have "
+                                            f"never happened")
 
-    # now given the strategy compute the regret using the Val function
-    # 1. find a loop
-    # 2. pass it to _Val function which is the value of that loop for the corresponding value function
-    # 3. update the str_dict['reg'] value
-    # merging both the dictionaries
-    a_val = _play_loop(g_hat, {**eve_str, **adam_str}, _Val_func)
-    str_dict['reg'] = -1*float(a_val)
+            # update the str dict
+            str_dict.update({b: {'eve': eve_str}})
+            str_dict[b].update({'adam': adam_str})
 
-    # update eve and adam str and return it
-    str_dict['adam'] = adam_str
-    str_dict['eve'] = eve_str
+            # compute the reg value and update the str_dict respectively
+            reg = -1 * float(_play_loop(g_hat, {**eve_str, **adam_str}, _Val_func))
+            str_dict[b].update({'reg': reg})
 
-    return str_dict
+    # after computing all the reg value find the str with the least reg
+    min_reg_b = min(str_dict, key=lambda key: str_dict[key]['reg'])
+
+    # return the corresponding str and reg value
+    final_str_dict.update({'reg': str_dict[min_reg_b]['reg']})
+    final_str_dict.update({'eve': str_dict[min_reg_b]['eve']})
+    final_str_dict.update({'adam': str_dict[min_reg_b]['adam']})
+
+    return final_str_dict
 
 def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple]) -> None:
     """
@@ -427,7 +490,7 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
 
 
 def main():
-    payoff_func = "limsup"
+    payoff_func = "liminf"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)
@@ -443,9 +506,12 @@ def main():
     plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=False)
     plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=False)
 
-    # Compute antagonistic value
-    personal_b_val = input("Enter a value of b: \n")
-    reg_dict = new_compute_aVal_from_g_m(G_hat, float(personal_b_val), payoff_func, w_prime, graph.graph)
+    # the strategy that eve comes up with is the strategy with the least regret.
+    # the regret will value be within [0, -2W - 1]; W = Max weight in the graph
+    # adam plays from v0 to v1 : only if he can ensure a non-zero regret( the Val of the corresponding play in
+    # g_hat should be > 0)
+    # eve select the strategy with the least regret (below the given threshold)
+    reg_dict = new_compute_aVal_from_g_m(G_hat, payoff_func, w_prime, graph.graph)
 
     for k, v in reg_dict.items():
         print(f"{k}: {v}")

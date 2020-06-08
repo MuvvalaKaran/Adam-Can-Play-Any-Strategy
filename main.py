@@ -81,7 +81,8 @@ def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle: payoff_value
 
     return tmp_payoff_handle.compute_cVal(node)
 
-def new_compute_w_prime_for_g_m(payoff_handle: payoff_value, org_graph: Graph) \
+
+def compute_w_prime(payoff_handle: payoff_value, org_graph: Graph) \
         -> Dict[Tuple, str]:
     """
     A method to compute w_prime function based on Algo 2. pseudocode. This function is a mapping from each edge to a
@@ -96,7 +97,7 @@ def new_compute_w_prime_for_g_m(payoff_handle: payoff_value, org_graph: Graph) \
     for edge in org_graph.graph.edges():
         # if the node belongs to adam, then the corresponding edge is assigned -inf
         if org_graph.graph.nodes(data='player')[edge[0]] == 'adam':
-            w_prime.update({edge: str(-1 * math.inf)})
+            w_prime.update({edge: -1 * math.inf})
 
         # if the node belongs to eve, then we compute the max cVal from all the possible alternate edges.
         # 1. We construct a new graph without the org edge (u, v)
@@ -126,12 +127,12 @@ def new_compute_w_prime_for_g_m(payoff_handle: payoff_value, org_graph: Graph) \
     return w_prime
 
 
-def _construct_g_b_from_g_m(g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph, b, w_prime: Dict) -> None:
+def _construct_g_b(g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph, b, w_prime: Dict) -> None:
     # each node is dict with the node name as key and 'b' as its value
     g_hat.add_nodes_from([((n), b) for n in org_graph.nodes()])
 
     # get the init nodes (ideally should only be one) of the org_graph
-    init_node = new_get_init_node(org_graph)
+    init_node = get_init_node(org_graph)
 
     assert (len(init_node) == 1), f"Detected multiple init nodes in the org graph: {[n for n in init_node]}. " \
                                   f"This should not be the case"
@@ -167,7 +168,7 @@ def get_max_weight(graph: nx.MultiDiGraph) -> float:
     return float(max(weight_list))
 
 
-def new_get_init_node(graph: nx.MultiDiGraph) -> List[Tuple]:
+def get_init_node(graph: nx.MultiDiGraph) -> List[Tuple]:
     # a helper method to find the init node and return
     init_node: List[Tuple[str, str]] = []
     for n in graph.nodes.data("init"):
@@ -176,7 +177,7 @@ def new_get_init_node(graph: nx.MultiDiGraph) -> List[Tuple]:
     return init_node
 
 
-def construct_g_hat_from_g_m(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx.MultiDiGraph:
+def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx.MultiDiGraph:
     print("*****************Constructing G_hat*****************")
     # construct new graph according to the pseudocode 3
     G_hat: nx.MultiDiGraph = nx.MultiDiGraph(name="G_hat")
@@ -193,14 +194,14 @@ def construct_g_hat_from_g_m(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, st
         [('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
 
     # compute the range of w_prime function
-    w_set = set(w_prime.values()) - {str(-1 * math.inf)}
+    w_set = set(w_prime.values()) - {-1 * math.inf}
     # construct g_b
     for b in w_set:
-        _construct_g_b_from_g_m(G_hat, org_graph, b, w_prime)
+        _construct_g_b(G_hat, org_graph, b, w_prime)
 
     # add edges between v1 of G_hat and init nodes(v1_b/ ((v1, 1), b) of graph G_b with edge weights 0
     # get init node of the org graph
-    init_node_list: List[Tuple] = new_get_init_node(graph=G_hat)
+    init_node_list: List[Tuple] = get_init_node(graph=G_hat)
 
     def remove_attribute(G, tnode, attr):
         G.nodes[tnode].pop(attr, None)
@@ -283,11 +284,10 @@ def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGr
     :param w_prime: the set of bs
     :return: A Tuple cflag; True if Reg > 0 else False
     """
-
     # get init_node of the original graph
-    init_node = new_get_init_node(org_graph)
+    init_node = get_init_node(org_graph)
 
-    for b in set(w_prime.values()) - {str(-1 * math.inf)}:
+    for b in set(w_prime.values()) - {-1 * math.inf}:
         _eve_str: Dict[Tuple, Tuple] = {}
         _adam_str: Dict[Tuple, Tuple] = {}
         # assume adam takes v0 to v1 edge - accordingly update the strategy
@@ -308,11 +308,6 @@ def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGr
                 else:
                     raise warnings.warn(f"The node {node} does not belong either to eve or adam. This should have "
                                         f"never happened")
-
-        # update the parent str dict with b as the key and the value and str for that graph
-        # _eve_str.update({b: _eve_str_b})
-        # _adam_str.update({b: _adam_str_b})
-
         # update str_dict
         str_dict.update({b: {'eve': _eve_str}})
         str_dict[b].update({'adam': _adam_str})
@@ -325,7 +320,7 @@ def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGr
     return str_dict, False
 
 
-def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_graph: nx.MultiDiGraph) \
+def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_graph: nx.MultiDiGraph) \
         -> Dict[str, Dict]:
     """
     A function to compute the regret value according to algorithm 4 : Reg = -1 * Val(.,.) on g_hat
@@ -366,7 +361,7 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: D
     #  the next node.
 
     # get the init nodes (ideally should only be one) of the org_graph
-    init_node = new_get_init_node(org_graph)
+    init_node = get_init_node(org_graph)
     assert (len(init_node) == 1), f"Detected multiple init nodes in the org graph: {[n for n in init_node]}. " \
                                   f"This should not be the case"
 
@@ -383,7 +378,7 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: D
     # update strategy for each node
     # 1. adam picks the edge with the min value
     # 2. eve picks the edge with the max value
-    for b in set(w_prime.values()) - {str(-1 * math.inf)}:
+    for b in set(w_prime.values()) - {-1 * math.inf}:
         # if we haven't computed a strategy for this b value then proceed ahead
         if str_dict.get(b) is None:
             eve_str: Dict[Tuple, Tuple] = {}
@@ -454,7 +449,7 @@ def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], payoff_func
     :return: The value of the loop when following the strategy @strategy
     """
     # add nodes to this stack and as soon as a loop is found we break
-    play = [new_get_init_node(graph)[0][0]]
+    play = [get_init_node(graph)[0][0]]
 
     # for node in graph.nodes():
     while 1:
@@ -486,7 +481,6 @@ def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], payoff_func
             tmp_p_handle = payoff_value(str_graph, payoff_func)
             _loop_vals = tmp_p_handle.cycle_main()
             play_key = tuple(tmp_p_handle._convert_stack_to_play_str(play))
-            play_key = tuple(tmp_p_handle._convert_stack_to_play_str(play))
 
             return _loop_vals[play_key]
 
@@ -506,17 +500,17 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
 
 
 def main():
-    payoff_func = "limsup"
+    payoff_func = "sup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)
     p = payoff_value(graph.graph, payoff_func)
 
     # construct W prime
-    w_prime = new_compute_w_prime_for_g_m(p, graph)
+    w_prime = compute_w_prime(p, graph)
 
     # construct G_hat
-    G_hat = construct_g_hat_from_g_m(graph.graph, w_prime)
+    G_hat = construct_g_hat(graph.graph, w_prime)
 
     # use methods from the Graph class create a visualization
     plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=False)
@@ -527,7 +521,7 @@ def main():
     # adam plays from v0 to v1 : only if he can ensure a non-zero regret( the Val of the corresponding play in
     # g_hat should be > 0)
     # eve select the strategy with the least regret (below the given threshold)
-    reg_dict = new_compute_aVal_from_g_m(G_hat, payoff_func, w_prime, graph.graph)
+    reg_dict = compute_aVal(G_hat, payoff_func, w_prime, graph.graph)
 
     if len(list(reg_dict.keys())) != 0:
         for k, v in reg_dict.items():

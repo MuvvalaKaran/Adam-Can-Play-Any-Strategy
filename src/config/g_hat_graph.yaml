@@ -22,6 +22,13 @@ graph:
     - &id004 !!python/tuple
       - v1
       - 2.0
+    - strategy: false
+      weight: 0
+  - !!python/tuple
+    - v1
+    - &id007 !!python/tuple
+      - v1
+      - 6.0
     - strategy: true
       weight: 0
   - !!python/tuple
@@ -74,16 +81,14 @@ graph:
     - strategy: false
       weight: '0.0'
   - !!python/tuple
-    - &id009 !!python/tuple
+    - &id012 !!python/tuple
       - v4
       - 1.0
-    - !!python/tuple
-      - v4
-      - 1.0
+    - vT
     - strategy: false
-      weight: '0.0'
+      weight: 0
   - !!python/tuple
-    - &id010 !!python/tuple
+    - &id013 !!python/tuple
       - v5
       - 1.0
     - !!python/tuple
@@ -93,18 +98,9 @@ graph:
       weight: '0.0'
   - !!python/tuple
     - *id004
-    - !!python/tuple
-      - v2
-      - 2.0
-    - strategy: true
-      weight: '0.0'
-  - !!python/tuple
-    - *id004
-    - !!python/tuple
-      - v3
-      - 2.0
+    - vT
     - strategy: false
-      weight: '0.0'
+      weight: 0
   - !!python/tuple
     - &id005 !!python/tuple
       - v2
@@ -112,7 +108,7 @@ graph:
     - !!python/tuple
       - v1
       - 2.0
-    - strategy: true
+    - strategy: false
       weight: '-3.0'
   - !!python/tuple
     - *id005
@@ -135,7 +131,7 @@ graph:
     - !!python/tuple
       - v3
       - 2.0
-    - strategy: true
+    - strategy: false
       weight: '-1.5'
   - !!python/tuple
     - *id006
@@ -145,8 +141,17 @@ graph:
     - strategy: false
       weight: '-1.0'
   - !!python/tuple
-    - &id007 !!python/tuple
+    - &id014 !!python/tuple
       - v4
+      - 2.0
+    - !!python/tuple
+      - v1
+      - 2.0
+    - strategy: false
+      weight: '0.0'
+  - !!python/tuple
+    - &id015 !!python/tuple
+      - v5
       - 2.0
     - !!python/tuple
       - v4
@@ -156,24 +161,86 @@ graph:
   - !!python/tuple
     - *id007
     - !!python/tuple
-      - v1
-      - 2.0
+      - v2
+      - 6.0
     - strategy: true
       weight: '0.0'
   - !!python/tuple
-    - &id008 !!python/tuple
-      - v5
-      - 2.0
+    - *id007
     - !!python/tuple
-      - v4
-      - 2.0
+      - v3
+      - 6.0
     - strategy: false
-      weight: '-1.0'
+      weight: '0.0'
+  - !!python/tuple
+    - &id008 !!python/tuple
+      - v2
+      - 6.0
+    - !!python/tuple
+      - v1
+      - 6.0
+    - strategy: true
+      weight: '-7.0'
   - !!python/tuple
     - *id008
     - !!python/tuple
+      - v3
+      - 6.0
+    - strategy: false
+      weight: '-5.0'
+  - !!python/tuple
+    - *id008
+    - !!python/tuple
+      - v4
+      - 6.0
+    - strategy: false
+      weight: '-4.0'
+  - !!python/tuple
+    - &id009 !!python/tuple
+      - v3
+      - 6.0
+    - !!python/tuple
+      - v3
+      - 6.0
+    - strategy: true
+      weight: '-5.5'
+  - !!python/tuple
+    - *id009
+    - !!python/tuple
       - v5
-      - 2.0
+      - 6.0
+    - strategy: false
+      weight: '-5.0'
+  - !!python/tuple
+    - &id010 !!python/tuple
+      - v4
+      - 6.0
+    - !!python/tuple
+      - v4
+      - 6.0
+    - strategy: true
+      weight: '0.0'
+  - !!python/tuple
+    - *id010
+    - !!python/tuple
+      - v1
+      - 6.0
+    - strategy: false
+      weight: '-4.0'
+  - !!python/tuple
+    - &id011 !!python/tuple
+      - v5
+      - 6.0
+    - !!python/tuple
+      - v4
+      - 6.0
+    - strategy: false
+      weight: '-5.0'
+  - !!python/tuple
+    - *id011
+    - !!python/tuple
+      - v5
+      - 6.0
     - strategy: true
       weight: '0.0'
   vertices:
@@ -197,10 +264,10 @@ graph:
     - *id003
     - player: adam
   - !!python/tuple
-    - *id009
+    - *id012
     - player: eve
   - !!python/tuple
-    - *id010
+    - *id013
     - player: eve
   - !!python/tuple
     - *id004
@@ -212,8 +279,23 @@ graph:
     - *id006
     - player: adam
   - !!python/tuple
+    - *id014
+    - player: eve
+  - !!python/tuple
+    - *id015
+    - player: eve
+  - !!python/tuple
     - *id007
     - player: eve
   - !!python/tuple
     - *id008
+    - player: adam
+  - !!python/tuple
+    - *id009
+    - player: adam
+  - !!python/tuple
+    - *id010
+    - player: eve
+  - !!python/tuple
+    - *id011
     - player: eve

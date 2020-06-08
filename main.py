@@ -340,7 +340,7 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: D
     # The str dict looks like this
     """
     str_dict = {
-        'b': {
+        b: {
             'reg': None,
             'eve': None,
             'adam': None,
@@ -357,22 +357,28 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: D
         print("A non-zero regret exists and thus adam will play from v0 to v1 in g_hat")
     else:
         print("A non-zero regret does NOT exist and thus adam will play v0 to v0")
-        return
+        return {}
 
     # update 0 to 1 transition in g_hat and 1 to 1_b depending on the value of b - hyper-paramter chosen by the user
     # NOTE: here the strategy is a dict; key is the current node while the value is the next node.
     #  This would NOT work in condition where there are more than one edge between the same nodes i.e 0-1 with multiple
     #  weights. If that is the case then we need to change the implementation to store the whole edge instead of just
     #  the next node.
-    # adam_str.update({'v0': "v1"})
 
     # get the init nodes (ideally should only be one) of the org_graph
     init_node = new_get_init_node(org_graph)
     assert (len(init_node) == 1), f"Detected multiple init nodes in the org graph: {[n for n in init_node]}. " \
                                   f"This should not be the case"
 
-    # eve_str.update({"v1": ((init_node[0][0]), allowed_b)})
-    # eve_str.update({"vT": "vT"})
+    reg_threshold: str = input(f"Enter a value of threshold with the range: "
+                               f"[0, {-1*(-2 * get_max_weight(org_graph) - 1)}]: \n")
+
+    try:
+        assert 0 <= float(reg_threshold) <= -1*(-2 * get_max_weight(org_graph) - 1), "please enter a valid value " \
+                                                                                     "within the above range"
+    except:
+        reg_threshold = input(
+            f"Enter a value of threshold with the range: [0, {-1 * (-2 * get_max_weight(org_graph) - 1)}]: \n")
 
     # update strategy for each node
     # 1. adam picks the edge with the min value
@@ -408,13 +414,23 @@ def new_compute_aVal_from_g_m(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: D
             reg = -1 * float(_play_loop(g_hat, {**eve_str, **adam_str}, _Val_func))
             str_dict[b].update({'reg': reg})
 
+    # create a tmp dict of strategies that have reg <= reg_threshold
+    __tmp_dict = {}
+    for k, v in str_dict.items():
+        if v['reg'] <= float(reg_threshold):
+            __tmp_dict.update({k: str_dict[k]})
+
+    if len(list(__tmp_dict.keys())) == 0:
+        print(f"There does not exist any strategy within the given threshold: {reg_threshold}")
+        return {}
+
     # after computing all the reg value find the str with the least reg
-    min_reg_b = min(str_dict, key=lambda key: str_dict[key]['reg'])
+    min_reg_b = min(__tmp_dict, key=lambda key: __tmp_dict[key]['reg'])
 
     # return the corresponding str and reg value
-    final_str_dict.update({'reg': str_dict[min_reg_b]['reg']})
-    final_str_dict.update({'eve': str_dict[min_reg_b]['eve']})
-    final_str_dict.update({'adam': str_dict[min_reg_b]['adam']})
+    final_str_dict.update({'reg': __tmp_dict[min_reg_b]['reg']})
+    final_str_dict.update({'eve': __tmp_dict[min_reg_b]['eve']})
+    final_str_dict.update({'adam': __tmp_dict[min_reg_b]['adam']})
 
     return final_str_dict
 
@@ -490,7 +506,7 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
 
 
 def main():
-    payoff_func = "liminf"
+    payoff_func = "limsup"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)
@@ -513,14 +529,15 @@ def main():
     # eve select the strategy with the least regret (below the given threshold)
     reg_dict = new_compute_aVal_from_g_m(G_hat, payoff_func, w_prime, graph.graph)
 
-    for k, v in reg_dict.items():
-        print(f"{k}: {v}")
+    if len(list(reg_dict.keys())) != 0:
+        for k, v in reg_dict.items():
+            print(f"{k}: {v}")
 
-    # visualize the strategy
-    plot_graph(G_hat, file_name='src/config/g_hat_graph',
-               save_flag=True,
-               visualize_str=True,
-               combined_strategy={**reg_dict['eve'], **reg_dict['adam']})
+        # visualize the strategy
+        plot_graph(G_hat, file_name='src/config/g_hat_graph',
+                   save_flag=True,
+                   visualize_str=True,
+                   combined_strategy={**reg_dict['eve'], **reg_dict['adam']})
 
 if __name__ == "__main__":
     main()

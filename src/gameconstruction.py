@@ -91,7 +91,7 @@ class Graph(object):
 
         return graph
 
-    def plot_fancy_graph(self) -> None:
+    def plot_fancy_graph(self, color=("lightgrey", "red")) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
@@ -99,28 +99,20 @@ class Graph(object):
         dot: Digraph = Digraph(name="graph")
         nodes = self.graph_yaml["vertices"]
         for n in nodes:
+            # default color for all the nodes is grey
+            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0]})
+            if n[1].get('init'):
+                # default color for init node is red
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
             if n[1]['player'] == 'eve':
-                if n[1].get('init'):
-                    dot.attr('node', style='filled', fillcolor='red')
-                else:
-                    dot.attr('node', style='filled', fillcolor='lightgrey')
-                dot.attr('node', shape='rectangle')
-                # dot.node('eve_{}'.format(n[0]))
-                dot.node(str(n[0]))
+                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
             else:
-                if n[1].get('init'):
-                    dot.attr('node', style='filled', fillcolor='red')
-                else:
-                    dot.attr('node', style='filled', fillcolor='lightgrey')
-                dot.attr('node', shape='circle')
-                # dot.node('adam_{}'.format(n[0]))
-                dot.node(str(n[0]))
+                dot.node(str(n[0]), _attributes={"shape": "circle"})
 
         # add all the edges
         edges = self.graph_yaml["edges"]
 
         # load the weights to illustrate on the graph
-        # weight = graph["weights"]
         for counter, edge in enumerate(edges):
             if edge[2].get('strategy') is True:
                 dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']), _attributes={'color': 'red'})

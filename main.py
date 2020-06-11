@@ -454,7 +454,6 @@ def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], payoff_func
     # for node in graph.nodes():
     while 1:
         # NOTE: This is assuming that a strategy is deterministic i.e the cardinality of next node is 1
-        # play.append(node)
         play.append(strategy[play[-1]])
 
         if play.count(play[-1]) == 2:
@@ -488,7 +487,8 @@ def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], payoff_func
 def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
     assert (func == max or func == min), "Please make sure the deciding function for transitions on the game g_hat for " \
                                          "eve and adam is either max or min"
-
+    # NOTE: if there are multiple edges with same weight, it select the first one with the min/max value.
+    #  Thus |next_node[1]| is 1.
     wt_list = {}
     for adj_edge in graph.edges(curr_node):
         # get the edge weight, store it in a list and find the max/min and return the next_node
@@ -513,14 +513,14 @@ def main():
     G_hat = construct_g_hat(graph.graph, w_prime)
 
     # use methods from the Graph class create a visualization
-    plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=False)
-    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=False)
+    plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=True)
+    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=True)
 
-    # the strategy that eve comes up with is the strategy with the least regret.
-    # the regret will value be within [0, -2W - 1]; W = Max weight in the graph
-    # adam plays from v0 to v1 : only if he can ensure a non-zero regret( the Val of the corresponding play in
-    # g_hat should be > 0)
-    # eve select the strategy with the least regret (below the given threshold)
+    # NOTE: The strategy that eve comes up with is the strategy with the least regret.
+    #  The regret value should be within [0, -2W - 1]; W = Max weight in the orignal graph
+    #  Adam plays from v0 to v1-only if he can ensure a non-zero regret (the Val of the corresponding play in
+    #  g_hat should be > 0)
+    #  Eve selects the strategy with the least regret (below the given threshold)
     reg_dict = compute_aVal(G_hat, payoff_func, w_prime, graph.graph)
 
     if len(list(reg_dict.keys())) != 0:

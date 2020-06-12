@@ -163,16 +163,16 @@ class Graph(object):
         else:
             MG.add_nodes_from(['v1', 'v2', 'v3', 'v4', 'v5'])
             MG.add_weighted_edges_from([('v1', 'v2', '1'),
-                                        ('v2', 'v1', '-1'),
-                                        ('v1', 'v3', '1'),
-                                        ('v2', 'v3', '1'),
-                                        ('v3', 'v3', '0.5'),
-                                        ('v3', 'v5', '1'),
-                                        ('v2', 'v4', '2'),
-                                        ('v4', 'v4', '2'),
-                                        ('v4', 'v1', '0'),
-                                        ('v5', 'v4', '6'),
-                                        ('v5', 'v5', '1')
+                                        ('v2', 'v1', '0'),
+                                        ('v1', 'v3', '2'),
+                                        # ('v2', 'v3', '0'),
+                                        ('v3', 'v3', '0'),
+                                        ('v3', 'v5', '0'),
+                                        ('v2', 'v4', '0'),
+                                        ('v4', 'v4', '3'),
+                                        # ('v4', 'v1', '0'),
+                                        # ('v5', 'v4', '6'),
+                                        ('v5', 'v5', '2')
                                         ])
 
             # assign each node a player - this is then later used to plot them conveniently

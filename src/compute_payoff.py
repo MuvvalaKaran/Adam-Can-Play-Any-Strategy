@@ -3,6 +3,7 @@ import copy
 import re
 import operator
 import networkx as nx
+import statistics
 
 from typing import List, Tuple, Dict
 # import helper function to deprecate warnings
@@ -38,7 +39,8 @@ class payoff_value():
             'limsup': max,
             'liminf': min,
             'inf': min,
-            'sup': max
+            'sup': max,
+            'mean': statistics.mean
         }
 
         try:
@@ -46,7 +48,7 @@ class payoff_value():
         except KeyError as error:
             print(error)
             print("Please enter a valid payoff function. NOTE: payoff_func string is case sensitive")
-            print("Make sure you exactly enter: 1.sup 2.inf 3. limsup 4. liminf. ")
+            print("Make sure you exactly enter: 1.sup 2.inf 3. limsup 4. liminf 5. mean. ")
 
     def get_init_node(self) -> List[Tuple]:
         """
@@ -313,7 +315,7 @@ class payoff_value():
 
 
 if __name__ == "__main__":
-    payoff_func = "liminf"
+    payoff_func = "mean"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     G = Graph(False)

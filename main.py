@@ -500,7 +500,7 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
 
 
 def main():
-    payoff_func = "sup"
+    payoff_func = "liminf"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)
@@ -513,8 +513,8 @@ def main():
     G_hat = construct_g_hat(graph.graph, w_prime)
 
     # use methods from the Graph class create a visualization
-    plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=True)
-    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=True)
+    plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=False)
+    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=False)
 
     # NOTE: The strategy that eve comes up with is the strategy with the least regret.
     #  The regret value should be within [0, -2W - 1]; W = Max weight in the orignal graph

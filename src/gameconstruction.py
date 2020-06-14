@@ -91,7 +91,7 @@ class Graph(object):
 
         return graph
 
-    def plot_fancy_graph(self, color=("lightgrey", "red")) -> None:
+    def plot_fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
@@ -104,6 +104,9 @@ class Graph(object):
             if n[1].get('init'):
                 # default color for init node is red
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
+            if n[1].get('accepting'):
+                # default color for accepting node is purple
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
             if n[1]['player'] == 'eve':
                 dot.node(str(n[0]), _attributes={"shape": "rectangle"})
             else:
@@ -164,15 +167,15 @@ class Graph(object):
             MG.add_nodes_from(['v1', 'v2', 'v3', 'v4', 'v5'])
             MG.add_weighted_edges_from([('v2', 'v3', '2'),
                                         ('v3', 'v2', '2'),
-                                        ('v2', 'v1', '3'),
+                                        ('v1', 'v2', '3'),
                                         ('v3', 'v1', '3'),
-                                        ('v1', 'v1', '3'),
+                                        # ('v1', 'v1', '3'),
                                         ('v3', 'v4', '2'),
                                         ('v2', 'v4', '2'),
                                         ('v4', 'v5', '1'),
                                         # ('v4', 'v1', '0'),
                                         # ('v5', 'v4', '6'),
-                                        ('v5', 'v5', '4')
+                                        ('v5', 'v5', '0')
                                         ])
             # MG.add_weighted_edges_from([('v1', 'v2', '1'),
             #                             ('v2', 'v1', '-1'),
@@ -201,6 +204,8 @@ class Graph(object):
         # add node 1 as the initial node
         MG.nodes['v2']['init'] = True
 
+        # add accepting states to the graph
+        MG.nodes['v5']['accepting'] = True
         self.graph = MG
 
         return MG

@@ -12,11 +12,18 @@ import operator
 from typing import List, Tuple, Dict, Any, Set
 from src.gameconstruction import Graph
 from src.compute_payoff import payoff_value
-from helper_methods import deprecated
 
 # asserts that this code is tested in linux
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
+# flag to use accepting_states_max_edge_weight
+acc_max_edge_weight = False
+# flag to use accepting_states_least_edge_weight
+acc_min_edge_weight = True
+# flag to add biasing to choose the final strategy with the accepting state in it
+choose_acc_state_run = False
+# print strategy even if there does not exist a non-zero regret on g_hat
+bypass_implementation = True
 
 def construct_graph(payoff_func: str, *args, **kwargs) -> Graph:
     """
@@ -32,7 +39,6 @@ def construct_graph(payoff_func: str, *args, **kwargs) -> Graph:
     sup_re = re.compile('^sup$')
     inf_re = re.compile('^inf$')
 
-    # TODO: make this more robust my checking limsup and liminf payoff string and throw a warning in case no match
     if inf_re.match(payoff_func):
         gmin = G.construct_Gmin(org_graph)
         G.graph = gmin
@@ -128,12 +134,13 @@ def compute_w_prime(payoff_handle: payoff_value, org_graph: Graph) \
     return w_prime
 
 
-def _construct_g_b(g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph, b, w_prime: Dict) -> None:
+def _construct_g_b(g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph, b, w_prime: Dict,
+                   init_node: List[Tuple], accp_node: List[Tuple]) -> None:
     # each node is dict with the node name as key and 'b' as its value
     g_hat.add_nodes_from([((n), b) for n in org_graph.nodes()])
-
-    # get the init nodes (ideally should only be one) of the org_graph
-    init_node = get_init_node(org_graph)
+    # TODO: Instead of computing init nodes every time from scratch pass them as an argument to this function
+    # # get the init nodes (ideally should only be one) of the org_graph
+    # init_node = get_init_node(org_graph)
 
     assert (len(init_node) == 1), f"Detected multiple init nodes in the org graph: {[n for n in init_node]}. " \
                                   f"This should not be the case"
@@ -142,6 +149,9 @@ def _construct_g_b(g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph, b, w_prim
         # assign the nodes of G_b with v1 in it at n[0] to have a 'init' attribute
         if len(n) == 2 and n[0] == init_node[0][0]:
             g_hat.nodes[n]['init'] = True
+        # assign the nodes of G_b with 'accepting' attribute
+        if len(n) == 2 and n[0] == accp_node[0][0]:
+            g_hat.nodes[n]['accepting'] = True
         if g_hat.nodes(data='player')[n] is None:
             if org_graph.nodes(data='player')[n[0]] == "adam":
                 g_hat.nodes[n]['player'] = "adam"
@@ -169,6 +179,16 @@ def get_max_weight(graph: nx.MultiDiGraph) -> float:
     return float(max(weight_list))
 
 
+def get_accepting_state_node(graph: nx.MultiDiGraph) -> List[Tuple]:
+    # a helper method to find the set of accepting nodes
+    accpeting_nodes: List[Tuple] = []
+    for n in graph.nodes.data("accepting"):
+        if n[1] is True:
+            accpeting_nodes.append(n)
+
+    return accpeting_nodes
+
+
 def get_init_node(graph: nx.MultiDiGraph) -> List[Tuple]:
     # a helper method to find the init node and return
     init_node: List[Tuple[str, str]] = []
@@ -190,15 +210,20 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx
 
     # add v0 as the initial node
     G_hat.nodes['v0']['init'] = True
+
+    # add accepting states to g_hat
+    accp_nodes = get_accepting_state_node(org_graph)
     # add the edges with the weights
     G_hat.add_weighted_edges_from(
         [('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
 
     # compute the range of w_prime function
     w_set = set(w_prime.values()) - {-1 * math.inf}
+    org_init_nodes = get_init_node(org_graph)
+
     # construct g_b
     for b in w_set:
-        _construct_g_b(G_hat, org_graph, b, w_prime)
+        _construct_g_b(G_hat, org_graph, b, w_prime, org_init_nodes, accp_nodes)
 
     # add edges between v1 of G_hat and init nodes(v1_b/ ((v1, 1), b) of graph G_b with edge weights 0
     # get init node of the org graph
@@ -215,9 +240,9 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx
 
     def w_hat_b(_org_graph: nx.MultiDiGraph, org_edge: Tuple[Tuple[str, str], Tuple[str, str]], b_value: str) -> str:
         """
-        an inline function to find the w_prime valued for a g_b graph
+        an inline function to find the w_hat value for a g_b graph
         :param _org_graph:
-        :param org_edge: edges of the format ("v1", "v2")
+        :param org_edge: edges of the format ("v1", "v2") or Tuple of tuples
         :param b_value:
         :return:
         """
@@ -237,12 +262,21 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx
         # only add weights if hasn't been initialized
         if G_hat[e[0]][e[1]][0].get('weight') is None:
             # an edge can only exist within a graph g_b
-            assert (e[0][1] == e[1][1]), "Make sure that there only exist edge betwen nodes that belong to the same g_b"
-            G_hat[e[0]][e[1]][0]['weight'] = w_hat_b(org_graph, (e[0][0], e[1][0]), e[0][1])
+            assert (e[0][1] == e[1][1]), \
+                "Make sure that there only exist edge between nodes that belong to the same g_b"
+            if acc_min_edge_weight and G_hat.nodes[e[0]].get('accepting') is not None:
+                G_hat[e[0]][e[1]][0]['weight'] = '0'
+            else:
+                G_hat[e[0]][e[1]][0]['weight'] = w_hat_b(org_graph, (e[0][0], e[1][0]), e[0][1])
 
     # for nodes that don't have any outgoing edges add a transition to the terminal node i.e 'T' in our case
     for node in G_hat.nodes():
         if G_hat.out_degree(node) == 0:
+            if acc_max_edge_weight:
+                # if the node belongs to the accepting state then add a self-loop to itself
+                if G_hat.nodes[node].get('accepting') is not None:
+                    G_hat.add_weighted_edges_from([(node, node, 0)])
+                    continue
             # add transition to the terminal node
             G_hat.add_weighted_edges_from([(node, 'vT', 0)])
 
@@ -341,14 +375,35 @@ def _find_optimal_str(plays: List[List[Tuple]], graph_g_hat: nx.MultiDiGraph, va
     :param eve_str: A dict mapping each node that belongs to eve to the next node
     :return: A tuple of the min reg value, the corresponding DETERMINISTIC strategy for eve and adam
     """
-    # a temp regret dict of format {play: reg_value}
-    tmp_reg_dict = {}
-    for play in plays:
-        tmp_reg_dict.update({tuple(play): -1 * float(_play_loop(graph_g_hat, play, value_func))})
 
-    # after finding the strategy with the least reg value determinize the strategy
-    min_reg_val = min(tmp_reg_dict.values())
-    min_play = random.choice([k for k in tmp_reg_dict if tmp_reg_dict[k] == min_reg_val])
+    def __check_acc_node(play: List[Tuple], accpeting_state) -> Tuple[bool, List[Tuple]]:
+        # an inline function to help check is a play contains the accepting state or not
+        # if yes then return True else False
+        for state in accpeting_state:
+            if state[0] in play:
+                return True, play
+        return False, None
+
+    # get accepting state(s)
+    accp_nodes = get_accepting_state_node(graph_g_hat)
+    flag = False
+    if choose_acc_state_run:
+        for play in plays:
+            flag, play = __check_acc_node(play, accp_nodes)
+            if flag:
+                min_reg_val = -1 * float(_play_loop(graph_g_hat, play, value_func))
+                min_play = play
+                break
+
+    if not flag:
+        # a temp regret dict of format {play: reg_value}
+        tmp_reg_dict = {}
+        for play in plays:
+                tmp_reg_dict.update({tuple(play): -1 * float(_play_loop(graph_g_hat, play, value_func))})
+
+        # after finding the strategy with the least reg value determinize the strategy
+        min_reg_val = min(tmp_reg_dict.values())
+        min_play = random.choice([k for k in tmp_reg_dict if tmp_reg_dict[k] == min_reg_val])
 
     # update the strategy
     for inx, node in enumerate(min_play):
@@ -397,14 +452,29 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
         print("A non-zero regret exists and thus adam will play from v0 to v1 in g_hat")
     else:
         print("A non-zero regret does NOT exist and thus adam will play v0 to v0")
-        return {}
+        # create a tmp dict of strategies that have reg <= reg_threshold
+        # __tmp_dict = {}
+        # for k, v in str_dict.items():
+        #     if v['reg'] <= float(reg_threshold):
+        #         __tmp_dict.update({k: str_dict[k]})
+        #
+        # if len(list(__tmp_dict.keys())) == 0:
+        #     print(f"There does not exist any strategy within the given threshold: {reg_threshold}")
+        #     return {}
+        if bypass_implementation:
+            # after computing all the reg value find the str with the least reg
+            min_reg_b = min(str_dict, key=lambda key: str_dict[key]['reg'])
+
+            # return the corresponding str and reg value
+            final_str_dict.update({'reg': str_dict[min_reg_b]['reg']})
+            final_str_dict.update({'eve': str_dict[min_reg_b]['eve']})
+            final_str_dict.update({'adam': str_dict[min_reg_b]['adam']})
+            return final_str_dict
+        else:
+            return {}
 
     # update 0 to 1 transition in g_hat and 1 to 1_b depending on the value of b - hyper-paramter chosen by the user
     # NOTE: here the strategy is a dict; key is the current node while the value is the next node.
-    #  This would NOT work in condition where there are more than one edge between the same nodes i.e 0-1 with multiple
-    #  weights. If that is the case then we need to change the implementation to store the whole edge instead of just
-    #  the next node.
-
     # get the init nodes (ideally should only be one) of the org_graph
     init_node = get_init_node(org_graph)
     assert (len(init_node) == 1), f"Detected multiple init nodes in the org graph: {[n for n in init_node]}. " \

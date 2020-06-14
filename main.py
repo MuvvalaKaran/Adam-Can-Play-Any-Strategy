@@ -594,7 +594,7 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> List[Tuple
 
 
 def main():
-    payoff_func = "inf"
+    payoff_func = "mean"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)

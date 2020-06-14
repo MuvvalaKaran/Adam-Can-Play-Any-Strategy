@@ -6,6 +6,7 @@ import networkx as nx
 import sys
 import re
 import warnings
+import random
 import operator
 
 from typing import List, Tuple, Dict, Any, Set
@@ -312,12 +313,56 @@ def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGr
         str_dict.update({b: {'eve': _eve_str}})
         str_dict[b].update({'adam': _adam_str})
         # compute the regret value for this b
-        reg = -1 * float(_play_loop(graph_g_hat, {**_eve_str, **_adam_str}, value_func))
+        plays: List[List[Tuple]] = _compute_all_plays(graph_g_hat, {**_eve_str, **_adam_str})
+        # if there is only possible play then that means the str we have is already deterministic
+        if len(plays) == 1:
+            reg = -1 * float(_play_loop(graph_g_hat, plays[0], value_func))
+        else:
+            reg, _adam_str, _eve_str = _find_optimal_str(plays, graph_g_hat, value_func, _adam_str, _eve_str)
+            str_dict[b]['eve'] = _eve_str
+            str_dict[b]['adam'] = _adam_str
+
         str_dict[b].update({'reg': reg})
         if reg > 0:
             return str_dict, True
 
     return str_dict, False
+
+
+def _find_optimal_str(plays: List[List[Tuple]], graph_g_hat: nx.MultiDiGraph, value_func: str,
+                      adam_str: Dict[Tuple, Tuple],
+                      eve_str: Dict[Tuple, Tuple]) -> Tuple[float, Dict, Dict]:
+    """
+    A helper method to find the most optimal strategy in a non-deterministic strategy
+    :param plays: a list of plays(tuple)
+    :param graph_g_hat: the graph on which we will roll out these strategies to compute the Val of the play
+    :param value_func: the value function to determine a finite quantity of an infinite play (e.f sup, mean, liminf)
+    :param adam_str: A dict mapping each node that belongs to adam to the next node
+    :param eve_str: A dict mapping each node that belongs to eve to the next node
+    :return: A tuple of the min reg value, the corresponding DETERMINISTIC strategy for eve and adam
+    """
+    # a temp regret dict of format {play: reg_value}
+    tmp_reg_dict = {}
+    for play in plays:
+        tmp_reg_dict.update({tuple(play): -1 * float(_play_loop(graph_g_hat, play, value_func))})
+
+    # after finding the strategy with the least reg value determinize the strategy
+    min_reg_val = min(tmp_reg_dict.values())
+    min_play = random.choice([k for k in tmp_reg_dict if tmp_reg_dict[k] == min_reg_val])
+
+    # update the strategy
+    for inx, node in enumerate(min_play):
+        # only proceed up to to the second last node
+        if inx < len(min_play) - 1:
+            # if the node belongs to eve then update eve strategy
+            if graph_g_hat.nodes[node]['player'] == 'adam':
+                # get the next node and update the strategy
+                adam_str[node] = min_play[inx + 1]
+            # if the node belongs to eve then update eve strategy
+            else:
+                eve_str[node] = min_play[inx + 1]
+
+    return min_reg_val, adam_str, eve_str
 
 
 def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_graph: nx.MultiDiGraph) \
@@ -405,9 +450,20 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
             str_dict.update({b: {'eve': eve_str}})
             str_dict[b].update({'adam': adam_str})
 
-            # compute the reg value and update the str_dict respectively
-            reg = -1 * float(_play_loop(g_hat, {**eve_str, **adam_str}, _Val_func))
+            plays: List[List[Tuple]] = _compute_all_plays(g_hat, {**eve_str, **adam_str})
+            # if there is only possible play then that means the str we have is already deterministic
+            if len(plays) == 1:
+                reg = -1 * float(_play_loop(g_hat, plays[0], _Val_func))
+            else:
+                reg, adam_str, eve_str = _find_optimal_str(plays, g_hat, _Val_func, adam_str, eve_str)
+                str_dict[b]['eve'] = eve_str
+                str_dict[b]['adam'] = adam_str
+
             str_dict[b].update({'reg': reg})
+
+            # compute the reg value and update the str_dict respectively
+            # reg = -1 * float(_play_loop(g_hat, {**eve_str, **adam_str}, _Val_func))
+            # str_dict[b].update({'reg': reg})
 
     # create a tmp dict of strategies that have reg <= reg_threshold
     __tmp_dict = {}
@@ -439,52 +495,88 @@ def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple]) -> 
     nx.set_edge_attributes(graph, False, 'strategy')
 
     for curr_node, next_node in strategy.items():
-        graph.edges[curr_node, next_node, 0]['strategy'] = True
+        if isinstance(next_node, list):
+            for n_node in next_node:
+                graph.edges[curr_node, n_node, 0]['strategy'] = True
+        else:
+            graph.edges[curr_node, next_node, 0]['strategy'] = True
 
-def _play_loop(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], payoff_func: str) -> str:
+
+def _compute_all_plays(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple]) -> List[List[Tuple]]:
+    """
+    A helper method to compute all the plays possible given a strategy
+    :return:
+    """
+    play_lst = []
+    play = [get_init_node(graph)[0][0]]
+    for n in play:
+        _compute_all_plays_utils(n, play, strategy, graph, play_lst)
+
+    return play_lst
+
+
+def _compute_all_plays_utils(n, play, strategy: Dict[Tuple, List], graph: nx.MultiDiGraph, play_lst) -> List[Tuple]:
+    if not isinstance(strategy[n], list):
+        play.append(strategy[n])
+        if play.count(play[-1]) >= 2:
+            print(play)
+            play_lst.append(play)
+    else:
+        for node in strategy[n]:
+            # path = []
+            path = copy.deepcopy(play)
+            path.append(node)
+            if path.count(path[-1]) < 2:
+                _compute_all_plays_utils(node, path, strategy, graph, play_lst)
+                # print(path)
+            else:
+                print(path)
+                play_lst.append(path)
+
+
+def _play_loop(graph: nx.MultiDiGraph, play: List[Tuple], payoff_func: str) -> str:
     """
     helper method to compute the loop value for a given payoff function
     :param graph: graph g_hat
     :param strategy: A mapping from a each node of g_hat to the next node
     :return: The value of the loop when following the strategy @strategy
     """
-    # add nodes to this stack and as soon as a loop is found we break
-    play = [get_init_node(graph)[0][0]]
+    # # add nodes to this stack and as soon as a loop is found we break
+    # play = [get_init_node(graph)[0][0]]
+    #
+    # # for node in graph.nodes():
+    # while 1:
+    #     play.append(strategy[play[-1]])
+    #
+    #     if play.count(play[-1]) == 2:
+    #         # play_str = ''.join([str(ele) for ele in play])
 
-    # for node in graph.nodes():
-    while 1:
-        # NOTE: This is assuming that a strategy is deterministic i.e the cardinality of next node is 1
-        play.append(strategy[play[-1]])
+    # create a tmp graph with the current node with their respective edges, compute the val and return it
+    str_graph = nx.MultiDiGraph(name="str_graph")
+    str_graph.add_nodes_from(play)
+    for i in range(0, len(play) - 1):
+        str_graph.add_weighted_edges_from([(play[i],
+                                            play[i+1],
+                                            graph[play[i]][play[i+1]][0].get('weight'))
+                                           ]
+                                          )
 
-        if play.count(play[-1]) == 2:
-            # play_str = ''.join([str(ele) for ele in play])
+    # manually add an edge from last to last -1 to complete the cycle
+    str_graph.add_weighted_edges_from([(play[-1],
+                                        play[-2],
+                                        graph[play[-1]][play[-2]][0].get('weight'))])
 
-            # create a tmp graph with the current node with their respective edges, compute the val and return it
-            str_graph = nx.MultiDiGraph(name="str_graph")
-            str_graph.add_nodes_from(play)
-            for i in range(0, len(play) - 1):
-                str_graph.add_weighted_edges_from([(play[i],
-                                                    play[i+1],
-                                                    graph[play[i]][play[i+1]][0].get('weight'))
-                                                   ]
-                                                  )
+    # add init node
+    str_graph.nodes[play[0]]['init'] = True
+    # add this graph to compute_payoff class
+    tmp_p_handle = payoff_value(str_graph, payoff_func)
+    _loop_vals = tmp_p_handle.cycle_main()
+    play_key = tuple(tmp_p_handle._convert_stack_to_play_str(play))
 
-            # manually add an edge from last to last -1 to complete the cycle
-            str_graph.add_weighted_edges_from([(play[-1],
-                                                play[-2],
-                                                graph[play[-1]][play[-2]][0].get('weight'))])
-
-            # add init node
-            str_graph.nodes[play[0]]['init'] = True
-            # add this graph to compute_payoff class
-            tmp_p_handle = payoff_value(str_graph, payoff_func)
-            _loop_vals = tmp_p_handle.cycle_main()
-            play_key = tuple(tmp_p_handle._convert_stack_to_play_str(play))
-
-            return _loop_vals[play_key]
+    return _loop_vals[play_key]
 
 
-def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
+def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> List[Tuple]:
     assert (func == max or func == min), "Please make sure the deciding function for transitions on the game g_hat for " \
                                          "eve and adam is either max or min"
     # NOTE: if there are multiple edges with same weight, it select the first one with the min/max value.
@@ -494,13 +586,15 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> Tuple:
         # get the edge weight, store it in a list and find the max/min and return the next_node
         wt_list.update({adj_edge: float(graph[adj_edge[0]][adj_edge[1]][0].get('weight'))})
 
-    next_node: Tuple = func(wt_list.items(), key=operator.itemgetter(1))[0]
+    min_value = min(wt_list.values())
+    next_nodes: List[Tuple] = [k[1] for k in wt_list if wt_list[k] == min_value]
+    # next_node: Tuple = func(wt_list.items(), key=operator.itemgetter(1))[0]
 
-    return next_node[1]
+    return next_nodes
 
 
 def main():
-    payoff_func = "liminf"
+    payoff_func = "mean"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)

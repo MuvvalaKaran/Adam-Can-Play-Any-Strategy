@@ -162,22 +162,34 @@ class Graph(object):
 
         else:
             MG.add_nodes_from(['v1', 'v2', 'v3', 'v4', 'v5'])
-            MG.add_weighted_edges_from([('v1', 'v2', '1'),
-                                        ('v2', 'v1', '0'),
-                                        ('v1', 'v3', '2'),
-                                        # ('v2', 'v3', '0'),
-                                        ('v3', 'v3', '0'),
-                                        ('v3', 'v5', '0'),
-                                        ('v2', 'v4', '0'),
-                                        ('v4', 'v4', '3'),
+            MG.add_weighted_edges_from([('v2', 'v3', '2'),
+                                        ('v3', 'v2', '2'),
+                                        ('v2', 'v1', '3'),
+                                        ('v3', 'v1', '3'),
+                                        ('v1', 'v1', '3'),
+                                        ('v3', 'v4', '2'),
+                                        ('v2', 'v4', '2'),
+                                        ('v4', 'v5', '1'),
                                         # ('v4', 'v1', '0'),
                                         # ('v5', 'v4', '6'),
-                                        ('v5', 'v5', '2')
+                                        ('v5', 'v5', '4')
                                         ])
+            # MG.add_weighted_edges_from([('v1', 'v2', '1'),
+            #                             ('v2', 'v1', '-1'),
+            #                             ('v1', 'v3', '1'),
+            #                             # ('v2', 'v3', '1'),
+            #                             ('v3', 'v3', '0.5'),
+            #                             ('v3', 'v5', '1'),
+            #                             ('v2', 'v4', '2'),
+            #                             ('v4', 'v4', '2'),
+            #                             # ('v4', 'v1', '0'),
+            #                             # ('v5', 'v4', '6'),
+            #                             ('v5', 'v5', '1')
+            #                             ])
 
             # assign each node a player - this is then later used to plot them conveniently
             MG.nodes['v1']['player'] = 'eve'
-            MG.nodes['v2']['player'] = 'adam'
+            MG.nodes['v2']['player'] = 'eve'
             MG.nodes['v3']['player'] = 'adam'
             MG.nodes['v4']['player'] = 'eve'
             MG.nodes['v5']['player'] = 'eve'
@@ -187,7 +199,7 @@ class Graph(object):
         #  (NOT A DICT) of the form (node_name, {key: value})
 
         # add node 1 as the initial node
-        MG.nodes['v1']['init'] = True
+        MG.nodes['v2']['init'] = True
 
         self.graph = MG
 
@@ -443,7 +455,7 @@ class Graph(object):
             path.setplayer("eve" if path.path[0] in _eve_state else "adam")
 
         if not path.init:
-            if path.path[0] == 1 or path.path[0] == (1,2):
+            if path.path[0] == 1 or path.path[0] == (1, 2):
                 path.setinit(True)
         paths = []
         if m != 0:

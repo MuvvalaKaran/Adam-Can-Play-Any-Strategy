@@ -19,7 +19,7 @@ assert ('linux' in sys.platform), "This code has been successfully tested in Lin
 # flag to use accepting_states_max_edge_weight
 acc_max_edge_weight = False
 # flag to use accepting_states_least_edge_weight
-acc_min_edge_weight = True
+acc_min_edge_weight = False
 # flag to add biasing to choose the final strategy with the accepting state in it
 choose_acc_state_run = False
 # print strategy even if there does not exist a non-zero regret on g_hat
@@ -33,7 +33,7 @@ def construct_graph(payoff_func: str, *args, **kwargs) -> Graph:
     """
     G: Graph = Graph(False)
     # create the directed multi-graph
-    org_graph = G.create_multigrpah()
+    org_graph = G.create_multigrpah(reward=False)
 
     # pattern to dtect exactly 'sup' or 'inf'
     sup_re = re.compile('^sup$')
@@ -150,8 +150,9 @@ def _construct_g_b(g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph, b, w_prim
         if len(n) == 2 and n[0] == init_node[0][0]:
             g_hat.nodes[n]['init'] = True
         # assign the nodes of G_b with 'accepting' attribute
-        if len(n) == 2 and n[0] == accp_node[0][0]:
-            g_hat.nodes[n]['accepting'] = True
+        for _accp_n in accp_node:
+            if len(n) == 2 and n[0] == _accp_n[0]:
+                g_hat.nodes[n]['accepting'] = True
         if g_hat.nodes(data='player')[n] is None:
             if org_graph.nodes(data='player')[n[0]] == "adam":
                 g_hat.nodes[n]['player'] = "adam"
@@ -247,7 +248,7 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx
         :return:
         """
         if float(w_prime[org_edge]) != -1 * math.inf:
-            return str(float(w_prime[org_edge]) - float(b_value))
+            return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
         else:
             try:
                 return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
@@ -589,7 +590,7 @@ def _compute_all_plays_utils(n, play, strategy: Dict[Tuple, List], graph: nx.Mul
     if not isinstance(strategy[n], list):
         play.append(strategy[n])
         if play.count(play[-1]) >= 2:
-            print(play)
+            # print(play)
             play_lst.append(play)
     else:
         for node in strategy[n]:
@@ -600,7 +601,7 @@ def _compute_all_plays_utils(n, play, strategy: Dict[Tuple, List], graph: nx.Mul
                 _compute_all_plays_utils(node, path, strategy, graph, play_lst)
                 # print(path)
             else:
-                print(path)
+                # print(path)
                 play_lst.append(path)
 
 
@@ -632,9 +633,9 @@ def _play_loop(graph: nx.MultiDiGraph, play: List[Tuple], payoff_func: str) -> s
                                           )
 
     # manually add an edge from last to last -1 to complete the cycle
-    str_graph.add_weighted_edges_from([(play[-1],
-                                        play[-2],
-                                        graph[play[-1]][play[-2]][0].get('weight'))])
+    # str_graph.add_weighted_edges_from([(play[-1],
+    #                                     play[-2],
+    #                                     graph[play[-1]][play[-2]][0].get('weight'))])
 
     # add init node
     str_graph.nodes[play[0]]['init'] = True
@@ -656,7 +657,7 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> List[Tuple
         # get the edge weight, store it in a list and find the max/min and return the next_node
         wt_list.update({adj_edge: float(graph[adj_edge[0]][adj_edge[1]][0].get('weight'))})
 
-    min_value = min(wt_list.values())
+    min_value = func(wt_list.values())
     next_nodes: List[Tuple] = [k[1] for k in wt_list if wt_list[k] == min_value]
     # next_node: Tuple = func(wt_list.items(), key=operator.itemgetter(1))[0]
 
@@ -664,7 +665,7 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> List[Tuple
 
 
 def main():
-    payoff_func = "mean"
+    payoff_func = "liminf"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
     graph = construct_graph(payoff_func)

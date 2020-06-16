@@ -20,7 +20,7 @@ print_str_m = False
 # print strategies for a given range of m
 print_range_str_m = False
 # set this boolean to true if you want to test Gmin and Gmax construction on a smaller graph
-test_case = False
+test_case = True
 
 # test inf payoff function
 test_inf = True
@@ -91,7 +91,7 @@ class Graph(object):
 
         return graph
 
-    def plot_fancy_graph(self, color=("lightgrey", "red")) -> None:
+    def plot_fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
@@ -104,6 +104,9 @@ class Graph(object):
             if n[1].get('init'):
                 # default color for init node is red
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
+            if n[1].get('accepting'):
+                # default color for accepting node is purple
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
             if n[1]['player'] == 'eve':
                 dot.node(str(n[0]), _attributes={"shape": "rectangle"})
             else:
@@ -139,7 +142,7 @@ class Graph(object):
 
         dot_object.render(get_cwd_path() + f'/graph/{graph_name}', view=view, cleanup=True)
 
-    def create_multigrpah(self) -> nx.MultiDiGraph:
+    def create_multigrpah(self, reward=False) -> nx.MultiDiGraph:
         """
         Method to create a multigraph
         :return: Multigraph constructed in networkx
@@ -148,32 +151,154 @@ class Graph(object):
         MG: nx.MultiDiGraph = nx.MultiDiGraph(name="org_graph")
 
         if test_case:
-            MG.add_nodes_from(['v1', 'v2', 'v3'])
-            MG.add_weighted_edges_from([('v1', 'v2', '1'),
-                                        ('v2', 'v1', '2'),
-                                        ('v1', 'v3', '1'),
-                                        ('v3', 'v3', '0.5')
-                                        ])
+            # MG.add_nodes_from(['v1', 'v2', 'v3'])
+            # MG.add_weighted_edges_from([('v1', 'v2', '1'),
+            #                             ('v2', 'v1', '2'),
+            #                             ('v1', 'v3', '1'),
+            #                             ('v3', 'v3', '0.5')
+            #                             ])
+            #
+            # # assign each node a player - this is then later used to plot them conveniently
+            # MG.nodes[1]['player'] = 'eve'
+            # MG.nodes[2]['player'] = 'adam'
+            # MG.nodes[3]['player'] = 'adam'
+            MG.add_nodes_from(['v1', 'v2', 'v3', 'v4', 'v5',
+                               'v6', 'v7', 'v9', 'v10', 'v11',
+                               'v12', 'v13', 'v14', 'v15', 'v15'])
+            # cost based edges
+            if not reward:
+                MG.add_weighted_edges_from([('v1', 'v3', '4'),
+                                            ('v1', 'v2', '0'),
+                                            ('v2', 'v1', '0'), ('v2', 'v3', '0'), ('v2', 'v5', '0'), ('v2', 'v7', '0'),
+                                            ('v2', 'v9', '0'),
+                                            ('v3', 'v1', '4'),
+                                            ('v3', 'v5', '3'),
+                                            ('v3', 'v4', '0'),
+                                            ('v4', 'v3', '0'), ('v4', 'v1', '0'), ('v4', 'v5', '0'), ('v4', 'v7', '0'),
+                                            ('v4', 'v9', '0'),
+                                            ('v5', 'v3', '3'),
+                                            ('v5', 'v7', '2'),
+                                            ('v5', 'v6', '0'),
+                                            ('v6', 'v5', '0'), ('v6', 'v3', '0'), ('v6', 'v1', '0'), ('v6', 'v7', '0'),
+                                            ('v6', 'v9', '0'),
+                                            ('v7', 'v10', '1'),
+                                            ('v7', 'v11', '1'),
+                                            ('v7', 'v13', '1'),
+                                            ('v7', 'v15', '0'),
+                                            # ('v10', 'v16', '6'),
+                                            # ('v11', 'v16', '6'),
+                                            # ('v12', 'v16', '6'),
+                                            # ('v13', 'v16', '6'),
+                                            # ('v14', 'v10', '6'), ('v14', 'v11', '6'), ('v14', 'v13', '6'), ('v14', 'v15', '6'),
+                                            # ('v15', 'v14', '6'), ('v15', 'v12', '6'), ('v15', 'v13', '6'), ('v15', 'v10', '6'), ('v15', 'v11', '6'),
+                                            ('v10', 'v16', '0'),
+                                            ('v11', 'v16', '0'),
+                                            ('v12', 'v16', '0'),
+                                            ('v13', 'v16', '0'),
+                                            ('v14', 'v10', '0'), ('v14', 'v11', '0'), ('v14', 'v13', '0'),
+                                            ('v14', 'v15', '0'),
+                                            ('v15', 'v14', '0'), ('v15', 'v12', '0'), ('v15', 'v13', '0'),
+                                            ('v15', 'v10', '0'), ('v15', 'v11', '0'),
+                                            ('v9', 'v16', '2'),
+                                            ('v16', 'v16', '2')])  # self-loop edge
+            # reward based edges
+            else:
+                MG.add_weighted_edges_from([('v1', 'v3', '1'),
+                                            ('v1', 'v2', '0'),
+                                            ('v2', 'v1', '0'), ('v2', 'v3', '0'), ('v2', 'v5', '0'), ('v2', 'v7', '0'),
+                                            ('v2', 'v9', '0'),
+                                            ('v3', 'v1', '1'),
+                                            ('v3', 'v5', '2'),
+                                            ('v3', 'v4', '0'),
+                                            ('v4', 'v3', '0'), ('v4', 'v1', '0'), ('v4', 'v5', '0'), ('v4', 'v7', '0'),
+                                            ('v4', 'v9', '0'),
+                                            ('v5', 'v3', '2'),
+                                            ('v5', 'v7', '3'),
+                                            ('v5', 'v6', '0'),
+                                            ('v6', 'v5', '0'), ('v6', 'v3', '0'), ('v6', 'v1', '0'), ('v6', 'v7', '0'),
+                                            ('v6', 'v9', '0'),
+                                            ('v7', 'v10', '4'),
+                                            ('v7', 'v11', '4'),
+                                            ('v7', 'v13', '4'),
+                                            ('v7', 'v15', '0'),
+                                            # ('v10', 'v16', '6'),
+                                            # ('v11', 'v16', '6'),
+                                            # ('v12', 'v16', '6'),
+                                            # ('v13', 'v16', '6'),
+                                            # ('v14', 'v10', '6'), ('v14', 'v11', '6'), ('v14', 'v13', '6'), ('v14', 'v15', '6'),
+                                            # ('v15', 'v14', '6'), ('v15', 'v12', '6'), ('v15', 'v13', '6'), ('v15', 'v10', '6'), ('v15', 'v11', '6'),
+                                            ('v10', 'v16', '5'),
+                                            ('v11', 'v16', '5'),
+                                            ('v12', 'v16', '5'),
+                                            ('v13', 'v16', '5'),
+                                            ('v14', 'v10', '5'), ('v14', 'v11', '5'), ('v14', 'v13', '5'),
+                                            ('v14', 'v15', '0'),
+                                            ('v15', 'v14', '0'), ('v15', 'v12', '0'), ('v15', 'v13', '0'),
+                                            ('v15', 'v10', '0'), ('v15', 'v11', '0'),
+                                            ('v9', 'v16', '3'),
+                                            ('v16', 'v16', '0')])  # self-loop edge
 
             # assign each node a player - this is then later used to plot them conveniently
-            MG.nodes[1]['player'] = 'eve'
-            MG.nodes[2]['player'] = 'adam'
-            MG.nodes[3]['player'] = 'adam'
+            MG.nodes['v1']['player'] = 'eve'
+            MG.nodes['v2']['player'] = 'adam'
+            MG.nodes['v3']['player'] = 'eve'
+            MG.nodes['v4']['player'] = 'adam'
+            MG.nodes['v5']['player'] = 'eve'
+            MG.nodes['v6']['player'] = 'adam'
+            MG.nodes['v7']['player'] = 'eve'
+            MG.nodes['v9']['player'] = 'eve'
+            MG.nodes['v10']['player'] = 'eve'
+            MG.nodes['v11']['player'] = 'eve'
+            MG.nodes['v12']['player'] = 'eve'
+            MG.nodes['v13']['player'] = 'eve'
+            MG.nodes['v14']['player'] = 'eve'
+            MG.nodes['v15']['player'] = 'adam'
+            MG.nodes['v16']['player'] = 'eve'
+
+            # add accepting states to the graph
+            MG.nodes['v10']['accepting'] = True
+            MG.nodes['v11']['accepting'] = True
+            MG.nodes['v12']['accepting'] = True
+            MG.nodes['v13']['accepting'] = True
+            MG.nodes['v14']['accepting'] = True
+            MG.nodes['v15']['accepting'] = True
+
+            # add node 1 as the initial node
+            MG.nodes['v1']['init'] = True
+
+            self.graph = MG
 
         else:
             MG.add_nodes_from(['v1', 'v2', 'v3', 'v4', 'v5'])
-            MG.add_weighted_edges_from([('v2', 'v3', '2'),
-                                        ('v3', 'v2', '2'),
-                                        ('v2', 'v1', '3'),
-                                        ('v3', 'v1', '3'),
-                                        ('v1', 'v1', '3'),
-                                        ('v3', 'v4', '2'),
-                                        ('v2', 'v4', '2'),
-                                        ('v4', 'v5', '1'),
-                                        # ('v4', 'v1', '0'),
-                                        # ('v5', 'v4', '6'),
-                                        ('v5', 'v5', '4')
-                                        ])
+            if not reward:
+                # personal test case graph with same no. of nodes (5)
+                MG.add_weighted_edges_from([('v2', 'v3', '2'),
+                                            ('v3', 'v2', '2'),
+                                            ('v2', 'v1', '3'),
+                                            ('v3', 'v1', '3'),
+                                            ('v1', 'v1', '3'),
+                                            ('v3', 'v4', '2'),
+                                            ('v2', 'v4', '2'),
+                                            ('v4', 'v5', '1'),
+                                            # ('v4', 'v1', '0'),
+                                            # ('v5', 'v4', '6'),
+                                            ('v5', 'v5', '0')
+                                            ])
+            # reward based edges
+            else:
+                MG.add_weighted_edges_from([('v2', 'v3', '2'),
+                                            ('v3', 'v2', '2'),
+                                            ('v2', 'v1', '1'),
+                                            ('v3', 'v1', '1'),
+                                            ('v1', 'v1', '0'),
+                                            ('v3', 'v4', '2'),
+                                            ('v2', 'v4', '2'),
+                                            ('v4', 'v5', '3'),
+                                            # ('v4', 'v1', '0'),
+                                            # ('v5', 'v4', '6'),
+                                            ('v5', 'v5', '4')
+                                            ])
+            # original graph
             # MG.add_weighted_edges_from([('v1', 'v2', '1'),
             #                             ('v2', 'v1', '-1'),
             #                             ('v1', 'v3', '1'),
@@ -194,14 +319,17 @@ class Graph(object):
             MG.nodes['v4']['player'] = 'eve'
             MG.nodes['v5']['player'] = 'eve'
 
+
         # NOTE: the data player and the init flag cannot be accessed as graph[node]['init'/ 'player'] you have to
-        #  first access the data as graph.nodes.data() and loop over the list each element in that list is a tuple
+        #  first access the data as graph.nodes.data() and loop over the list; each element in that list is a tuple
         #  (NOT A DICT) of the form (node_name, {key: value})
 
-        # add node 1 as the initial node
-        MG.nodes['v2']['init'] = True
+            # add node 1 as the initial node
+            MG.nodes['v2']['init'] = True
 
-        self.graph = MG
+            # add accepting states to the graph
+            MG.nodes['v5']['accepting'] = True
+            self.graph = MG
 
         return MG
 

@@ -16,14 +16,35 @@ from src.compute_payoff import payoff_value
 # asserts that this code is tested in linux
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
-# flag to use accepting_states_max_edge_weight
+"""
+acc_max_edge_weight : flag for graph with accepting states that have a self loop with max weight(W). In this case except 
+for g_bmax all accepting states that belong to g_{b\b_max} will have an edge from acc_state to vT. So with this flag I 
+manually remove all those edges and instead add a self-loop with edge weight of zero in g_hat.
+"""
 acc_max_edge_weight = False
 # flag to use accepting_states_least_edge_weight
+"""
+acc_min_edge_weight : flag for graph with accepting states that have a self loop with edge weight 0. In this case all 
+the accepting states in all the g_b in g_hat DO NOT transit to vT but they have a self weight of -b 
+(w(e) - b => 0 - b => -b). Thus by default a transition to acc_state does NOT result in zero regret except for when 
+b = 0.0. With this flag we manually modify the edge weight for all the accepting states to be zero.
+"""
 acc_min_edge_weight = False
 # flag to add biasing to choose the final strategy with the accepting state in it
+"""
+choose_acc_state_run : Say we have multiple runs with zero regret, then we manually check if a play contains the 
+acc_state(s). If it does then we return the corresponding strategy. 
+
+"""
 choose_acc_state_run = False
 # print strategy even if there does not exist a non-zero regret on g_hat
+"""
+bypass_implementation : a flag to visualize a strategy even is there does not exist a non-zero regret because according
+to the paper, if there does not exist a non-zero regret then adam does not proceed from v0. This flag forces adam to 
+play v0 to v1.
+"""
 bypass_implementation = True
+
 
 def construct_graph(payoff_func: str, *args, **kwargs) -> Graph:
     """

@@ -4,6 +4,10 @@ import numpy as np
 from sympy import Interval
 import matplotlib.pyplot as plt
 
+from helper_methods import deprecated
+
+
+@deprecated
 class PayoffFunc:
 
     def __init__(self):
@@ -53,8 +57,9 @@ class PayoffFunc:
     def get_no_of_func(self):
         return len(self.list)
 
-def main():
 
+@deprecated
+def main():
     # test payoff functions
 
     partial_play = set((1, 2, 3, 5))

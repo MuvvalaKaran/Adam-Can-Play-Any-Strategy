@@ -8,6 +8,9 @@ from helper_methods import deprecated
 from typing import List, Tuple, AnyStr
 from graphviz import Digraph
 from src.PayoffFunc import PayoffFunc
+from src.transys import transys
+from src.transys import automata
+from src.transys import products
 
 print_edge = False
 # use this boolean to print nodes and edges with their respective weights
@@ -59,8 +62,10 @@ class Strategy(object):
     def setplayer(self, player: List) -> None:
         self.player = player
 
-    # def updatedict(self, key, value):
-    #     self.dict.update({key: value})
+    @deprecated
+    def updatedict(self, key, value):
+        self.dict.update({key: value})
+
 
 class Graph(object):
 
@@ -91,37 +96,70 @@ class Graph(object):
 
         return graph
 
-    def plot_fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+    def plot_fancy_graph(self, color=("lightgrey", "red", "purple"), ap=False, ba=False) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
         """
         dot: Digraph = Digraph(name="graph")
         nodes = self.graph_yaml["vertices"]
-        for n in nodes:
-            # default color for all the nodes is grey
-            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0]})
-            if n[1].get('init'):
-                # default color for init node is red
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
-            if n[1].get('accepting'):
-                # default color for accepting node is purple
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
-            if n[1]['player'] == 'eve':
-                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
-            else:
-                dot.node(str(n[0]), _attributes={"shape": "circle"})
+        if not ap:
+            for n in nodes:
+                # default color for all the nodes is grey
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0]})
+                if n[1].get('init'):
+                    # default color for init node is red
+                    dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
+                if n[1].get('accepting'):
+                    # default color for accepting node is purple
+                    dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
+                if n[1].get('player') == 'eve':
+                    dot.node(str(n[0]), _attributes={"shape": "rectangle"})
+                else:
+                    dot.node(str(n[0]), _attributes={"shape": "circle"})
+        else:
+            for n in nodes:
+                # default color for all the nodes is grey
+                # get the ap associated with a node
+                ap = n[1].get('ap')
+                dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[0]})
+                if n[1].get('init'):
+                    # default color for init node is red
+                    dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[1]})
+                if n[1].get('accepting'):
+                    # default color for accepting node is purple
+                    dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[2]})
+                if n[1].get('player') == 'eve':
+                    dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "rectangle"})
+                else:
+                    dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "circle"})
 
         # add all the edges
         edges = self.graph_yaml["edges"]
 
-        # load the weights to illustrate on the graph
-        for counter, edge in enumerate(edges):
-            if edge[2].get('strategy') is True:
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']), _attributes={'color': 'red'})
-            else:
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']))
+        if not ap:
+            # load the weights to illustrate on the graph
+            for counter, edge in enumerate(edges):
+                # NOTE : We can implement interface for plot fancy grpah and inherit it in different classes and add
+                #  different functionality for different graphs
+                if ba:
+                    label = str(edge[2].get('letter'))
+                else:
+                    label = str(edge[2].get('weight'))
 
+                if edge[2].get('strategy') is True:
+                    dot.edge(str(edge[0]), str(edge[1]), label=label, _attributes={'color': 'red'})
+                else:
+                    dot.edge(str(edge[0]), str(edge[1]), label=label)
+        else:
+            for counter, edge in enumerate(edges):
+                ap_u = self.graph.nodes[edge[0]].get('ap')
+                ap_v = self.graph.nodes[edge[1]].get('ap')
+                if edge[2].get('strategy') is True:
+                    dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('weight')),
+                             _attributes={'color': 'red'})
+                else:
+                    dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('weight')))
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
         dot.node_attr['fixedsize'] = 'False'
@@ -750,48 +788,154 @@ class Graph(object):
         print(f"val for payoff LimSup is {val_limsup} for the given play: \n {rn_play.path}")
         print(f"val for payoff LimInf is {val_liminf} for the given play: \n {rn_play.path}")
 
+
+    def construct_transition_system(self):
+        ts = transys.FiniteTransitionSystem()
+        ts.__setattr__('name', 'tran_sys')
+        ts.atomic_propositions |= {'a', 'b', 'c', ''}
+        ts.states.add_from([('(s1,0)', {'ap': {'b'}, 'player': 'eve'}),
+                            ('(s2,0)', {'ap': {'a'}, 'player': 'eve'}),
+                            ('(s3,0)', {'ap': {'c'}, 'player': 'eve'}),
+                            ('(s1,1)', {'ap': {'b'}, 'player': 'eve'}),
+                            ('(s2,1)', {'ap': {'a'}, 'player': 'eve'}),
+                            ('(s3,1)', {'ap': {'c'}, 'player': 'eve'}),
+                            ('(h12,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
+                            ('(h21,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
+                            ('(h23,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
+                            ('(h33,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
+                            ], check=False)
+
+        ts.sys_actions |= ['s12', 's21', 's23', 's33']
+        ts.env_actions |= ['m', 's12', 's21', 's23', 's33']
+        ts.transitions.add('(s1,0)', '(h12,0)', sys_actions='s12')
+        ts.transitions.add('(h12,0)', '(s2,0)', sys_actions='s12')
+        ts.transitions.add('(s2,0)', '(h23,0)', sys_actions='s23')
+        ts.transitions.add('(h23,0)', '(s3,0)', sys_actions='s23')
+        ts.transitions.add('(s2,0)', '(h21,0)', sys_actions='s21')
+        ts.transitions.add('(h21,0)', '(s1,0)', sys_actions='s21')
+        ts.transitions.add('(s3,0)', '(h33,0)', sys_actions='s33')
+        ts.transitions.add('(h33,0)', '(s3,0)', sys_actions='s33')
+        ts.transitions.add('(s1,1)', '(s2,1)', sys_actions='s12')
+        ts.transitions.add('(s2,1)', '(s1,1)', sys_actions='s21')
+        ts.transitions.add('(s2,1)', '(s3,1)', sys_actions='s23')
+        ts.transitions.add('(s3,1)', '(s3,1)', sys_actions='s33')
+        ts.transitions.add('(h12,0)', '(s1,1)', env_actions='m')
+        ts.transitions.add('(h12,0)', '(s3,1)', env_actions='m')
+        ts.transitions.add('(h23,0)', '(s1,1)', env_actions='m')
+        ts.transitions.add('(h23,0)', '(s2,1)', env_actions='m')
+        ts.transitions.add('(h21,0)', '(s1,1)', env_actions='m')
+        ts.transitions.add('(h21,0)', '(s2,1)', env_actions='m')
+        ts.transitions.add('(h33,0)', '(s1,1)', env_actions='m')
+        ts.transitions.add('(h33,0)', '(s2,1)', env_actions='m')
+
+        # add initial state
+        ts.states.initial.add('(s2,0)')
+
+        self.trans_sys = ts
+
+        return ts
+
+    def construct_dfa(self):
+        b = automata.BuchiAutomaton(deterministic=True, atomic_proposition_based=True)
+        # b.alphabet
+        b.__setattr__('name', 'dfa_graph')
+        b.atomic_propositions.add_from(['a', 'b', 'c'])
+        b.add_nodes_from(['q0', 'q1', 'q2', 'q3'])
+        b.states.initial.add('q2')
+        b.states.accepting.add('q0')
+        # test = PowerSet(MathSet(['!a', 'c', '!b', '!c', 'b', 'T', 'a']))
+        # test.__contains__('')
+        b.add_edge('q2', 'q2', letter={'a'})
+        b.add_edge('q2', 'q0', letter={'c'})
+        b.add_edge('q2', 'q1', letter={'a'})
+        b.add_edge('q2', 'q3', letter={'b'})
+        b.add_edge('q3', 'q3', letter={'a'})
+        b.add_edge('q3', 'q3', letter={'b'})
+        b.add_edge('q3', 'q3', letter={'c'})
+        b.add_edge('q1', 'q0', letter={'c'})
+        b.add_edge('q1', 'q1', letter={'b'})
+        b.add_edge('q1', 'q1', letter={'a'})
+        b.add_edge('q0', 'q0', letter={'a'})
+        b.add_edge('q0', 'q0', letter={'b'})
+        b.add_edge('q0', 'q0', letter={'c'})
+
+        # manually add accepting attribute to the accepting state for ease of visualization
+        b.nodes['q0']['accepting'] = True
+
+        self.dfa = b
+
+        return b
+
+    def construct_product_automaton(self):
+        prod_auto = products.ts_ba_sync_prod(self.trans_sys, self.dfa)
+
+        print(prod_auto[0])
+        print(prod_auto[1])
+
+        return prod_auto
+
+
+
+
 def main() -> None:
     # a main routine to create a the graph and implement the strategy synthesis
     graph_obj: Graph = Graph(True)
 
-    # create a multigraph
-    org_graph = graph_obj.create_multigrpah()
-    graph_obj.graph = org_graph
+    # # create a multigraph
+    # org_graph = graph_obj.create_multigrpah()
+    # graph_obj.graph = org_graph
+    #
+    # if print_edge:
+    #     graph_obj.print_edges()
+    #
+    # # file to store the yaml for plotting it in graphviz
+    # graph_obj.file_name = 'config/org_graph'
+    #
+    # # dump the graph to yaml
+    # graph_obj.dump_to_yaml()
+    #
+    # # read the yaml file
+    # graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
+    # graph_obj.plot_fancy_graph()
+    #
+    # # test Gmin construction
+    # # construct Gmin
+    # Gmin = graph_obj.construct_Gmin(org_graph)
+    # graph_obj.graph = Gmin
+    #
+    # graph_obj.file_name = 'config/Gmin_graph'
+    # # dump to yaml file and plot it
+    # graph_obj.dump_to_yaml()
+    # graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
+    # graph_obj.plot_fancy_graph()
+    #
+    # # test Gmax construction
+    # # construct Gmin
+    # Gmax = graph_obj.construct_Gmax(org_graph)
+    # graph_obj.graph = Gmax
+    #
+    # graph_obj.file_name = 'config/Gmax_graph'
+    # # dump to yaml file and plot it
+    # graph_obj.dump_to_yaml()
+    # graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
+    # graph_obj.plot_fancy_graph()
 
-    if print_edge:
-        graph_obj.print_edges()
+    # test transition system construction
+    ts_graph: transys.FiniteTransitionSystem = graph_obj.construct_transition_system()
+    # graph_obj.graph = ts_graph
+    # graph_obj.file_name = 'config/tran_sys'
+    # graph_obj.dump_to_yaml()
+    # graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
+    # graph_obj.plot_fancy_graph(ap=True)
 
-    # file to store the yaml for plotting it in graphviz
-    graph_obj.file_name = 'config/org_graph'
+    dfa_graph: automata.FiniteStateAutomaton = graph_obj.construct_dfa()
+    # graph_obj.graph = dfa_graph
+    # graph_obj.file_name = 'config/dfa_graph'
+    # graph_obj.dump_to_yaml()
+    # graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
+    # graph_obj.plot_fancy_graph(ap=False, ba=True)
 
-    # dump the graph to yaml
-    graph_obj.dump_to_yaml()
-
-    # read the yaml file
-    graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
-    graph_obj.plot_fancy_graph()
-
-    # test Gmin construction
-    # construct Gmin
-    Gmin = graph_obj.construct_Gmin(org_graph)
-    graph_obj.graph = Gmin
-
-    graph_obj.file_name = 'config/Gmin_graph'
-    # dump to yaml file and plot it
-    graph_obj.dump_to_yaml()
-    graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
-    graph_obj.plot_fancy_graph()
-
-    # test Gmax construction
-    # construct Gmin
-    Gmax = graph_obj.construct_Gmax(org_graph)
-    graph_obj.graph = Gmax
-
-    graph_obj.file_name = 'config/Gmax_graph'
-    # dump to yaml file and plot it
-    graph_obj.dump_to_yaml()
-    graph_obj.graph_yaml = graph_obj.read_yaml_file(graph_obj.file_name)
-    graph_obj.plot_fancy_graph()
+    graph_obj.construct_product_automaton()
 
 if __name__ == "__main__":
     main()

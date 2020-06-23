@@ -1,0 +1,137 @@
+graph:
+  edges:
+  - !!python/tuple
+    - (s1,0)
+    - (h12,0)
+    - sys_actions: s12
+  - !!python/tuple
+    - (s2,0)
+    - (h23,0)
+    - sys_actions: s23
+  - !!python/tuple
+    - (s2,0)
+    - (h21,0)
+    - sys_actions: s21
+  - !!python/tuple
+    - (s3,0)
+    - (h33,0)
+    - sys_actions: s33
+  - !!python/tuple
+    - (s1,1)
+    - (s2,1)
+    - sys_actions: s12
+  - !!python/tuple
+    - (s2,1)
+    - (s1,1)
+    - sys_actions: s21
+  - !!python/tuple
+    - (s2,1)
+    - (s3,1)
+    - sys_actions: s23
+  - !!python/tuple
+    - (s3,1)
+    - (s3,1)
+    - sys_actions: s33
+  - !!python/tuple
+    - (h12,0)
+    - (s2,0)
+    - sys_actions: s12
+  - !!python/tuple
+    - (h12,0)
+    - (s1,1)
+    - env_actions: m
+  - !!python/tuple
+    - (h12,0)
+    - (s3,1)
+    - env_actions: m
+  - !!python/tuple
+    - (h21,0)
+    - (s1,0)
+    - sys_actions: s21
+  - !!python/tuple
+    - (h21,0)
+    - (s1,1)
+    - env_actions: m
+  - !!python/tuple
+    - (h21,0)
+    - (s2,1)
+    - env_actions: m
+  - !!python/tuple
+    - (h23,0)
+    - (s3,0)
+    - sys_actions: s23
+  - !!python/tuple
+    - (h23,0)
+    - (s1,1)
+    - env_actions: m
+  - !!python/tuple
+    - (h23,0)
+    - (s2,1)
+    - env_actions: m
+  - !!python/tuple
+    - (h33,0)
+    - (s3,0)
+    - sys_actions: s33
+  - !!python/tuple
+    - (h33,0)
+    - (s1,1)
+    - env_actions: m
+  - !!python/tuple
+    - (h33,0)
+    - (s2,1)
+    - env_actions: m
+  vertices:
+  - !!python/tuple
+    - (s1,0)
+    - ap: !!set
+        b: null
+      player: eve
+  - !!python/tuple
+    - (s2,0)
+    - ap: !!set
+        a: null
+      player: eve
+  - !!python/tuple
+    - (s3,0)
+    - ap: !!set
+        c: null
+      player: eve
+  - !!python/tuple
+    - (s1,1)
+    - ap: !!set
+        b: null
+      player: eve
+  - !!python/tuple
+    - (s2,1)
+    - ap: !!set
+        a: null
+      player: eve
+  - !!python/tuple
+    - (s3,1)
+    - ap: !!set
+        c: null
+      player: eve
+  - !!python/tuple
+    - (h12,0)
+    - ap: !!set
+        ? ''
+        : null
+      player: adam
+  - !!python/tuple
+    - (h21,0)
+    - ap: !!set
+        ? ''
+        : null
+      player: adam
+  - !!python/tuple
+    - (h23,0)
+    - ap: !!set
+        ? ''
+        : null
+      player: adam
+  - !!python/tuple
+    - (h33,0)
+    - ap: !!set
+        ? ''
+        : null
+      player: adam

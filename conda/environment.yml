@@ -5,56 +5,57 @@ channels:
 dependencies:
   - _libgcc_mutex=0.1=main
   - attrs=19.3.0=py_0
-  - ca-certificates=2019.11.28=hecc5488_0
+  - ca-certificates=2020.1.1=0
   - cairo=1.16.0=hcf35c78_1003
-  - certifi=2019.11.28=py36h9f0ad1d_1
-  - expat=2.2.9=he1b5a44_2
+  - certifi=2020.4.5.2=py36_0
+  - expat=2.2.6=he6710b0_0
   - fontconfig=2.13.1=h86ecdb6_1001
-  - freetype=2.10.1=he06d7ca_0
+  - freetype=2.10.2=h5ab3b9f_0
   - fribidi=1.0.9=h516909a_0
-  - gettext=0.19.8.1=hc5be6a0_1002
-  - glib=2.58.3=py36hd3ed26a_1003
-  - graphite2=1.3.13=he1b5a44_1001
+  - gettext=0.19.8.1=h9b4dc7a_1
+  - glib=2.63.1=h3eb4bd4_1
+  - graphite2=1.3.13=h23475e2_0
   - graphviz=2.42.3=h0511662_0
   - harfbuzz=2.4.0=h9f30f68_3
   - icu=64.2=he1b5a44_1
-  - importlib_metadata=1.5.0=py36_0
+  - importlib-metadata=1.6.1=py36_0
+  - importlib_metadata=1.6.1=0
   - jpeg=9c=h14c3975_1001
   - ld_impl_linux-64=2.33.1=h53a641e_7
-  - libedit=3.1.20181209=hc058e9b_0
-  - libffi=3.2.1=hd88cf55_4
+  - libedit=3.1.20191231=h7b6447c_0
+  - libffi=3.3=he6710b0_1
   - libgcc-ng=9.1.0=hdf63c60_0
-  - libiconv=1.15=h516909a_1006
-  - libpng=1.6.37=hed695b0_1
+  - libiconv=1.15=h63c8f33_5
+  - libpng=1.6.37=hbc83047_0
   - libstdcxx-ng=9.1.0=hdf63c60_0
-  - libtiff=4.1.0=hc7e4089_6
-  - libtool=2.4.6=h14c3975_1002
+  - libtiff=4.1.0=h2733197_1
+  - libtool=2.4.6=h7b6447c_5
   - libuuid=2.32.1=h14c3975_1000
   - libwebp-base=1.1.0=h516909a_3
-  - libxcb=1.13=h14c3975_1002
-  - libxml2=2.9.10=hee79883_0
-  - lz4-c=1.8.3=he1b5a44_1001
-  - more-itertools=8.2.0=py_0
-  - ncurses=6.2=he6710b0_0
-  - openssl=1.1.1e=h516909a_0
-  - packaging=20.3=py_0
+  - libxcb=1.13=h1bed415_1
+  - libxml2=2.9.9=hea5a465_1
+  - lz4-c=1.9.2=he6710b0_0
+  - more-itertools=8.4.0=py_0
+  - ncurses=6.2=he6710b0_1
+  - openssl=1.1.1g=h7b6447c_0
+  - packaging=20.4=py_0
   - pango=1.42.4=h7062337_3
-  - pcre=8.44=he1b5a44_0
-  - pip=20.0.2=py36_1
-  - pixman=0.38.0=h516909a_1003
+  - pcre=8.43=he6710b0_0
+  - pip=20.1.1=py36_1
+  - pixman=0.38.0=h7b6447c_0
   - pluggy=0.13.1=py36_0
-  - pthread-stubs=0.4=h14c3975_1001
-  - py=1.8.1=py_0
-  - pyparsing=2.4.6=py_0
-  - pytest=5.4.1=py36_0
-  - python=3.6.10=h191fe78_1
+  - pthread-stubs=0.3=h0ce48e5_1
+  - py=1.8.2=py_0
+  - pyparsing=2.4.7=py_0
+  - pytest=5.4.3=py36_0
+  - python=3.6.10=h7579374_2
   - python_abi=3.6=1_cp36m
-  - readline=7.0=h7b6447c_5
-  - setuptools=46.1.1=py36_0
-  - six=1.14.0=py36_0
-  - sqlite=3.31.1=h7b6447c_0
-  - tk=8.6.8=hbc83047_0
-  - wcwidth=0.1.8=py_0
+  - readline=8.0=h7b6447c_0
+  - setuptools=47.3.0=py36_0
+  - six=1.15.0=py_0
+  - sqlite=3.32.2=h62c20be_0
+  - tk=8.6.10=hbc83047_0
+  - wcwidth=0.2.4=py_0
   - wheel=0.34.2=py36_0
   - xorg-kbproto=1.0.7=h14c3975_1002
   - xorg-libice=1.0.10=h516909a_0
@@ -69,10 +70,10 @@ dependencies:
   - xorg-renderproto=0.11.1=h14c3975_1002
   - xorg-xextproto=7.3.0=h14c3975_1002
   - xorg-xproto=7.0.31=h14c3975_1007
-  - xz=5.2.4=h14c3975_4
-  - zipp=2.2.0=py_0
+  - xz=5.2.5=h7b6447c_0
+  - zipp=3.1.0=py_0
   - zlib=1.2.11=h7b6447c_3
-  - zstd=1.4.4=h3b9ef0a_2
+  - zstd=1.4.4=h0b5b093_3
   - pip:
     - cycler==0.10.0
     - decorator==4.4.2
@@ -91,5 +92,5 @@ dependencies:
     - pyyaml==5.3.1
     - scipy==1.4.1
     - sympy==1.5.1
-prefix: /home/karan/anaconda3/envs/adam_can_play_any_strategy
+prefix: /home/karan-m/anaconda3/envs/adam_can_play_any_strategy
 

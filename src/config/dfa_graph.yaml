@@ -1,0 +1,52 @@
+graph:
+  edges:
+  - !!python/tuple
+    - q0
+    - q0
+    - letter: !!set
+        T: null
+  - !!python/tuple
+    - q1
+    - q0
+    - letter: !!set
+        c: null
+  - !!python/tuple
+    - q1
+    - q1
+    - letter: !!set
+        '!c': null
+  - !!python/tuple
+    - q2
+    - q0
+    - letter: !!set
+        '!b': null
+        c: null
+  - !!python/tuple
+    - q2
+    - q1
+    - letter: !!set
+        '!b': null
+        '!c': null
+  - !!python/tuple
+    - q2
+    - q3
+    - letter: !!set
+        b: null
+  - !!python/tuple
+    - q3
+    - q3
+    - letter: !!set
+        T: null
+  vertices:
+  - !!python/tuple
+    - q0
+    - accepting: true
+  - !!python/tuple
+    - q1
+    - {}
+  - !!python/tuple
+    - q2
+    - {}
+  - !!python/tuple
+    - q3
+    - {}

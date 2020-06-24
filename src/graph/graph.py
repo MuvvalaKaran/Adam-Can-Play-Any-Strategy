@@ -4,15 +4,16 @@ import yaml
 import os
 import warnings
 
+
 from graphviz import Digraph
 from typing import List, Tuple, AnyStr
 from helper_methods import deprecated
 
 
-class Graph(abc):
-    def __init__(self, filename, config_yaml, graph, save_flag: bool=False):
-        self._filename: str = filename
-        self._graph_yaml: str = None
+class Graph(abc.ABC):
+    def __init__(self, config_yaml, graph, save_flag: bool=False):
+        # self._filename: str = filename
+        self._graph_yaml = None
         self._config_yaml: str = config_yaml
         self._save_flag: bool = save_flag
         self._graph: nx.MultiDiGraph = graph
@@ -22,7 +23,7 @@ class Graph(abc):
         pass
 
     @abc.abstractmethod
-    def plot_graph(self):
+    def fancy_graph(self):
         pass
 
     @staticmethod
@@ -32,7 +33,8 @@ class Graph(abc):
         NOTE : Verify what this function exactly returns
         :return: A path to the script we are running
         """
-        return os.path.dirname(os.path.realpath(__file__))
+        # return os.path.dirname(os.path.realpath(__file__))
+        return "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/src/"
     
     def read_yaml_file(self) -> None:
         """
@@ -42,15 +44,16 @@ class Graph(abc):
         """
         if self._config_yaml is not None:
             file_name: str = self._config_yaml + ".yaml"
+            file_add = Graph._get_current_working_directory() + file_name
             try:
-                with open(file_name, 'r') as stream:
+                with open(file_add, 'r') as stream:
                     graph_data = yaml.load(stream, Loader=yaml.Loader)
             
             except FileNotFoundError as error:
                 print(error)
                 print(f"The file {file_name} does not exist")
             
-            self._graph_yaml = graph_data
+            self._graph_yaml = graph_data['graph']
 
     def save_dot_graph(self, dot_object: Digraph, graph_name: str, view: bool = False) -> None:
         """
@@ -86,13 +89,26 @@ class Graph(abc):
             )
         )
 
-        config_file_name: str = str(self._file_name + '.yaml')
+        config_file_name: str = str(self._config_yaml + '.yaml')
+        config_file_add = Graph._get_current_working_directory() + config_file_name
         try:
-            with open(config_file_name, 'w') as outfile:
+            with open(config_file_add, 'w') as outfile:
                 yaml.dump(data, outfile, default_flow_style=False)
         except FileNotFoundError:
             print(FileNotFoundError)
             print(f"The file {config_file_name} could not be found")
+
+    def plot_graph(self):
+        """
+        A helper method to dump the graph data to a yaml file, read the yaml file and plotting the graph itself
+        :return: None
+        """
+        # dump to yaml file
+        self.dump_to_yaml()
+        # read the yaml file
+        self.read_yaml_file()
+        # plot it
+        self.fancy_graph()
 
     def add_state(self, state_name: nx.nodes, **kwargs) -> None:
         """
@@ -136,11 +152,27 @@ class Graph(abc):
         TODO : Verify the output
         (v1, {'player', 'eve'})
         """
-        if isinstance(attribute_key, str):
+        if not isinstance(attribute_key, str):
             warnings.warn(f"The attribute key {attribute_key} is not of type string. I don't know how Networkx handles "
                           f"a non-string type dictionary key")
 
         self._graph.nodes[state][attribute_key] = attribute_value
+
+    def add_state_attributes_from(self, states: List, attribute_key: str, attribute_value) -> None:
+        """
+        A helper function to add all the states with the same attribute_key and value pair
+        :param states: A container of valid states of the graph @self._graph
+        :param attribute_key: The name of attribute to be added
+        :param attribute_value: The value associated with the attribute
+
+        Sample:
+        >>> G = Graph
+        >>> G.add_state('v1')
+        >>> G.add_state_attribute(['v1', 'v3', 'v4'], 'player', 'eve')
+        """
+
+        for _s in states:
+            self.add_state_attribute(_s, attribute_key=attribute_key, attribute_value=attribute_value)
 
     def get_states(self) -> List:
         """
@@ -378,14 +410,56 @@ class Graph(abc):
 
 
 class TwoPlayerGraph(Graph):
-    def __init__(self, filename, config_yaml, graph, save_flag: bool = False):
-        super().__init__(filename= filename, config_yaml= config_yaml, graph=graph, save_flag=save_flag)
-
+    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
+        # initialize the Graph class instance variables
+        self._config_yaml = config_yaml
+        self._save_flag = save_flag
+        self._graph_name = graph_name
+        
     def construct_graph(self):
-        pass
+        two_player_graph: nx.MultiDiGraph = nx.MultiDiGraph(name=self._graph_name)
+        # add this graph object of type of Networkx to our Graph class 
+        self._graph = two_player_graph
 
-    def plot_graph(self):
-        pass
+    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+        """
+        Method to create a illustration of the graph
+        :return: Diagram of the graph
+        """
+        dot: Digraph = Digraph(name="graph")
+        nodes = self._graph_yaml["vertices"]
+        for n in nodes:
+            # default color for all the nodes is grey
+            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0]})
+            if n[1].get('init'):
+                # default color for init node is red
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
+            if n[1].get('accepting'):
+                # default color for accepting node is purple
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
+            if n[1]['player'] == 'eve':
+                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
+            else:
+                dot.node(str(n[0]), _attributes={"shape": "circle"})
+        
+        # add all the edges
+        edges = self._graph_yaml["edges"]
+
+        # load the weights to illustrate on the graph
+        for counter, edge in enumerate(edges):
+            if edge[2].get('strategy') is True:
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']), _attributes={'color': 'red'})
+            else:
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']))
+
+        # set graph attributes
+        # dot.graph_attr['rankdir'] = 'LR'
+        dot.node_attr['fixedsize'] = 'False'
+        dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
+
+        if self._save_flag:
+            graph_name = str(self._graph.__getattribute__('name'))
+            self.save_dot_graph(dot, graph_name, True)
 
 
 class GminGraph(TwoPlayerGraph):
@@ -402,10 +476,30 @@ class FiniteTransSys(TwoPlayerGraph):
 class DFAGraph(Graph):
 
     def __init__(self, filename, config_yaml, graph, save_flag: bool = False):
-        super().__init__(filename, config_yaml, graph, save_flag)
+        # super().__init__(config_yaml, graph, save_flag)
+        pass
 
     def construct_graph(self):
         pass
 
     def plot_graph(self):
         pass
+
+
+if __name__ == "__main__":
+    two_player_graph = TwoPlayerGraph('sample_graph', 'config/graph', save_flag=True)
+    two_player_graph.construct_graph()
+
+    two_player_graph.add_states_from(['v1', 'v2', 'v3'])
+    two_player_graph.add_weighted_edges_from([('v1', 'v2', '1'),
+                                              ('v2', 'v1', '2'),
+                                              ('v1', 'v3', '1'),
+                                              ('v3', 'v3', '0.5')])
+
+    two_player_graph.add_state_attribute('v1', 'player', 'eve')
+    two_player_graph.add_state_attribute('v2', 'player', 'adam')
+    two_player_graph.add_state_attribute('v3', 'player', 'adam')
+
+    two_player_graph.add_state_attributes_from(['v1', 'v2', 'v3'], 'accepting', True)
+    two_player_graph.plot_graph()
+

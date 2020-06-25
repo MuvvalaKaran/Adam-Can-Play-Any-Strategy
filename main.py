@@ -634,15 +634,6 @@ def _play_loop(graph: nx.MultiDiGraph, play: List[Tuple], payoff_func: str) -> s
     :return: The value of the loop when following the strategy @strategy
     """
     # # add nodes to this stack and as soon as a loop is found we break
-    # play = [get_init_node(graph)[0][0]]
-    #
-    # # for node in graph.nodes():
-    # while 1:
-    #     play.append(strategy[play[-1]])
-    #
-    #     if play.count(play[-1]) == 2:
-    #         # play_str = ''.join([str(ele) for ele in play])
-
     # create a tmp graph with the current node with their respective edges, compute the val and return it
     str_graph = nx.MultiDiGraph(name="str_graph")
     str_graph.add_nodes_from(play)

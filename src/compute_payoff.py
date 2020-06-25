@@ -285,7 +285,6 @@ class payoff_value():
         # open the file and overwrite the context
         f = open("config/sample.mpg", "w")
 
-
         for inode, node in enumerate(self.graph.nodes()):
             self.graph.nodes[node]['map'] = inode
 

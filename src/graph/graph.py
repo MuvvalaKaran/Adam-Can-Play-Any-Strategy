@@ -3,6 +3,7 @@ import networkx as nx
 import yaml
 import os
 import warnings
+import random
 
 
 from graphviz import Digraph
@@ -398,6 +399,12 @@ class Graph(abc.ABC):
 
         return _accp_state
 
+    def print_edges(self):
+        print(self.get_transitions())
+
+    def print_nodes(self):
+        print(self.get_states())
+
     def __str__(self):
         g = ('Graph : ' + self._graph.__getattribute__("name") + '\n' +
              'Players : ' + self.player + '\n' +
@@ -410,6 +417,7 @@ class Graph(abc.ABC):
 
 
 class TwoPlayerGraph(Graph):
+
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
         # initialize the Graph class instance variables
         self._config_yaml = config_yaml
@@ -461,12 +469,35 @@ class TwoPlayerGraph(Graph):
             graph_name = str(self._graph.__getattribute__('name'))
             self.save_dot_graph(dot, graph_name, True)
 
+    def print_edges(self):
+        print(f"Printing {self._graph_name} edges \n")
+        super().print_edges()
+
+    def print_nodes(self):
+        print(f"Printing {self._graph_name} nodes \n")
+        super().print_edges()
+
 
 class GminGraph(TwoPlayerGraph):
-    pass
+
+    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
+        self._graph_name = graph_name
+        self._config_yaml = config_yaml
+        self._save_flag = save_flag
+
+    def construct_graph(self):
+        super().construct_graph()
+
 
 class GmaxGraph(TwoPlayerGraph):
-    pass
+
+    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
+        self._graph_name = graph_name
+        self._config_yaml = config_yaml
+        self._save_flag = save_flag
+
+    def construct_graph(self):
+        super().construct_graph()
 
 
 class FiniteTransSys(TwoPlayerGraph):
@@ -475,31 +506,310 @@ class FiniteTransSys(TwoPlayerGraph):
 
 class DFAGraph(Graph):
 
-    def __init__(self, filename, config_yaml, graph, save_flag: bool = False):
-        # super().__init__(config_yaml, graph, save_flag)
-        pass
+    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
+        # initialize the Graph class instance variables
+        self._config_yaml = config_yaml
+        self._save_flag = save_flag
+        self._graph_name = graph_name
 
     def construct_graph(self):
+        two_player_graph: nx.MultiDiGraph = nx.MultiDiGraph(name=self._graph_name)
+        # add this graph object of type of Networkx to our Graph class
+        self._graph = two_player_graph
+
+    def plot_graph(self, color=("lightgrey", "red", "purple")) -> None:
+        dot: Digraph = Digraph(name="graph")
+        nodes = self._graph_yaml["vertices"]
+
+        for n in nodes:
+            # default color for all the nodes is grey
+            # get the ap associated with a node
+            ap = n[1].get('ap')
+            dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "circle", "style": "filled", "fillcolor": color[0]})
+            if n[1].get('init'):
+                # default color for init node is red
+                dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[1]})
+            if n[1].get('accepting'):
+                # default color for accepting node is purple
+                dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "doublecircle", "style": "filled", "fillcolor": color[2]})
+        
+        # add all the edges
+        edges = self._graph_yaml["edges"]
+        
+        for counter, edge in enumerate(edges):
+            ap_u = self._graph.nodes[edge[0]].get('ap')
+            ap_v = self._graph.nodes[edge[1]].get('ap')
+            if edge[2].get('strategy') is True:
+                dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('weight')),
+                         _attributes={'color': 'red'})
+            else:
+                dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('weight')))
+
+        # set graph attributes
+        # dot.graph_attr['rankdir'] = 'LR'
+        dot.node_attr['fixedsize'] = 'False'
+        dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
+
+        if self._save_flag:
+            graph_name = str(self._graph.__getattribute__('name'))
+            self.save_dot_graph(dot, graph_name, True)
+
+
+class GraphFactory:
+
+    @staticmethod
+    def get_two_player_game() -> TwoPlayerGraph:
+        # GraphFactory._const
         pass
 
-    def plot_graph(self):
+    @staticmethod
+    def get_gmin_graph() -> GminGraph:
         pass
+
+    @staticmethod
+    def get_gmax_graph() -> GmaxGraph:
+        pass
+
+    @staticmethod
+    def get_Finited_trans_sys_graph() -> FiniteTransSys:
+        pass
+
+    @staticmethod
+    def get_DFA_graph() -> DFAGraph:
+        pass
+
+    @staticmethod
+    def _construct_two_player_graph():
+        two_player_graph = TwoPlayerGraph('org_graph', 'config/org_graph', save_flag=True)
+        two_player_graph.construct_graph()
+
+        two_player_graph.add_states_from(['v1', 'v2', 'v3', 'v4', 'v5',
+                                          'v6', 'v7', 'v8', 'v9', 'v10',
+                                          'v11', 'v12', 'v13', 'v14', 'v15',
+                                          'v16', 'v17', 'v18', 'v19', 'v20',
+                                          'v21', 'v22', 'v23', 'v24', 'v25',
+                                          'v26', 'v27', 'v28', 'v29', 'v30',
+                                          'v31', 'v32', 'v33', 'v34', 'v35',
+                                          'v36', 'v37', 'v38', 'v39', 'v40'])
+
+        s12: str = str(random.randint(1, 9))
+        s21: str = str(random.randint(1, 9))
+        s23: str = str(random.randint(1, 9))
+        s33: str = str(1)
+        print(f"Values of s12 : {s12}, s21: {s21}, s23: {s23}, s33: {s33}")
+        two_player_graph.add_weighted_edges_from([('v1', 'v32', s12),  # region q_2
+                                            ('v2', 'v3', s12), ('v2', 'v8', '0'), ('v2', 'v10', '0'),
+                                            ('v3', 'v14', s21), ('v3', 'v16', s23),
+                                            ('v4', 'v1', s21), ('v4', 'v9', '0'), ('v4', 'v10', '0'),
+                                            ('v5', 'v27', s33),
+                                            ('v6', 'v5', s23), ('v6', 'v8', '0'), ('v6', 'v9', '0'),
+                                            ('v7', 'v5', s33), ('v7', 'v8', '0'), ('v7', 'v9', '0'),
+                                            ('v8', 'v39', s12),
+                                            ('v9', 'v8', s21), ('v9', 'v20', s23),
+                                            ('v10', 'v30', s33),
+                                            ('v11', 'v12', s12),  # region q_1 starts
+                                            ('v12', 'v13', s12), ('v12', 'v18', '0'), ('v12', 'v20', '0'),
+                                            ('v13', 'v16', s23), ('v13', 'v14', s21),
+                                            ('v14', 'v11', s12), ('v14', 'v19', '0'), ('v14', 'v20', '0'),
+                                            ('v15', 'v27', s33),
+                                            ('v16', 'v15', s23), ('v16', 'v18', '0'), ('v16', 'v19', '0'),
+                                            ('v17', 'v15', s33), ('v17', 'v18', '0'), ('v17', 'v19', '0'),
+                                            ('v18', 'v19', s12),
+                                            ('v19', 'v18', s21), ('v19', 'v20', s23),
+                                            ('v20', 'v30', s33),
+                                            ('v21', 'v22', s12),  # region q_0 starts
+                                            ('v22', 'v23', s12), ('v22', 'v28', '0'), ('v22', 'v30', '0'),
+                                            ('v23', 'v26', s23), ('v23', 'v24', s21),
+                                            ('v24', 'v21', s21), ('v24', 'v29', '0'), ('v24', 'v30', '0'),
+                                            ('v25', 'v27', s33),
+                                            ('v26', 'v25', s23), ('v26', 'v28', '0'), ('v26', 'v29', '0'),
+                                            ('v27', 'v25', s33), ('v27', 'v28', '0'), ('v27', 'v29', '0'),
+                                            ('v28', 'v29', s12),
+                                            ('v29', 'v28', s21), ('v29', 'v30', s23),
+                                            ('v30', 'v30', s33),
+                                            ('v31', 'v32', s12),  # region q_4 starts
+                                            ('v32', 'v33', s12), ('v32', 'v38', '0'), ('v32', 'v40', '0'),
+                                            ('v33', 'v36', s23), ('v33', 'v34', s21),
+                                            ('v34', 'v31', s21), ('v34', 'v39', '0'), ('v34', 'v40', '0'),
+                                            ('v35', 'v37', s33),
+                                            ('v36', 'v35', s23), ('v36', 'v38', '0'), ('v36', 'v39', '0'),
+                                            ('v37', 'v35', s33), ('v37', 'v38', '0'), ('v37', 'v39', '0'),
+                                            ('v38', 'v39', s12),
+                                            ('v39', 'v38', s21), ('v39', 'v40', s23),
+                                            ('v40', 'v40', s33)])
+
+        two_player_graph.add_state_attribute('v1', 'player', 'eve')
+        two_player_graph.add_state_attribute('v2', 'player', 'adam')
+        two_player_graph.add_state_attribute('v3', 'player', 'eve')
+        two_player_graph.add_state_attribute('v4', 'player', 'adam')
+        two_player_graph.add_state_attribute('v5', 'player', 'eve')
+        two_player_graph.add_state_attribute('v6', 'player', 'adam')
+        two_player_graph.add_state_attribute('v7', 'player', 'adam')
+        two_player_graph.add_state_attribute('v8', 'player', 'eve')
+        two_player_graph.add_state_attribute('v9', 'player', 'eve')
+        two_player_graph.add_state_attribute('v10', 'player', 'eve')
+        two_player_graph.add_state_attribute('v11', 'player', 'eve')
+        two_player_graph.add_state_attribute('v12', 'player', 'adam')
+        two_player_graph.add_state_attribute('v13', 'player', 'eve')
+        two_player_graph.add_state_attribute('v14', 'player', 'adam')
+        two_player_graph.add_state_attribute('v15', 'player', 'eve')
+        two_player_graph.add_state_attribute('v16', 'player', 'adam')
+        two_player_graph.add_state_attribute('v17', 'player', 'adam')
+        two_player_graph.add_state_attribute('v18', 'player', 'eve')
+        two_player_graph.add_state_attribute('v19', 'player', 'eve')
+        two_player_graph.add_state_attribute('v20', 'player', 'eve')
+        two_player_graph.add_state_attribute('v21', 'player', 'eve')
+        two_player_graph.add_state_attribute('v22', 'player', 'adam')
+        two_player_graph.add_state_attribute('v23', 'player', 'eve')
+        two_player_graph.add_state_attribute('v24', 'player', 'adam')
+        two_player_graph.add_state_attribute('v25', 'player', 'eve')
+        two_player_graph.add_state_attribute('v26', 'player', 'adam')
+        two_player_graph.add_state_attribute('v27', 'player', 'adam')
+        two_player_graph.add_state_attribute('v28', 'player', 'eve')
+        two_player_graph.add_state_attribute('v29', 'player', 'eve')
+        two_player_graph.add_state_attribute('v30', 'player', 'eve')
+        two_player_graph.add_state_attribute('v31', 'player', 'eve')
+        two_player_graph.add_state_attribute('v32', 'player', 'adam')
+        two_player_graph.add_state_attribute('v33', 'player', 'eve')
+        two_player_graph.add_state_attribute('v34', 'player', 'adam')
+        two_player_graph.add_state_attribute('v35', 'player', 'eve')
+        two_player_graph.add_state_attribute('v36', 'player', 'adam')
+        two_player_graph.add_state_attribute('v37', 'player', 'adam')
+        two_player_graph.add_state_attribute('v38', 'player', 'eve')
+        two_player_graph.add_state_attribute('v39', 'player', 'eve')
+        two_player_graph.add_state_attribute('v40', 'player', 'eve')
+
+        two_player_graph.add_accepting_states_from(['v21', 'v22', 'v23', 'v24', 'v25',
+                                                    'v26', 'v27', 'v28', 'v29', 'v30'])
+
+        two_player_graph.add_initial_state('v3')
+
+        # two_player_graph.plot_graph()
+
+        return two_player_graph
+
+    @staticmethod
+    def _construct_gmin_graph(debug=False):
+        two_player_gmin = GminGraph('Gmin_graph', 'config/Gmin_graph', save_flag=True)
+        two_player_gmin.construct_graph()
+        two_player_game = GraphFactory._construct_two_player_graph()
+
+        # construct new set of states V'
+        V_prime = [(v, str(w)) for v in two_player_game._graph.nodes.data() for _, _, w in two_player_game._graph.edges.data('weight')]
+
+        # find the maximum weight in the og graph(G)
+        # specifically adding self.graph.edges.data('weight') to a create to tuple where the
+        # third element is the weight value
+        max_edge = max(dict(two_player_game._graph.edges).items(), key=lambda x: x[1]['weight'])
+        W: str = max_edge[1].get('weight')
+
+        # assign nodes to Gmin with player as attributes to each node
+        for n in V_prime:
+            if n[0][1]['player'] == "eve":
+                two_player_gmin.add_state((n[0][0], n[1]))
+                two_player_gmin.add_state_attribute((n[0][0], n[1]), 'player', 'eve')
+
+            else:
+                two_player_gmin.add_state((n[0][0], n[1]))
+                two_player_gmin.add_state_attribute((n[0][0], n[1]), 'player', 'adam')
+
+            # if the node has init attribute and n[1] == W then add it to the init vertex in Gmin
+            if n[0][1].get('init') and n[1] == W:
+                # Gmin.nodes[(n[0][0], n[1])]['init'] = True
+                two_player_gmin.add_initial_state((n[0][0], n[1]))
+
+        if debug:
+            two_player_gmin.print_nodes()
+
+        # constructing edges as per the requirement mentioned in the doc_string
+        for parent in two_player_gmin._graph.nodes:
+            for child in two_player_gmin._graph.nodes:
+                if two_player_game._graph.has_edge(parent[0], child[0]):
+                    if float(child[1]) == min(float(parent[1]),
+                                              float(two_player_game._graph.get_edge_data(parent[0],
+                                                                                         child[0])[0]['weight'])):
+                        two_player_gmin._graph.add_edge(parent, child, weight=child[1])
+
+        if debug:
+            two_player_gmin.print_edges()
+
+        two_player_gmin.plot_graph()
+
+        return two_player_gmin
+
+    @staticmethod
+    def _construct_gmax_graph(debug=False):
+        two_player_gmax = GminGraph('Gmax_graph', 'config/Gmax_graph', save_flag=True)
+        two_player_gmax.construct_graph()
+        two_player_game = GraphFactory._construct_two_player_graph()
+        
+        # construct new set of states V'
+        V_prime = [(v, str(w)) for v in two_player_game._graph.nodes.data()
+                   for _, _, w in two_player_game._graph.edges.data('weight')]
+
+        # find the maximum weight in the og graph(G)
+        # specifically adding self.graph.edges.data('weight') to a create to tuple where the
+        # third element is the weight value
+        max_edge = max(dict(two_player_game._graph.edges).items(), key=lambda x: x[1]['weight'])
+        W: str = max_edge[1].get('weight')
+
+        # assign nodes to Gmax with player as attributes to each node
+        for n in V_prime:
+
+            if n[0][1]['player'] == "eve":
+                two_player_gmax.add_state((n[0][0], n[1]))
+                two_player_gmax.add_state_attribute((n[0][0], n[1]), 'player', 'eve')
+            else:
+                two_player_gmax.add_state((n[0][0], n[1]))
+                two_player_gmax.add_state_attribute((n[0][0], n[1]), 'player', 'adam')
+
+            # if the node has init attribute and n[1] == W then add it to the init vertex in Gmin
+            if n[0][1].get('init') and n[1] == W:
+                # Gmax.nodes[(n[0][0], n[1])]['init'] = True
+                two_player_gmax.add_initial_state((n[0][0], n[1]))
+
+        if debug:
+            # print("Printing Gmax nodes : \n", Gmax.nodes.data())
+            two_player_gmax.print_nodes()
+
+        # constructing edges as per the requirement mentioned in the doc_string
+        for parent in two_player_gmax._graph.nodes:
+            for child in two_player_gmax._graph.nodes:
+                if two_player_game._graph.has_edge(parent[0], child[0]):
+                    if float(child[1]) == max(float(parent[1]),
+                                              float(two_player_game._graph.get_edge_data(parent[0],
+                                                                                  child[0])[0]['weight'])):
+                        two_player_gmax.add_edge(parent, child, weight=child[1])
+
+        if debug:
+            two_player_gmax.print_edges()
+
+        two_player_gmax.plot_graph()
+
+        return two_player_gmax
+
+    @staticmethod
+    def _construct_finite_trans_sys():
+        pass
+
+    @staticmethod
+    def _construct_dfa_graph():
+        dfa = DFAGraph('dfa_graph', 'config/dfa_graph', save_flag=True)
 
 
 if __name__ == "__main__":
-    two_player_graph = TwoPlayerGraph('sample_graph', 'config/graph', save_flag=True)
-    two_player_graph.construct_graph()
 
-    two_player_graph.add_states_from(['v1', 'v2', 'v3'])
-    two_player_graph.add_weighted_edges_from([('v1', 'v2', '1'),
-                                              ('v2', 'v1', '2'),
-                                              ('v1', 'v3', '1'),
-                                              ('v3', 'v3', '0.5')])
+    # test two_player_game_construction
+    # GraphFactory._construct_two_player_graph()
 
-    two_player_graph.add_state_attribute('v1', 'player', 'eve')
-    two_player_graph.add_state_attribute('v2', 'player', 'adam')
-    two_player_graph.add_state_attribute('v3', 'player', 'adam')
+    # test gmin graph construction
+    # GraphFactory._construct_gmin_graph()
 
-    two_player_graph.add_state_attributes_from(['v1', 'v2', 'v3'], 'accepting', True)
-    two_player_graph.plot_graph()
+    # test gmax graph construction
+    GraphFactory._construct_gmax_graph()
 
+    # test finite transition system construction
+    GraphFactory._construct_finite_trans_sys()
+
+    # test DFA construction
+    GraphFactory._construct_dfa_graph()

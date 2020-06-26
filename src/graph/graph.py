@@ -1,15 +1,16 @@
 import abc
 import networkx as nx
 import yaml
-import os
 import warnings
 import random
+import re
 
-
+from src.graph.promela import parse as parse_ltl, find_states, find_symbols
+from src.graph.spot import run_spot
 from graphviz import Digraph
-from typing import List, Tuple, AnyStr
+from typing import List, Tuple, AnyStr, Dict
 from helper_methods import deprecated
-
+from src.graph.Parser import parse as parse_guard
 
 class Graph(abc.ABC):
     def __init__(self, config_yaml, graph, save_flag: bool=False):
@@ -66,7 +67,7 @@ class Graph(abc.ABC):
         if view:
             dot_object.view(cleanup=True)
 
-        dot_object.render(Graph._get_current_working_directory() + f'/graph/{graph_name}', view=view, cleanup=True)
+        dot_object.render(Graph._get_current_working_directory() + f'/graph_plots/{graph_name}', view=view, cleanup=True)
 
     def dump_to_yaml(self) -> None:
         """
@@ -456,9 +457,9 @@ class TwoPlayerGraph(Graph):
         # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
             if edge[2].get('strategy') is True:
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']), _attributes={'color': 'red'})
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')), _attributes={'color': 'red'})
             else:
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2]['weight']))
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')))
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
@@ -501,49 +502,45 @@ class GmaxGraph(TwoPlayerGraph):
 
 
 class FiniteTransSys(TwoPlayerGraph):
-    pass
-
-
-class DFAGraph(Graph):
 
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
-        # initialize the Graph class instance variables
+        self._graph_name = graph_name
         self._config_yaml = config_yaml
         self._save_flag = save_flag
-        self._graph_name = graph_name
 
     def construct_graph(self):
-        two_player_graph: nx.MultiDiGraph = nx.MultiDiGraph(name=self._graph_name)
-        # add this graph object of type of Networkx to our Graph class
-        self._graph = two_player_graph
+        super().construct_graph()
 
-    def plot_graph(self, color=("lightgrey", "red", "purple")) -> None:
+    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+        """
+        Method to create a illustration of the graph
+        :return: Diagram of the graph
+        """
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["vertices"]
-
         for n in nodes:
             # default color for all the nodes is grey
-            # get the ap associated with a node
-            ap = n[1].get('ap')
-            dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "circle", "style": "filled", "fillcolor": color[0]})
+            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0]})
             if n[1].get('init'):
                 # default color for init node is red
-                dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[1]})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
             if n[1].get('accepting'):
                 # default color for accepting node is purple
-                dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "doublecircle", "style": "filled", "fillcolor": color[2]})
-        
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
+            if n[1]['player'] == 'eve':
+                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
+            else:
+                dot.node(str(n[0]), _attributes={"shape": "circle"})
+
         # add all the edges
         edges = self._graph_yaml["edges"]
-        
+
+        # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
-            ap_u = self._graph.nodes[edge[0]].get('ap')
-            ap_v = self._graph.nodes[edge[1]].get('ap')
             if edge[2].get('strategy') is True:
-                dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('weight')),
-                         _attributes={'color': 'red'})
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')), _attributes={'color': 'red'})
             else:
-                dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('weight')))
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')))
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
@@ -553,6 +550,72 @@ class DFAGraph(Graph):
         if self._save_flag:
             graph_name = str(self._graph.__getattribute__('name'))
             self.save_dot_graph(dot, graph_name, True)
+
+class DFAGraph(Graph):
+
+    def __init__(self, formula: str, graph_name: str, config_yaml: str, save_flag: bool = False):
+        # initialize the Graph class instance variables
+        self._formula = formula
+        self._config_yaml = config_yaml
+        self._save_flag = save_flag
+        self._graph_name = graph_name
+
+    def construct_graph(self):
+        buchi = nx.MultiDiGraph(name=self._graph_name)
+        self._graph = buchi
+
+    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+        dot: Digraph = Digraph(name="graph")
+        nodes = self._graph_yaml["vertices"]
+
+        for n in nodes:
+            # default color for all the nodes is grey
+            dot.node(f'{str(n[0])}', _attributes={"shape": "circle", "style": "filled", "fillcolor": color[0]})
+            if n[0] == 'q1':
+                # default color for init node is red
+                dot.node(f'{str(n[0])}', _attributes={"style": "filled", "fillcolor": color[1]})
+            if n[0] == 'q0':
+                # default color for accepting node is purple
+                dot.node(f'{str(n[0])}', _attributes={"shape": "doublecircle", "style": "filled", "fillcolor": color[2]})
+        
+        # add all the edges
+        edges = self._graph_yaml["edges"]
+        
+        for counter, edge in enumerate(edges):
+                dot.edge(f'{str(edge[0])}', f'{str(edge[1])}', label=str(edge[2].get('guard_formula')))
+
+        # set graph attributes
+        dot.graph_attr['rankdir'] = 'LR'
+        dot.node_attr['fixedsize'] = 'False'
+        dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
+
+        if self._save_flag:
+            graph_name = str(self._graph.__getattribute__('name'))
+            self.save_dot_graph(dot, graph_name, True)
+
+    def convert_std_state_names(self, states: List[str]) -> Dict[str, str]:
+        """
+        A helper function to change the name of a state of the format
+        1. T0_S# -> q#
+        2. T0_init -> qW where W is the max number of states
+        3. accept_all -> q0
+        :param states: A List of states with the original naming convention of spot
+        :return: A list of state with the new naming convention
+        """
+        _new_state_lst = {}
+        for _s in states:
+            if _s == "T0_init":
+                _new_state_lst.update({_s: f"q1"})
+            elif _s == "accept_all":
+                _new_state_lst.update({_s: "q0"})
+            else:
+                # find the number after the string T0_S
+                s = re.compile("^T0_S")
+                indx = s.search(_s)
+                # number string is
+                _new_state_lst.update({_s: f"q{int(_s[indx.regs[0][1]:])}"})
+
+        return _new_state_lst
 
 
 class GraphFactory:
@@ -790,11 +853,68 @@ class GraphFactory:
 
     @staticmethod
     def _construct_finite_trans_sys():
-        pass
+        trans_sys = FiniteTransSys("transition_system", "config/trans_sys", save_flag=True)
+        trans_sys.construct_graph()
+
+        trans_sys.add_states_from([('(s1,0)', {'ap': {'b'}, 'player': 'eve'}),
+                                   ('(s2,0)', {'ap': {'a'}, 'player': 'eve'}),
+                                   ('(s3,0)', {'ap': {'c'}, 'player': 'eve'}),
+                                   ('(s1,1)', {'ap': {'b'}, 'player': 'eve'}),
+                                   ('(s2,1)', {'ap': {'a'}, 'player': 'eve'}),
+                                   ('(s3,1)', {'ap': {'c'}, 'player': 'eve'}),
+                                   ('(h12,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
+                                   ('(h21,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
+                                   ('(h23,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
+                                   ('(h33,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'})])
+
+        trans_sys.add_edge('(s1,0)', '(h12,0)', actions='s12')
+        trans_sys.add_edge('(h12,0)', '(s2,0)', actions='s12')
+        trans_sys.add_edge('(s2,0)', '(h23,0)', actions='s23')
+        trans_sys.add_edge('(h23,0)', '(s3,0)', actions='s23')
+        trans_sys.add_edge('(s2,0)', '(h21,0)', actions='s21')
+        trans_sys.add_edge('(h21,0)', '(s1,0)', actions='s21')
+        trans_sys.add_edge('(s3,0)', '(h33,0)', actions='s33')
+        trans_sys.add_edge('(h33,0)', '(s3,0)', actions='s33')
+        trans_sys.add_edge('(s1,1)', '(s2,1)', actions='s12')
+        trans_sys.add_edge('(s2,1)', '(s1,1)', actions='s21')
+        trans_sys.add_edge('(s2,1)', '(s3,1)', actions='s23')
+        trans_sys.add_edge('(s3,1)', '(s3,1)', actions='s33')
+        trans_sys.add_edge('(h12,0)', '(s1,1)', actions='m')
+        trans_sys.add_edge('(h12,0)', '(s3,1)', actions='m')
+        trans_sys.add_edge('(h23,0)', '(s1,1)', actions='m')
+        trans_sys.add_edge('(h23,0)', '(s2,1)', actions='m')
+        trans_sys.add_edge('(h21,0)', '(s1,1)', actions='m')
+        trans_sys.add_edge('(h21,0)', '(s2,1)', actions='m')
+        trans_sys.add_edge('(h33,0)', '(s1,1)', actions='m')
+        trans_sys.add_edge('(h33,0)', '(s2,1)', actions='m')
+
+        trans_sys.add_initial_state('(s2,0)')
+
+        trans_sys.plot_graph()
 
     @staticmethod
     def _construct_dfa_graph():
-        dfa = DFAGraph('dfa_graph', 'config/dfa_graph', save_flag=True)
+        # construct a basic graph object
+        dfa = DFAGraph('!b U c', 'dfa_graph', 'config/dfa_graph', save_flag=True)
+        dfa.construct_graph()
+
+        # do all the spot operation
+        spot_output = run_spot(formula=dfa._formula)
+        symbols = find_symbols(dfa._formula)
+        edges = parse_ltl(spot_output)
+        (states, initial, accepts) = find_states(edges)
+
+        states = dfa.convert_std_state_names(states)
+        for old_state, new_state in states.items():
+                dfa.add_state(new_state)
+
+        for (u, v) in edges.keys():
+            transition_formula = edges[(u, v)]
+            transition_expr = parse_guard(transition_formula)
+            dfa.add_edge(states[u], states[v], guard=transition_expr, guard_formula=transition_formula)
+
+        dfa.plot_graph()
+
 
 
 if __name__ == "__main__":
@@ -806,10 +926,10 @@ if __name__ == "__main__":
     # GraphFactory._construct_gmin_graph()
 
     # test gmax graph construction
-    GraphFactory._construct_gmax_graph()
+    # GraphFactory._construct_gmax_graph()
 
     # test finite transition system construction
     GraphFactory._construct_finite_trans_sys()
 
     # test DFA construction
-    GraphFactory._construct_dfa_graph()
+    # GraphFactory._construct_dfa_graph()

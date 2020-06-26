@@ -38,7 +38,7 @@ class atomicProposition():
     def set_aps(self, _aps: List) -> None:
         # a function to initialize the elements in _aps as the @self.aps.keys
         for _e in _aps:
-            self.aps.update({_e: None})
+            self.aps.update({_e: 'False'})
 
     def construct_aps(self):
         # a helper to methods
@@ -54,14 +54,6 @@ class Formula(atomicProposition):
         self._operator_to_str = {}
         self.__set_operator()
         self.set_aps(__aps)
-
-    # @property
-    # def formula(self) -> str:
-    #     return self.formula
-    #
-    # @formula.setter
-    # def formula(self, _f: str) -> None:
-    #     self.formula = _f
 
     def __set_operator(self):
         # a look up table to replace each operator with python eval() understandable language
@@ -104,13 +96,7 @@ class Formula(atomicProposition):
         return eval(_formula)
 
 if __name__ == "__main__":
-    ap = atomicProposition()
-    # ap.set_aps(['a', 'b', 'c'])
-    # ap.set_ap_value('a', 'False')
-    # ap.set_ap_value('b', 'True')
-
     formula = Formula("!a & b", ['a', 'b', 'c'])
     formula.set_ap_value('a', 'False')
-    formula.set_ap_value('b', 'True')
-    # formula.formula()
+    formula.set_ap_value('c', 'False')
     print(formula.translate_formula())

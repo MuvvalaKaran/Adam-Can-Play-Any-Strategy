@@ -446,7 +446,7 @@ class TwoPlayerGraph(Graph):
             if n[1].get('accepting'):
                 # default color for accepting node is purple
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
-            if n[1]['player'] == 'eve':
+            if n[1].get('player') == 'eve':
                 dot.node(str(n[0]), _attributes={"shape": "rectangle"})
             else:
                 dot.node(str(n[0]), _attributes={"shape": "circle"})
@@ -571,10 +571,10 @@ class DFAGraph(Graph):
         for n in nodes:
             # default color for all the nodes is grey
             dot.node(f'{str(n[0])}', _attributes={"shape": "circle", "style": "filled", "fillcolor": color[0]})
-            if n[0] == 'q1':
+            if n[1].get("init"):
                 # default color for init node is red
                 dot.node(f'{str(n[0])}', _attributes={"style": "filled", "fillcolor": color[1]})
-            if n[0] == 'q0':
+            if n[1].get("accepting"):
                 # default color for accepting node is purple
                 dot.node(f'{str(n[0])}', _attributes={"shape": "doublecircle", "style": "filled", "fillcolor": color[2]})
         
@@ -617,6 +617,79 @@ class DFAGraph(Graph):
 
         return _new_state_lst
 
+
+class productAutomaton(TwoPlayerGraph):
+
+    def __init__(self,trans_sys_graph:TwoPlayerGraph, automaton: DFAGraph,
+               graph_name: str, config_name, save_flag:bool = False):
+        self._trans_sys = trans_sys_graph
+        self._auto_graph = automaton
+        self._graph_name = graph_name
+        self._config_yaml = config_name
+        self._save_flag = save_flag
+
+    def construct_graph(self):
+        super().construct_graph()
+        for _u_ts_node in self._trans_sys._graph.nodes():
+            for _u_a_node in self._auto_graph._graph.nodes():
+                _u_prod_node = self.composition(_u_ts_node, _u_a_node)
+
+                for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
+                    for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
+                        _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+
+                        # NOTE: labels in future on transition systwm maybe replaced with weights
+                        label = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
+                        weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('actions')
+                        auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
+                        # the code works well. BUT for human edges, skip checking for label and directly allow edges
+                        if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
+                            if auto_label.formula == "(true)" or auto_label.formula == "1":
+                                truth = True
+                            else:
+                                truth = auto_label.check(label)
+                        else:
+                            truth = True
+
+                        if truth:
+                            self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, weight)])
+
+
+    def composition(self, ts_node, auto_node) -> Tuple:
+        _p_node = (ts_node, auto_node)
+
+        if not self._graph.has_node(_p_node):
+            self._graph.add_node(_p_node)
+            self._graph.nodes[_p_node]['ts'] = ts_node
+            self._graph.nodes[_p_node]['dfa'] = auto_node
+            self._graph.nodes[_p_node]['obs'] = self._trans_sys._graph.nodes[ts_node].get('ap')
+
+            # self._graph.add_node(_p_node, ts=ts_node, dfa=auto_node, obs=self._trans_sys._graph.nodes[_p_node]['ap'])
+
+            if (self._trans_sys._graph.nodes[ts_node].get('init') and
+                    self._auto_graph._graph.nodes[auto_node].get('init')):
+                # if both the transition node and the dfa node are belong to the initial state sets then set this
+                # product node as initial too
+                self._graph.nodes[_p_node]['init'] = True
+
+            if self._auto_graph._graph.nodes[auto_node].get('accepting'):
+                # if both the transition node and the dfa node are belong to the accepting state sets then set this
+                # product node as initial too
+                self._graph.nodes[_p_node]['accepting'] = True
+
+            if self._trans_sys._graph.nodes[ts_node].get('player') == 'eve':
+                self._graph.nodes[_p_node]['player'] = 'eve'
+            else:
+                self._graph.nodes[_p_node]['player'] = 'adam'
+
+        return _p_node
+
+
+    def build_initial(self):
+        pass
+
+    def build_accepting(self):
+        pass
 
 class GraphFactory:
 
@@ -890,12 +963,14 @@ class GraphFactory:
 
         trans_sys.add_initial_state('(s2,0)')
 
-        trans_sys.plot_graph()
+        # trans_sys.plot_graph()
+
+        return trans_sys
 
     @staticmethod
-    def _construct_dfa_graph():
+    def _construct_dfa_graph(use_alias=True):
         # construct a basic graph object
-        dfa = DFAGraph('!b U c', 'dfa_graph', 'config/dfa_graph', save_flag=True)
+        dfa = DFAGraph('!b & Fc', 'dfa_graph', 'config/dfa_graph', save_flag=True)
         dfa.construct_graph()
 
         # do all the spot operation
@@ -904,17 +979,28 @@ class GraphFactory:
         edges = parse_ltl(spot_output)
         (states, initial, accepts) = find_states(edges)
 
-        states = dfa.convert_std_state_names(states)
-        for old_state, new_state in states.items():
-                dfa.add_state(new_state)
+        if use_alias:
+            states = dfa.convert_std_state_names(states)
+            for old_state, new_state in states.items():
+                    dfa.add_state(new_state)
+        else:
+            for _state in states:
+                dfa.add_state(_state)
+                if _state == "T0_init":
+                    dfa._graph.nodes[_state]['init'] = True
+                if _state == "accept_all":
+                    dfa._graph.nodes[_state]['accepting'] = True
 
         for (u, v) in edges.keys():
             transition_formula = edges[(u, v)]
             transition_expr = parse_guard(transition_formula)
-            dfa.add_edge(states[u], states[v], guard=transition_expr, guard_formula=transition_formula)
-
+            if use_alias:
+                dfa.add_edge(states[u], states[v], guard=transition_expr, guard_formula=transition_formula)
+            else:
+                dfa.add_edge(u, v, guard=transition_expr, guard_formula=transition_formula)
         dfa.plot_graph()
 
+        return dfa
 
 
 if __name__ == "__main__":
@@ -929,7 +1015,12 @@ if __name__ == "__main__":
     # GraphFactory._construct_gmax_graph()
 
     # test finite transition system construction
-    GraphFactory._construct_finite_trans_sys()
+    tran_sys = GraphFactory._construct_finite_trans_sys()
 
     # test DFA construction
-    # GraphFactory._construct_dfa_graph()
+    dfa = GraphFactory._construct_dfa_graph(use_alias=False)
+
+    # build the product automaton
+    p = productAutomaton(tran_sys, dfa, "product_graph", "config/prod_auto", save_flag=True )
+    p.construct_graph()
+    p.plot_graph()

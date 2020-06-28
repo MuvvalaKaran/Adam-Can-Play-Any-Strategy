@@ -8,12 +8,12 @@ import re
 from src.graph.promela import parse as parse_ltl, find_states, find_symbols
 from src.graph.spot import run_spot
 from graphviz import Digraph
-from typing import List, Tuple, AnyStr, Dict
+from typing import List, Tuple, Dict
 from helper_methods import deprecated
 from src.graph.Parser import parse as parse_guard
 
 class Graph(abc.ABC):
-    def __init__(self, config_yaml, graph, save_flag: bool=False):
+    def __init__(self, config_yaml, graph, save_flag: bool = False):
         # self._filename: str = filename
         self._graph_yaml = None
         self._config_yaml: str = config_yaml
@@ -1035,22 +1035,19 @@ class GraphFactory:
 if __name__ == "__main__":
 
     # test two_player_game_construction
-    # GraphFactory._construct_two_player_graph()
+    GraphFactory._construct_two_player_graph()
 
     # test gmin graph construction
-    # GraphFactory._construct_gmin_graph()
+    GraphFactory._construct_gmin_graph()
 
     # test gmax graph construction
-    # GraphFactory._construct_gmax_graph()
+    GraphFactory._construct_gmax_graph()
 
     # test finite transition system construction
-    # tran_sys = GraphFactory._construct_finite_trans_sys()
+    tran_sys = GraphFactory._construct_finite_trans_sys()
 
     # test DFA construction
-    # dfa = GraphFactory._construct_dfa_graph(use_alias=False)
+    dfa = GraphFactory._construct_dfa_graph(use_alias=False)
 
     # build the product automaton
-    # p = ProductAutomaton(tran_sys, dfa, "product_graph", "config/prod_auto", save_flag=True)
-    # p.construct_graph()
-    # p.plot_graph()
     GraphFactory._construct_product_automaton_graph()

@@ -2,9 +2,11 @@
 import warnings
 import re
 
-from typing import Dict, List, Tuple, Set
+from helper_methods import deprecated
 
+from typing import Dict, List
 
+@deprecated
 class atomicProposition():
     # A class that hold all the valid atomic proposition in transition system T
 
@@ -44,7 +46,7 @@ class atomicProposition():
         # a helper to methods
         raise NotImplementedError
 
-
+@deprecated
 class Formula(atomicProposition):
     # this class represents a boolean formula which is a collection of atomic proposition and operator
     def __init__(self, __formula: str, __aps: List[str]):

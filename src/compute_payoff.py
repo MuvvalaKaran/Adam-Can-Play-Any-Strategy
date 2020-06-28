@@ -3,9 +3,7 @@ import networkx as nx
 import statistics
 
 from typing import List, Tuple, Dict
-# import helper function to deprecate warnings
 from helper_methods import deprecated
-from src.gameconstruction import Graph
 from src.graph.graph import GraphFactory
 
 """

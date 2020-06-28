@@ -1,0 +1,58 @@
+graph:
+  edges:
+  - !!python/tuple
+    - q0
+    - q0
+    - guard: !!python/object:src.graph.Parser.TrueExpression
+        formula: '1'
+      guard_formula: '1'
+  - !!python/tuple
+    - q1
+    - q0
+    - guard: !!python/object:src.graph.Parser.SymbolExpression
+        formula: (c)
+        name: c
+        symbol: c
+      guard_formula: (c)
+  - !!python/tuple
+    - q1
+    - q1
+    - guard: !!python/object:src.graph.Parser.ANDExpression
+        formula: ((!(b)) && (!(c)))
+        left: !!python/object:src.graph.Parser.NotSymbolExpression
+          name: '!b'
+          symbol: b
+        right: !!python/object:src.graph.Parser.NotSymbolExpression
+          name: '!c'
+          symbol: c
+      guard_formula: ((!(b)) && (!(c)))
+  - !!python/tuple
+    - q1
+    - q2
+    - guard: !!python/object:src.graph.Parser.ANDExpression
+        formula: ((b) && (!(c)))
+        left: !!python/object:src.graph.Parser.SymbolExpression
+          name: b
+          symbol: b
+        right: !!python/object:src.graph.Parser.NotSymbolExpression
+          name: '!c'
+          symbol: c
+      guard_formula: ((b) && (!(c)))
+  - !!python/tuple
+    - q2
+    - q2
+    - guard: !!python/object:src.graph.Parser.SymbolExpression
+        formula: (true)
+        name: 'true'
+        symbol: 'true'
+      guard_formula: (true)
+  vertices:
+  - !!python/tuple
+    - q0
+    - {}
+  - !!python/tuple
+    - q1
+    - {}
+  - !!python/tuple
+    - q2
+    - {}

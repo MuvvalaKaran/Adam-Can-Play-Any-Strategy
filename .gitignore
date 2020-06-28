@@ -1,6 +1,9 @@
 # ignore pycharm ide files
 *.idea
 
+# ignore lib/ directory changes on the branch add_feature_factory_class_implementation
+lib/ 
+
 # ignore the graph pdf files being spotaneously produced
 src/*.gv.pdf
 *.gv.pdf

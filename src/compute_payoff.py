@@ -119,7 +119,7 @@ class payoff_value():
         """
 
         def get_edge_weight(k: Tuple) -> float:
-            return float(self.graph[k[0]][k[1]][0]['weight'])
+            return float(self.graph[k[0]][k[1]][0].get('weight'))
 
         # find the element which is repeated twice or more in the list
         # which has to be the very last element of the list

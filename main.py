@@ -7,11 +7,11 @@ import sys
 import re
 import warnings
 import random
-import operator
 
 from typing import List, Tuple, Dict, Any, Set
-from src.gameconstruction import Graph
 from src.compute_payoff import payoff_value
+from src.graph.graph import GraphFactory
+from src.graph.graph import TwoPlayerGraph, ProductAutomaton
 
 # asserts that this code is tested in linux
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
@@ -46,29 +46,35 @@ play v0 to v1.
 bypass_implementation = True
 
 
-def construct_graph(payoff_func: str, *args, **kwargs) -> Graph:
+def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = False,
+                    scLTL_formula: str = "", plot: bool = False) -> ProductAutomaton:
     """
-    A helper method to construct a graph
+    A helper method to construct a graph using the GraphFactory() class, given a boolean formula
     :param payoff_func: A payoff function
+    :param debug :
+    :param use_alias
+    :param scLTL_formula
+    :param plot
     :return: Return graph G or Gmin/Gmax if payoff function is inf/sup respectively.
     """
-    G: Graph = Graph(False)
-    # create the directed multi-graph
-    org_graph = G.create_multigrpah(reward=False)
 
-    # pattern to dtect exactly 'sup' or 'inf'
+    # pattern to detect exactly 'sup' or 'inf'
     sup_re = re.compile('^sup$')
     inf_re = re.compile('^inf$')
 
     if inf_re.match(payoff_func):
-        gmin = G.construct_Gmin(org_graph)
-        G.graph = gmin
+        # gmin = G.construct_Gmin(org_graph)
+        _graph = GraphFactory._construct_gmin_graph(debug=debug)
+        # gmain.graph = gmin
     elif sup_re.match(payoff_func):
-        gmax = G.construct_Gmax(org_graph)
-        G.graph = gmax
+        # gmax = G.construct_Gmax(org_graph)
+        _graph = GraphFactory._construct_gmax_graph(debug=debug)
+        # G.graph = gmax
     else:
-        G.graph = org_graph
-    return G
+        _graph = GraphFactory._construct_product_automaton_graph(use_alias=debug, scLTL_formula=scLTL_formula,
+                                                                 plot=plot)
+        # G.graph = org_graph
+    return _graph
 
 
 def construct_alt_game(graph: nx.MultiDiGraph, edge: Tuple[Tuple, Tuple]) -> nx.MultiDiGraph:
@@ -110,7 +116,7 @@ def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle: payoff_value
     return tmp_payoff_handle.compute_cVal(node)
 
 
-def compute_w_prime(payoff_handle: payoff_value, org_graph: Graph) \
+def compute_w_prime(payoff_handle: payoff_value, org_graph: nx.MultiDiGraph) \
         -> Dict[Tuple, str]:
     """
     A method to compute w_prime function based on Algo 2. pseudocode. This function is a mapping from each edge to a
@@ -122,9 +128,9 @@ def compute_w_prime(payoff_handle: payoff_value, org_graph: Graph) \
     print("*****************Constructing W_prime*****************")
     # compute the cVal from each node
     w_prime: Dict[Tuple, str] = {}
-    for edge in org_graph.graph.edges():
+    for edge in org_graph.edges():
         # if the node belongs to adam, then the corresponding edge is assigned -inf
-        if org_graph.graph.nodes(data='player')[edge[0]] == 'adam':
+        if org_graph.nodes(data='player')[edge[0]] == 'adam':
             w_prime.update({edge: -1 * math.inf})
 
         # if the node belongs to eve, then we compute the max cVal from all the possible alternate edges.
@@ -135,7 +141,7 @@ def compute_w_prime(payoff_handle: payoff_value, org_graph: Graph) \
             # TODO: check if this is necessary as @tmp_graph is already a deepcopy and I am making a deepcopy of a
             #  deepcopy. Seems redundant but safety over everything.
             # step 1. construct a new game without (u, v)
-            tmp_graph = construct_alt_game(org_graph.graph, edge)
+            tmp_graph = construct_alt_game(org_graph, edge)
             # construct the game without the org edge and find the max from each alternate play
             tmp_cvals = []
             # step 2. get all the alt edges (u, v')
@@ -148,7 +154,7 @@ def compute_w_prime(payoff_handle: payoff_value, org_graph: Graph) \
             # if no alternate edges exist then just compute the cVal from v of the org edge
             else:
                 # make a copy of the org_graph and a another tmp_payoff_handle and compute loop vals
-                w_prime.update({edge: _compute_max_cval_from_v(org_graph.graph, payoff_handle, edge[1])})
+                w_prime.update({edge: _compute_max_cval_from_v(org_graph, payoff_handle, edge[1])})
 
     print(f"the value of b are {set(w_prime.values())}")
 
@@ -212,11 +218,13 @@ def get_accepting_state_node(graph: nx.MultiDiGraph) -> List[Tuple]:
 
 
 def get_init_node(graph: nx.MultiDiGraph) -> List[Tuple]:
-    # a helper method to find the init node and return
+    # a helper method to find the init node and return.
     init_node: List[Tuple[str, str]] = []
     for n in graph.nodes.data("init"):
         if n[1] is True:
             init_node.append(n)
+
+    # init node is of the form ((node, bool value)). To access the node we need to do [0][0]
     return init_node
 
 
@@ -306,7 +314,7 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx
 
 
 def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, visualize_str: bool = False,
-               combined_strategy: Dict[Tuple, Tuple] = None) -> None:
+               combined_strategy: Dict[Tuple, Tuple] = None, plot=False) -> None:
     """
     A helper method to plot a given graph and save it if the @save_flag is True.
     :param graph: The graph to be plotted
@@ -318,20 +326,8 @@ def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, v
     if visualize_str:
         _add_strategy_flag(graph, combined_strategy)
 
-    # create Graph object
-    plot_handle = Graph(save_flag)
-    plot_handle.graph = graph
-
-    # file to store the yaml for plotting it in graphviz
-    plot_handle.file_name = file_name
-
-    # dump the graph to yaml
-    plot_handle.dump_to_yaml()
-
-    # plot graph
-    plot_handle.graph_yaml = plot_handle.read_yaml_file(plot_handle.file_name)
-    plot_handle.plot_fancy_graph()
-
+    # grate a two_player_game using g_hat graph and plot the graph
+    GraphFactory.get_two_player_game(graph, "config/g_hat_graph", file_name, save_flag=save_flag, plot=plot)
 
 def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph,  w_prime, value_func,
                            str_dict) -> Tuple[Dict[float, Dict], bool]:
@@ -474,15 +470,6 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
         print("A non-zero regret exists and thus adam will play from v0 to v1 in g_hat")
     else:
         print("A non-zero regret does NOT exist and thus adam will play v0 to v0")
-        # create a tmp dict of strategies that have reg <= reg_threshold
-        # __tmp_dict = {}
-        # for k, v in str_dict.items():
-        #     if v['reg'] <= float(reg_threshold):
-        #         __tmp_dict.update({k: str_dict[k]})
-        #
-        # if len(list(__tmp_dict.keys())) == 0:
-        #     print(f"There does not exist any strategy within the given threshold: {reg_threshold}")
-        #     return {}
         if bypass_implementation:
             # after computing all the reg value find the str with the least reg
             min_reg_b = min(str_dict, key=lambda key: str_dict[key]['reg'])
@@ -671,44 +658,85 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> List[Tuple
 
     min_value = func(wt_list.values())
     next_nodes: List[Tuple] = [k[1] for k in wt_list if wt_list[k] == min_value]
-    # next_node: Tuple = func(wt_list.items(), key=operator.itemgetter(1))[0]
 
     return next_nodes
+
+def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph, strategy: Dict) -> Dict:
+    #  A function to map the strategy from g_hat to the original strategy
+
+    # a list to keep track of nodes visited
+    org_strategy = []
+    g_hat_strategy = []
+
+    g_hat_tmp = {}
+    org_tmp = {}
+
+    # start from the initial node of the org_graph
+    curr_node = get_init_node(g_hat)[0][0] # v1
+    g_hat_strategy.append(curr_node)  # [v1]
+
+    # get the value associated with this key
+    next_node = strategy[curr_node]  # v2
+    g_hat_tmp.update({curr_node: next_node})
+    # org_strategy.append(next_node)
+    while next_node not in g_hat_strategy:
+        g_hat_strategy.append(next_node)  # [v1, v2, ... ]
+        curr_node = next_node  # curr_node = v2
+        next_node = strategy[curr_node]  # v3
+        g_hat_tmp.update({curr_node: next_node})
+
+    # check if the current node in g_hat_strategy does exist in org_graph. If so add it to org_strategy
+    for node in g_hat_strategy:
+        if node != "v0" and node != "v1":
+            if org_graph._trans_sys._graph.has_node(node[0][0]):
+                org_strategy.append(node[0][0])
+
+    for u_node, v_node in g_hat_tmp.items():
+        if u_node != "v0" and u_node != "v1":
+            if org_graph._trans_sys._graph.has_node(u_node[0][0]):
+                org_tmp.update({u_node[0][0]: v_node[0][0]})
+
+    return org_tmp
+
 
 
 def main():
     payoff_func = "liminf"
     print(f"*****************Using {payoff_func}*****************")
     # construct graph
-    graph = construct_graph(payoff_func)
-    p = payoff_value(graph.graph, payoff_func)
+    graph = construct_graph(payoff_func, scLTL_formula="!b & Fc")
+    p = payoff_value(graph._graph, payoff_func)
 
     # construct W prime
-    w_prime = compute_w_prime(p, graph)
+    w_prime = compute_w_prime(p, graph._graph)
 
     # construct G_hat
-    G_hat = construct_g_hat(graph.graph, w_prime)
-
-    # use methods from the Graph class create a visualization
-    plot_graph(graph.graph, file_name='src/config/main_file_org_graph', save_flag=True)
-    plot_graph(G_hat, file_name='src/config/g_hat_graph', save_flag=True)
+    G_hat = construct_g_hat(graph._graph, w_prime)
 
     # NOTE: The strategy that eve comes up with is the strategy with the least regret.
     #  The regret value should be within [0, -2W - 1]; W = Max weight in the orignal graph
     #  Adam plays from v0 to v1-only if he can ensure a non-zero regret (the Val of the corresponding play in
     #  g_hat should be > 0)
     #  Eve selects the strategy with the least regret (below the given threshold)
-    reg_dict = compute_aVal(G_hat, payoff_func, w_prime, graph.graph)
+    reg_dict = compute_aVal(G_hat, payoff_func, w_prime, graph._graph)
 
     if len(list(reg_dict.keys())) != 0:
         for k, v in reg_dict.items():
             print(f"{k}: {v}")
 
-        # visualize the strategy
-        plot_graph(G_hat, file_name='src/config/g_hat_graph',
-                   save_flag=True,
-                   visualize_str=True,
-                   combined_strategy={**reg_dict['eve'], **reg_dict['adam']})
+    # visualize the strategy
+    plot_graph(G_hat, file_name='config/g_hat_graph',
+               save_flag=False,
+               visualize_str=True,
+               combined_strategy={**reg_dict['eve'], **reg_dict['adam']}, plot=False)
+
+    # map back strategy from g_hat to the original graph
+    org_strategy = map_g_hat_str_to_org_graph(G_hat, graph, {**reg_dict['eve'], **reg_dict['adam']})
+
+    plot_graph(graph._trans_sys._graph, file_name="config/trans_sys",
+               save_flag=True,
+               visualize_str=True,
+               combined_strategy=org_strategy, plot=True)
 
 if __name__ == "__main__":
     main()

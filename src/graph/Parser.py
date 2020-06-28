@@ -1,4 +1,4 @@
-from lexer import get_lexer
+from src.graph.lexer import get_lexer
 import itertools
 
 

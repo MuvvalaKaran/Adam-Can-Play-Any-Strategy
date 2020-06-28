@@ -618,9 +618,9 @@ class DFAGraph(Graph):
         return _new_state_lst
 
 
-class productAutomaton(TwoPlayerGraph):
+class ProductAutomaton(TwoPlayerGraph):
 
-    def __init__(self,trans_sys_graph:TwoPlayerGraph, automaton: DFAGraph,
+    def __init__(self, trans_sys_graph: TwoPlayerGraph, automaton: DFAGraph,
                graph_name: str, config_name, save_flag:bool = False):
         self._trans_sys = trans_sys_graph
         self._auto_graph = automaton
@@ -635,25 +635,35 @@ class productAutomaton(TwoPlayerGraph):
                 _u_prod_node = self.composition(_u_ts_node, _u_a_node)
 
                 for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
-                    for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
+                    for _v_a_node in self._auto_graph._graph.nodes():
                         _v_prod_node = self.composition(_v_ts_node, _v_a_node)
-
+                        # initialize flag of the edge to be false at each iteration
+                        truth = False
                         # NOTE: labels in future on transition systwm maybe replaced with weights
                         label = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
-                        weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('actions')
-                        auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
-                        # the code works well. BUT for human edges, skip checking for label and directly allow edges
-                        if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
-                            if auto_label.formula == "(true)" or auto_label.formula == "1":
-                                truth = True
+                        weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
+                        if self._auto_graph._graph.has_edge(_u_a_node, _v_a_node):
+                            auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
+                            # the code works well. BUT for human edges, skip checking for label and directly allow edges
+                            if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
+                                if auto_label.formula == "(true)" or auto_label.formula == "1":
+                                    truth = True
+                                else:
+                                    truth = auto_label.check(label)
                             else:
-                                truth = auto_label.check(label)
+                                # if the current automaton node and the target automaton node is the same then add the
+                                # internal edge
+                                # TODO: verify with Morteza what happens if you are in the human state
+                                if _u_a_node == _v_a_node:
+                                    truth = True
                         else:
-                            truth = True
+                            if _u_a_node == _v_a_node:
+                                # this is the edge case where TS remains in the same Q evolves naturally in the same
+                                # sub_graph
+                                truth = True
 
                         if truth:
                             self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, weight)])
-
 
     def composition(self, ts_node, auto_node) -> Tuple:
         _p_node = (ts_node, auto_node)
@@ -694,28 +704,15 @@ class productAutomaton(TwoPlayerGraph):
 class GraphFactory:
 
     @staticmethod
-    def get_two_player_game() -> TwoPlayerGraph:
-        # GraphFactory._const
-        pass
+    def get_two_player_game(graph, graph_name, config_yaml, save_flag=False, plot=False):
+        two_player_game = TwoPlayerGraph(graph_name, config_yaml, save_flag)
+        two_player_game._graph = graph
+
+        if plot:
+            two_player_game.plot_graph()
 
     @staticmethod
-    def get_gmin_graph() -> GminGraph:
-        pass
-
-    @staticmethod
-    def get_gmax_graph() -> GmaxGraph:
-        pass
-
-    @staticmethod
-    def get_Finited_trans_sys_graph() -> FiniteTransSys:
-        pass
-
-    @staticmethod
-    def get_DFA_graph() -> DFAGraph:
-        pass
-
-    @staticmethod
-    def _construct_two_player_graph():
+    def _construct_two_player_graph(plot=False):
         two_player_graph = TwoPlayerGraph('org_graph', 'config/org_graph', save_flag=True)
         two_player_graph.construct_graph()
 
@@ -820,15 +817,17 @@ class GraphFactory:
 
         two_player_graph.add_initial_state('v3')
 
-        # two_player_graph.plot_graph()
+        if plot:
+            two_player_graph.plot_graph()
 
         return two_player_graph
 
     @staticmethod
-    def _construct_gmin_graph(debug=False):
+    def _construct_gmin_graph(debug=False, use_alias=False, scLTL_formula: str='', plot=False):
         two_player_gmin = GminGraph('Gmin_graph', 'config/Gmin_graph', save_flag=True)
         two_player_gmin.construct_graph()
-        two_player_game = GraphFactory._construct_two_player_graph()
+        # two_player_game = GraphFactory._construct_two_player_graph()
+        two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot)
 
         # construct new set of states V'
         V_prime = [(v, str(w)) for v in two_player_game._graph.nodes.data() for _, _, w in two_player_game._graph.edges.data('weight')]
@@ -869,16 +868,17 @@ class GraphFactory:
         if debug:
             two_player_gmin.print_edges()
 
-        two_player_gmin.plot_graph()
+        if plot:
+            two_player_gmin.plot_graph()
 
         return two_player_gmin
 
     @staticmethod
-    def _construct_gmax_graph(debug=False):
+    def _construct_gmax_graph(debug=False, use_alias=False, scLTL_formula: str='', plot=False):
         two_player_gmax = GminGraph('Gmax_graph', 'config/Gmax_graph', save_flag=True)
         two_player_gmax.construct_graph()
-        two_player_game = GraphFactory._construct_two_player_graph()
-        
+        # two_player_game = GraphFactory._construct_two_player_graph()
+        two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot)
         # construct new set of states V'
         V_prime = [(v, str(w)) for v in two_player_game._graph.nodes.data()
                    for _, _, w in two_player_game._graph.edges.data('weight')]
@@ -920,12 +920,13 @@ class GraphFactory:
         if debug:
             two_player_gmax.print_edges()
 
-        two_player_gmax.plot_graph()
+        if plot:
+            two_player_gmax.plot_graph()
 
         return two_player_gmax
 
     @staticmethod
-    def _construct_finite_trans_sys():
+    def _construct_finite_trans_sys(plot=False):
         trans_sys = FiniteTransSys("transition_system", "config/trans_sys", save_flag=True)
         trans_sys.construct_graph()
 
@@ -935,42 +936,46 @@ class GraphFactory:
                                    ('(s1,1)', {'ap': {'b'}, 'player': 'eve'}),
                                    ('(s2,1)', {'ap': {'a'}, 'player': 'eve'}),
                                    ('(s3,1)', {'ap': {'c'}, 'player': 'eve'}),
-                                   ('(h12,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
-                                   ('(h21,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
-                                   ('(h23,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'}),
-                                   ('(h33,0)', {'ap': {'a', 'b', 'c'}, 'player': 'adam'})])
+                                   ('(h12,0)', {'ap': {''}, 'player': 'adam'}),
+                                   ('(h21,0)', {'ap': {''}, 'player': 'adam'}),
+                                   ('(h23,0)', {'ap': {''}, 'player': 'adam'}),
+                                   ('(h33,0)', {'ap': {''}, 'player': 'adam'})])
 
-        trans_sys.add_edge('(s1,0)', '(h12,0)', actions='s12')
-        trans_sys.add_edge('(h12,0)', '(s2,0)', actions='s12')
-        trans_sys.add_edge('(s2,0)', '(h23,0)', actions='s23')
-        trans_sys.add_edge('(h23,0)', '(s3,0)', actions='s23')
-        trans_sys.add_edge('(s2,0)', '(h21,0)', actions='s21')
-        trans_sys.add_edge('(h21,0)', '(s1,0)', actions='s21')
-        trans_sys.add_edge('(s3,0)', '(h33,0)', actions='s33')
-        trans_sys.add_edge('(h33,0)', '(s3,0)', actions='s33')
-        trans_sys.add_edge('(s1,1)', '(s2,1)', actions='s12')
-        trans_sys.add_edge('(s2,1)', '(s1,1)', actions='s21')
-        trans_sys.add_edge('(s2,1)', '(s3,1)', actions='s23')
-        trans_sys.add_edge('(s3,1)', '(s3,1)', actions='s33')
-        trans_sys.add_edge('(h12,0)', '(s1,1)', actions='m')
-        trans_sys.add_edge('(h12,0)', '(s3,1)', actions='m')
-        trans_sys.add_edge('(h23,0)', '(s1,1)', actions='m')
-        trans_sys.add_edge('(h23,0)', '(s2,1)', actions='m')
-        trans_sys.add_edge('(h21,0)', '(s1,1)', actions='m')
-        trans_sys.add_edge('(h21,0)', '(s2,1)', actions='m')
-        trans_sys.add_edge('(h33,0)', '(s1,1)', actions='m')
-        trans_sys.add_edge('(h33,0)', '(s2,1)', actions='m')
+        trans_sys.add_edge('(s1,0)', '(h12,0)', actions='s12', weight='0')
+        trans_sys.add_edge('(h12,0)', '(s2,0)', actions='s12', weight='0')
+        trans_sys.add_edge('(s2,0)', '(h23,0)', actions='s23', weight='3')
+        trans_sys.add_edge('(h23,0)', '(s3,0)', actions='s23', weight='3')
+        trans_sys.add_edge('(s2,0)', '(h21,0)', actions='s21', weight='2')
+        trans_sys.add_edge('(h21,0)', '(s1,0)', actions='s21', weight='2')
+        trans_sys.add_edge('(s3,0)', '(h33,0)', actions='s33', weight='5')
+        trans_sys.add_edge('(h33,0)', '(s3,0)', actions='s33', weight='5')
+        trans_sys.add_edge('(s1,1)', '(s2,1)', actions='s12', weight='0')
+        trans_sys.add_edge('(s2,1)', '(s1,1)', actions='s21', weight='2')
+        trans_sys.add_edge('(s2,1)', '(s3,1)', actions='s23', weight='3')
+        trans_sys.add_edge('(s3,1)', '(s3,1)', actions='s33', weight='5')
+        trans_sys.add_edge('(h12,0)', '(s1,1)', actions='m', weight='0')
+        trans_sys.add_edge('(h12,0)', '(s3,1)', actions='m', weight='0')
+        trans_sys.add_edge('(h23,0)', '(s1,1)', actions='m', weight='0')
+        trans_sys.add_edge('(h23,0)', '(s2,1)', actions='m', weight='0')
+        trans_sys.add_edge('(h21,0)', '(s1,1)', actions='m', weight='0')
+        trans_sys.add_edge('(h21,0)', '(s2,1)', actions='m', weight='0')
+        trans_sys.add_edge('(h33,0)', '(s1,1)', actions='m', weight='0')
+        trans_sys.add_edge('(h33,0)', '(s2,1)', actions='m', weight='0')
 
         trans_sys.add_initial_state('(s2,0)')
 
-        # trans_sys.plot_graph()
+        if plot:
+            trans_sys.plot_graph()
 
         return trans_sys
 
     @staticmethod
-    def _construct_dfa_graph(use_alias=True):
-        # construct a basic graph object
-        dfa = DFAGraph('!b & Fc', 'dfa_graph', 'config/dfa_graph', save_flag=True)
+    def _construct_dfa_graph(use_alias=True, scLTL_formula: str='', plot=False):
+        if scLTL_formula == '':
+            # construct a basic graph object
+            dfa = DFAGraph('!b & Fc', 'dfa_graph', 'config/dfa_graph', save_flag=True)
+        else:
+            dfa = DFAGraph(scLTL_formula, 'dfa_graph', 'config/dfa_graph', save_flag=True)
         dfa.construct_graph()
 
         # do all the spot operation
@@ -998,11 +1003,26 @@ class GraphFactory:
                 dfa.add_edge(states[u], states[v], guard=transition_expr, guard_formula=transition_formula)
             else:
                 dfa.add_edge(u, v, guard=transition_expr, guard_formula=transition_formula)
-        dfa.plot_graph()
+        if plot:
+            dfa.plot_graph()
 
         return dfa
 
+    @staticmethod
+    def _construct_product_automaton_graph(use_alias=False, scLTL_formula: str='', plot=False):
+        # construct the transition system
+        tran_sys = GraphFactory._construct_finite_trans_sys(plot=plot)
 
+        # construct the dfa
+        dfa = GraphFactory._construct_dfa_graph(use_alias=use_alias, scLTL_formula=scLTL_formula, plot=plot)
+
+        # construct the product automaton
+        prod_auto = ProductAutomaton(tran_sys, dfa, "product_graph", "config/prod_auto", save_flag=True)
+        prod_auto.construct_graph()
+        if plot:
+            prod_auto.plot_graph()
+
+        return prod_auto
 if __name__ == "__main__":
 
     # test two_player_game_construction
@@ -1015,12 +1035,13 @@ if __name__ == "__main__":
     # GraphFactory._construct_gmax_graph()
 
     # test finite transition system construction
-    tran_sys = GraphFactory._construct_finite_trans_sys()
+    # tran_sys = GraphFactory._construct_finite_trans_sys()
 
     # test DFA construction
-    dfa = GraphFactory._construct_dfa_graph(use_alias=False)
+    # dfa = GraphFactory._construct_dfa_graph(use_alias=False)
 
     # build the product automaton
-    p = productAutomaton(tran_sys, dfa, "product_graph", "config/prod_auto", save_flag=True )
-    p.construct_graph()
-    p.plot_graph()
+    # p = ProductAutomaton(tran_sys, dfa, "product_graph", "config/prod_auto", save_flag=True)
+    # p.construct_graph()
+    # p.plot_graph()
+    GraphFactory._construct_product_automaton_graph()

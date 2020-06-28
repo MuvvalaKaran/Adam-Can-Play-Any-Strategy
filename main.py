@@ -228,24 +228,34 @@ def get_init_node(graph: nx.MultiDiGraph) -> List[Tuple]:
     return init_node
 
 
-def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx.MultiDiGraph:
+def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> TwoPlayerGraph:
     print("*****************Constructing G_hat*****************")
     # construct new graph according to the pseudocode 3
-    G_hat: nx.MultiDiGraph = nx.MultiDiGraph(name="G_hat")
-    G_hat.add_nodes_from(['v0', 'v1', 'vT'])
-    # nodes will be nested tuple from now onwards for ease of implementation
-    G_hat.nodes['v0']['player'] = "adam"
-    G_hat.nodes['v1']['player'] = "eve"
-    G_hat.nodes['vT']['player'] = "eve"
+    # G_hat: nx.MultiDiGraph = nx.MultiDiGraph(name="G_hat")
+    G_hat = TwoPlayerGraph(graph_name="G_hat", config_yaml="config/G_hat", save_flag=False)
+    G_hat.construct_graph()
+    G_hat.add_states_from(['v0', 'v1', 'vT'])
+    # G_hat.add_nodes_from(['v0', 'v1', 'vT'])
+
+    # G_hat.nodes['v0']['player'] = "adam"
+    # G_hat.nodes['v1']['player'] = "eve"
+    # G_hat.nodes['vT']['player'] = "eve"
+
+    G_hat.add_state_attribute('v0', 'player', 'adam')
+    G_hat.add_state_attribute('v1', 'player', 'eve')
+    G_hat.add_state_attribute('vT', 'player', 'eve')
 
     # add v0 as the initial node
-    G_hat.nodes['v0']['init'] = True
+    # G_hat.nodes['v0']['init'] = True
+    G_hat.add_initial_state('v0')
 
     # add accepting states to g_hat
     accp_nodes = get_accepting_state_node(org_graph)
     # add the edges with the weights
-    G_hat.add_weighted_edges_from(
-        [('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
+    G_hat.add_weighted_edges_from([
+        ('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
+    # G_hat.add_weighted_edges_from(
+    #     [('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
 
     # compute the range of w_prime function
     w_set = set(w_prime.values()) - {-1 * math.inf}
@@ -253,11 +263,11 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx
 
     # construct g_b
     for b in w_set:
-        _construct_g_b(G_hat, org_graph, b, w_prime, org_init_nodes, accp_nodes)
+        _construct_g_b(G_hat._graph, org_graph, b, w_prime, org_init_nodes, accp_nodes)
 
     # add edges between v1 of G_hat and init nodes(v1_b/ ((v1, 1), b) of graph G_b with edge weights 0
     # get init node of the org graph
-    init_node_list: List[Tuple] = get_init_node(graph=G_hat)
+    init_node_list: List[Tuple] = get_init_node(graph=G_hat._graph)
 
     def remove_attribute(G, tnode, attr):
         G.nodes[tnode].pop(attr, None)
@@ -266,7 +276,7 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx
     for _init_n in init_node_list:
         if isinstance(_init_n[0], tuple):
             G_hat.add_weighted_edges_from([('v1', _init_n[0], 0)])
-            remove_attribute(G_hat, _init_n[0], "init")
+            remove_attribute(G_hat._graph, _init_n[0], "init")
 
     def w_hat_b(_org_graph: nx.MultiDiGraph, org_edge: Tuple[Tuple[str, str], Tuple[str, str]], b_value: str) -> str:
         """
@@ -276,35 +286,35 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> nx
         :param b_value:
         :return:
         """
-        if float(w_prime[org_edge]) != -1 * math.inf:
+        # if float(w_prime[org_edge]) != -1 * math.inf:
+        #     return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
+        # else:
+        try:
             return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
-        else:
-            try:
-                return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
-            except KeyError:
-                print(KeyError)
-                print("The code should have never thrown this error. The error strongly indicates that the edges of the"
-                      "original graph has been modified and the edge {} does not exist".format(org_edge))
+        except KeyError:
+            print(KeyError)
+            print("The code should have never thrown this error. The error strongly indicates that the edges of the"
+                  "original graph has been modified and the edge {} does not exist".format(org_edge))
 
     # add edges with their respective weights; a sample edge ((".","."),"."),((".","."),".") for with gmin/gmax and
     # with ((".","."),(".", "."))
-    for e in G_hat.edges():
+    for e in G_hat._graph.edges():
         # only add weights if hasn't been initialized
-        if G_hat[e[0]][e[1]][0].get('weight') is None:
+        if G_hat._graph[e[0]][e[1]][0].get('weight') is None:
             # an edge can only exist within a graph g_b
             assert (e[0][1] == e[1][1]), \
                 "Make sure that there only exist edge between nodes that belong to the same g_b"
-            if acc_min_edge_weight and G_hat.nodes[e[0]].get('accepting') is not None:
-                G_hat[e[0]][e[1]][0]['weight'] = '0'
+            if acc_min_edge_weight and G_hat._graph.nodes[e[0]].get('accepting') is not None:
+                G_hat._graph[e[0]][e[1]][0]['weight'] = '0'
             else:
-                G_hat[e[0]][e[1]][0]['weight'] = w_hat_b(org_graph, (e[0][0], e[1][0]), e[0][1])
+                G_hat._graph[e[0]][e[1]][0]['weight'] = w_hat_b(org_graph, (e[0][0], e[1][0]), e[0][1])
 
     # for nodes that don't have any outgoing edges add a transition to the terminal node i.e 'T' in our case
-    for node in G_hat.nodes():
-        if G_hat.out_degree(node) == 0:
+    for node in G_hat._graph.nodes():
+        if G_hat._graph.out_degree(node) == 0:
             if acc_max_edge_weight:
                 # if the node belongs to the accepting state then add a self-loop to itself
-                if G_hat.nodes[node].get('accepting') is not None:
+                if G_hat._graph.nodes[node].get('accepting') is not None:
                     G_hat.add_weighted_edges_from([(node, node, 0)])
                     continue
             # add transition to the terminal node
@@ -688,52 +698,60 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
     # check if the current node in g_hat_strategy does exist in org_graph. If so add it to org_strategy
     for node in g_hat_strategy:
         if node != "v0" and node != "v1":
-            if org_graph._trans_sys._graph.has_node(node[0][0]):
-                org_strategy.append(node[0][0])
+            if org_graph._graph_name == "Gmin_graph" or org_graph._graph_name == "Gmax_graph":
+                if org_graph._trans_sys._graph.has_node(node[0][0][0]):
+                    org_strategy.append(node[0][0][0])
+            else:
+                if org_graph._trans_sys._graph.has_node(node[0][0]):
+                    org_strategy.append(node[0][0])
 
     for u_node, v_node in g_hat_tmp.items():
         if u_node != "v0" and u_node != "v1":
-            if org_graph._trans_sys._graph.has_node(u_node[0][0]):
-                org_tmp.update({u_node[0][0]: v_node[0][0]})
+            if org_graph._graph_name == "Gmin_graph" or org_graph._graph_name == "Gmax_graph":
+                if org_graph._trans_sys._graph.has_node(u_node[0][0][0]):
+                    org_tmp.update({u_node[0][0][0]: v_node[0][0][0]})
+            else:
+                if org_graph._trans_sys._graph.has_node(u_node[0][0]):
+                    org_tmp.update({u_node[0][0]: v_node[0][0]})
 
     return org_tmp
 
 
-
 def main():
-    payoff_func = "liminf"
+    payoff_func = "sup"
     print(f"*****************Using {payoff_func}*****************")
+
     # construct graph
-    graph = construct_graph(payoff_func, scLTL_formula="!b & Fc")
-    p = payoff_value(graph._graph, payoff_func)
+    prod_graph = construct_graph(payoff_func, scLTL_formula="!b & Fc", plot=True)
+    p = payoff_value(prod_graph._graph, payoff_func)
 
     # construct W prime
-    w_prime = compute_w_prime(p, graph._graph)
+    w_prime = compute_w_prime(p, prod_graph._graph)
 
     # construct G_hat
-    G_hat = construct_g_hat(graph._graph, w_prime)
+    G_hat = construct_g_hat(prod_graph._graph, w_prime)
 
     # NOTE: The strategy that eve comes up with is the strategy with the least regret.
     #  The regret value should be within [0, -2W - 1]; W = Max weight in the orignal graph
     #  Adam plays from v0 to v1-only if he can ensure a non-zero regret (the Val of the corresponding play in
     #  g_hat should be > 0)
     #  Eve selects the strategy with the least regret (below the given threshold)
-    reg_dict = compute_aVal(G_hat, payoff_func, w_prime, graph._graph)
+    reg_dict = compute_aVal(G_hat._graph, payoff_func, w_prime, prod_graph._graph)
 
     if len(list(reg_dict.keys())) != 0:
         for k, v in reg_dict.items():
             print(f"{k}: {v}")
 
     # visualize the strategy
-    plot_graph(G_hat, file_name='config/g_hat_graph',
-               save_flag=False,
+    plot_graph(G_hat._graph, file_name='config/g_hat_graph',
+               save_flag=True,
                visualize_str=True,
-               combined_strategy={**reg_dict['eve'], **reg_dict['adam']}, plot=False)
+               combined_strategy={**reg_dict['eve'], **reg_dict['adam']}, plot=True)
 
     # map back strategy from g_hat to the original graph
-    org_strategy = map_g_hat_str_to_org_graph(G_hat, graph, {**reg_dict['eve'], **reg_dict['adam']})
+    org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph, {**reg_dict['eve'], **reg_dict['adam']})
 
-    plot_graph(graph._trans_sys._graph, file_name="config/trans_sys",
+    plot_graph(prod_graph._trans_sys._graph, file_name="config/trans_sys",
                save_flag=True,
                visualize_str=True,
                combined_strategy=org_strategy, plot=True)

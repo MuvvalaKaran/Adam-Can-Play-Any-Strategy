@@ -482,6 +482,8 @@ class TwoPlayerGraph(Graph):
 class GminGraph(TwoPlayerGraph):
 
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
+        self._trans_sys = None
+        self._auto_graph = None
         self._graph_name = graph_name
         self._config_yaml = config_yaml
         self._save_flag = save_flag
@@ -493,6 +495,8 @@ class GminGraph(TwoPlayerGraph):
 class GmaxGraph(TwoPlayerGraph):
 
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
+        self._trans_sys = None
+        self._auto_graph = None
         self._graph_name = graph_name
         self._config_yaml = config_yaml
         self._save_flag = save_flag
@@ -826,8 +830,10 @@ class GraphFactory:
     def _construct_gmin_graph(debug=False, use_alias=False, scLTL_formula: str='', plot=False):
         two_player_gmin = GminGraph('Gmin_graph', 'config/Gmin_graph', save_flag=True)
         two_player_gmin.construct_graph()
-        # two_player_game = GraphFactory._construct_two_player_graph()
+
         two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot)
+        two_player_gmin._trans_sys = two_player_game._trans_sys
+        two_player_gmin._auto_graph = two_player_game._auto_graph
 
         # construct new set of states V'
         V_prime = [(v, str(w)) for v in two_player_game._graph.nodes.data() for _, _, w in two_player_game._graph.edges.data('weight')]
@@ -877,8 +883,11 @@ class GraphFactory:
     def _construct_gmax_graph(debug=False, use_alias=False, scLTL_formula: str='', plot=False):
         two_player_gmax = GminGraph('Gmax_graph', 'config/Gmax_graph', save_flag=True)
         two_player_gmax.construct_graph()
-        # two_player_game = GraphFactory._construct_two_player_graph()
+
         two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot)
+        two_player_gmax._trans_sys = two_player_game._trans_sys
+        two_player_gmax._auto_graph = two_player_game._auto_graph
+
         # construct new set of states V'
         V_prime = [(v, str(w)) for v in two_player_game._graph.nodes.data()
                    for _, _, w in two_player_game._graph.edges.data('weight')]

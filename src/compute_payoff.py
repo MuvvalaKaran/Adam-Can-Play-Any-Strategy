@@ -6,6 +6,7 @@ from typing import List, Tuple, Dict
 # import helper function to deprecate warnings
 from helper_methods import deprecated
 from src.gameconstruction import Graph
+from src.graph.graph import GraphFactory
 
 """
 formatting notes : _protected variable: This effectively prevents it to be accessed unless, it is within a sub-class
@@ -276,6 +277,7 @@ class payoff_value():
                 else:
                     f.write(f":{int(float(v))}, ")
 
+    @deprecated
     def alt_dump_mpg_data_file(self) -> None:
         """
         The format of the file should be <NODE> <MIN/MAX> <ADJ_NODE>:<EDGE_WEIGHT>...;
@@ -311,24 +313,20 @@ class payoff_value():
 
 
 if __name__ == "__main__":
-    payoff_func = "mean"
+    payoff_func = "inf"
     print(f"*****************Using {payoff_func}*****************")
-    # construct graph
-    G = Graph(False)
-    org_graph = G.create_multigrpah()
 
     if payoff_func == "sup":
-        gmax = G.construct_Gmax(org_graph)
-        p = payoff_value(gmax, payoff_func)
+        _graph = GraphFactory._construct_gmin_graph(debug=False, plot=True)
+        p = payoff_value(_graph._graph, payoff_func)
     elif payoff_func == "inf":
-        gmin = G.construct_Gmin(org_graph)
-        p = payoff_value(gmin, payoff_func)
+        _graph = GraphFactory._construct_gmax_graph(debug=False, plot=True)
+        p = payoff_value(_graph._graph, payoff_func)
     else:
-        p = payoff_value(org_graph, payoff_func)
+        _graph = GraphFactory._construct_product_automaton_graph(use_alias=False, scLTL_formula="!b & Fc", plot=True)
+        p = payoff_value(_graph._graph, payoff_func)
 
     loop_vals = p.cycle_main()
     for k, v in loop_vals.items():
         print(f"Play: {k} : val: {v} ")
-
-    p.alt_dump_mpg_data_file()
 

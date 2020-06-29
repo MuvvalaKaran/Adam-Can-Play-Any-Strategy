@@ -47,7 +47,7 @@ bypass_implementation = True
 
 
 def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = False,
-                    scLTL_formula: str = "", plot: bool = False) -> ProductAutomaton:
+                    scLTL_formula: str = "", plot: bool = False, prune: bool = False) -> ProductAutomaton:
     """
     A helper method to construct a graph using the GraphFactory() class, given a boolean formula
     :param payoff_func: A payoff function
@@ -57,23 +57,20 @@ def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = Fal
     :param plot
     :return: Return graph G or Gmin/Gmax if payoff function is inf/sup respectively.
     """
-
+    print("=========================================")
+    print(f"Using scLTL formula : {scLTL_formula}")
+    print("=========================================")
     # pattern to detect exactly 'sup' or 'inf'
     sup_re = re.compile('^sup$')
     inf_re = re.compile('^inf$')
 
     if inf_re.match(payoff_func):
-        # gmin = G.construct_Gmin(org_graph)
-        _graph = GraphFactory._construct_gmin_graph(debug=debug, plot=plot)
-        # gmain.graph = gmin
+        _graph = GraphFactory._construct_gmin_graph(debug=debug, plot=plot, prune=prune)
     elif sup_re.match(payoff_func):
-        # gmax = G.construct_Gmax(org_graph)
-        _graph = GraphFactory._construct_gmax_graph(debug=debug, plot=plot)
-        # G.graph = gmax
+        _graph = GraphFactory._construct_gmax_graph(debug=debug, plot=plot, prune=prune)
     else:
         _graph = GraphFactory._construct_product_automaton_graph(use_alias=use_alias, scLTL_formula=scLTL_formula,
-                                                                 plot=plot)
-        # G.graph = org_graph
+                                                                 plot=plot, debug=debug, prune=prune)
     return _graph
 
 
@@ -718,11 +715,11 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
 
 
 def main():
-    payoff_func = "inf"
+    payoff_func = "limsup"
     print(f"*****************Using {payoff_func}*****************")
 
     # construct graph
-    prod_graph = construct_graph(payoff_func, scLTL_formula="!b & Fc", plot=True)
+    prod_graph = construct_graph(payoff_func, scLTL_formula="!b U (!a U c)", plot=True, debug=True, prune=True)
     p = payoff_value(prod_graph._graph, payoff_func)
 
     # construct W prime
@@ -732,7 +729,7 @@ def main():
     G_hat = construct_g_hat(prod_graph._graph, w_prime)
 
     # NOTE: The strategy that eve comes up with is the strategy with the least regret.
-    #  The regret value should be within [0, -2W - 1]; W = Max weight in the orignal graph
+    #  The regret value should be within [0, -2W - 1]; W = Max weight in the original graph
     #  Adam plays from v0 to v1-only if he can ensure a non-zero regret (the Val of the corresponding play in
     #  g_hat should be > 0)
     #  Eve selects the strategy with the least regret (below the given threshold)

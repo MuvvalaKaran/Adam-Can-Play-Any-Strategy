@@ -5,6 +5,7 @@ import warnings
 import random
 import re
 
+from collections import deque, defaultdict
 from src.graph.promela import parse as parse_ltl, find_states, find_symbols
 from src.graph.spot import run_spot
 from graphviz import Digraph
@@ -183,11 +184,11 @@ class Graph(abc.ABC):
         >>> G = Graph
         >>> G.add_state(1)
         >>> G.add_states_from([2, 4])
-        >>> list(G.nodes)
+        >>> list(G.nodes.data())
         [1, 2, 4]
         :return: A list of nodes corresponding to @self._graph
         """
-        return list(self._graph.nodes)
+        return list(self._graph.nodes.data())
 
     def get_states_w_attributes(self) -> List:
         """
@@ -393,7 +394,7 @@ class Graph(abc.ABC):
 
         for n in self._graph.nodes.data('accepting'):
             if n[1] is True:
-                _accp_state.append(n)
+                _accp_state.append(n[0])
 
         if len(_accp_state) == 0:
             warnings.warn("WARNING: The set of accepting states is empty. Returning an empty list.")
@@ -471,12 +472,16 @@ class TwoPlayerGraph(Graph):
             self.save_dot_graph(dot, graph_name, True)
 
     def print_edges(self):
+        print("=====================================")
         print(f"Printing {self._graph_name} edges \n")
         super().print_edges()
+        print("=====================================")
 
     def print_nodes(self):
+        print("=====================================")
         print(f"Printing {self._graph_name} nodes \n")
         super().print_edges()
+        print("=====================================")
 
 
 class GminGraph(TwoPlayerGraph):
@@ -554,6 +559,7 @@ class FiniteTransSys(TwoPlayerGraph):
         if self._save_flag:
             graph_name = str(self._graph.__getattribute__('name'))
             self.save_dot_graph(dot, graph_name, True)
+
 
 class DFAGraph(Graph):
 
@@ -690,10 +696,111 @@ class ProductAutomaton(TwoPlayerGraph):
 
 
     def build_initial(self):
-        pass
+        raise NotImplementedError
 
     def build_accepting(self):
-        pass
+        raise NotImplementedError
+
+    def prune_graph(self, debug=False):
+
+        # set to hold the attractor states
+        # attr = deque()
+        # attr = defaultdict(lambda: False)
+        # eve_str = {}
+        # # get the set of accepting state and update the set of attractor states
+        # accp_states = self.get_accepting_states()
+        # # attr.extend(self.get_accepting_states())
+        # for _a in accp_states:
+        #     attr.update({_a: False})
+        # # look at the predecessors nodes of the the attractor states
+        # for _n in attr.keys():
+        #     # find predecessor if you haven't checked this node before
+        #     if not attr[_n]:
+        #         for _pre_n in self._graph.predecessors(_n):
+        #             # if the predecessor belongs to player adam then just add it to the set
+        #             if self._graph.nodes[_pre_n].get('player') == 'adam':
+        #                 # attr |= _pre_n
+        #                 if _pre_n not in attr:
+        #                     attr.update({_pre_n: False})
+        #             else:
+        #                 # add the eve node to the set and the respective edge
+        #                 # attr |= _pre_n
+        #                 if _pre_n not in attr:
+        #                     attr.update({_pre_n: False})
+        #                 if not eve_str.get(_pre_n):
+        #                     eve_str.update({_pre_n: [_n]})
+        #                 else:
+        #                     eve_str[_pre_n].append(_n)
+        #         attr[_n] = True
+
+        # initialize queue (deque is part of std library and allows O(1) append() and pop() at either end)
+        queue = deque()
+        regions = defaultdict(lambda : -1)
+        attr = []  # the attractor region
+        eve_str = {}
+
+        for node in self.get_accepting_states():
+            queue.append(node)
+            regions[node] = +1
+            attr.append(node)
+
+        while queue:
+            _n = queue.popleft()
+
+            for _pre_n in self._graph.predecessors(_n):
+                if regions[_pre_n] == -1 or self._graph.nodes[_pre_n].get("player") == "eve":   #  if you haven't visited this node yet
+                    if self._graph.nodes[_pre_n].get("player") == "adam":
+                        queue.append(_pre_n)
+                        regions[_pre_n] = +1
+                        attr.append(_pre_n)
+                    else:
+                        if regions[_pre_n] == -1:
+                            queue.append(_pre_n)
+                            regions[_pre_n] = +1
+                            attr.append(_pre_n)
+                        if not eve_str.get(_pre_n):
+                            eve_str.update({_pre_n: [_n]})
+                        else:
+                            eve_str[_pre_n].append(_n)
+
+        # debug
+        if debug:
+            print("=====================================")
+            init_node = self.get_initial_states()[0][0]
+            if init_node in attr:
+                print("A Winning Strategy may exists")
+            else:
+                print("A Winning Strategy does not exists at all")
+            print("=====================================")
+
+        nx.set_edge_attributes(self._graph, False, "prune")
+        # lets prune the graph by removing edges of eve do not exist in eve_str
+        for _u, _vs in eve_str.items():
+            for _v in _vs:
+                # add attribute for the corresponding edge and the remove edges without this particular attribut
+                self._graph.edges[_u, _v, 0]["prune"] = True
+
+        self.prune_edges(debug=debug)
+
+
+    def prune_edges(self, debug):
+        # A helper function to remove edges without the "prune" attribute
+        remove_lst = []
+        for _ed in self._graph.edges.data():
+            if (not _ed[2].get("prune")) and _ed[2].get("player") == "eve":
+                remove_lst.append(_ed)
+
+        if debug:
+            print("=====================================")
+            print(f"The number of edges prunes are : {len(remove_lst)}")
+            print("=====================================")
+
+        for _e in remove_lst:
+            if debug:
+                print("=====================================")
+                print(f"Removing edge between {_e[0]}--->{_e[1]}")
+                print("=====================================")
+            self._graph.remove_edge(_e[0], _e[1])
 
 class GraphFactory:
 
@@ -817,11 +924,13 @@ class GraphFactory:
         return two_player_graph
 
     @staticmethod
-    def _construct_gmin_graph(debug=False, use_alias=False, scLTL_formula: str='', plot=False):
+    def _construct_gmin_graph(debug: bool = False, use_alias: bool = False, scLTL_formula: str='',
+                              plot: bool = False, prune: bool = False):
         two_player_gmin = GminGraph('Gmin_graph', 'config/Gmin_graph', save_flag=True)
         two_player_gmin.construct_graph()
 
-        two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot)
+        two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
+                                                                          debug=debug, prune=prune)
         two_player_gmin._trans_sys = two_player_game._trans_sys
         two_player_gmin._auto_graph = two_player_game._auto_graph
 
@@ -872,11 +981,13 @@ class GraphFactory:
         return two_player_gmin
 
     @staticmethod
-    def _construct_gmax_graph(debug=False, use_alias=False, scLTL_formula: str='', plot=False):
+    def _construct_gmax_graph(debug: bool = False, use_alias: bool = False, scLTL_formula: str = '',
+                              plot: bool = False, prune: bool = False):
         two_player_gmax = GminGraph('Gmax_graph', 'config/Gmax_graph', save_flag=True)
         two_player_gmax.construct_graph()
 
-        two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot)
+        two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
+                                                                          debug=debug, prune=prune)
         two_player_gmax._trans_sys = two_player_game._trans_sys
         two_player_gmax._auto_graph = two_player_game._auto_graph
 
@@ -1012,7 +1123,7 @@ class GraphFactory:
         return dfa
 
     @staticmethod
-    def _construct_product_automaton_graph(use_alias=False, scLTL_formula: str='', plot=False):
+    def _construct_product_automaton_graph(use_alias=False, scLTL_formula: str='', plot=False, prune=False, debug=False):
         # construct the transition system
         tran_sys = GraphFactory._construct_finite_trans_sys(plot=plot)
 
@@ -1022,6 +1133,11 @@ class GraphFactory:
         # construct the product automaton
         prod_auto = ProductAutomaton(tran_sys, dfa, "product_graph", "config/prod_auto", save_flag=True)
         prod_auto.construct_graph()
+
+        if prune:
+            # prune the graph
+            prod_auto.prune_graph(debug=debug)
+
         if plot:
             prod_auto.plot_graph()
 
@@ -1029,19 +1145,19 @@ class GraphFactory:
 if __name__ == "__main__":
 
     # test two_player_game_construction
-    GraphFactory._construct_two_player_graph()
+    # GraphFactory._construct_two_player_graph()
 
     # test gmin graph construction
-    GraphFactory._construct_gmin_graph()
+    # GraphFactory._construct_gmin_graph()
 
     # test gmax graph construction
-    GraphFactory._construct_gmax_graph()
+    # GraphFactory._construct_gmax_graph()
 
     # test finite transition system construction
-    tran_sys = GraphFactory._construct_finite_trans_sys()
+    # GraphFactory._construct_finite_trans_sys()
 
     # test DFA construction
-    dfa = GraphFactory._construct_dfa_graph(use_alias=False)
+    # GraphFactory._construct_dfa_graph(use_alias=False)
 
     # build the product automaton
-    GraphFactory._construct_product_automaton_graph()
+    GraphFactory._construct_product_automaton_graph(debug=True, plot=True, prune=True)

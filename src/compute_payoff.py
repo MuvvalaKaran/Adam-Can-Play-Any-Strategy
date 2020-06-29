@@ -321,7 +321,8 @@ if __name__ == "__main__":
         _graph = GraphFactory._construct_gmax_graph(debug=False, plot=True)
         p = payoff_value(_graph._graph, payoff_func)
     else:
-        _graph = GraphFactory._construct_product_automaton_graph(use_alias=False, scLTL_formula="!b & Fc", plot=True)
+        _graph = GraphFactory._construct_product_automaton_graph(use_alias=False, scLTL_formula="!b & Fc",
+                                                                 plot=True, prune=False)
         p = payoff_value(_graph._graph, payoff_func)
 
     loop_vals = p.cycle_main()

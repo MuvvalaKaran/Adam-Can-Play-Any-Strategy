@@ -637,37 +637,27 @@ class ProductAutomaton(TwoPlayerGraph):
         for _u_ts_node in self._trans_sys._graph.nodes():
             for _u_a_node in self._auto_graph._graph.nodes():
                 _u_prod_node = self.composition(_u_ts_node, _u_a_node)
-
                 for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
-                    for _v_a_node in self._auto_graph._graph.nodes():
+                    for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
                         _v_prod_node = self.composition(_v_ts_node, _v_a_node)
-                        # initialize flag of the edge to be false at each iteration
-                        truth = False
-                        # NOTE: labels in future on transition systwm maybe replaced with weights
+                        # NOTE: labels in future on transition system maybe replaced with weights
                         label = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
                         weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
-                        if self._auto_graph._graph.has_edge(_u_a_node, _v_a_node):
-                            auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
-                            # the code works well. BUT for human edges, skip checking for label and directly allow edges
-                            if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
-                                if auto_label.formula == "(true)" or auto_label.formula == "1":
-                                    truth = True
-                                else:
-                                    truth = auto_label.check(label)
-                            else:
-                                # if the current automaton node and the target automaton node is the same then add the
-                                # internal edge
-                                # TODO: verify with Morteza what happens if you are in the human state
-                                if _u_a_node == _v_a_node:
-                                    truth = True
-                        else:
-                            if _u_a_node == _v_a_node:
-                                # this is the edge case where TS remains in the same Q evolves naturally in the same
-                                # sub_graph
+                        auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
+                        if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
+                            if auto_label.formula == "(true)" or auto_label.formula == "1":
                                 truth = True
-
+                            else:
+                                truth = auto_label.check(label)
+                        # if the node belongs to adam
+                        else:
+                            # TODO: verify with Morteza what happens if you are in the human state
+                            _v_a_node = _u_a_node
+                            _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+                            truth = True
                         if truth:
-                            self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, weight)])
+                            if not self._graph.has_edge(_u_prod_node, _v_prod_node):
+                                self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, weight)])
 
     def composition(self, ts_node, auto_node) -> Tuple:
         _p_node = (ts_node, auto_node)
@@ -858,6 +848,8 @@ class GraphFactory:
             if n[0][1].get('init') and n[1] == W:
                 # Gmin.nodes[(n[0][0], n[1])]['init'] = True
                 two_player_gmin.add_initial_state((n[0][0], n[1]))
+            if n[0][1].get('accepting'):
+                two_player_gmin.add_accepting_state((n[0][0], n[1]))
 
         if debug:
             two_player_gmin.print_nodes()
@@ -912,6 +904,8 @@ class GraphFactory:
             if n[0][1].get('init') and n[1] == W:
                 # Gmax.nodes[(n[0][0], n[1])]['init'] = True
                 two_player_gmax.add_initial_state((n[0][0], n[1]))
+            if n[0][1].get('accepting'):
+                two_player_gmax.add_accepting_state((n[0][0], n[1]))
 
         if debug:
             # print("Printing Gmax nodes : \n", Gmax.nodes.data())
@@ -966,7 +960,7 @@ class GraphFactory:
         trans_sys.add_edge('(h12,0)', '(s3,1)', actions='m', weight='0')
         trans_sys.add_edge('(h23,0)', '(s1,1)', actions='m', weight='0')
         trans_sys.add_edge('(h23,0)', '(s2,1)', actions='m', weight='0')
-        trans_sys.add_edge('(h21,0)', '(s1,1)', actions='m', weight='0')
+        trans_sys.add_edge('(h21,0)', '(s3,1)', actions='m', weight='0')
         trans_sys.add_edge('(h21,0)', '(s2,1)', actions='m', weight='0')
         trans_sys.add_edge('(h33,0)', '(s1,1)', actions='m', weight='0')
         trans_sys.add_edge('(h33,0)', '(s2,1)', actions='m', weight='0')

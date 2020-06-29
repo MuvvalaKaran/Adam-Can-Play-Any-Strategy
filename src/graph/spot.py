@@ -185,7 +185,7 @@ def run_spot(formula: str, debug=False):
     :return:
     """
     if not isinstance(formula, str):
-        warnings.warn("Please make sure the input formula is of typ string.")
+        warnings.warn("Please make sure the input formula is of type string.")
 
     process = Popen(["ltl2tgba", "--complete", "--ba", "--state-based-acceptance",
                                "--deterministic", "--spin", f"--formula={formula}"], stdout=PIPE)

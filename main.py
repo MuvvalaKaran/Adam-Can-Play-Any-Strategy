@@ -64,14 +64,14 @@ def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = Fal
 
     if inf_re.match(payoff_func):
         # gmin = G.construct_Gmin(org_graph)
-        _graph = GraphFactory._construct_gmin_graph(debug=debug)
+        _graph = GraphFactory._construct_gmin_graph(debug=debug, plot=plot)
         # gmain.graph = gmin
     elif sup_re.match(payoff_func):
         # gmax = G.construct_Gmax(org_graph)
-        _graph = GraphFactory._construct_gmax_graph(debug=debug)
+        _graph = GraphFactory._construct_gmax_graph(debug=debug, plot=plot)
         # G.graph = gmax
     else:
-        _graph = GraphFactory._construct_product_automaton_graph(use_alias=debug, scLTL_formula=scLTL_formula,
+        _graph = GraphFactory._construct_product_automaton_graph(use_alias=use_alias, scLTL_formula=scLTL_formula,
                                                                  plot=plot)
         # G.graph = org_graph
     return _graph
@@ -718,7 +718,7 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
 
 
 def main():
-    payoff_func = "sup"
+    payoff_func = "inf"
     print(f"*****************Using {payoff_func}*****************")
 
     # construct graph

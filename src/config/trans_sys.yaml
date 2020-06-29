@@ -4,82 +4,122 @@ graph:
     - (s1,0)
     - (h12,0)
     - actions: s12
+      strategy: false
+      weight: '0'
   - !!python/tuple
     - (s2,0)
     - (h23,0)
     - actions: s23
+      strategy: true
+      weight: '3'
   - !!python/tuple
     - (s2,0)
     - (h21,0)
     - actions: s21
+      strategy: false
+      weight: '2'
   - !!python/tuple
     - (s3,0)
     - (h33,0)
     - actions: s33
+      strategy: false
+      weight: '5'
   - !!python/tuple
     - (s1,1)
     - (s2,1)
     - actions: s12
+      strategy: true
+      weight: '0'
   - !!python/tuple
     - (s2,1)
     - (s1,1)
     - actions: s21
+      strategy: true
+      weight: '2'
   - !!python/tuple
     - (s2,1)
     - (s3,1)
     - actions: s23
+      strategy: false
+      weight: '3'
   - !!python/tuple
     - (s3,1)
     - (s3,1)
     - actions: s33
+      strategy: false
+      weight: '5'
   - !!python/tuple
     - (h12,0)
     - (s2,0)
     - actions: s12
+      strategy: false
+      weight: '0'
   - !!python/tuple
     - (h12,0)
     - (s1,1)
     - actions: m
+      strategy: false
+      weight: '0'
   - !!python/tuple
     - (h12,0)
     - (s3,1)
     - actions: m
+      strategy: false
+      weight: '0'
   - !!python/tuple
     - (h21,0)
     - (s1,0)
     - actions: s21
+      strategy: false
+      weight: '2'
   - !!python/tuple
     - (h21,0)
-    - (s1,1)
+    - (s3,1)
     - actions: m
+      strategy: false
+      weight: '0'
   - !!python/tuple
     - (h21,0)
     - (s2,1)
     - actions: m
+      strategy: false
+      weight: '0'
   - !!python/tuple
     - (h23,0)
     - (s3,0)
     - actions: s23
+      strategy: false
+      weight: '3'
   - !!python/tuple
     - (h23,0)
     - (s1,1)
     - actions: m
+      strategy: false
+      weight: '0'
   - !!python/tuple
     - (h23,0)
     - (s2,1)
     - actions: m
+      strategy: true
+      weight: '0'
   - !!python/tuple
     - (h33,0)
     - (s3,0)
     - actions: s33
+      strategy: false
+      weight: '5'
   - !!python/tuple
     - (h33,0)
     - (s1,1)
     - actions: m
+      strategy: false
+      weight: '0'
   - !!python/tuple
     - (h33,0)
     - (s2,1)
     - actions: m
+      strategy: false
+      weight: '0'
   vertices:
   - !!python/tuple
     - (s1,0)
@@ -115,28 +155,24 @@ graph:
   - !!python/tuple
     - (h12,0)
     - ap: !!set
-        a: null
-        b: null
-        c: null
+        ? ''
+        : null
       player: adam
   - !!python/tuple
     - (h21,0)
     - ap: !!set
-        a: null
-        b: null
-        c: null
+        ? ''
+        : null
       player: adam
   - !!python/tuple
     - (h23,0)
     - ap: !!set
-        a: null
-        b: null
-        c: null
+        ? ''
+        : null
       player: adam
   - !!python/tuple
     - (h33,0)
     - ap: !!set
-        a: null
-        b: null
-        c: null
+        ? ''
+        : null
       player: adam

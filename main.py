@@ -715,11 +715,11 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
 
 
 def main():
-    payoff_func = "limsup"
+    payoff_func = "mean"
     print(f"*****************Using {payoff_func}*****************")
 
     # construct graph
-    prod_graph = construct_graph(payoff_func, scLTL_formula="!b U (!a U c)", plot=True, debug=True, prune=True)
+    prod_graph = construct_graph(payoff_func, scLTL_formula="!d U g", plot=True, debug=True, prune=True)
     p = payoff_value(prod_graph._graph, payoff_func)
 
     # construct W prime

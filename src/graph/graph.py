@@ -536,7 +536,7 @@ class FiniteTransSys(TwoPlayerGraph):
             if n[1].get('accepting'):
                 # default color for accepting node is purple
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
-            if n[1]['player'] == 'eve':
+            if n[1].get('player') == 'eve':
                 dot.node(str(n[0]), _attributes={"shape": "rectangle"})
             else:
                 dot.node(str(n[0]), _attributes={"shape": "circle"})
@@ -560,6 +560,65 @@ class FiniteTransSys(TwoPlayerGraph):
             graph_name = str(self._graph.__getattribute__('name'))
             self.save_dot_graph(dot, graph_name, True)
 
+    def automate_construction(self, k: int):
+        # a function to construct the two game automatically in code. K = # of times the human can intervene
+        if not isinstance(k, int):
+            warnings.warn("Please Make sure the Quantity K which represents the number of times the human can "
+                          "intervene is an integer")
+        eve_node_lst = []
+        adam_node_lst = []
+        two_player_graph_ts = FiniteTransSys(self._graph_name, self._config_yaml, self._save_flag)
+        two_player_graph_ts.construct_graph()
+
+        # lets create k copies of the stats
+        for _n in self._graph.nodes():
+            for i in range(k+1):
+                _sys_node = (_n, i)
+                eve_node_lst.append(_sys_node)
+
+        two_player_graph_ts.add_states_from(eve_node_lst, player='eve')
+
+        # for each edge create a human node and then alter the orginal edge to go through the human node
+        for e in self._graph.edges():
+            for i in range(k):
+                # lets create a human edge with huv,k naming convention
+                _env_node = ((f"h{e[0][1:]}{e[1][1:]}"), f"{i}")
+                adam_node_lst.append(_env_node)
+
+        two_player_graph_ts.add_states_from(adam_node_lst, player='adam')
+
+        # add init node
+        init_node = self.get_initial_states()
+        two_player_graph_ts.add_state_attribute((init_node[0][0], 0), "init", True)
+        # create a new graph
+        # self.add_states_from(node_lst)
+        # two_player_graph: nx.MultiDiGraph = nx.MultiDiGraph(name=self._graph_name)
+
+        # now we add edges
+        for e in self._graph.edges.data():
+            # add edge between e[0] and the human node h{e[0][1:]}{e[0][1:]}, k
+            for ik in range(k):
+                two_player_graph_ts.add_edge((e[0], ik), ((f"h{e[0][1:]}{e[1][1:]}"), f"{ik}"),
+                                             actions=e[2].get("actions"), weight=e[2].get("weight"))
+                two_player_graph_ts.add_edge(((f"h{e[0][1:]}{e[1][1:]}"), f"{ik}"), (e[1], ik),
+                                             actions=e[2].get("actions"), weight=e[2].get("weight"))
+                _alt_nodes_set = set(self._graph.nodes()) - {e[1]}
+                for _alt_nodes in _alt_nodes_set:
+                    two_player_graph_ts.add_edge(((f"h{e[0][1:]}{e[1][1:]}"), f"{ik}"), (_alt_nodes, ik+1),
+                                                 actions="m", weight="0")
+
+        # manually add edges to states that belong to k index
+        for e in self._graph.edges.data():
+            two_player_graph_ts.add_edge((e[0], k), (e[1], k),
+                                         actions=e[2].get('actions'), weight=e[2].get("weight"))
+
+        # add the original atomic proposition to the new states
+        for _n in self._graph.nodes.data():
+            if _n[1].get('ap'):
+                for ik in range(k+1):
+                    two_player_graph_ts.add_state_attribute((_n[0], ik), 'ap', _n[1].get('ap'))
+
+        return two_player_graph_ts
 
 class DFAGraph(Graph):
 
@@ -805,7 +864,7 @@ class ProductAutomaton(TwoPlayerGraph):
 class GraphFactory:
 
     @staticmethod
-    def get_two_player_game(graph, graph_name, config_yaml, save_flag=False, plot=False):
+    def get_two_player_game(graph, graph_name, config_yaml, save_flag: bool = False, plot: bool = False):
         two_player_game = TwoPlayerGraph(graph_name, config_yaml, save_flag)
         two_player_game._graph = graph
 
@@ -813,7 +872,7 @@ class GraphFactory:
             two_player_game.plot_graph()
 
     @staticmethod
-    def _construct_two_player_graph(plot=False):
+    def _construct_two_player_graph(plot: bool = False):
         two_player_graph = TwoPlayerGraph('org_graph', 'config/org_graph', save_flag=True)
         two_player_graph.construct_graph()
 
@@ -1040,51 +1099,90 @@ class GraphFactory:
         return two_player_gmax
 
     @staticmethod
-    def _construct_finite_trans_sys(plot=False):
+    def _construct_finite_trans_sys(debug: bool = False, plot: bool = False):
         trans_sys = FiniteTransSys("transition_system", "config/trans_sys", save_flag=True)
         trans_sys.construct_graph()
 
-        trans_sys.add_states_from([('(s1,0)', {'ap': {'b'}, 'player': 'eve'}),
-                                   ('(s2,0)', {'ap': {'a'}, 'player': 'eve'}),
-                                   ('(s3,0)', {'ap': {'c'}, 'player': 'eve'}),
-                                   ('(s1,1)', {'ap': {'b'}, 'player': 'eve'}),
-                                   ('(s2,1)', {'ap': {'a'}, 'player': 'eve'}),
-                                   ('(s3,1)', {'ap': {'c'}, 'player': 'eve'}),
-                                   ('(h12,0)', {'ap': {''}, 'player': 'adam'}),
-                                   ('(h21,0)', {'ap': {''}, 'player': 'adam'}),
-                                   ('(h23,0)', {'ap': {''}, 'player': 'adam'}),
-                                   ('(h33,0)', {'ap': {''}, 'player': 'adam'})])
+        if not debug:
+            trans_sys.add_states_from(['s1', 's2', 's3'])
+            trans_sys.add_state_attribute('s1', 'ap', 'b')
+            trans_sys.add_state_attribute('s2', 'ap', 'a')
+            trans_sys.add_state_attribute('s3', 'ap', 'c')
 
-        trans_sys.add_edge('(s1,0)', '(h12,0)', actions='s12', weight='0')
-        trans_sys.add_edge('(h12,0)', '(s2,0)', actions='s12', weight='0')
-        trans_sys.add_edge('(s2,0)', '(h23,0)', actions='s23', weight='3')
-        trans_sys.add_edge('(h23,0)', '(s3,0)', actions='s23', weight='3')
-        trans_sys.add_edge('(s2,0)', '(h21,0)', actions='s21', weight='2')
-        trans_sys.add_edge('(h21,0)', '(s1,0)', actions='s21', weight='2')
-        trans_sys.add_edge('(s3,0)', '(h33,0)', actions='s33', weight='5')
-        trans_sys.add_edge('(h33,0)', '(s3,0)', actions='s33', weight='5')
-        trans_sys.add_edge('(s1,1)', '(s2,1)', actions='s12', weight='0')
-        trans_sys.add_edge('(s2,1)', '(s1,1)', actions='s21', weight='2')
-        trans_sys.add_edge('(s2,1)', '(s3,1)', actions='s23', weight='3')
-        trans_sys.add_edge('(s3,1)', '(s3,1)', actions='s33', weight='5')
-        trans_sys.add_edge('(h12,0)', '(s1,1)', actions='m', weight='0')
-        trans_sys.add_edge('(h12,0)', '(s3,1)', actions='m', weight='0')
-        trans_sys.add_edge('(h23,0)', '(s1,1)', actions='m', weight='0')
-        trans_sys.add_edge('(h23,0)', '(s2,1)', actions='m', weight='0')
-        trans_sys.add_edge('(h21,0)', '(s3,1)', actions='m', weight='0')
-        trans_sys.add_edge('(h21,0)', '(s2,1)', actions='m', weight='0')
-        trans_sys.add_edge('(h33,0)', '(s1,1)', actions='m', weight='0')
-        trans_sys.add_edge('(h33,0)', '(s2,1)', actions='m', weight='0')
+            # trans_sys.add_states_from([('(s1,0)', {'ap': {'b'}, 'player': 'eve'}),
+            #                            ('(s2,0)', {'ap': {'a'}, 'player': 'eve'}),
+            #                            ('(s3,0)', {'ap': {'c'}, 'player': 'eve'}),
+            #                            ('(s1,1)', {'ap': {'b'}, 'player': 'eve'}),
+            #                            ('(s2,1)', {'ap': {'a'}, 'player': 'eve'}),
+            #                            ('(s3,1)', {'ap': {'c'}, 'player': 'eve'}),
+            #                            ('(h12,0)', {'ap': {''}, 'player': 'adam'}),
+            #                            ('(h21,0)', {'ap': {''}, 'player': 'adam'}),
+            #                            ('(h23,0)', {'ap': {''}, 'player': 'adam'}),
+            #                            ('(h33,0)', {'ap': {''}, 'player': 'adam'})])
+            #
 
-        trans_sys.add_initial_state('(s2,0)')
+            trans_sys.add_edge('s1', 's2', actions='s12', weight='0')
+            trans_sys.add_edge('s2', 's1', actions='s21', weight='2')
+            trans_sys.add_edge('s2', 's3', actions='s23', weight='3')
+            # trans_sys.add_edge('s3', 's3', actions='s33', weight='5')
+            trans_sys.add_edge('s3', 's1', actions='s31', weight='5')
+            trans_sys.add_edge('s1', 's3', actions='s13', weight='3')
+            # trans_sys.add_edge('(s1,0)', '(h12,0)', actions='s12', weight='0')
+            # trans_sys.add_edge('(h12,0)', '(s2,0)', actions='s12', weight='0')
+            # trans_sys.add_edge('(s2,0)', '(h23,0)', actions='s23', weight='3')
+            # trans_sys.add_edge('(h23,0)', '(s3,0)', actions='s23', weight='3')
+            # trans_sys.add_edge('(s2,0)', '(h21,0)', actions='s21', weight='2')
+            # trans_sys.add_edge('(h21,0)', '(s1,0)', actions='s21', weight='2')
+            # trans_sys.add_edge('(s3,0)', '(h33,0)', actions='s33', weight='5')
+            # trans_sys.add_edge('(h33,0)', '(s3,0)', actions='s33', weight='5')
+            # trans_sys.add_edge('(s1,1)', '(s2,1)', actions='s12', weight='0')
+            # trans_sys.add_edge('(s2,1)', '(s1,1)', actions='s21', weight='2')
+            # trans_sys.add_edge('(s2,1)', '(s3,1)', actions='s23', weight='3')
+            # trans_sys.add_edge('(s3,1)', '(s3,1)', actions='s33', weight='5')
+            # trans_sys.add_edge('(h12,0)', '(s1,1)', actions='m', weight='0')
+            # trans_sys.add_edge('(h12,0)', '(s3,1)', actions='m', weight='0')
+            # trans_sys.add_edge('(h23,0)', '(s1,1)', actions='m', weight='0')
+            # trans_sys.add_edge('(h23,0)', '(s2,1)', actions='m', weight='0')
+            # trans_sys.add_edge('(h21,0)', '(s3,1)', actions='m', weight='0')
+            # trans_sys.add_edge('(h21,0)', '(s2,1)', actions='m', weight='0')
+            # trans_sys.add_edge('(h33,0)', '(s1,1)', actions='m', weight='0')
+            # trans_sys.add_edge('(h33,0)', '(s2,1)', actions='m', weight='0')
+            #
+
+            trans_sys.add_initial_state('s2')
+            # trans_sys.add_initial_state('(s2,0)')
+        else:
+            trans_sys.add_states_from(['s1', 's2', 's3', 's4', 's5'])
+            trans_sys.add_state_attribute('s1', 'ap', 'b')
+            trans_sys.add_state_attribute('s2', 'ap', 'i')
+            trans_sys.add_state_attribute('s3', 'ap', 'r')
+            trans_sys.add_state_attribute('s4', 'ap', 'g')
+            trans_sys.add_state_attribute('s5', 'ap', 'd')
+            # E = 4 ; W = 2; S = 3 ; N = 9
+            trans_sys.add_edge('s1', 's2', actions='E', weight='4')
+            trans_sys.add_edge('s2', 's1', actions='W', weight='2')
+            trans_sys.add_edge('s3', 's2', actions='N', weight='9')
+            trans_sys.add_edge('s2', 's3', actions='S', weight='3')
+            trans_sys.add_edge('s3', 's4', actions='S', weight='3')
+            trans_sys.add_edge('s4', 's3', actions='N', weight='9')
+            trans_sys.add_edge('s1', 's4', actions='W', weight='2')
+            trans_sys.add_edge('s4', 's1', actions='W', weight='2')
+            trans_sys.add_edge('s4', 's5', actions='E', weight='4')
+            trans_sys.add_edge('s5', 's4', actions='S', weight='3')
+            trans_sys.add_edge('s2', 's5', actions='E', weight='4')
+            trans_sys.add_edge('s5', 's2', actions='N', weight='9')
+
+            trans_sys.add_initial_state('s1')
+
+        new_trans = trans_sys.automate_construction(k=2)
 
         if plot:
-            trans_sys.plot_graph()
+            new_trans.plot_graph()
 
-        return trans_sys
+        return new_trans
 
     @staticmethod
-    def _construct_dfa_graph(use_alias=True, scLTL_formula: str='', plot=False):
+    def _construct_dfa_graph(use_alias: bool = True, scLTL_formula: str = '', plot: bool = False):
         if scLTL_formula == '':
             # construct a basic graph object
             dfa = DFAGraph('!b & Fc', 'dfa_graph', 'config/dfa_graph', save_flag=True)
@@ -1123,9 +1221,10 @@ class GraphFactory:
         return dfa
 
     @staticmethod
-    def _construct_product_automaton_graph(use_alias=False, scLTL_formula: str='', plot=False, prune=False, debug=False):
+    def _construct_product_automaton_graph(use_alias: bool = False, scLTL_formula: str = '', plot: bool = False,
+                                           prune=False, debug=False):
         # construct the transition system
-        tran_sys = GraphFactory._construct_finite_trans_sys(plot=plot)
+        tran_sys = GraphFactory._construct_finite_trans_sys(debug=debug, plot=plot)
 
         # construct the dfa
         dfa = GraphFactory._construct_dfa_graph(use_alias=use_alias, scLTL_formula=scLTL_formula, plot=plot)

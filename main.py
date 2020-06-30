@@ -696,20 +696,20 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
     for node in g_hat_strategy:
         if node != "v0" and node != "v1":
             if org_graph._graph_name == "Gmin_graph" or org_graph._graph_name == "Gmax_graph":
-                if org_graph._trans_sys._graph.has_node(node[0][0][0]):
-                    org_strategy.append(node[0][0][0])
-            else:
-                if org_graph._trans_sys._graph.has_node(node[0][0]):
+                if org_graph._graph.has_node(node[0][0]):
                     org_strategy.append(node[0][0])
+            else:
+                if org_graph._graph.has_node(node[0]):
+                    org_strategy.append(node[0])
 
     for u_node, v_node in g_hat_tmp.items():
         if u_node != "v0" and u_node != "v1":
             if org_graph._graph_name == "Gmin_graph" or org_graph._graph_name == "Gmax_graph":
-                if org_graph._trans_sys._graph.has_node(u_node[0][0][0]):
-                    org_tmp.update({u_node[0][0][0]: v_node[0][0][0]})
-            else:
-                if org_graph._trans_sys._graph.has_node(u_node[0][0]):
+                if org_graph._graph.has_node(u_node[0][0]):
                     org_tmp.update({u_node[0][0]: v_node[0][0]})
+            else:
+                if org_graph._graph.has_node(u_node[0]):
+                    org_tmp.update({u_node[0]: v_node[0]})
 
     return org_tmp
 
@@ -748,10 +748,16 @@ def main():
     # map back strategy from g_hat to the original graph
     org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph, {**reg_dict['eve'], **reg_dict['adam']})
 
-    plot_graph(prod_graph._trans_sys._graph, file_name="config/trans_sys",
+    # plot_graph(prod_graph._trans_sys._graph, file_name="config/trans_sys",
+    #            save_flag=True,
+    #            visualize_str=True,
+    #            combined_strategy=org_strategy, plot=True)
+
+    plot_graph(prod_graph._graph, file_name="config/trans_sys",
                save_flag=True,
                visualize_str=True,
                combined_strategy=org_strategy, plot=True)
+
 
 if __name__ == "__main__":
     main()

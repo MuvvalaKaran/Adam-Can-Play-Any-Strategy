@@ -192,8 +192,8 @@ def run_spot(formula: str, debug=False):
     (raw_output, err) = process.communicate()
     if err:
         print(err)
-        warnings.warn("The process did not run properly. Please check if spot it installed correctly, and the formula "
-                     "is a string")
+        warnings.warn("The process did not run properly. Please check if spot is installed correctly, and the formula "
+                      "is a string")
 
     ascii_decoder = getdecoder("ascii")
     (processed_output, _) = ascii_decoder(raw_output)

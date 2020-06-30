@@ -47,7 +47,8 @@ bypass_implementation = True
 
 
 def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = False,
-                    scLTL_formula: str = "", plot: bool = False, prune: bool = False) -> ProductAutomaton:
+                    scLTL_formula: str = "", plot: bool = False, prune: bool = False,
+                    human_intervention: int = 1, user_input: int = -1) -> ProductAutomaton:
     """
     A helper method to construct a graph using the GraphFactory() class, given a boolean formula
     :param payoff_func: A payoff function
@@ -57,20 +58,36 @@ def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = Fal
     :param plot
     :return: Return graph G or Gmin/Gmax if payoff function is inf/sup respectively.
     """
-    print("=========================================")
-    print(f"Using scLTL formula : {scLTL_formula}")
-    print("=========================================")
     # pattern to detect exactly 'sup' or 'inf'
     sup_re = re.compile('^sup$')
     inf_re = re.compile('^inf$')
 
-    if inf_re.match(payoff_func):
-        _graph = GraphFactory._construct_gmin_graph(debug=debug, plot=plot, prune=prune)
-    elif sup_re.match(payoff_func):
-        _graph = GraphFactory._construct_gmax_graph(debug=debug, plot=plot, prune=prune)
+    if user_input == 1:
+        if inf_re.match(payoff_func):
+            _graph = GraphFactory._construct_gmin_graph(plot=plot)
+        elif sup_re.match(payoff_func):
+            _graph = GraphFactory._construct_gmax_graph(plot=plot)
+        else:
+            _graph = GraphFactory._construct_two_player_graph(plot=plot)
     else:
-        _graph = GraphFactory._construct_product_automaton_graph(use_alias=use_alias, scLTL_formula=scLTL_formula,
-                                                                 plot=plot, debug=debug, prune=prune)
+        if scLTL_formula == "":
+            warnings.warn("**************************The co-safe LTL formula is empty.******************************")
+            sys.exit()
+
+        print("=========================================")
+        print(f"Using scLTL formula : {scLTL_formula}")
+        print("=========================================")
+
+        if inf_re.match(payoff_func):
+            _graph = GraphFactory._construct_gmin_graph(debug=debug, plot=plot, prune=prune, scLTL_formula=scLTL_formula,
+                                                        human_intervention=human_intervention, use_alias=use_alias)
+        elif sup_re.match(payoff_func):
+            _graph = GraphFactory._construct_gmax_graph(debug=debug, plot=plot, prune=prune, scLTL_formula=scLTL_formula,
+                                                        human_intervention=human_intervention, use_alias=use_alias)
+        else:
+            _graph = GraphFactory._construct_product_automaton_graph(use_alias=use_alias, scLTL_formula=scLTL_formula,
+                                                                     plot=plot, debug=debug, prune=prune,
+                                                                     human_intervention=human_intervention)
     return _graph
 
 
@@ -283,9 +300,6 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> Tw
         :param b_value:
         :return:
         """
-        # if float(w_prime[org_edge]) != -1 * math.inf:
-        #     return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
-        # else:
         try:
             return str(float(_org_graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
         except KeyError:
@@ -454,10 +468,6 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
     :return: a dict consisting of the reg value and strategy for eve and adam respectively
     """
     print(f"*****************Computing regret and strategies for eve and adam*****************")
-    # assert (float(meta_b) in set(w_prime.values()) - {-1*math.inf}), "make sure that the b value manually
-    # entered belongs to w_prime i.e {}.".format(set(w_prime.values()))
-    # create a dict which will be update once we find the reg value and strategies for eve and adam
-    # The str dict looks like this
     """
     str_dict = {
         b: {
@@ -489,7 +499,6 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
         else:
             return {}
 
-    # update 0 to 1 transition in g_hat and 1 to 1_b depending on the value of b - hyper-paramter chosen by the user
     # NOTE: here the strategy is a dict; key is the current node while the value is the next node.
     # get the init nodes (ideally should only be one) of the org_graph
     init_node = get_init_node(org_graph)
@@ -537,7 +546,7 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
             str_dict[b].update({'adam': adam_str})
 
             plays: List[List[Tuple]] = _compute_all_plays(g_hat, {**eve_str, **adam_str})
-            # if there is only possible play then that means the str we have is already deterministic
+            # if there is only one possible play then that means the str we have is already deterministic
             if len(plays) == 1:
                 reg = -1 * float(_play_loop(g_hat, plays[0], _Val_func))
             else:
@@ -546,10 +555,6 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
                 str_dict[b]['adam'] = adam_str
 
             str_dict[b].update({'reg': reg})
-
-            # compute the reg value and update the str_dict respectively
-            # reg = -1 * float(_play_loop(g_hat, {**eve_str, **adam_str}, _Val_func))
-            # str_dict[b].update({'reg': reg})
 
     # create a tmp dict of strategies that have reg <= reg_threshold
     __tmp_dict = {}
@@ -570,6 +575,7 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
     final_str_dict.update({'adam': __tmp_dict[min_reg_b]['adam']})
 
     return final_str_dict
+
 
 def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple]) -> None:
     """
@@ -638,11 +644,6 @@ def _play_loop(graph: nx.MultiDiGraph, play: List[Tuple], payoff_func: str) -> s
                                            ]
                                           )
 
-    # manually add an edge from last to last -1 to complete the cycle
-    # str_graph.add_weighted_edges_from([(play[-1],
-    #                                     play[-2],
-    #                                     graph[play[-1]][play[-2]][0].get('weight'))])
-
     # add init node
     str_graph.nodes[play[0]]['init'] = True
     # add this graph to compute_payoff class
@@ -685,12 +686,24 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
     # get the value associated with this key
     next_node = strategy[curr_node]  # v2
     g_hat_tmp.update({curr_node: next_node})
+
+    # just in case loop through the strategy dict and if there is a value as list with only one node in it then
+    # "de-list" it
+    for k, v in strategy.items():
+        if len(v) == 1:
+            strategy[k] = v[0]
+
     # org_strategy.append(next_node)
     while next_node not in g_hat_strategy:
         g_hat_strategy.append(next_node)  # [v1, v2, ... ]
         curr_node = next_node  # curr_node = v2
-        next_node = strategy[curr_node]  # v3
+        # if isinstance(curr_node, list):
+        #     next_node = strategy[curr_node[0]]  # v3
+        #     g_hat_tmp.update({curr_node[0]: next_node})
+        # else:
+        next_node = strategy[curr_node]
         g_hat_tmp.update({curr_node: next_node})
+
 
     # check if the current node in g_hat_strategy does exist in org_graph. If so add it to org_strategy
     for node in g_hat_strategy:
@@ -717,9 +730,21 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
 def main():
     payoff_func = "mean"
     print(f"*****************Using {payoff_func}*****************")
+    formula = " "
+
+    # ask the user if he wants to use the manually constrcuted two player graph or input an LTL formula
+    construct_flag = 3
+    while construct_flag != 1 and construct_flag != 2:
+        construct_flag = int(input("Please Enter 1. if you want to use the manually constructed graph or 2. "
+                               "to construct a two player graph by taking the product of the transition system "
+                               "and the Automaton given an LTL formula. \n"))
+
+        assert(construct_flag == 1 or construct_flag == 2), "Please enter a valid input - 1 or 2. \n"
 
     # construct graph
-    prod_graph = construct_graph(payoff_func, scLTL_formula="!d U g", plot=True, debug=True, prune=True)
+    prod_graph = construct_graph(payoff_func, scLTL_formula="!b U c", plot=True, debug=True, prune=False,
+                                 human_intervention=1, user_input=construct_flag, use_alias=False)
+
     p = payoff_value(prod_graph._graph, payoff_func)
 
     # construct W prime
@@ -747,11 +772,6 @@ def main():
 
     # map back strategy from g_hat to the original graph
     org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph, {**reg_dict['eve'], **reg_dict['adam']})
-
-    # plot_graph(prod_graph._trans_sys._graph, file_name="config/trans_sys",
-    #            save_flag=True,
-    #            visualize_str=True,
-    #            combined_strategy=org_strategy, plot=True)
 
     plot_graph(prod_graph._graph, file_name="config/trans_sys",
                save_flag=True,

@@ -1,37 +1,11 @@
 graph:
   edges:
   - !!python/tuple
-    - T0_init
     - accept_all
-    - guard: !!python/object:src.graph.Parser.SymbolExpression
-        formula: (g)
-        name: g
-        symbol: g
-      guard_formula: (g)
-  - !!python/tuple
-    - T0_init
-    - T0_init
-    - guard: !!python/object:src.graph.Parser.ANDExpression
-        formula: ((!(d)) && (!(g)))
-        left: !!python/object:src.graph.Parser.NotSymbolExpression
-          name: '!d'
-          symbol: d
-        right: !!python/object:src.graph.Parser.NotSymbolExpression
-          name: '!g'
-          symbol: g
-      guard_formula: ((!(d)) && (!(g)))
-  - !!python/tuple
-    - T0_init
-    - T0_S2
-    - guard: !!python/object:src.graph.Parser.ANDExpression
-        formula: ((d) && (!(g)))
-        left: !!python/object:src.graph.Parser.SymbolExpression
-          name: d
-          symbol: d
-        right: !!python/object:src.graph.Parser.NotSymbolExpression
-          name: '!g'
-          symbol: g
-      guard_formula: ((d) && (!(g)))
+    - accept_all
+    - guard: !!python/object:src.graph.Parser.TrueExpression
+        formula: '1'
+      guard_formula: '1'
   - !!python/tuple
     - T0_S2
     - T0_S2
@@ -41,18 +15,44 @@ graph:
         symbol: 'true'
       guard_formula: (true)
   - !!python/tuple
+    - T0_init
     - accept_all
-    - accept_all
-    - guard: !!python/object:src.graph.Parser.TrueExpression
-        formula: '1'
-      guard_formula: '1'
-  vertices:
+    - guard: !!python/object:src.graph.Parser.SymbolExpression
+        formula: (c)
+        name: c
+        symbol: c
+      guard_formula: (c)
   - !!python/tuple
     - T0_init
-    - init: true
+    - T0_init
+    - guard: !!python/object:src.graph.Parser.ANDExpression
+        formula: ((!(b)) && (!(c)))
+        left: !!python/object:src.graph.Parser.NotSymbolExpression
+          name: '!b'
+          symbol: b
+        right: !!python/object:src.graph.Parser.NotSymbolExpression
+          name: '!c'
+          symbol: c
+      guard_formula: ((!(b)) && (!(c)))
+  - !!python/tuple
+    - T0_init
+    - T0_S2
+    - guard: !!python/object:src.graph.Parser.ANDExpression
+        formula: ((b) && (!(c)))
+        left: !!python/object:src.graph.Parser.SymbolExpression
+          name: b
+          symbol: b
+        right: !!python/object:src.graph.Parser.NotSymbolExpression
+          name: '!c'
+          symbol: c
+      guard_formula: ((b) && (!(c)))
+  vertices:
+  - !!python/tuple
+    - accept_all
+    - accepting: true
   - !!python/tuple
     - T0_S2
     - {}
   - !!python/tuple
-    - accept_all
-    - accepting: true
+    - T0_init
+    - init: true

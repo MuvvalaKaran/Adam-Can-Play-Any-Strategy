@@ -846,7 +846,7 @@ class ProductAutomaton(TwoPlayerGraph):
         # A helper function to remove edges without the "prune" attribute
         remove_lst = []
         for _ed in self._graph.edges.data():
-            if (not _ed[2].get("prune")) and _ed[2].get("player") == "eve":
+            if (not _ed[2].get("prune")) and self._graph.nodes[_ed[0]].get("player") == "eve":
                 remove_lst.append(_ed)
 
         if debug:
@@ -876,106 +876,123 @@ class GraphFactory:
         two_player_graph = TwoPlayerGraph('org_graph', 'config/org_graph', save_flag=True)
         two_player_graph.construct_graph()
 
-        two_player_graph.add_states_from(['v1', 'v2', 'v3', 'v4', 'v5',
-                                          'v6', 'v7', 'v8', 'v9', 'v10',
-                                          'v11', 'v12', 'v13', 'v14', 'v15',
-                                          'v16', 'v17', 'v18', 'v19', 'v20',
-                                          'v21', 'v22', 'v23', 'v24', 'v25',
-                                          'v26', 'v27', 'v28', 'v29', 'v30',
-                                          'v31', 'v32', 'v33', 'v34', 'v35',
-                                          'v36', 'v37', 'v38', 'v39', 'v40'])
+        # two_player_graph.add_states_from(['v1', 'v2', 'v3', 'v4', 'v5',
+        #                                   'v6', 'v7', 'v8', 'v9', 'v10',
+        #                                   'v11', 'v12', 'v13', 'v14', 'v15',
+        #                                   'v16', 'v17', 'v18', 'v19', 'v20',
+        #                                   'v21', 'v22', 'v23', 'v24', 'v25',
+        #                                   'v26', 'v27', 'v28', 'v29', 'v30',
+        #                                   'v31', 'v32', 'v33', 'v34', 'v35',
+        #                                   'v36', 'v37', 'v38', 'v39', 'v40'])
+        two_player_graph.add_states_from(['v1', 'v2', 'v3', 'v4', 'v5'])
 
-        s12: str = str(random.randint(1, 9))
-        s21: str = str(random.randint(1, 9))
-        s23: str = str(random.randint(1, 9))
-        s33: str = str(1)
-        print(f"Values of s12 : {s12}, s21: {s21}, s23: {s23}, s33: {s33}")
-        two_player_graph.add_weighted_edges_from([('v1', 'v32', s12),  # region q_2
-                                            ('v2', 'v3', s12), ('v2', 'v8', '0'), ('v2', 'v10', '0'),
-                                            ('v3', 'v14', s21), ('v3', 'v16', s23),
-                                            ('v4', 'v1', s21), ('v4', 'v9', '0'), ('v4', 'v10', '0'),
-                                            ('v5', 'v27', s33),
-                                            ('v6', 'v5', s23), ('v6', 'v8', '0'), ('v6', 'v9', '0'),
-                                            ('v7', 'v5', s33), ('v7', 'v8', '0'), ('v7', 'v9', '0'),
-                                            ('v8', 'v39', s12),
-                                            ('v9', 'v8', s21), ('v9', 'v20', s23),
-                                            ('v10', 'v30', s33),
-                                            ('v11', 'v12', s12),  # region q_1 starts
-                                            ('v12', 'v13', s12), ('v12', 'v18', '0'), ('v12', 'v20', '0'),
-                                            ('v13', 'v16', s23), ('v13', 'v14', s21),
-                                            ('v14', 'v11', s12), ('v14', 'v19', '0'), ('v14', 'v20', '0'),
-                                            ('v15', 'v27', s33),
-                                            ('v16', 'v15', s23), ('v16', 'v18', '0'), ('v16', 'v19', '0'),
-                                            ('v17', 'v15', s33), ('v17', 'v18', '0'), ('v17', 'v19', '0'),
-                                            ('v18', 'v19', s12),
-                                            ('v19', 'v18', s21), ('v19', 'v20', s23),
-                                            ('v20', 'v30', s33),
-                                            ('v21', 'v22', s12),  # region q_0 starts
-                                            ('v22', 'v23', s12), ('v22', 'v28', '0'), ('v22', 'v30', '0'),
-                                            ('v23', 'v26', s23), ('v23', 'v24', s21),
-                                            ('v24', 'v21', s21), ('v24', 'v29', '0'), ('v24', 'v30', '0'),
-                                            ('v25', 'v27', s33),
-                                            ('v26', 'v25', s23), ('v26', 'v28', '0'), ('v26', 'v29', '0'),
-                                            ('v27', 'v25', s33), ('v27', 'v28', '0'), ('v27', 'v29', '0'),
-                                            ('v28', 'v29', s12),
-                                            ('v29', 'v28', s21), ('v29', 'v30', s23),
-                                            ('v30', 'v30', s33),
-                                            ('v31', 'v32', s12),  # region q_4 starts
-                                            ('v32', 'v33', s12), ('v32', 'v38', '0'), ('v32', 'v40', '0'),
-                                            ('v33', 'v36', s23), ('v33', 'v34', s21),
-                                            ('v34', 'v31', s21), ('v34', 'v39', '0'), ('v34', 'v40', '0'),
-                                            ('v35', 'v37', s33),
-                                            ('v36', 'v35', s23), ('v36', 'v38', '0'), ('v36', 'v39', '0'),
-                                            ('v37', 'v35', s33), ('v37', 'v38', '0'), ('v37', 'v39', '0'),
-                                            ('v38', 'v39', s12),
-                                            ('v39', 'v38', s21), ('v39', 'v40', s23),
-                                            ('v40', 'v40', s33)])
+        # s12: str = str(random.randint(1, 9))
+        # s21: str = str(random.randint(1, 9))
+        # s23: str = str(random.randint(1, 9))
+        # s33: str = str(1)
+        # print(f"Values of s12 : {s12}, s21: {s21}, s23: {s23}, s33: {s33}")
+        # two_player_graph.add_weighted_edges_from([('v1', 'v32', s12),  # region q_2
+        #                                     ('v2', 'v3', s12), ('v2', 'v8', '0'), ('v2', 'v10', '0'),
+        #                                     ('v3', 'v14', s21), ('v3', 'v16', s23),
+        #                                     ('v4', 'v1', s21), ('v4', 'v9', '0'), ('v4', 'v10', '0'),
+        #                                     ('v5', 'v27', s33),
+        #                                     ('v6', 'v5', s23), ('v6', 'v8', '0'), ('v6', 'v9', '0'),
+        #                                     ('v7', 'v5', s33), ('v7', 'v8', '0'), ('v7', 'v9', '0'),
+        #                                     ('v8', 'v39', s12),
+        #                                     ('v9', 'v8', s21), ('v9', 'v20', s23),
+        #                                     ('v10', 'v30', s33),
+        #                                     ('v11', 'v12', s12),  # region q_1 starts
+        #                                     ('v12', 'v13', s12), ('v12', 'v18', '0'), ('v12', 'v20', '0'),
+        #                                     ('v13', 'v16', s23), ('v13', 'v14', s21),
+        #                                     ('v14', 'v11', s12), ('v14', 'v19', '0'), ('v14', 'v20', '0'),
+        #                                     ('v15', 'v27', s33),
+        #                                     ('v16', 'v15', s23), ('v16', 'v18', '0'), ('v16', 'v19', '0'),
+        #                                     ('v17', 'v15', s33), ('v17', 'v18', '0'), ('v17', 'v19', '0'),
+        #                                     ('v18', 'v19', s12),
+        #                                     ('v19', 'v18', s21), ('v19', 'v20', s23),
+        #                                     ('v20', 'v30', s33),
+        #                                     ('v21', 'v22', s12),  # region q_0 starts
+        #                                     ('v22', 'v23', s12), ('v22', 'v28', '0'), ('v22', 'v30', '0'),
+        #                                     ('v23', 'v26', s23), ('v23', 'v24', s21),
+        #                                     ('v24', 'v21', s21), ('v24', 'v29', '0'), ('v24', 'v30', '0'),
+        #                                     ('v25', 'v27', s33),
+        #                                     ('v26', 'v25', s23), ('v26', 'v28', '0'), ('v26', 'v29', '0'),
+        #                                     ('v27', 'v25', s33), ('v27', 'v28', '0'), ('v27', 'v29', '0'),
+        #                                     ('v28', 'v29', s12),
+        #                                     ('v29', 'v28', s21), ('v29', 'v30', s23),
+        #                                     ('v30', 'v30', s33),
+        #                                     ('v31', 'v32', s12),  # region q_4 starts
+        #                                     ('v32', 'v33', s12), ('v32', 'v38', '0'), ('v32', 'v40', '0'),
+        #                                     ('v33', 'v36', s23), ('v33', 'v34', s21),
+        #                                     ('v34', 'v31', s21), ('v34', 'v39', '0'), ('v34', 'v40', '0'),
+        #                                     ('v35', 'v37', s33),
+        #                                     ('v36', 'v35', s23), ('v36', 'v38', '0'), ('v36', 'v39', '0'),
+        #                                     ('v37', 'v35', s33), ('v37', 'v38', '0'), ('v37', 'v39', '0'),
+        #                                     ('v38', 'v39', s12),
+        #                                     ('v39', 'v38', s21), ('v39', 'v40', s23),
+        #                                     ('v40', 'v40', s33)])
+
+        two_player_graph.add_weighted_edges_from([('v1', 'v2', '1'),
+                                                  ('v2', 'v1', '-1'),
+                                                  ('v1', 'v3', '1'),
+                                                  ('v3', 'v3', '0.5'),
+                                                  ('v3', 'v5', '1'),
+                                                  ('v2', 'v4', '2'),
+                                                  ('v4', 'v4', '2'),
+                                                  ('v5', 'v5', '1')])
+
+        # two_player_graph.add_state_attribute('v1', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v2', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v3', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v4', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v5', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v6', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v7', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v8', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v9', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v10', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v11', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v12', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v13', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v14', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v15', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v16', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v17', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v18', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v19', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v20', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v21', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v22', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v23', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v24', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v25', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v26', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v27', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v28', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v29', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v30', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v31', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v32', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v33', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v34', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v35', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v36', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v37', 'player', 'adam')
+        # two_player_graph.add_state_attribute('v38', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v39', 'player', 'eve')
+        # two_player_graph.add_state_attribute('v40', 'player', 'eve')
 
         two_player_graph.add_state_attribute('v1', 'player', 'eve')
         two_player_graph.add_state_attribute('v2', 'player', 'adam')
-        two_player_graph.add_state_attribute('v3', 'player', 'eve')
-        two_player_graph.add_state_attribute('v4', 'player', 'adam')
+        two_player_graph.add_state_attribute('v3', 'player', 'adam')
+        two_player_graph.add_state_attribute('v4', 'player', 'eve')
         two_player_graph.add_state_attribute('v5', 'player', 'eve')
-        two_player_graph.add_state_attribute('v6', 'player', 'adam')
-        two_player_graph.add_state_attribute('v7', 'player', 'adam')
-        two_player_graph.add_state_attribute('v8', 'player', 'eve')
-        two_player_graph.add_state_attribute('v9', 'player', 'eve')
-        two_player_graph.add_state_attribute('v10', 'player', 'eve')
-        two_player_graph.add_state_attribute('v11', 'player', 'eve')
-        two_player_graph.add_state_attribute('v12', 'player', 'adam')
-        two_player_graph.add_state_attribute('v13', 'player', 'eve')
-        two_player_graph.add_state_attribute('v14', 'player', 'adam')
-        two_player_graph.add_state_attribute('v15', 'player', 'eve')
-        two_player_graph.add_state_attribute('v16', 'player', 'adam')
-        two_player_graph.add_state_attribute('v17', 'player', 'adam')
-        two_player_graph.add_state_attribute('v18', 'player', 'eve')
-        two_player_graph.add_state_attribute('v19', 'player', 'eve')
-        two_player_graph.add_state_attribute('v20', 'player', 'eve')
-        two_player_graph.add_state_attribute('v21', 'player', 'eve')
-        two_player_graph.add_state_attribute('v22', 'player', 'adam')
-        two_player_graph.add_state_attribute('v23', 'player', 'eve')
-        two_player_graph.add_state_attribute('v24', 'player', 'adam')
-        two_player_graph.add_state_attribute('v25', 'player', 'eve')
-        two_player_graph.add_state_attribute('v26', 'player', 'adam')
-        two_player_graph.add_state_attribute('v27', 'player', 'adam')
-        two_player_graph.add_state_attribute('v28', 'player', 'eve')
-        two_player_graph.add_state_attribute('v29', 'player', 'eve')
-        two_player_graph.add_state_attribute('v30', 'player', 'eve')
-        two_player_graph.add_state_attribute('v31', 'player', 'eve')
-        two_player_graph.add_state_attribute('v32', 'player', 'adam')
-        two_player_graph.add_state_attribute('v33', 'player', 'eve')
-        two_player_graph.add_state_attribute('v34', 'player', 'adam')
-        two_player_graph.add_state_attribute('v35', 'player', 'eve')
-        two_player_graph.add_state_attribute('v36', 'player', 'adam')
-        two_player_graph.add_state_attribute('v37', 'player', 'adam')
-        two_player_graph.add_state_attribute('v38', 'player', 'eve')
-        two_player_graph.add_state_attribute('v39', 'player', 'eve')
-        two_player_graph.add_state_attribute('v40', 'player', 'eve')
 
-        two_player_graph.add_accepting_states_from(['v21', 'v22', 'v23', 'v24', 'v25',
-                                                    'v26', 'v27', 'v28', 'v29', 'v30'])
+        # two_player_graph.add_accepting_states_from(['v21', 'v22', 'v23', 'v24', 'v25',
+        #                                             'v26', 'v27', 'v28', 'v29', 'v30'])
+        two_player_graph.add_initial_state('v1')
 
-        two_player_graph.add_initial_state('v3')
+        # two_player_graph.add_initial_state('v3')
 
         if plot:
             two_player_graph.plot_graph()
@@ -984,12 +1001,18 @@ class GraphFactory:
 
     @staticmethod
     def _construct_gmin_graph(debug: bool = False, use_alias: bool = False, scLTL_formula: str='',
-                              plot: bool = False, prune: bool = False):
+                              plot: bool = False, prune: bool = False, human_intervention: int = 1,
+                              manual_const: bool = False):
         two_player_gmin = GminGraph('Gmin_graph', 'config/Gmin_graph', save_flag=True)
         two_player_gmin.construct_graph()
 
-        two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
-                                                                          debug=debug, prune=prune)
+        if manual_const:
+            two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
+                                                                              debug=debug, prune=prune,
+                                                                              human_intervention=human_intervention)
+        else:
+            two_player_game = GraphFactory._construct_two_player_graph(plot=plot)
+
         two_player_gmin._trans_sys = two_player_game._trans_sys
         two_player_gmin._auto_graph = two_player_game._auto_graph
 
@@ -1041,12 +1064,18 @@ class GraphFactory:
 
     @staticmethod
     def _construct_gmax_graph(debug: bool = False, use_alias: bool = False, scLTL_formula: str = '',
-                              plot: bool = False, prune: bool = False):
+                              plot: bool = False, prune: bool = False, human_intervention: int = 1 ,
+                              manual_const: bool = False):
         two_player_gmax = GminGraph('Gmax_graph', 'config/Gmax_graph', save_flag=True)
         two_player_gmax.construct_graph()
 
-        two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
-                                                                          debug=debug, prune=prune)
+        if manual_const:
+            two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
+                                                                              debug=debug, prune=prune,
+                                                                              human_intervention=human_intervention)
+        else:
+            two_player_game = GraphFactory._construct_two_player_graph(plot=plot)
+
         two_player_gmax._trans_sys = two_player_game._trans_sys
         two_player_gmax._auto_graph = two_player_game._auto_graph
 
@@ -1099,7 +1128,7 @@ class GraphFactory:
         return two_player_gmax
 
     @staticmethod
-    def _construct_finite_trans_sys(debug: bool = False, plot: bool = False):
+    def _construct_finite_trans_sys(debug: bool = False, plot: bool = False, human_intervention: int = 1):
         trans_sys = FiniteTransSys("transition_system", "config/trans_sys", save_flag=True)
         trans_sys.construct_graph()
 
@@ -1174,7 +1203,7 @@ class GraphFactory:
 
             trans_sys.add_initial_state('s1')
 
-        new_trans = trans_sys.automate_construction(k=2)
+        new_trans = trans_sys.automate_construction(k=human_intervention)
 
         if plot:
             new_trans.plot_graph()
@@ -1222,9 +1251,10 @@ class GraphFactory:
 
     @staticmethod
     def _construct_product_automaton_graph(use_alias: bool = False, scLTL_formula: str = '', plot: bool = False,
-                                           prune=False, debug=False):
+                                           prune: bool = False, debug: bool = False, human_intervention: int = 1):
         # construct the transition system
-        tran_sys = GraphFactory._construct_finite_trans_sys(debug=debug, plot=plot)
+        tran_sys = GraphFactory._construct_finite_trans_sys(debug=False, plot=plot,
+                                                            human_intervention=human_intervention)
 
         # construct the dfa
         dfa = GraphFactory._construct_dfa_graph(use_alias=use_alias, scLTL_formula=scLTL_formula, plot=plot)

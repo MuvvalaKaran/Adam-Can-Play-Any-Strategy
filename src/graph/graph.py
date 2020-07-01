@@ -529,27 +529,31 @@ class FiniteTransSys(TwoPlayerGraph):
         nodes = self._graph_yaml["vertices"]
         for n in nodes:
             # default color for all the nodes is grey
-            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0]})
+            ap = n[1].get('ap')
+            dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[0]})
             if n[1].get('init'):
                 # default color for init node is red
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
+                dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[1]})
             if n[1].get('accepting'):
                 # default color for accepting node is purple
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
+                dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[2]})
             if n[1].get('player') == 'eve':
-                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
+                dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "rectangle"})
             else:
-                dot.node(str(n[0]), _attributes={"shape": "circle"})
+                dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "circle"})
 
         # add all the edges
         edges = self._graph_yaml["edges"]
 
         # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
+            ap_u = self._graph.nodes[edge[0]].get('ap')
+            ap_v = self._graph.nodes[edge[1]].get('ap')
             if edge[2].get('strategy') is True:
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')), _attributes={'color': 'red'})
+                dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('actions')),
+                         _attributes={'color': 'red'})
             else:
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')))
+                dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('actions')))
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
@@ -1006,15 +1010,15 @@ class GraphFactory:
         two_player_gmin = GminGraph('Gmin_graph', 'config/Gmin_graph', save_flag=True)
         two_player_gmin.construct_graph()
 
-        if manual_const:
+        if not manual_const:
             two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
                                                                               debug=debug, prune=prune,
                                                                               human_intervention=human_intervention)
+            two_player_gmin._trans_sys = two_player_game._trans_sys
+            two_player_gmin._auto_graph = two_player_game._auto_graph
+
         else:
             two_player_game = GraphFactory._construct_two_player_graph(plot=plot)
-
-        two_player_gmin._trans_sys = two_player_game._trans_sys
-        two_player_gmin._auto_graph = two_player_game._auto_graph
 
         # construct new set of states V'
         V_prime = [(v, str(w)) for v in two_player_game._graph.nodes.data() for _, _, w in two_player_game._graph.edges.data('weight')]
@@ -1069,15 +1073,14 @@ class GraphFactory:
         two_player_gmax = GminGraph('Gmax_graph', 'config/Gmax_graph', save_flag=True)
         two_player_gmax.construct_graph()
 
-        if manual_const:
+        if not manual_const:
             two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
                                                                               debug=debug, prune=prune,
                                                                               human_intervention=human_intervention)
+            two_player_gmax._trans_sys = two_player_game._trans_sys
+            two_player_gmax._auto_graph = two_player_game._auto_graph
         else:
             two_player_game = GraphFactory._construct_two_player_graph(plot=plot)
-
-        two_player_gmax._trans_sys = two_player_game._trans_sys
-        two_player_gmax._auto_graph = two_player_game._auto_graph
 
         # construct new set of states V'
         V_prime = [(v, str(w)) for v in two_player_game._graph.nodes.data()

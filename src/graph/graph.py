@@ -766,36 +766,6 @@ class ProductAutomaton(TwoPlayerGraph):
 
     def prune_graph(self, debug=False):
 
-        # set to hold the attractor states
-        # attr = deque()
-        # attr = defaultdict(lambda: False)
-        # eve_str = {}
-        # # get the set of accepting state and update the set of attractor states
-        # accp_states = self.get_accepting_states()
-        # # attr.extend(self.get_accepting_states())
-        # for _a in accp_states:
-        #     attr.update({_a: False})
-        # # look at the predecessors nodes of the the attractor states
-        # for _n in attr.keys():
-        #     # find predecessor if you haven't checked this node before
-        #     if not attr[_n]:
-        #         for _pre_n in self._graph.predecessors(_n):
-        #             # if the predecessor belongs to player adam then just add it to the set
-        #             if self._graph.nodes[_pre_n].get('player') == 'adam':
-        #                 # attr |= _pre_n
-        #                 if _pre_n not in attr:
-        #                     attr.update({_pre_n: False})
-        #             else:
-        #                 # add the eve node to the set and the respective edge
-        #                 # attr |= _pre_n
-        #                 if _pre_n not in attr:
-        #                     attr.update({_pre_n: False})
-        #                 if not eve_str.get(_pre_n):
-        #                     eve_str.update({_pre_n: [_n]})
-        #                 else:
-        #                     eve_str[_pre_n].append(_n)
-        #         attr[_n] = True
-
         # initialize queue (deque is part of std library and allows O(1) append() and pop() at either end)
         queue = deque()
         regions = defaultdict(lambda : -1)
@@ -1256,7 +1226,7 @@ class GraphFactory:
     def _construct_product_automaton_graph(use_alias: bool = False, scLTL_formula: str = '', plot: bool = False,
                                            prune: bool = False, debug: bool = False, human_intervention: int = 1):
         # construct the transition system
-        tran_sys = GraphFactory._construct_finite_trans_sys(debug=False, plot=plot,
+        tran_sys = GraphFactory._construct_finite_trans_sys(debug=debug, plot=plot,
                                                             human_intervention=human_intervention)
 
         # construct the dfa

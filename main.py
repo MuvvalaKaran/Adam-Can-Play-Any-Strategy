@@ -7,6 +7,8 @@ import sys
 import re
 import warnings
 import random
+import cProfile
+import pandas as pd
 
 from typing import List, Tuple, Dict
 from src.compute_payoff import payoff_value
@@ -120,10 +122,7 @@ def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle: payoff_value
     tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
     # FIXME: even if you are not dealing with a new init node, this process finds the current init node, deletes it and
     #  adds the same thing again. Looks redundant!
-    tmp_init_node = tmp_payoff_handle.get_init_node()
-    # we should ideally only have one init node
-    for _n in tmp_init_node:
-        tmp_payoff_handle.remove_attribute(_n, 'init')
+    tmp_payoff_handle.remove_attribute(tmp_payoff_handle.get_init_node(), 'init')
     tmp_payoff_handle.set_init_node(node)
     tmp_payoff_handle.cycle_main()
 
@@ -152,13 +151,10 @@ def compute_w_prime(payoff_handle: payoff_value, org_graph: nx.MultiDiGraph) \
         # 2. we assign v' (tail node of the alt edge) as the init node
         # 3. Compute the max cVal for all v' from u
         else:
-            # TODO: check if this is necessary as @tmp_graph is already a deepcopy and I am making a deepcopy of a
-            #  deepcopy. Seems redundant but safety over everything.
-            # step 1. construct a new game without (u, v)
             tmp_graph = construct_alt_game(org_graph, edge)
             # construct the game without the org edge and find the max from each alternate play
             tmp_cvals = []
-            # step 2. get all the alt edges (u, v')
+
             for alt_e in tmp_graph.out_edges(edge[0]):
                 # get all cVal from all the alt edges(v') from a given node (u)
                 tmp_cvals.append(_compute_max_cval_from_v(tmp_graph, payoff_handle, alt_e[1]))
@@ -249,18 +245,12 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> Tw
     G_hat = TwoPlayerGraph(graph_name="G_hat", config_yaml="config/G_hat", save_flag=False)
     G_hat.construct_graph()
     G_hat.add_states_from(['v0', 'v1', 'vT'])
-    # G_hat.add_nodes_from(['v0', 'v1', 'vT'])
-
-    # G_hat.nodes['v0']['player'] = "adam"
-    # G_hat.nodes['v1']['player'] = "eve"
-    # G_hat.nodes['vT']['player'] = "eve"
 
     G_hat.add_state_attribute('v0', 'player', 'adam')
     G_hat.add_state_attribute('v1', 'player', 'eve')
     G_hat.add_state_attribute('vT', 'player', 'eve')
 
     # add v0 as the initial node
-    # G_hat.nodes['v0']['init'] = True
     G_hat.add_initial_state('v0')
 
     # add accepting states to g_hat
@@ -268,8 +258,6 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> Tw
     # add the edges with the weights
     G_hat.add_weighted_edges_from([
         ('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
-    # G_hat.add_weighted_edges_from(
-    #     [('v0', 'v0', '0'), ('v0', 'v1', '0'), ('vT', 'vT', str(-2 * get_max_weight(org_graph) - 1))])
 
     # compute the range of w_prime function
     w_set = set(w_prime.values()) - {-1 * math.inf}
@@ -421,7 +409,7 @@ def _find_optimal_str(plays: List[List[Tuple]], graph_g_hat: nx.MultiDiGraph, va
         for state in accpeting_state:
             if state[0] in play:
                 return True, play
-        return False, None
+        return False, []
 
     # get accepting state(s)
     accp_nodes = get_accepting_state_node(graph_g_hat)
@@ -611,18 +599,14 @@ def _compute_all_plays_utils(n, play, strategy: Dict[Tuple, List], graph: nx.Mul
     if not isinstance(strategy[n], list):
         play.append(strategy[n])
         if play.count(play[-1]) >= 2:
-            # print(play)
             play_lst.append(play)
     else:
         for node in strategy[n]:
-            # path = []
             path = copy.deepcopy(play)
             path.append(node)
             if path.count(path[-1]) < 2:
                 _compute_all_plays_utils(node, path, strategy, graph, play_lst)
-                # print(path)
             else:
-                # print(path)
                 play_lst.append(path)
 
 
@@ -649,7 +633,7 @@ def _play_loop(graph: nx.MultiDiGraph, play: List[Tuple], payoff_func: str) -> s
     # add this graph to compute_payoff class
     tmp_p_handle = payoff_value(str_graph, payoff_func)
     _loop_vals = tmp_p_handle.cycle_main()
-    play_key = tuple(tmp_p_handle._convert_stack_to_play_str(play))
+    play_key = tuple(play)
 
     return _loop_vals[play_key]
 
@@ -697,30 +681,17 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
     while next_node not in g_hat_strategy:
         g_hat_strategy.append(next_node)  # [v1, v2, ... ]
         curr_node = next_node  # curr_node = v2
-        # if isinstance(curr_node, list):
-        #     next_node = strategy[curr_node[0]]  # v3
-        #     g_hat_tmp.update({curr_node[0]: next_node})
-        # else:
         next_node = strategy[curr_node]
         g_hat_tmp.update({curr_node: next_node})
-
 
     # check if the current node in g_hat_strategy does exist in org_graph. If so add it to org_strategy
     for node in g_hat_strategy:
         if node != "v0" and node != "v1":
-            # if org_graph._graph_name == "Gmin_graph" or org_graph._graph_name == "Gmax_graph":
-            #     if org_graph._graph.has_node(node[0]):
-            #         org_strategy.append(node[0])
-            # else:
             if org_graph._graph.has_node(node[0]):
                 org_strategy.append(node[0])
 
     for u_node, v_node in g_hat_tmp.items():
         if u_node != "v0" and u_node != "v1":
-            # if org_graph._graph_name == "Gmin_graph" or org_graph._graph_name == "Gmax_graph":
-            #     if org_graph._graph.has_node(u_node[0]):
-            #         org_tmp.update({u_node[0]: v_node[0]})
-            # else:
             if org_graph._graph.has_node(u_node[0]):
                 org_tmp.update({u_node[0]: v_node[0]})
 
@@ -728,11 +699,10 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
 
 
 def main():
-    payoff_func = "limsup"
+    payoff_func = "mean"
     print(f"*****************Using {payoff_func}*****************")
-    formula = " "
 
-    # ask the user if he wants to use the manually constrcuted two player graph or input an LTL formula
+    # ask the user if he wants to use the manually constructed two player graph or input an LTL formula
     construct_flag = 3
     while construct_flag != 1 and construct_flag != 2:
         construct_flag = int(input("Please Enter 1. if you want to use the manually constructed graph or 2. "
@@ -742,8 +712,8 @@ def main():
         assert(construct_flag == 1 or construct_flag == 2), "Please enter a valid input - 1 or 2. \n"
 
     # construct graph
-    prod_graph = construct_graph(payoff_func, scLTL_formula="!b U c", plot=True, debug=True, prune=True,
-                                 human_intervention=1, user_input=construct_flag, use_alias=False)
+    prod_graph = construct_graph(payoff_func, scLTL_formula="!d U g", plot=True, debug=True, prune=False,
+                                 human_intervention=2, user_input=construct_flag, use_alias=False)
 
     p = payoff_value(prod_graph._graph, payoff_func)
 
@@ -761,8 +731,8 @@ def main():
     reg_dict = compute_aVal(G_hat._graph, payoff_func, w_prime, prod_graph._graph)
 
     if len(list(reg_dict.keys())) != 0:
-        for k, v in reg_dict.items():
-            print(f"{k}: {v}")
+        # for k, v in reg_dict.items():
+        #     print(f"{k}: {v}")
 
         # visualize the strategy
         plot_graph(G_hat._graph, file_name='config/g_hat_graph',

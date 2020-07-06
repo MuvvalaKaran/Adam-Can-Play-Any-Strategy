@@ -2,6 +2,7 @@ import copy
 import networkx as nx
 import statistics
 
+from collections import defaultdict
 from typing import List, Tuple, Dict
 from helper_methods import deprecated
 from src.graph.graph import GraphFactory
@@ -24,6 +25,8 @@ class payoff_value():
         self._raw_payoff_value: str = payoff_func
         self.__payoff_func = self._choose_payoff(self._raw_payoff_value)
         self.__loop_vals = None
+        self._init_node = None
+        self.initialize_init_node()
 
     def _choose_payoff(self, payoff_func: str):
         """
@@ -46,7 +49,17 @@ class payoff_value():
             print("Please enter a valid payoff function. NOTE: payoff_func string is case sensitive")
             print("Make sure you exactly enter: 1.sup 2.inf 3. limsup 4. liminf 5. mean. ")
 
-    def get_init_node(self) -> List[Tuple]:
+    def initialize_init_node(self) -> None:
+        """
+        A helper method to initialize the initial node
+        :return:
+        """
+        for node in self.graph.nodes.data():
+            if node[1].get('init'):
+                self._init_node = node[0]
+                return
+
+    def get_init_node(self) -> Tuple:
         """
         A helper method to get the initial node(s) of a given graph stored in self.graph
         :return: node
@@ -54,9 +67,9 @@ class payoff_value():
         # TODO: This methods loops through every element even after detecting a node which is a waste of time.
         #  Maybe I should break after I find an init node.
         # NOTE: if we assume to have only one init node then we can break immediately after we find it
-        init_node = [node[0] for node in self.graph.nodes.data() if node[1].get('init') == True]
+        # init_node = [node[0] for node in self.graph.nodes.data() if node[1].get('init') == True]
 
-        return init_node
+        return self._init_node
 
     def set_init_node(self, node) -> None:
         """
@@ -64,6 +77,7 @@ class payoff_value():
         :param node: a valid node of the graph
         """
         self.graph.nodes[node]['init'] = True
+        self._init_node = node
 
     def remove_attribute(self, tnode: Tuple, attr: str) -> None:
         """
@@ -85,54 +99,21 @@ class payoff_value():
         """
         return self._raw_payoff_value
 
-    def _convert_stack_to_play_str(self, stack: List[Tuple]) -> List[Tuple]:
-        """
-        Helper method to convert a play to its corresponding str representation
-        :param stack: a dict of type {node: boolean_value}
-        :return: basestring
-        """
-        # play = [node for node, value in stack.items() if value == True]
-        # play_str = ''.join([ele for ele in stack])
-        # lets create a list of tuple
-        play_list: List[Tuple] = [node for node in stack]
-        return play_list
-
-    def _reinit_visitStack(self, stack: Dict[Tuple, bool]) -> Dict[Tuple, bool]:
-        """
-        helper method to re_initialize visit stack. For all nodes we re_initialize the value to be False
-        :return: Dict of node with all the values as False Stack[node] = False
-        """
-        # RFE (request for enhancement): find better alternatives than traversing through the whole stack
-        # IDEA: use generators or build methods from the builtin operator library in python
-        # find all the values that are True and substitute False in there
-        for node, flag in stack.items():
-            if flag:
-                stack[node] = False
-        return stack
-
     def _compute_loop_value(self, stack: List) -> str:
         """
         A helper method to compute the value of a loop
         :param stack: a List of nodes (of type tuple)
         :return: The value associate with a play (nodes in stack) given a payoff function
         """
-
-        def get_edge_weight(k: Tuple) -> float:
-            return float(self.graph[k[0]][k[1]][0].get('weight'))
-
-        # find the element which is repeated twice or more in the list
-        # which has to be the very last element of the list
-        assert stack.count(stack[-1]) >= 2, "The count of the repeated elements in a loops should be exactly 2"
-
         # get the index of the repeated node when it first appeared
         initial_index = stack.index(stack[-1])
-        loop_edges = []
+        loop_edge_w = []
         # get the edge weights between the repeated nodes
         for i in range(initial_index, len(stack) - 1):
             # create the edge tuple up to the very last element
-            loop_edges.append((stack[i], stack[i + 1]))
+            loop_edge_w.append(float(self.graph[stack[i]][stack[i + 1]][0].get('weight')))
 
-        return self.__payoff_func(map(get_edge_weight, [k for k in loop_edges]))
+        return self.__payoff_func(loop_edge_w)
 
     def cycle_main(self) -> Dict[Tuple, str]:
         """
@@ -141,28 +122,19 @@ class payoff_value():
         :return: A dict consisting all the loops that exist in a graph with a given init node and its corresponding
         values for a given payoff function
         """
-        visitStack: Dict[Tuple, bool] = {}
         # NOTE: the data player and the init flag cannot be accessed as graph[node]['init'/ 'player'] you have to first
         #  access the data as graph.nodes.data() and loop over the list each element in that list is a tuple
         #  (NOT A DICT) of the form (node_name, {key: value})
-
-        # get all the info regarding the node of type tuple, format (node_name, {'player': value, 'init': True})
-        init_node = [node[0] for node in self.graph.nodes.data() if node[1].get('init') == True]
-
-        # initialize visitStack
-        for node in self.graph.nodes:
-            visitStack.update({node: False})
 
         # create a dict to hold values of the loops as str for a corresponding play which is a str too
         loop_dict: Dict[Tuple, str] = {}
 
         # visit each neighbour of the init node
-        for node in self.graph.neighbors(init_node[0]):
-            # reset all the flags except the init node flag to be False
-            visitStack = self._reinit_visitStack(visitStack)
-            visitStack[init_node[0]] = True
+        for node in self.graph.neighbors(self._init_node):
+            visitStack: Dict[Tuple, bool] = defaultdict(lambda: False)
+            visitStack[self._init_node] = True
             nodeStack: List[Tuple] = []
-            nodeStack.append(init_node[0])
+            nodeStack.append(self._init_node)
             self._cycle_util(node, visitStack, loop_dict, nodeStack)
 
         self.__loop_vals = loop_dict
@@ -189,9 +161,8 @@ class payoff_value():
             if visitStack[neighbour]:
                 nodeStack = copy.copy((nodeStack))
                 nodeStack.append(neighbour)
-                play_tuple = tuple(self._convert_stack_to_play_str(nodeStack))
                 loop_value: str = self._compute_loop_value(nodeStack)
-                loop_dict.update({play_tuple: loop_value})
+                loop_dict.update({tuple(nodeStack): loop_value})
                 nodeStack.pop()
                 continue
             else:
@@ -208,7 +179,7 @@ class payoff_value():
             return True
         return False
 
-    def compute_cVal(self, vertex: Tuple, debug:bool = False) -> str:
+    def compute_cVal(self, vertex: Tuple, debug: bool = False) -> str:
         """
         A Method to compute the cVal using  @vertex as the starting node
         :param vertex: a valid node of the graph
@@ -225,90 +196,6 @@ class payoff_value():
             print(f"for the play {max_play} is {play_dict[max_play]}")
 
         return play_dict[max_play]
-
-    def compute_aVal(self) -> None:
-        raise NotImplementedError
-
-    @deprecated
-    def dump_mpg_data_file(self) -> None:
-        """
-        The format of the file should be <NODE> <MIN/MAX> <ADJ_NODE>:<EDGE_WEIGHT>...;
-        :return:
-        """
-
-        # open the file and overwrite the context
-        f = open("config/sample.mpg", "w")
-
-        # helper function to print nodes
-        def __print_nodes(_node):
-            for n in _node:
-                if 'v' in n:
-                    f.write(f"{n[1:]}")
-                else:
-                    f.write(f"{n}")
-
-        for node in self.graph.nodes():
-            if self.graph.nodes[node]["player"] == "adam":
-                player = "MIN"
-            else:
-                player = "MAX"
-
-            # create the line
-
-            # for curr_node in node:
-            #     if 'v' in curr_node:
-            #         f.write(f"{curr_node[1:]}")
-            #     else:
-            #         f.write(f"{curr_node} ")
-            __print_nodes(node)
-            f.write(f" {player} ")
-            # create an edge list which will later be added to the line
-            edge_list: List[Tuple] = []
-            # get outgoing edges of a graph
-            for e in self.graph.edges(node):
-                edge_list.append((e[1], self.graph[e[0]][e[1]][0]['weight']))
-
-            for ix, (k, v) in enumerate(edge_list):
-                __print_nodes(k)
-                if ix == len(edge_list) - 1:
-                    f.write(f":{int(float(v))}; \n")
-                else:
-                    f.write(f":{int(float(v))}, ")
-
-    @deprecated
-    def alt_dump_mpg_data_file(self) -> None:
-        """
-        The format of the file should be <NODE> <MIN/MAX> <ADJ_NODE>:<EDGE_WEIGHT>...;
-        :return:
-        """
-
-        # open the file and overwrite the context
-        f = open("config/sample.mpg", "w")
-
-        for inode, node in enumerate(self.graph.nodes()):
-            self.graph.nodes[node]['map'] = inode
-
-        for node in self.graph.nodes():
-            if self.graph.nodes[node]["player"] == "adam":
-                player = "MIN"
-            else:
-                player = "MAX"
-
-            # create the line
-            f.write(f"{self.graph.nodes[node]['map']} {player} ")
-            # create an edge list which will later be added to the line
-            edge_list: List[Tuple] = []
-            # get outgoing edges of a graph
-            for ie, e in enumerate(self.graph.edges(node)):
-                # mapped_curr_node = self.graph.nodes[e[0]]['map']
-                mapped_next_node = self.graph.nodes[e[1]]['map']
-                # edge_list.append((, self.graph[e[0]][e[1]][0]['weight']))
-                edge_weight = float(self.graph[e[0]][e[1]][0]['weight'])
-                if ie == len(self.graph.edges(node)) - 1:
-                    f.write(f"{mapped_next_node}:{int(edge_weight)}; \n")
-                else:
-                    f.write(f"{mapped_next_node}:{int(edge_weight)}, ")
-
 
 if __name__ == "__main__":
     payoff_func = "inf"

@@ -7,8 +7,7 @@ import sys
 import re
 import warnings
 import random
-import cProfile
-import pandas as pd
+import operator
 
 from typing import List, Tuple, Dict
 from src.compute_payoff import payoff_value
@@ -31,7 +30,7 @@ the accepting states in all the g_b in g_hat DO NOT transit to vT but they have 
 (w(e) - b => 0 - b => -b). Thus by default a transition to acc_state does NOT result in zero regret except for when 
 b = 0.0. With this flag we manually modify the edge weight for all the accepting states to be zero.
 """
-acc_min_edge_weight = False
+acc_min_edge_weight = True
 # flag to add biasing to choose the final strategy with the accepting state in it
 """
 choose_acc_state_run : Say we have multiple runs with zero regret, then we manually check if a play contains the 
@@ -50,7 +49,7 @@ bypass_implementation = True
 
 def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = False,
                     scLTL_formula: str = "", plot: bool = False, prune: bool = False,
-                    human_intervention: int = 1, user_input: int = -1) -> ProductAutomaton:
+                    human_intervention: int = 1, user_input: int = -1, absorbing: bool  = False) -> ProductAutomaton:
     """
     A helper method to construct a graph using the GraphFactory() class, given a boolean formula
     :param payoff_func: A payoff function
@@ -81,15 +80,20 @@ def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = Fal
         print("=========================================")
 
         if inf_re.match(payoff_func):
-            _graph = GraphFactory._construct_gmin_graph(debug=debug, plot=plot, prune=prune, scLTL_formula=scLTL_formula,
-                                                        human_intervention=human_intervention, use_alias=use_alias)
+            _graph = GraphFactory._construct_gmin_graph(debug=debug, plot=plot, prune=prune,
+                                                        scLTL_formula=scLTL_formula,
+                                                        human_intervention=human_intervention,
+                                                        use_alias=use_alias, absorbing=absorbing)
         elif sup_re.match(payoff_func):
-            _graph = GraphFactory._construct_gmax_graph(debug=debug, plot=plot, prune=prune, scLTL_formula=scLTL_formula,
-                                                        human_intervention=human_intervention, use_alias=use_alias)
+            _graph = GraphFactory._construct_gmax_graph(debug=debug, plot=plot, prune=prune,
+                                                        scLTL_formula=scLTL_formula,
+                                                        human_intervention=human_intervention,
+                                                        use_alias=use_alias, absorbing=absorbing)
         else:
             _graph = GraphFactory._construct_product_automaton_graph(use_alias=use_alias, scLTL_formula=scLTL_formula,
                                                                      plot=plot, debug=debug, prune=prune,
-                                                                     human_intervention=human_intervention)
+                                                                     human_intervention=human_intervention,
+                                                                     absorbing=absorbing)
     return _graph
 
 
@@ -120,8 +124,6 @@ def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle: payoff_value
     # 2. add @node as the new init vertex
     # 3. compute the loop-vals for this new graph
     tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
-    # FIXME: even if you are not dealing with a new init node, this process finds the current init node, deletes it and
-    #  adds the same thing again. Looks redundant!
     tmp_payoff_handle.remove_attribute(tmp_payoff_handle.get_init_node(), 'init')
     tmp_payoff_handle.set_init_node(node)
     tmp_payoff_handle.cycle_main()
@@ -339,7 +341,7 @@ def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, v
     GraphFactory.get_two_player_game(graph, "config/g_hat_graph", file_name, save_flag=save_flag, plot=plot)
 
 def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGraph,  w_prime, value_func,
-                           str_dict) -> Tuple[Dict[float, Dict], bool]:
+                           str_dict, optimistic: bool = False) -> Tuple[Dict[float, Dict], bool]:
     """
     A helper method to check if there exist non-zero regret in the game g_hat. If yes return true else False
     :param graph_g_hat: graph g_hat on which we would like to compute the regret value
@@ -363,29 +365,39 @@ def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGr
                 # if the node belongs to adam
                 if graph_g_hat.nodes[node]['player'] == 'adam':
                     # get the next node and update
-                    _adam_str.update({node: _get_next_node(graph_g_hat, node, min)})
+                    _adam_str.update({node: _get_next_node(graph_g_hat, node, min, optimistic=optimistic)})
                 # if node belongs to eve
                 elif graph_g_hat.nodes[node]['player'] == 'eve':
-                    _eve_str.update({node: _get_next_node(graph_g_hat, node, max)})
+                    _eve_str.update({node: _get_next_node(graph_g_hat, node, max, optimistic=optimistic)})
                 else:
                     raise warnings.warn(f"The node {node} does not belong either to eve or adam. This should have "
                                         f"never happened")
         # update str_dict
         str_dict.update({b: {'eve': _eve_str}})
         str_dict[b].update({'adam': _adam_str})
-        # compute the regret value for this b
-        plays: List[List[Tuple]] = _compute_all_plays(graph_g_hat, {**_eve_str, **_adam_str})
-        # if there is only possible play then that means the str we have is already deterministic
-        if len(plays) == 1:
-            reg = -1 * float(_play_loop(graph_g_hat, plays[0], value_func))
+        if optimistic:
+            # compute the regret value for this b
+            plays: List[List[Tuple]] = _compute_all_plays(graph_g_hat, {**_eve_str, **_adam_str})
+            # if there is only possible play then that means the str we have is already deterministic
+            if len(plays) == 1:
+                reg = -1 * float(_play_loop(graph_g_hat, plays[0], value_func))
+            else:
+                reg, _adam_str, _eve_str = _find_optimal_str(plays, graph_g_hat, value_func, _adam_str, _eve_str)
+                str_dict[b]['eve'] = _eve_str
+                str_dict[b]['adam'] = _adam_str
+
+            str_dict[b].update({'reg': reg})
+            if reg > 0:
+                return str_dict, True
         else:
-            reg, _adam_str, _eve_str = _find_optimal_str(plays, graph_g_hat, value_func, _adam_str, _eve_str)
+            plays: List[List[Tuple]] = _compute_all_plays(graph_g_hat, {**_eve_str, **_adam_str})
+            reg = -1 * float(_play_loop(graph_g_hat, plays[0], value_func))
             str_dict[b]['eve'] = _eve_str
             str_dict[b]['adam'] = _adam_str
+            str_dict[b].update({'reg': reg})
 
-        str_dict[b].update({'reg': reg})
-        if reg > 0:
-            return str_dict, True
+            if reg > 0:
+                return str_dict, True
 
     return str_dict, False
 
@@ -447,8 +459,8 @@ def _find_optimal_str(plays: List[List[Tuple]], graph_g_hat: nx.MultiDiGraph, va
     return min_reg_val, adam_str, eve_str
 
 
-def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_graph: nx.MultiDiGraph) \
-        -> Dict[str, Dict]:
+def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_graph: nx.MultiDiGraph,
+                 optimistic: bool = False) -> Dict[str, Dict]:
     """
     A function to compute the regret value according to algorithm 4 : Reg = -1 * Val(.,.) on g_hat
     :param g_hat: a directed multi-graph constructed using construct_g_hat()
@@ -470,7 +482,7 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
 
     # check if you adam can ensure non-zero regret
     str_dict, reg_flag = _check_non_zero_regret(graph_g_hat=g_hat, org_graph=org_graph, w_prime=w_prime, 
-                                                value_func=_Val_func, str_dict=str_dict)
+                                                value_func=_Val_func, str_dict=str_dict, optimistic=optimistic)
     if reg_flag:
         print("A non-zero regret exists and thus adam will play from v0 to v1 in g_hat")
     else:
@@ -521,10 +533,10 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
                     # if the node belongs to adam
                     if g_hat.nodes[node]['player'] == 'adam':
                         # get the next node and update
-                        adam_str.update({node: _get_next_node(g_hat, node, min)})
+                        adam_str.update({node: _get_next_node(g_hat, node, min, optimistic=optimistic)})
                     # if node belongs to eve
                     elif g_hat.nodes[node]['player'] == 'eve':
-                        eve_str.update({node: _get_next_node(g_hat, node, max)})
+                        eve_str.update({node: _get_next_node(g_hat, node, max, optimistic=optimistic)})
                     else:
                         raise warnings.warn(f"The node {node} does not belong either to eve or adam. This should have "
                                             f"never happened")
@@ -532,18 +544,25 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
             # update the str dict
             str_dict.update({b: {'eve': eve_str}})
             str_dict[b].update({'adam': adam_str})
-
-            plays: List[List[Tuple]] = _compute_all_plays(g_hat, {**eve_str, **adam_str})
-            # if there is only one possible play then that means the str we have is already deterministic
-            if len(plays) == 1:
-                reg = -1 * float(_play_loop(g_hat, plays[0], _Val_func))
+            
+            if optimistic:
+                plays: List[List[Tuple]] = _compute_all_plays(g_hat, {**eve_str, **adam_str})
+                # if there is only one possible play then that means the str we have is already deterministic
+                if len(plays) == 1:
+                    reg = -1 * float(_play_loop(g_hat, plays[0], _Val_func))
+                else:
+                    reg, adam_str, eve_str = _find_optimal_str(plays, g_hat, _Val_func, adam_str, eve_str)
+                    str_dict[b]['eve'] = eve_str
+                    str_dict[b]['adam'] = adam_str
+    
+                str_dict[b].update({'reg': reg})
             else:
-                reg, adam_str, eve_str = _find_optimal_str(plays, g_hat, _Val_func, adam_str, eve_str)
+                plays: List[List[Tuple]] = _compute_all_plays(g_hat, {**eve_str, **adam_str})
+                reg = -1 * float(_play_loop(g_hat, plays[0], _Val_func))
                 str_dict[b]['eve'] = eve_str
                 str_dict[b]['adam'] = adam_str
-
-            str_dict[b].update({'reg': reg})
-
+                str_dict[b].update({'reg': reg})
+            
     # create a tmp dict of strategies that have reg <= reg_threshold
     __tmp_dict = {}
     for k, v in str_dict.items():
@@ -638,7 +657,7 @@ def _play_loop(graph: nx.MultiDiGraph, play: List[Tuple], payoff_func: str) -> s
     return _loop_vals[play_key]
 
 
-def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> List[Tuple]:
+def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func, optimistic: bool = False) -> List[Tuple]:
     assert (func == max or func == min), "Please make sure the deciding function for transitions on the game g_hat for " \
                                          "eve and adam is either max or min"
     # NOTE: if there are multiple edges with same weight, it select the first one with the min/max value.
@@ -648,10 +667,14 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func) -> List[Tuple
         # get the edge weight, store it in a list and find the max/min and return the next_node
         wt_list.update({adj_edge: float(graph[adj_edge[0]][adj_edge[1]][0].get('weight'))})
 
-    min_value = func(wt_list.values())
-    next_nodes: List[Tuple] = [k[1] for k in wt_list if wt_list[k] == min_value]
-
-    return next_nodes
+    if optimistic:
+        threshold_value = func(wt_list.values())
+        next_nodes: List[Tuple] = [k[1] for k in wt_list if wt_list[k] == threshold_value]
+        return next_nodes
+    else:
+        threshold_value = func(wt_list.values())
+        next_node = random.choice([k[1] for k in wt_list if wt_list[k] == threshold_value])
+        return [next_node]
 
 def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph, strategy: Dict) -> Dict:
     #  A function to map the strategy from g_hat to the original strategy
@@ -712,8 +735,8 @@ def main():
         assert(construct_flag == 1 or construct_flag == 2), "Please enter a valid input - 1 or 2. \n"
 
     # construct graph
-    prod_graph = construct_graph(payoff_func, scLTL_formula="!d U g", plot=True, debug=True, prune=False,
-                                 human_intervention=2, user_input=construct_flag, use_alias=False)
+    prod_graph = construct_graph(payoff_func, scLTL_formula="!d U g", plot=True, debug=True, prune=True,
+                                 human_intervention=1, user_input=construct_flag, use_alias=False, absorbing=True)
 
     p = payoff_value(prod_graph._graph, payoff_func)
 
@@ -728,7 +751,7 @@ def main():
     #  Adam plays from v0 to v1-only if he can ensure a non-zero regret (the Val of the corresponding play in
     #  g_hat should be > 0)
     #  Eve selects the strategy with the least regret (below the given threshold)
-    reg_dict = compute_aVal(G_hat._graph, payoff_func, w_prime, prod_graph._graph)
+    reg_dict = compute_aVal(G_hat._graph, payoff_func, w_prime, prod_graph._graph, optimistic=False)
 
     if len(list(reg_dict.keys())) != 0:
         # for k, v in reg_dict.items():

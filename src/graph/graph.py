@@ -624,6 +624,16 @@ class FiniteTransSys(TwoPlayerGraph):
 
         return two_player_graph_ts
 
+    def get_max_weight(self) -> str:
+        # NOTE: WE assuming that the edge weights are purely integer
+
+        max_weight: int = -1
+        # loop through all the edges and return the max weight
+        for _e in self._graph.edges.data("weight"):
+            if int(_e[2]) > max_weight:
+                max_weight = int(_e[2])
+
+        return str(max_weight)
 class DFAGraph(Graph):
 
     def __init__(self, formula: str, graph_name: str, config_yaml: str, save_flag: bool = False):
@@ -632,6 +642,7 @@ class DFAGraph(Graph):
         self._config_yaml = config_yaml
         self._save_flag = save_flag
         self._graph_name = graph_name
+        # self._absorbing_states = self.get_absorbing_states()
 
     def construct_graph(self):
         buchi = nx.MultiDiGraph(name=self._graph_name)
@@ -690,43 +701,92 @@ class DFAGraph(Graph):
 
         return _new_state_lst
 
+    def get_absorbing_states(self) -> List[Tuple]:
+        abs_states = []
+        for _n in self._graph.nodes():
+            if len(list(self._graph.successors(_n))) == 1 and list(self._graph.successors(_n))[0] == _n:
+                abs_states.append(_n)
+
+        return abs_states
+
 
 class ProductAutomaton(TwoPlayerGraph):
 
-    def __init__(self, trans_sys_graph: TwoPlayerGraph, automaton: DFAGraph,
-               graph_name: str, config_name, save_flag:bool = False):
+    def __init__(self, trans_sys_graph: FiniteTransSys, automaton: DFAGraph,
+               graph_name: str, config_name, save_flag: bool = False):
         self._trans_sys = trans_sys_graph
         self._auto_graph = automaton
         self._graph_name = graph_name
         self._config_yaml = config_name
         self._save_flag = save_flag
 
-    def construct_graph(self):
+    def construct_graph(self, absorbing: bool = False):
         super().construct_graph()
+        max_w: str = self._trans_sys.get_max_weight()
         for _u_ts_node in self._trans_sys._graph.nodes():
             for _u_a_node in self._auto_graph._graph.nodes():
-                _u_prod_node = self.composition(_u_ts_node, _u_a_node)
+                if not absorbing:
+                    _u_prod_node = self.composition(_u_ts_node, _u_a_node)
+                else:
+                    if _u_a_node in self._auto_graph.get_absorbing_states():
+                        _u_prod_node = self.add_prod_state(_u_a_node, _u_a_node)
+                    else:
+                        _u_prod_node = self.composition(_u_ts_node, _u_a_node)
+
                 for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
                     for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
-                        _v_prod_node = self.composition(_v_ts_node, _v_a_node)
-                        # NOTE: labels in future on transition system maybe replaced with weights
+                        if not absorbing:
+                            _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+                        else:
+                            if _v_a_node in self._auto_graph.get_absorbing_states():
+                                _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
+                            else:
+                                _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+
                         label = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
                         weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
                         auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
+
                         if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
                             if auto_label.formula == "(true)" or auto_label.formula == "1":
                                 truth = True
                             else:
                                 truth = auto_label.check(label)
+
                         # if the node belongs to adam
                         else:
                             # TODO: verify with Morteza what happens if you are in the human state
                             _v_a_node = _u_a_node
-                            _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+                            if not absorbing:
+                                _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+                            else:
+                                if _v_a_node in self._auto_graph.get_absorbing_states():
+                                    _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
+                                else:
+                                    _v_prod_node = self.composition(_v_ts_node, _v_a_node)
                             truth = True
+
                         if truth:
                             if not self._graph.has_edge(_u_prod_node, _v_prod_node):
-                                self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, weight)])
+                                if _u_prod_node in self._auto_graph.get_absorbing_states():
+                                    if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
+                                        self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, '0')])
+                                    else:
+                                        self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, max_w)])
+                                else:
+                                    self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, weight)])
+
+    def add_prod_state(self, _p_node, auto_node) -> None:
+        """
+        A helper method which is called when we use the absorbing flag to add manually created node to the product graph
+        """
+        if not self._graph.has_node(_p_node):
+            self._graph.add_node(_p_node)
+
+            if self._auto_graph._graph.nodes[auto_node].get('accepting'):
+                self._graph.nodes[_p_node]['accepting'] = True
+
+        return _p_node
 
     def composition(self, ts_node, auto_node) -> Tuple:
         _p_node = (ts_node, auto_node)
@@ -757,15 +817,7 @@ class ProductAutomaton(TwoPlayerGraph):
 
         return _p_node
 
-
-    def build_initial(self):
-        raise NotImplementedError
-
-    def build_accepting(self):
-        raise NotImplementedError
-
-    def prune_graph(self, debug=False):
-
+    def prune_graph(self, debug: bool = False):
         # initialize queue (deque is part of std library and allows O(1) append() and pop() at either end)
         queue = deque()
         regions = defaultdict(lambda : -1)
@@ -781,7 +833,7 @@ class ProductAutomaton(TwoPlayerGraph):
             _n = queue.popleft()
 
             for _pre_n in self._graph.predecessors(_n):
-                if regions[_pre_n] == -1 or self._graph.nodes[_pre_n].get("player") == "eve":   #  if you haven't visited this node yet
+                if regions[_pre_n] == -1 or self._graph.nodes[_pre_n].get("player") == "eve":
                     if self._graph.nodes[_pre_n].get("player") == "adam":
                         queue.append(_pre_n)
                         regions[_pre_n] = +1
@@ -815,6 +867,21 @@ class ProductAutomaton(TwoPlayerGraph):
 
         self.prune_edges(debug=debug)
 
+        # do a sanity check to make sure the final graph is total indeed
+        self._sanity_check(debug=debug)
+
+    def _sanity_check(self, debug: bool = False):
+        # check is the graph is total or not by loop through every node and add a self-loop of weight max(W)
+        # to every node that does not  have a successor
+        max_w : str = self._trans_sys.get_max_weight()
+        for _n in self._graph.nodes():
+            if len(list(self._graph.successors(_n))) == 0:
+                if debug:
+                    print("=====================================")
+                    print(f"Adding self loop of weight - {max_w} to the node {_n}")
+                    print("=====================================")
+                self._graph.add_weighted_edges_from([(_n, _n, max_w)])
+
 
     def prune_edges(self, debug):
         # A helper function to remove edges without the "prune" attribute
@@ -835,6 +902,7 @@ class ProductAutomaton(TwoPlayerGraph):
                 print("=====================================")
             self._graph.remove_edge(_e[0], _e[1])
 
+
 class GraphFactory:
 
     @staticmethod
@@ -850,61 +918,7 @@ class GraphFactory:
         two_player_graph = TwoPlayerGraph('org_graph', 'config/org_graph', save_flag=True)
         two_player_graph.construct_graph()
 
-        # two_player_graph.add_states_from(['v1', 'v2', 'v3', 'v4', 'v5',
-        #                                   'v6', 'v7', 'v8', 'v9', 'v10',
-        #                                   'v11', 'v12', 'v13', 'v14', 'v15',
-        #                                   'v16', 'v17', 'v18', 'v19', 'v20',
-        #                                   'v21', 'v22', 'v23', 'v24', 'v25',
-        #                                   'v26', 'v27', 'v28', 'v29', 'v30',
-        #                                   'v31', 'v32', 'v33', 'v34', 'v35',
-        #                                   'v36', 'v37', 'v38', 'v39', 'v40'])
         two_player_graph.add_states_from(['v1', 'v2', 'v3', 'v4', 'v5'])
-
-        # s12: str = str(random.randint(1, 9))
-        # s21: str = str(random.randint(1, 9))
-        # s23: str = str(random.randint(1, 9))
-        # s33: str = str(1)
-        # print(f"Values of s12 : {s12}, s21: {s21}, s23: {s23}, s33: {s33}")
-        # two_player_graph.add_weighted_edges_from([('v1', 'v32', s12),  # region q_2
-        #                                     ('v2', 'v3', s12), ('v2', 'v8', '0'), ('v2', 'v10', '0'),
-        #                                     ('v3', 'v14', s21), ('v3', 'v16', s23),
-        #                                     ('v4', 'v1', s21), ('v4', 'v9', '0'), ('v4', 'v10', '0'),
-        #                                     ('v5', 'v27', s33),
-        #                                     ('v6', 'v5', s23), ('v6', 'v8', '0'), ('v6', 'v9', '0'),
-        #                                     ('v7', 'v5', s33), ('v7', 'v8', '0'), ('v7', 'v9', '0'),
-        #                                     ('v8', 'v39', s12),
-        #                                     ('v9', 'v8', s21), ('v9', 'v20', s23),
-        #                                     ('v10', 'v30', s33),
-        #                                     ('v11', 'v12', s12),  # region q_1 starts
-        #                                     ('v12', 'v13', s12), ('v12', 'v18', '0'), ('v12', 'v20', '0'),
-        #                                     ('v13', 'v16', s23), ('v13', 'v14', s21),
-        #                                     ('v14', 'v11', s12), ('v14', 'v19', '0'), ('v14', 'v20', '0'),
-        #                                     ('v15', 'v27', s33),
-        #                                     ('v16', 'v15', s23), ('v16', 'v18', '0'), ('v16', 'v19', '0'),
-        #                                     ('v17', 'v15', s33), ('v17', 'v18', '0'), ('v17', 'v19', '0'),
-        #                                     ('v18', 'v19', s12),
-        #                                     ('v19', 'v18', s21), ('v19', 'v20', s23),
-        #                                     ('v20', 'v30', s33),
-        #                                     ('v21', 'v22', s12),  # region q_0 starts
-        #                                     ('v22', 'v23', s12), ('v22', 'v28', '0'), ('v22', 'v30', '0'),
-        #                                     ('v23', 'v26', s23), ('v23', 'v24', s21),
-        #                                     ('v24', 'v21', s21), ('v24', 'v29', '0'), ('v24', 'v30', '0'),
-        #                                     ('v25', 'v27', s33),
-        #                                     ('v26', 'v25', s23), ('v26', 'v28', '0'), ('v26', 'v29', '0'),
-        #                                     ('v27', 'v25', s33), ('v27', 'v28', '0'), ('v27', 'v29', '0'),
-        #                                     ('v28', 'v29', s12),
-        #                                     ('v29', 'v28', s21), ('v29', 'v30', s23),
-        #                                     ('v30', 'v30', s33),
-        #                                     ('v31', 'v32', s12),  # region q_4 starts
-        #                                     ('v32', 'v33', s12), ('v32', 'v38', '0'), ('v32', 'v40', '0'),
-        #                                     ('v33', 'v36', s23), ('v33', 'v34', s21),
-        #                                     ('v34', 'v31', s21), ('v34', 'v39', '0'), ('v34', 'v40', '0'),
-        #                                     ('v35', 'v37', s33),
-        #                                     ('v36', 'v35', s23), ('v36', 'v38', '0'), ('v36', 'v39', '0'),
-        #                                     ('v37', 'v35', s33), ('v37', 'v38', '0'), ('v37', 'v39', '0'),
-        #                                     ('v38', 'v39', s12),
-        #                                     ('v39', 'v38', s21), ('v39', 'v40', s23),
-        #                                     ('v40', 'v40', s33)])
 
         two_player_graph.add_weighted_edges_from([('v1', 'v2', '1'),
                                                   ('v2', 'v1', '-1'),
@@ -915,58 +929,13 @@ class GraphFactory:
                                                   ('v4', 'v4', '2'),
                                                   ('v5', 'v5', '1')])
 
-        # two_player_graph.add_state_attribute('v1', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v2', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v3', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v4', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v5', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v6', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v7', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v8', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v9', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v10', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v11', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v12', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v13', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v14', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v15', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v16', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v17', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v18', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v19', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v20', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v21', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v22', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v23', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v24', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v25', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v26', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v27', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v28', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v29', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v30', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v31', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v32', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v33', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v34', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v35', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v36', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v37', 'player', 'adam')
-        # two_player_graph.add_state_attribute('v38', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v39', 'player', 'eve')
-        # two_player_graph.add_state_attribute('v40', 'player', 'eve')
-
         two_player_graph.add_state_attribute('v1', 'player', 'eve')
         two_player_graph.add_state_attribute('v2', 'player', 'adam')
         two_player_graph.add_state_attribute('v3', 'player', 'adam')
         two_player_graph.add_state_attribute('v4', 'player', 'eve')
         two_player_graph.add_state_attribute('v5', 'player', 'eve')
 
-        # two_player_graph.add_accepting_states_from(['v21', 'v22', 'v23', 'v24', 'v25',
-        #                                             'v26', 'v27', 'v28', 'v29', 'v30'])
         two_player_graph.add_initial_state('v1')
-
-        # two_player_graph.add_initial_state('v3')
 
         if plot:
             two_player_graph.plot_graph()
@@ -976,14 +945,15 @@ class GraphFactory:
     @staticmethod
     def _construct_gmin_graph(debug: bool = False, use_alias: bool = False, scLTL_formula: str='',
                               plot: bool = False, prune: bool = False, human_intervention: int = 1,
-                              manual_const: bool = False):
+                              manual_const: bool = False, absorbing: bool = False):
         two_player_gmin = GminGraph('Gmin_graph', 'config/Gmin_graph', save_flag=True)
         two_player_gmin.construct_graph()
 
         if not manual_const:
             two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
                                                                               debug=debug, prune=prune,
-                                                                              human_intervention=human_intervention)
+                                                                              human_intervention=human_intervention,
+                                                                              absorbing=absorbing)
             two_player_gmin._trans_sys = two_player_game._trans_sys
             two_player_gmin._auto_graph = two_player_game._auto_graph
 
@@ -1039,14 +1009,15 @@ class GraphFactory:
     @staticmethod
     def _construct_gmax_graph(debug: bool = False, use_alias: bool = False, scLTL_formula: str = '',
                               plot: bool = False, prune: bool = False, human_intervention: int = 1 ,
-                              manual_const: bool = False):
+                              manual_const: bool = False,  absorbing: bool = False):
         two_player_gmax = GminGraph('Gmax_graph', 'config/Gmax_graph', save_flag=True)
         two_player_gmax.construct_graph()
 
         if not manual_const:
             two_player_game = GraphFactory._construct_product_automaton_graph(use_alias, scLTL_formula, plot,
                                                                               debug=debug, prune=prune,
-                                                                              human_intervention=human_intervention)
+                                                                              human_intervention=human_intervention,
+                                                                              absorbing=absorbing)
             two_player_gmax._trans_sys = two_player_game._trans_sys
             two_player_gmax._auto_graph = two_player_game._auto_graph
         else:
@@ -1111,48 +1082,14 @@ class GraphFactory:
             trans_sys.add_state_attribute('s2', 'ap', 'a')
             trans_sys.add_state_attribute('s3', 'ap', 'c')
 
-            # trans_sys.add_states_from([('(s1,0)', {'ap': {'b'}, 'player': 'eve'}),
-            #                            ('(s2,0)', {'ap': {'a'}, 'player': 'eve'}),
-            #                            ('(s3,0)', {'ap': {'c'}, 'player': 'eve'}),
-            #                            ('(s1,1)', {'ap': {'b'}, 'player': 'eve'}),
-            #                            ('(s2,1)', {'ap': {'a'}, 'player': 'eve'}),
-            #                            ('(s3,1)', {'ap': {'c'}, 'player': 'eve'}),
-            #                            ('(h12,0)', {'ap': {''}, 'player': 'adam'}),
-            #                            ('(h21,0)', {'ap': {''}, 'player': 'adam'}),
-            #                            ('(h23,0)', {'ap': {''}, 'player': 'adam'}),
-            #                            ('(h33,0)', {'ap': {''}, 'player': 'adam'})])
-            #
-
             trans_sys.add_edge('s1', 's2', actions='s12', weight='0')
             trans_sys.add_edge('s2', 's1', actions='s21', weight='2')
             trans_sys.add_edge('s2', 's3', actions='s23', weight='3')
-            # trans_sys.add_edge('s3', 's3', actions='s33', weight='5')
             trans_sys.add_edge('s3', 's1', actions='s31', weight='5')
             trans_sys.add_edge('s1', 's3', actions='s13', weight='3')
-            # trans_sys.add_edge('(s1,0)', '(h12,0)', actions='s12', weight='0')
-            # trans_sys.add_edge('(h12,0)', '(s2,0)', actions='s12', weight='0')
-            # trans_sys.add_edge('(s2,0)', '(h23,0)', actions='s23', weight='3')
-            # trans_sys.add_edge('(h23,0)', '(s3,0)', actions='s23', weight='3')
-            # trans_sys.add_edge('(s2,0)', '(h21,0)', actions='s21', weight='2')
-            # trans_sys.add_edge('(h21,0)', '(s1,0)', actions='s21', weight='2')
-            # trans_sys.add_edge('(s3,0)', '(h33,0)', actions='s33', weight='5')
-            # trans_sys.add_edge('(h33,0)', '(s3,0)', actions='s33', weight='5')
-            # trans_sys.add_edge('(s1,1)', '(s2,1)', actions='s12', weight='0')
-            # trans_sys.add_edge('(s2,1)', '(s1,1)', actions='s21', weight='2')
-            # trans_sys.add_edge('(s2,1)', '(s3,1)', actions='s23', weight='3')
-            # trans_sys.add_edge('(s3,1)', '(s3,1)', actions='s33', weight='5')
-            # trans_sys.add_edge('(h12,0)', '(s1,1)', actions='m', weight='0')
-            # trans_sys.add_edge('(h12,0)', '(s3,1)', actions='m', weight='0')
-            # trans_sys.add_edge('(h23,0)', '(s1,1)', actions='m', weight='0')
-            # trans_sys.add_edge('(h23,0)', '(s2,1)', actions='m', weight='0')
-            # trans_sys.add_edge('(h21,0)', '(s3,1)', actions='m', weight='0')
-            # trans_sys.add_edge('(h21,0)', '(s2,1)', actions='m', weight='0')
-            # trans_sys.add_edge('(h33,0)', '(s1,1)', actions='m', weight='0')
-            # trans_sys.add_edge('(h33,0)', '(s2,1)', actions='m', weight='0')
-            #
 
             trans_sys.add_initial_state('s2')
-            # trans_sys.add_initial_state('(s2,0)')
+
         else:
             trans_sys.add_states_from(['s1', 's2', 's3', 's4', 's5'])
             trans_sys.add_state_attribute('s1', 'ap', 'b')
@@ -1187,7 +1124,7 @@ class GraphFactory:
     def _construct_dfa_graph(use_alias: bool = True, scLTL_formula: str = '', plot: bool = False):
         if scLTL_formula == '':
             # construct a basic graph object
-            dfa = DFAGraph('!b & Fc', 'dfa_graph', 'config/dfa_graph', save_flag=True)
+            dfa = DFAGraph('!b U c', 'dfa_graph', 'config/dfa_graph', save_flag=True)
         else:
             dfa = DFAGraph(scLTL_formula, 'dfa_graph', 'config/dfa_graph', save_flag=True)
         dfa.construct_graph()
@@ -1224,17 +1161,19 @@ class GraphFactory:
 
     @staticmethod
     def _construct_product_automaton_graph(use_alias: bool = False, scLTL_formula: str = '', plot: bool = False,
-                                           prune: bool = False, debug: bool = False, human_intervention: int = 1):
+                                           prune: bool = False, debug: bool = False, human_intervention: int = 1,
+                                           absorbing: bool = False):
         # construct the transition system
         tran_sys = GraphFactory._construct_finite_trans_sys(debug=debug, plot=plot,
                                                             human_intervention=human_intervention)
 
         # construct the dfa
         dfa = GraphFactory._construct_dfa_graph(use_alias=use_alias, scLTL_formula=scLTL_formula, plot=plot)
+        dfa.get_absorbing_states()
 
         # construct the product automaton
         prod_auto = ProductAutomaton(tran_sys, dfa, "product_graph", "config/prod_auto", save_flag=True)
-        prod_auto.construct_graph()
+        prod_auto.construct_graph(absorbing=absorbing)
 
         if prune:
             # prune the graph
@@ -1262,4 +1201,5 @@ if __name__ == "__main__":
     # GraphFactory._construct_dfa_graph(use_alias=False)
 
     # build the product automaton
-    GraphFactory._construct_product_automaton_graph(debug=True, plot=True, prune=True)
+    GraphFactory._construct_product_automaton_graph(scLTL_formula="!d U g", debug=True,
+                                                    plot=True, prune=True, absorbing=True)

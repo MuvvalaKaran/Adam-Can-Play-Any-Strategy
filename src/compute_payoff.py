@@ -1,6 +1,8 @@
 import copy
 import networkx as nx
 import statistics
+import warnings
+import sys
 
 from collections import defaultdict
 from typing import List, Tuple, Dict
@@ -189,11 +191,17 @@ class payoff_value():
         # find all plays in which the vertex exist
         play_dict = {k: v for k, v in self.__loop_vals.items() if self._find_vertex_in_play(vertex, k)}
 
-        # find the max of the value
-        max_play = max(play_dict, key=lambda key: play_dict[key])
-        if debug:
-            print(f"The cVal from the node {vertex}")
-            print(f"for the play {max_play} is {play_dict[max_play]}")
+        if play_dict:
+            # find the max of the value
+            max_play = max(play_dict, key=lambda key: play_dict[key])
+            if debug:
+                print(f"The cVal from the node {vertex}")
+                print(f"for the play {max_play} is {play_dict[max_play]}")
+        else:
+            warnings.warn(f"There does not exists any loops from the node {vertex}. Please check if the "
+                          f"graph is total and that {vertex} has at-least one outgoing edge. "
+                          f"If this is true and you still see this error then who knows what's wrong! \n")
+            sys.exit(-1)
 
         return play_dict[max_play]
 

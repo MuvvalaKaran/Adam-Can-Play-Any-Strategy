@@ -571,7 +571,7 @@ class FiniteTransSys(TwoPlayerGraph):
                           "intervene is an integer")
         eve_node_lst = []
         adam_node_lst = []
-        two_player_graph_ts = FiniteTransSys(self._graph_name, self._config_yaml, self._save_flag)
+        two_player_graph_ts = FiniteTransSys("transition_system", self._config_yaml, self._save_flag)
         two_player_graph_ts.construct_graph()
 
         # lets create k copies of the stats
@@ -1072,8 +1072,9 @@ class GraphFactory:
         return two_player_gmax
 
     @staticmethod
-    def _construct_finite_trans_sys(debug: bool = False, plot: bool = False, human_intervention: int = 1):
-        trans_sys = FiniteTransSys("transition_system", "config/trans_sys", save_flag=True)
+    def _construct_finite_trans_sys(debug: bool = False, plot: bool = False, human_intervention: int = 1,
+                                    plot_raw_ts: bool = False):
+        trans_sys = FiniteTransSys("raw_transition_system", "config/trans_sys", save_flag=True)
         trans_sys.construct_graph()
 
         if not debug:
@@ -1112,6 +1113,9 @@ class GraphFactory:
             trans_sys.add_edge('s5', 's2', actions='N', weight='9')
 
             trans_sys.add_initial_state('s1')
+
+        if plot_raw_ts:
+            trans_sys.plot_graph()
 
         new_trans = trans_sys.automate_construction(k=human_intervention)
 
@@ -1165,7 +1169,7 @@ class GraphFactory:
                                            absorbing: bool = False):
         # construct the transition system
         tran_sys = GraphFactory._construct_finite_trans_sys(debug=debug, plot=plot,
-                                                            human_intervention=human_intervention)
+                                                            human_intervention=human_intervention, plot_raw_ts=True)
 
         # construct the dfa
         dfa = GraphFactory._construct_dfa_graph(use_alias=use_alias, scLTL_formula=scLTL_formula, plot=plot)

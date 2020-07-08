@@ -9,7 +9,8 @@ import warnings
 import random
 import operator
 
-from typing import List, Tuple, Dict
+from collections import defaultdict
+from typing import List, Tuple, Dict, Any
 from src.compute_payoff import payoff_value
 from src.graph.graph import GraphFactory
 from src.graph.graph import TwoPlayerGraph, ProductAutomaton
@@ -110,7 +111,7 @@ def construct_alt_game(graph: nx.MultiDiGraph, edge: Tuple[Tuple, Tuple]) -> nx.
     return new_graph
 
 
-def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle: payoff_value, node: Tuple):
+def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle: payoff_value, node: Tuple) -> str:
     """
     A helper method to compute the cVal from a given vertex (@node) for a give graph @graph
     :param graph: The graph on which would like to compute the cVal
@@ -131,13 +132,23 @@ def _compute_max_cval_from_v(graph: nx.MultiDiGraph, payoff_handle: payoff_value
     return tmp_payoff_handle.compute_cVal(node)
 
 
-def compute_w_prime(payoff_handle: payoff_value, org_graph: nx.MultiDiGraph) \
+def new_compute_cVal(payoff_handle: payoff_value, org_graph: nx.MultiDiGraph) -> Dict[Any, str]:
+    # compute the w_prime for all the nodes in the graph initially and then just look them up when needed.
+    # cVal is dict mapping each node to its max cVal
+
+    max_coop_val = defaultdict(lambda: '-1')
+    for n in org_graph.nodes():
+        max_coop_val[n] = _compute_max_cval_from_v(org_graph, payoff_handle, n)
+
+    return max_coop_val
+
+def compute_w_prime(payoff_handle: payoff_value, org_graph: nx.MultiDiGraph, coop_dict: Dict[Any, str]) \
         -> Dict[Tuple, str]:
     """
     A method to compute w_prime function based on Algo 2. pseudocode. This function is a mapping from each edge to a
     real valued number.
     :param payoff_handle: instance of the @compute_value() to compute the cVal
-    :param org_graph: The orginal graph from which we compute the mapping for all the edges in this graph.
+    :param org_graph: The orignal graph from which we compute the mapping for all the edges in this graph.
     :return: A dict mapping each edge (tuple of nodes(tuple)) to a finite value
     """
     print("*****************Constructing W_prime*****************")
@@ -153,20 +164,22 @@ def compute_w_prime(payoff_handle: payoff_value, org_graph: nx.MultiDiGraph) \
         # 2. we assign v' (tail node of the alt edge) as the init node
         # 3. Compute the max cVal for all v' from u
         else:
-            tmp_graph = construct_alt_game(org_graph, edge)
+            # tmp_graph = construct_alt_game(org_graph, edge)
             # construct the game without the org edge and find the max from each alternate play
             tmp_cvals = []
-
-            for alt_e in tmp_graph.out_edges(edge[0]):
+            out_going_edge = set(org_graph.out_edges(edge[0])) - set([edge])
+            for alt_e in out_going_edge:
                 # get all cVal from all the alt edges(v') from a given node (u)
-                tmp_cvals.append(_compute_max_cval_from_v(tmp_graph, payoff_handle, alt_e[1]))
+                # tmp_cvals.append(_compute_max_cval_from_v(org_graph, payoff_handle, alt_e[1]))
+                tmp_cvals.append(coop_dict[alt_e[1]])
             # after going throw all the alternate edges
             if len(tmp_cvals) != 0:
                 w_prime.update({edge: max(tmp_cvals)})
             # if no alternate edges exist then just compute the cVal from v of the org edge
             else:
                 # make a copy of the org_graph and a another tmp_payoff_handle and compute loop vals
-                w_prime.update({edge: _compute_max_cval_from_v(org_graph, payoff_handle, edge[1])})
+                # w_prime.update({edge: _compute_max_cval_from_v(org_graph, payoff_handle, edge[1])})
+                w_prime.update({edge: coop_dict[edge[1]]})
 
     print(f"the value of b are {set(w_prime.values())}")
 
@@ -325,7 +338,7 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> Tw
 
 
 def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, visualize_str: bool = False,
-               combined_strategy: Dict[Tuple, Tuple] = None, plot=False) -> None:
+               combined_strategy: Dict[Tuple, Tuple] = None, plot: bool = False, only_eve: bool = False) -> None:
     """
     A helper method to plot a given graph and save it if the @save_flag is True.
     :param graph: The graph to be plotted
@@ -335,7 +348,7 @@ def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, v
     """
     print(f"*****************Plotting graph with save_flag = {save_flag}*****************")
     if visualize_str:
-        _add_strategy_flag(graph, combined_strategy)
+        _add_strategy_flag(graph, combined_strategy, only_eve=only_eve)
 
     # grate a two_player_game using g_hat graph and plot the graph
     GraphFactory.get_two_player_game(graph, "config/g_hat_graph", file_name, save_flag=save_flag, plot=plot)
@@ -584,7 +597,7 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
     return final_str_dict
 
 
-def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple]) -> None:
+def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], only_eve: bool = False) -> None:
     """
     A helper method to add an attribute/flag which makes it easier to visualize the
     :param graph:
@@ -594,12 +607,19 @@ def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple]) -> 
     nx.set_edge_attributes(graph, False, 'strategy')
 
     for curr_node, next_node in strategy.items():
-        if isinstance(next_node, list):
-            for n_node in next_node:
-                graph.edges[curr_node, n_node, 0]['strategy'] = True
+        if only_eve:
+            if graph.nodes[curr_node].get("player") == "eve":
+                if isinstance(next_node, list):
+                    for n_node in next_node:
+                        graph.edges[curr_node, n_node, 0]['strategy'] = True
+                else:
+                    graph.edges[curr_node, next_node, 0]['strategy'] = True
         else:
-            graph.edges[curr_node, next_node, 0]['strategy'] = True
-
+            if isinstance(next_node, list):
+                for n_node in next_node:
+                    graph.edges[curr_node, n_node, 0]['strategy'] = True
+            else:
+                graph.edges[curr_node, next_node, 0]['strategy'] = True
 
 def _compute_all_plays(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple]) -> List[List[Tuple]]:
     """
@@ -676,7 +696,8 @@ def _get_next_node(graph: nx.MultiDiGraph, curr_node: Tuple, func, optimistic: b
         next_node = random.choice([k[1] for k in wt_list if wt_list[k] == threshold_value])
         return [next_node]
 
-def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph, strategy: Dict) -> Dict:
+def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph, strategy: Dict,
+                               only_final_play: bool = False) -> Dict:
     #  A function to map the strategy from g_hat to the original strategy
 
     # a list to keep track of nodes visited
@@ -700,21 +721,26 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
         if len(v) == 1:
             strategy[k] = v[0]
 
-    # org_strategy.append(next_node)
-    while next_node not in g_hat_strategy:
-        g_hat_strategy.append(next_node)  # [v1, v2, ... ]
-        curr_node = next_node  # curr_node = v2
-        next_node = strategy[curr_node]
-        g_hat_tmp.update({curr_node: next_node})
+    if only_final_play:
+        # org_strategy.append(next_node)
+        while next_node not in g_hat_strategy:
+            g_hat_strategy.append(next_node)  # [v1, v2, ... ]
+            curr_node = next_node  # curr_node = v2
+            next_node = strategy[curr_node]
+            g_hat_tmp.update({curr_node: next_node})
 
-    # check if the current node in g_hat_strategy does exist in org_graph. If so add it to org_strategy
-    for node in g_hat_strategy:
-        if node != "v0" and node != "v1":
-            if org_graph._graph.has_node(node[0]):
-                org_strategy.append(node[0])
+        # check if the current node in g_hat_strategy does exist in org_graph. If so add it to org_strategy
+        for node in g_hat_strategy:
+            if node != "v0" and node != "v1":
+                if org_graph._graph.has_node(node[0]):
+                    org_strategy.append(node[0])
 
-    for u_node, v_node in g_hat_tmp.items():
-        if u_node != "v0" and u_node != "v1":
+        for u_node, v_node in g_hat_tmp.items():
+            if u_node != "v0" and u_node != "v1":
+                if org_graph._graph.has_node(u_node[0]):
+                    org_tmp.update({u_node[0]: v_node[0]})
+    else:
+        for u_node, v_node in strategy.items():
             if org_graph._graph.has_node(u_node[0]):
                 org_tmp.update({u_node[0]: v_node[0]})
 
@@ -741,7 +767,8 @@ def main():
     p = payoff_value(prod_graph._graph, payoff_func)
 
     # construct W prime
-    w_prime = compute_w_prime(p, prod_graph._graph)
+    coop_dict = new_compute_cVal(p, prod_graph._graph)
+    w_prime = compute_w_prime(p, prod_graph._graph, coop_dict)
 
     # construct G_hat
     G_hat = construct_g_hat(prod_graph._graph, w_prime)
@@ -761,15 +788,16 @@ def main():
         plot_graph(G_hat._graph, file_name='config/g_hat_graph',
                    save_flag=True,
                    visualize_str=True,
-                   combined_strategy={**reg_dict['eve'], **reg_dict['adam']}, plot=True)
+                   combined_strategy={**reg_dict['eve'], **reg_dict['adam']}, plot=True, only_eve=True)
 
         # map back strategy from g_hat to the original graph
-        org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph, {**reg_dict['eve'], **reg_dict['adam']})
+        org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph, {**reg_dict['eve'], **reg_dict['adam']},
+                                                  only_final_play=False)
 
         plot_graph(prod_graph._graph, file_name="config/trans_sys",
                    save_flag=True,
                    visualize_str=True,
-                   combined_strategy=org_strategy, plot=True)
+                   combined_strategy=org_strategy, plot=True, only_eve=True)
 
 
 if __name__ == "__main__":

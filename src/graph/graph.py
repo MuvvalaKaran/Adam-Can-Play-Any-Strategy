@@ -744,7 +744,10 @@ class ProductAutomaton(TwoPlayerGraph):
                                 _v_prod_node = self.composition(_v_ts_node, _v_a_node)
 
                         label = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
-                        weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
+                        if self._trans_sys._graph.nodes[_u_ts_node].get("player") == "eve":
+                            weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
+                        else:
+                            weight = '0'
                         auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
 
                         if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
@@ -755,7 +758,6 @@ class ProductAutomaton(TwoPlayerGraph):
 
                         # if the node belongs to adam
                         else:
-                            # TODO: verify with Morteza what happens if you are in the human state
                             _v_a_node = _u_a_node
                             if not absorbing:
                                 _v_prod_node = self.composition(_v_ts_node, _v_a_node)
@@ -770,11 +772,15 @@ class ProductAutomaton(TwoPlayerGraph):
                             if not self._graph.has_edge(_u_prod_node, _v_prod_node):
                                 if _u_prod_node in self._auto_graph.get_absorbing_states():
                                     if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
-                                        self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, '0')])
+                                        self._graph.add_weighted_edges_from([(_u_prod_node,
+                                                                              _v_prod_node, max_w)])
                                     else:
-                                        self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, max_w)])
+                                        self._graph.add_weighted_edges_from([(_u_prod_node,
+                                                                              _v_prod_node,
+                                                                              str(-1 * float(max_w)))])
                                 else:
-                                    self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node, weight)])
+                                    self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node,
+                                                                          str(-1 * float(weight)))])
 
     def add_prod_state(self, _p_node, auto_node) -> None:
         """
@@ -880,7 +886,7 @@ class ProductAutomaton(TwoPlayerGraph):
                     print("=====================================")
                     print(f"Adding self loop of weight - {max_w} to the node {_n}")
                     print("=====================================")
-                self._graph.add_weighted_edges_from([(_n, _n, max_w)])
+                self._graph.add_weighted_edges_from([(_n, _n, str(-1 * float(max_w)))])
 
 
     def prune_edges(self, debug):

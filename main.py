@@ -31,7 +31,7 @@ the accepting states in all the g_b in g_hat DO NOT transit to vT but they have 
 (w(e) - b => 0 - b => -b). Thus by default a transition to acc_state does NOT result in zero regret except for when 
 b = 0.0. With this flag we manually modify the edge weight for all the accepting states to be zero.
 """
-acc_min_edge_weight = True
+acc_min_edge_weight = False
 # flag to add biasing to choose the final strategy with the accepting state in it
 """
 choose_acc_state_run : Say we have multiple runs with zero regret, then we manually check if a play contains the 
@@ -227,9 +227,9 @@ def get_max_weight(graph: nx.MultiDiGraph) -> float:
 
     weight_list = []
     for _, _, weight in graph.edges(data='weight'):
-        weight_list.append(weight)
+        weight_list.append(abs(float(weight)))
 
-    return float(max(weight_list))
+    return max(weight_list)
 
 
 def get_accepting_state_node(graph: nx.MultiDiGraph) -> List[Tuple]:
@@ -741,8 +741,9 @@ def map_g_hat_str_to_org_graph(g_hat: nx.MultiDiGraph, org_graph: TwoPlayerGraph
                     org_tmp.update({u_node[0]: v_node[0]})
     else:
         for u_node, v_node in strategy.items():
-            if org_graph._graph.has_node(u_node[0]):
-                org_tmp.update({u_node[0]: v_node[0]})
+            if u_node != "v0" and u_node != "v1":
+                if org_graph._graph.has_node(u_node[0]) and org_graph._graph.has_node(v_node[0]):
+                    org_tmp.update({u_node[0]: v_node[0]})
 
     return org_tmp
 
@@ -761,7 +762,7 @@ def main():
         assert(construct_flag == 1 or construct_flag == 2), "Please enter a valid input - 1 or 2. \n"
 
     # construct graph
-    prod_graph = construct_graph(payoff_func, scLTL_formula="!d U g", plot=True, debug=True, prune=True,
+    prod_graph = construct_graph(payoff_func, scLTL_formula="!d U g", plot=True, debug=True, prune=False,
                                  human_intervention=1, user_input=construct_flag, use_alias=False, absorbing=True)
 
     p = payoff_value(prod_graph._graph, payoff_func)
@@ -788,7 +789,7 @@ def main():
         plot_graph(G_hat._graph, file_name='config/g_hat_graph',
                    save_flag=True,
                    visualize_str=True,
-                   combined_strategy={**reg_dict['eve'], **reg_dict['adam']}, plot=True, only_eve=True)
+                   combined_strategy={**reg_dict['eve'], **reg_dict['adam']}, plot=True, only_eve=False)
 
         # map back strategy from g_hat to the original graph
         org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph, {**reg_dict['eve'], **reg_dict['adam']},

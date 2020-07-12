@@ -780,7 +780,8 @@ class ProductAutomaton(TwoPlayerGraph):
                                                                               str(-1 * float(max_w)))])
                                 else:
                                     self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node,
-                                                                          str(-1 * float(weight)))])
+                                                                          # weight)])
+                                                                          str(-1* float(weight)))])
 
     def add_prod_state(self, _p_node, auto_node) -> None:
         """
@@ -926,7 +927,7 @@ class GraphFactory:
 
         two_player_graph.add_states_from(['v1', 'v2', 'v3', 'v4', 'v5'])
 
-        two_player_graph.add_weighted_edges_from([('v1', 'v2', '1'),
+        two_player_graph.add_weighted_edges_from([('v1', 'v2', '0'),
                                                   ('v2', 'v1', '-1'),
                                                   ('v1', 'v3', '1'),
                                                   ('v3', 'v3', '0.5'),

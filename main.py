@@ -46,7 +46,12 @@ to the paper, if there does not exist a non-zero regret then adam does not proce
 play v0 to v1.
 """
 bypass_implementation = True
-
+"""
+plot_all : a flag to visualize all the strategies in all the copies of g_b in g_hat. Setting it to False will only 
+visualize the strategy with the least regret on g_hat. 
+NOTE: the strategy on the original graph is still the least regret strategy   
+"""
+plot_all = True
 
 def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = False,
                     scLTL_formula: str = "", plot: bool = False, prune: bool = False,
@@ -338,7 +343,8 @@ def construct_g_hat(org_graph: nx.MultiDiGraph, w_prime: Dict[Tuple, str]) -> Tw
 
 
 def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, visualize_str: bool = False,
-               combined_strategy: Dict[Tuple, Tuple] = None, plot: bool = False, only_eve: bool = False) -> None:
+               combined_strategy: Dict[Tuple, Tuple] = {}, plot: bool = False, only_eve: bool = False,
+               plot_all: bool = False) -> None:
     """
     A helper method to plot a given graph and save it if the @save_flag is True.
     :param graph: The graph to be plotted
@@ -347,7 +353,9 @@ def plot_graph(graph: nx.MultiDiGraph, file_name: str, save_flag: bool = True, v
     :param save_flag: flag to save the plot. If False then the plots don't show up and are not saved  as well.
     """
     print(f"*****************Plotting graph with save_flag = {save_flag}*****************")
+
     if visualize_str:
+        # for str in combined_strategy:
         _add_strategy_flag(graph, combined_strategy, only_eve=only_eve)
 
     # grate a two_player_game using g_hat graph and plot the graph
@@ -400,6 +408,7 @@ def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGr
                 str_dict[b]['adam'] = _adam_str
 
             str_dict[b].update({'reg': reg})
+            check_str_validuty(str_dict[b])
             if reg > 0:
                 return str_dict, True
         else:
@@ -408,6 +417,8 @@ def _check_non_zero_regret(graph_g_hat: nx.MultiDiGraph, org_graph: nx.MultiDiGr
             str_dict[b]['eve'] = _eve_str
             str_dict[b]['adam'] = _adam_str
             str_dict[b].update({'reg': reg})
+
+            check_str_validuty(str_dict[b])
 
             if reg > 0:
                 return str_dict, True
@@ -471,9 +482,60 @@ def _find_optimal_str(plays: List[List[Tuple]], graph_g_hat: nx.MultiDiGraph, va
 
     return min_reg_val, adam_str, eve_str
 
+def check_str_validuty(str_dict: Dict) -> None:
+    """
+    A helper to add update the flag - true if the given strategy is valid else false
+    :param str: A dictionary which is a mapping from each state to the next state
+    :return: Updated the dict with the new flag - valid : True/False
+    """
+
+    # All the edges of Adam are retained in all G_b. So no node that belongs to adam has an edge to the vT -
+    # the terminal state with the highest regret
+
+    # so if we have vT in as the next node in the strategy dict then that is not a valid str.
+    # NOTE: there is an exception that we manually the vT to vT loop.
+    str = {**str_dict['eve'], **str_dict['adam']}
+    str_dict.update({'valid': True})
+    for k, v in str.items():
+        if 'vT' in v:
+            if k == 'vT':
+                continue
+            else:
+                str_dict['valid'] = False
+                return
+
+def _get_least_reg_str(reg_dict: Dict[int, Dict]) -> Dict:
+    """
+    A helper method that returns the least regret strategy that also valid given a reg diction which is of the fomr
+    {b_value :
+            eve: strategy
+            adam: strategy
+            reg: value
+            valid: True/False
+    }
+    :param reg_dict:
+    :return: the least regret dict of the form
+    """
+    str_dict = {}
+    # sort from least to highest - ascending
+    min_reg_b = sorted(reg_dict, key=lambda key: reg_dict[key]['reg'])
+
+    for ib in min_reg_b:
+        # return the corresponding str and reg value - IF THEY ARE VALID
+        if reg_dict[ib].get('valid'):
+            str_dict.update({'reg': reg_dict[ib]['reg']})
+            str_dict.update({'valid': reg_dict[ib]['valid']})
+            str_dict.update({'eve': reg_dict[ib]['eve']})
+            str_dict.update({'adam': reg_dict[ib]['adam']})
+
+            assert str_dict.get('valid') == True, \
+                                           "Returing an Invalid Strategy. This means that there exists atleast " \
+                                           "one transition from eve's state to the terminal state vT"
+            return str_dict
+
 
 def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_graph: nx.MultiDiGraph,
-                 optimistic: bool = False) -> Dict[str, Dict]:
+                 optimistic: bool = False, plot_all: bool = False) -> Dict[str, Dict]:
     """
     A function to compute the regret value according to algorithm 4 : Reg = -1 * Val(.,.) on g_hat
     :param g_hat: a directed multi-graph constructed using construct_g_hat()
@@ -569,12 +631,15 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
                     str_dict[b]['adam'] = adam_str
     
                 str_dict[b].update({'reg': reg})
+
             else:
                 plays: List[List[Tuple]] = _compute_all_plays(g_hat, {**eve_str, **adam_str})
                 reg = -1 * float(_play_loop(g_hat, plays[0], _Val_func))
                 str_dict[b]['eve'] = eve_str
                 str_dict[b]['adam'] = adam_str
                 str_dict[b].update({'reg': reg})
+
+            check_str_validuty(str_dict[b])
             
     # create a tmp dict of strategies that have reg <= reg_threshold
     __tmp_dict = {}
@@ -586,16 +651,10 @@ def compute_aVal(g_hat: nx.MultiDiGraph, _Val_func: str, w_prime: Dict, org_grap
         print(f"There does not exist any strategy within the given threshold: {reg_threshold}")
         return {}
 
-    # after computing all the reg value find the str with the least reg
-    min_reg_b = min(__tmp_dict, key=lambda key: __tmp_dict[key]['reg'])
-
-    # return the corresponding str and reg value
-    final_str_dict.update({'reg': __tmp_dict[min_reg_b]['reg']})
-    final_str_dict.update({'eve': __tmp_dict[min_reg_b]['eve']})
-    final_str_dict.update({'adam': __tmp_dict[min_reg_b]['adam']})
-
-    return final_str_dict
-
+    if plot_all:
+        return str_dict
+    else:
+        return _get_least_reg_str(reg_dict=str_dict)
 
 def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], only_eve: bool = False) -> None:
     """
@@ -603,9 +662,6 @@ def _add_strategy_flag(graph: nx.MultiDiGraph, strategy: Dict[Tuple, Tuple], onl
     :param graph:
     :param strategy:
     """
-    # add strategy as an attribute for plotting the final strategy
-    nx.set_edge_attributes(graph, False, 'strategy')
-
     for curr_node, next_node in strategy.items():
         if only_eve:
             if graph.nodes[curr_node].get("player") == "eve":
@@ -779,26 +835,52 @@ def main():
     #  Adam plays from v0 to v1-only if he can ensure a non-zero regret (the Val of the corresponding play in
     #  g_hat should be > 0)
     #  Eve selects the strategy with the least regret (below the given threshold)
-    reg_dict = compute_aVal(G_hat._graph, payoff_func, w_prime, prod_graph._graph, optimistic=False)
+    reg_dict = compute_aVal(G_hat._graph, payoff_func, w_prime, prod_graph._graph, optimistic=False, plot_all=plot_all)
 
     if len(list(reg_dict.keys())) != 0:
         # for k, v in reg_dict.items():
         #     print(f"{k}: {v}")
 
         # visualize the strategy
-        plot_graph(G_hat._graph, file_name='config/g_hat_graph',
-                   save_flag=True,
-                   visualize_str=True,
-                   combined_strategy={**reg_dict['eve'], **reg_dict['adam']}, plot=True, only_eve=False)
+        # add strategy as an attribute for plotting the final strategy
+        nx.set_edge_attributes(G_hat._graph, False, 'strategy')
+        if plot_all:
+            # create the appr dict
+            # combined_strategy = [{**strategy['eve'], **strategy['adam']}]
+            combined_strategy = []
+            for str_b in reg_dict.items():
+                if str_b[1].get('valid'):
+                    combined_strategy.append({**str_b[1]['eve'], **str_b[1]['adam']})
 
-        # map back strategy from g_hat to the original graph
-        org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph, {**reg_dict['eve'], **reg_dict['adam']},
-                                                  only_final_play=False)
+            for str in combined_strategy:
+                plot_graph(G_hat._graph, file_name='config/g_hat_graph',
+                           save_flag=True,
+                           visualize_str=True,
+                           combined_strategy=str, plot=True, only_eve=False, plot_all=plot_all)
+
+            # we need to find the str with least regret value
+            str_dict = _get_least_reg_str(reg_dict)
+
+            # map back strategy from g_hat to the original graph
+            org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph,
+                                                      {**str_dict['eve'], **str_dict['adam']},
+                                                      only_final_play=False)
+
+        else:
+            str = {**reg_dict['eve'], **reg_dict['adam']}
+            plot_graph(G_hat._graph, file_name='config/g_hat_graph',
+                       save_flag=True,
+                       visualize_str=True,
+                       combined_strategy=str, plot=True, only_eve=False, plot_all=plot_all)
+
+            # map back strategy from g_hat to the original graph
+            org_strategy = map_g_hat_str_to_org_graph(G_hat._graph, prod_graph, {**reg_dict['eve'], **reg_dict['adam']},
+                                                      only_final_play=False)
 
         plot_graph(prod_graph._graph, file_name="config/trans_sys",
                    save_flag=True,
                    visualize_str=True,
-                   combined_strategy=org_strategy, plot=True, only_eve=True)
+                   combined_strategy=org_strategy, plot=True, only_eve=True, plot_all=plot_all)
 
 
 if __name__ == "__main__":

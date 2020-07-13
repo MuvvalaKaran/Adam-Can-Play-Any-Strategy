@@ -818,8 +818,8 @@ def main():
         assert(construct_flag == 1 or construct_flag == 2), "Please enter a valid input - 1 or 2. \n"
 
     # construct graph
-    prod_graph = construct_graph(payoff_func, scLTL_formula="!d U g", plot=True, debug=True, prune=False,
-                                 human_intervention=1, user_input=construct_flag, use_alias=False, absorbing=True)
+    prod_graph = construct_graph(payoff_func, scLTL_formula="!b U c", plot=True, debug=False, prune=False,
+                                 human_intervention=2, user_input=construct_flag, use_alias=False, absorbing=True)
 
     p = payoff_value(prod_graph._graph, payoff_func)
 

@@ -74,7 +74,7 @@ Install anaconda on your os and then run the below moentioned shell commands wit
 	Depending on the function, if we call `construct_two_player_game()` then we build the two player graph with env and system nodes manually else if call the `construct_product_graph()` method with an `LTL formula` the automatically creates this two player graph for you given the following things:
 
 	- A transition system (*should be total*) consisting of only `Eve's` node
-	- A scLTL (co-safe LTL) formula eg : `!b U c`
+	- A scLTL (co-safe LTL) formula eg : `!b U c` 
 	- The number of times the human can intervene(`k`)
 
 	Given a transition system such as the one below 
@@ -83,7 +83,9 @@ Install anaconda on your os and then run the below moentioned shell commands wit
 		<img src="http://yuml.me/diagram/scruffy/activity/[s1]->[s2]->[s3], [s1]->[s3], [s3]->[s1], [s2]->[s1]">
 	</p>
 
-	We add a human node after each edge originating from the system nodes and add a counter which represents how many time the human as intervened e.g `s1,0` mean the human as intervened `0` times. If the human does not take any action then we proceed to the original states. If the human does take an action then that edge is represented with `m` and we increment the counter by 1. 
+	We add a human node after each edge originating from the system nodes and add a counter which represents how many time the human as intervened e.g `s1,0` mean the human as intervened `0` times. If the human does not take any action then we proceed to the original states. If the human does take an action then that edge is represented with `m` and we increment the counter by 1. Thus we get the transition system(T).
+
+	After constructing T, we compose it with the A (The Deterministic Finite Automaton) - we use co-safe LTL to specify a task as it the ideal framework to express robotic tasks that must be accomplished in finite time. 
 
 	<p align="center">
 		<img src="http://yuml.me/diagram/scruffy/activity/[s1,0]-s12>(h12,0),(h12,0)-s12>[s2,0],[s2,0]-s23>(h23,0),(h23,0)-s23>[s3,0],[s1,0]-s13>(h13,0),(h13,0)-s13>[s3,0],[s3,0]-s31>(h31,0),(h31,0)-s31>[s1,0],[s2,0]-s21>(h21,0),(h21,0)-s21>[s1,0],(h12,0)-m>[s1,1],(h12,0)-m>[s3,1],(h23,0)-m>[s1,1],(h23,0)-m>[s2,1],(h13,0)-m>[s2,1],(h13,0)-m>[s1,1],(h31,0)-m>[s2,1],(h31,0)-m>[s3,1],(h21,0)-m>[s2,1], (h21,0)-m>[s3,1],[s1,1]-s12>[s2,1],[s2,1]-s23>[s3,1],[s2,1]-s21>[s1,1],[s1,1]-s13>[s3,1],[s3,1]-s31>[s1,1]">

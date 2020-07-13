@@ -927,7 +927,7 @@ class GraphFactory:
 
         two_player_graph.add_states_from(['v1', 'v2', 'v3', 'v4', 'v5'])
 
-        two_player_graph.add_weighted_edges_from([('v1', 'v2', '0'),
+        two_player_graph.add_weighted_edges_from([('v1', 'v2', '1'),
                                                   ('v2', 'v1', '-1'),
                                                   ('v1', 'v3', '1'),
                                                   ('v3', 'v3', '0.5'),

@@ -530,30 +530,31 @@ class FiniteTransSys(TwoPlayerGraph):
         for n in nodes:
             # default color for all the nodes is grey
             ap = n[1].get('ap')
-            dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[0]})
+            ap = "{" + str(ap) + "}"
+            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0], "xlabel": ap})
             if n[1].get('init'):
                 # default color for init node is red
-                dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[1]})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": ap})
             if n[1].get('accepting'):
                 # default color for accepting node is purple
-                dot.node(f'{str(n[0])}-{ap}', _attributes={"style": "filled", "fillcolor": color[2]})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
             if n[1].get('player') == 'eve':
-                dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "rectangle"})
+                dot.node(str(n[0]), _attributes={"shape": "rectangle", "xlabel": ap})
             else:
-                dot.node(f'{str(n[0])}-{ap}', _attributes={"shape": "circle"})
+                dot.node(str(n[0]), _attributes={"shape": "circle", "xlabel": ap})
 
         # add all the edges
         edges = self._graph_yaml["edges"]
 
         # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
-            ap_u = self._graph.nodes[edge[0]].get('ap')
-            ap_v = self._graph.nodes[edge[1]].get('ap')
+            # ap_u = self._graph.nodes[edge[0]].get('ap')
+            # ap_v = self._graph.nodes[edge[1]].get('ap')
             if edge[2].get('strategy') is True:
-                dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('actions')),
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')),
                          _attributes={'color': 'red'})
             else:
-                dot.edge(f'{str(edge[0])}-{ap_u}', f'{str(edge[1])}-{ap_v}', label=str(edge[2].get('actions')))
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')))
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
@@ -634,6 +635,8 @@ class FiniteTransSys(TwoPlayerGraph):
                 max_weight = int(_e[2])
 
         return str(max_weight)
+
+
 class DFAGraph(Graph):
 
     def __init__(self, formula: str, graph_name: str, config_yaml: str, save_flag: bool = False):

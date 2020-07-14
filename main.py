@@ -819,7 +819,7 @@ def main():
 
     # construct graph
     prod_graph = construct_graph(payoff_func, scLTL_formula="!b U c", plot=True, debug=False, prune=False,
-                                 human_intervention=2, user_input=construct_flag, use_alias=False, absorbing=True)
+                                 human_intervention=1, user_input=construct_flag, use_alias=False, absorbing=True)
 
     p = payoff_value(prod_graph._graph, payoff_func)
 
@@ -838,8 +838,8 @@ def main():
     reg_dict = compute_aVal(G_hat._graph, payoff_func, w_prime, prod_graph._graph, optimistic=False, plot_all=plot_all)
 
     if len(list(reg_dict.keys())) != 0:
-        # for k, v in reg_dict.items():
-        #     print(f"{k}: {v}")
+        for k, v in reg_dict.items():
+            print(f"{k}: {v['reg']}")
 
         # visualize the strategy
         # add strategy as an attribute for plotting the final strategy

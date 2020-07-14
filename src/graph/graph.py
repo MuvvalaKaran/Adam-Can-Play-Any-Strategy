@@ -440,13 +440,15 @@ class TwoPlayerGraph(Graph):
         nodes = self._graph_yaml["vertices"]
         for n in nodes:
             # default color for all the nodes is grey
-            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0]})
+            ap = n[1].get('ap')
+            ap = "{" + str(ap) + "}"
+            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0], "xlabel": ap})
             if n[1].get('init'):
                 # default color for init node is red
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": ap})
             if n[1].get('accepting'):
                 # default color for accepting node is purple
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
             if n[1].get('player') == 'eve':
                 dot.node(str(n[0]), _attributes={"shape": "rectangle"})
             else:
@@ -595,9 +597,6 @@ class FiniteTransSys(TwoPlayerGraph):
         # add init node
         init_node = self.get_initial_states()
         two_player_graph_ts.add_state_attribute((init_node[0][0], 0), "init", True)
-        # create a new graph
-        # self.add_states_from(node_lst)
-        # two_player_graph: nx.MultiDiGraph = nx.MultiDiGraph(name=self._graph_name)
 
         # now we add edges
         for e in self._graph.edges.data():
@@ -776,7 +775,7 @@ class ProductAutomaton(TwoPlayerGraph):
                                 if _u_prod_node in self._auto_graph.get_absorbing_states():
                                     if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
                                         self._graph.add_weighted_edges_from([(_u_prod_node,
-                                                                              _v_prod_node, max_w)])
+                                                                              _v_prod_node, '0')])
                                     else:
                                         self._graph.add_weighted_edges_from([(_u_prod_node,
                                                                               _v_prod_node,
@@ -792,6 +791,7 @@ class ProductAutomaton(TwoPlayerGraph):
         """
         if not self._graph.has_node(_p_node):
             self._graph.add_node(_p_node)
+            # self._graph.nodes[_p_node]['ap'] = self._trans_sys._graph.nodes[ts_node].get('ap')
 
             if self._auto_graph._graph.nodes[auto_node].get('accepting'):
                 self._graph.nodes[_p_node]['accepting'] = True
@@ -805,7 +805,7 @@ class ProductAutomaton(TwoPlayerGraph):
             self._graph.add_node(_p_node)
             self._graph.nodes[_p_node]['ts'] = ts_node
             self._graph.nodes[_p_node]['dfa'] = auto_node
-            self._graph.nodes[_p_node]['obs'] = self._trans_sys._graph.nodes[ts_node].get('ap')
+            self._graph.nodes[_p_node]['ap'] = self._trans_sys._graph.nodes[ts_node].get('ap')
 
             # self._graph.add_node(_p_node, ts=ts_node, dfa=auto_node, obs=self._trans_sys._graph.nodes[_p_node]['ap'])
 
@@ -1093,11 +1093,11 @@ class GraphFactory:
             trans_sys.add_state_attribute('s2', 'ap', 'a')
             trans_sys.add_state_attribute('s3', 'ap', 'c')
 
-            trans_sys.add_edge('s1', 's2', actions='s12', weight='0')
-            trans_sys.add_edge('s2', 's1', actions='s21', weight='2')
-            trans_sys.add_edge('s2', 's3', actions='s23', weight='3')
-            trans_sys.add_edge('s3', 's1', actions='s31', weight='5')
-            trans_sys.add_edge('s1', 's3', actions='s13', weight='3')
+            trans_sys.add_edge('s1', 's2', actions='s12', weight='1')
+            trans_sys.add_edge('s2', 's1', actions='s21', weight='1')
+            trans_sys.add_edge('s2', 's3', actions='s23', weight='1')
+            trans_sys.add_edge('s3', 's1', actions='s31', weight='1')
+            trans_sys.add_edge('s1', 's3', actions='s13', weight='1')
 
             trans_sys.add_initial_state('s2')
 

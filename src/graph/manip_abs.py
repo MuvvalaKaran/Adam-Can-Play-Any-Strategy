@@ -1,4 +1,6 @@
 # a file to construct the manipulation domain
+import yaml
+
 from typing import List, Tuple, Dict
 from collections import defaultdict
 
@@ -57,7 +59,7 @@ class SysActions:
     def create_parameterized_action(self, u: tuple, v: tuple):
         raise NotImplementedError
 
-    def check_drop_action(self, u: tuple, v: tuple, node_handle) -> bool:
+    def check_drop_action(self, u: tuple, v: tuple, node_handle) -> Tuple[bool, str]:
         # check if there exists a drop edge between u and v
         if ("gripper" in u[:-1]) and (u[-1] in node_handle._loc_of_interest):
             # get which obj was being manipulated
@@ -66,10 +68,10 @@ class SysActions:
             # get the location where the gripper was going to place the object
             _loc = u[-1]
             if (v[_idx] == _loc) and (v[-1] == "free"):
-                return True
-        return False
+                return True, f"drop_p0{u[0][0]}_p1{u[1][0]}_p{u[2][0]}"
+        return False, ""
 
-    def check_grab_action(self, u: tuple, v: tuple, node_handle) -> bool:
+    def check_grab_action(self, u: tuple, v: tuple, node_handle) -> Tuple[bool, str]:
         if (u[-1] == "free") and ("gripper" not in u[:-1]):
             # if "gripper" in v[:-1]:
             #     # get the object being grabbed
@@ -78,10 +80,10 @@ class SysActions:
             #     if v[-1] == obj:
             #         return True
             if (v[-1] in node_handle.obj_list) and (u[:-1] == v[:-1]):
-                return True
-        return False
+                return True, f"grab_p0{u[0][0]}_p1{u[1][0]}_p{u[2][0]}"
+        return False, ""
 
-    def check_transfer_action(self, u: tuple, v: tuple, node_handle) -> bool:
+    def check_transfer_action(self, u: tuple, v: tuple, node_handle) -> Tuple[bool, str]:
         if ("gripper" not in u[:-1]) and (u[-1] in node_handle.obj_list):
             # # self loop
             # if u == v:
@@ -94,20 +96,19 @@ class SysActions:
             if (v[_idx] == "gripper") and (v[-1] in node_handle._loc_of_interest):
                 for idx in rem_set:
                     if v[idx] != u[idx]:
-                        return False
-                    return True
-        return False
+                        return False, ""
+                    return True, f"transfer_p0{u[0][0]}_p1{u[1][0]}_p{u[2][0]}"
+        return False, ""
 
-
-    def check_transit_action(self, u: tuple, v: tuple, node_handle) -> bool:
+    def check_transit_action(self, u: tuple, v: tuple, node_handle) -> Tuple[bool, str]:
         if ("gripper" not in u[:-1]) and (u[-1] == "free"):
             if u == v:
-                return True
+                return True, f"transit_p0{u[0][0]}_p1{u[1][0]}_p{u[2][0]}"
 
             if (v[-1] in node_handle.obj_list) and (v[:-1] == u[:-1]):
-                return True
+                return True, f"transit_p0{u[0][0]}_p1{u[1][0]}_p{u[2][0]}"
 
-        return False
+        return False, ""
 
 
 class Predicates:
@@ -118,6 +119,22 @@ class Predicates:
     def get_predicates(self):
         return self.__atomic_propositions
 
+    def add_state_labels(self, u : tuple) -> List:
+        # a state label is a tuple of truth assignments that are true at that state
+
+        mapping = {
+            "rightbase": "r",
+            "leftbase": "l",
+            "top": "t"
+        }
+
+        _label = []
+        for _idx, _n in enumerate(u[:-1]):
+            if _n in self.__atomic_propositions:
+                _label.append(f"P{_idx}{mapping[_n]}")
+
+        return set(_label)
+
 
 class ManipAbs(FiniteTransSys):
 
@@ -126,15 +143,64 @@ class ManipAbs(FiniteTransSys):
         self._config_yaml = config_yaml
         self._save_flag = save_flag
 
-    # def dump_to_yaml(self) -> None:
-    #     # overriding this method to suit the format that nicks wants it in
-    #     raise NotImplementedError
+    def dump_to_yaml(self) -> None:
+        # overriding this method to suit the format that nicks wants it in
+
+        # print number of symbols in TS
+        config_file_name: str = str(self._config_yaml + '.yaml')
+        config_file_add = self._get_current_working_directory() + config_file_name
+
+        data = dict(
+            node=[node for node in self._graph.nodes.data()],
+            edges=[edge for edge in self._graph.edges.data()]
+        )
+        try:
+            f = open(config_file_add, "w")
+            f.write("# number of symbols in TS alphabet\n")
+            f.write(f"alphabet_size: {len(self._graph.edges())} \n")
+            f.write("\n")
+            f.write("# number of states in TS state space\n")
+            f.write(f"num_states: {len(self._graph.nodes())} \n")
+            f.write("\n")
+            f.write("# number of discrete state observations in TS obs. space\n")
+            f.write(f"num_obs: {3} \n")
+            f.write("\n")
+            f.write("# unique start state string label of TS\n")
+            f.write(f"start_state: '{len(self.get_initial_states())}' \n")
+            f.write("\n")
+
+            f.write("nodes:\n")
+            f.write("\n")
+
+            for node in self._graph.nodes.data():
+                # n[0] = node name
+                # n[1] = attrs
+                f.write(f"   '{node[0]}':\n")
+                f.write(f"      observation: '{''.join(node[1].get('ap')) }'\n")
+                f.write("\n")
+
+            f.write("edges: \n")
+            f.write("\n")
+
+            for node in self._graph.nodes.data():
+                f.write(f"   '{node[0]}':\n")
+                for _succ in self._graph.successors(node[0]):
+                    f.write("\n")
+                    f.write(f"      '{_succ}'\n")
+                    f.write(f"         symbols:\n")
+                    f.write(f"           - '{self._graph[node[0]][_succ][0].get('actions')}'\n")
+                    f.write("\n")
+
+            f.close()
+        except:
+            pass
 
 
 class ManipAbsBuilder:
 
     def construct_manip_abs(self, object_count: int, locations: List[str],
                             sys_actions: List[str] = ["grasp", "hold", "move", "place"],
+                            predicates: List[str] = ["top", "leftbase", "rightbase"],
                             initial_node: tuple = ("rightbase", "elsewhere_1", "leftbase", "free"),
                             debug: bool = False, plot: bool = False):
         manip_graph = ManipAbs("manip_abs", "config/manip_abs", save_flag=True)
@@ -148,10 +214,12 @@ class ManipAbsBuilder:
         node_list = self.construct_nodes(node_handle, debug=debug)
 
         loop_up_table = self._loop_up_table(node_list)
+        preds = Predicates(predicates)
 
         # add nodes to the graph
         for node in node_list:
             manip_graph.add_state(loop_up_table[node])
+            manip_graph.add_state_attribute(loop_up_table[node], "ap", preds.add_state_labels(node))
 
         # add the initial node
         manip_graph.add_initial_state(loop_up_table[initial_node])
@@ -161,7 +229,7 @@ class ManipAbsBuilder:
 
         if plot:
             print("*************Plotting graph***************")
-            manip_graph.plot_graph()
+            manip_graph.dump_to_yaml()
 
     def _loop_up_table(self, node_list: List) -> Dict:
         # assign each node a unique number
@@ -171,6 +239,7 @@ class ManipAbsBuilder:
             node_loop_up[_n] = inx
 
         return node_loop_up
+
 
     def construct_nodes(self, node_handle: Node, debug: bool = False) -> List[tuple]:
         print("***********************Constructing set of Nodes***********************")
@@ -202,21 +271,25 @@ class ManipAbsBuilder:
             for v_node in node_list:
 
                 # add function here that check for conditions of grab, drop, transfer and transit
-                if sys_action.check_drop_action(u_node, v_node, node_handle):
+                drop_flag, act_name = sys_action.check_drop_action(u_node, v_node, node_handle)
+                if drop_flag:
                     edge_count += 1
-                    abs_graph.add_edge(map[u_node], map[v_node])
+                    abs_graph.add_edge(map[u_node], map[v_node], actions=act_name)
 
-                if sys_action.check_grab_action(u_node, v_node, node_handle):
+                grab_flag, act_name = sys_action.check_grab_action(u_node, v_node, node_handle)
+                if grab_flag:
                     edge_count += 1
-                    abs_graph.add_edge(map[u_node], map[v_node])
+                    abs_graph.add_edge(map[u_node], map[v_node], actions=act_name)
 
-                if sys_action.check_transfer_action(u_node, v_node, node_handle):
+                transfer_flag, act_name = sys_action.check_transfer_action(u_node, v_node, node_handle)
+                if transfer_flag:
                     edge_count += 1
-                    abs_graph.add_edge(map[u_node], map[v_node])
-                #
-                # if sys_action.check_transit_action(u_node, v_node, node_handle):
-                #     edge_count += 1
-                #     abs_graph.add_edge(map[u_node], map[v_node])
+                    abs_graph.add_edge(map[u_node], map[v_node], actions=act_name)
+
+                transit_flag, act_name = sys_action.check_transit_action(u_node, v_node, node_handle)
+                if transit_flag:
+                    edge_count += 1
+                    abs_graph.add_edge(map[u_node], map[v_node], actions=act_name)
 
         if debug:
             print(f"Total Number of edges are : {edge_count}")

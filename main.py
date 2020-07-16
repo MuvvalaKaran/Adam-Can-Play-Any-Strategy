@@ -819,7 +819,7 @@ def main():
 
     # construct graph
     prod_graph = construct_graph(payoff_func, scLTL_formula="!b U c", plot=True, debug=False, prune=False,
-                                 human_intervention=2, user_input=construct_flag, use_alias=False, absorbing=True)
+                                 human_intervention=1, user_input=construct_flag, use_alias=False, absorbing=True)
 
     p = payoff_value(prod_graph._graph, payoff_func)
 

@@ -440,13 +440,15 @@ class TwoPlayerGraph(Graph):
         nodes = self._graph_yaml["vertices"]
         for n in nodes:
             # default color for all the nodes is grey
-            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0]})
+            ap = n[1].get('ap')
+            ap = "{" + str(ap) + "}"
+            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0], "xlabel": ap})
             if n[1].get('init'):
                 # default color for init node is red
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": ap})
             if n[1].get('accepting'):
                 # default color for accepting node is purple
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2]})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
             if n[1].get('player') == 'eve':
                 dot.node(str(n[0]), _attributes={"shape": "rectangle"})
             else:
@@ -798,7 +800,7 @@ class ProductAutomaton(TwoPlayerGraph):
             self._graph.add_node(_p_node)
             self._graph.nodes[_p_node]['ts'] = ts_node
             self._graph.nodes[_p_node]['dfa'] = auto_node
-            self._graph.nodes[_p_node]['obs'] = self._trans_sys._graph.nodes[ts_node].get('ap')
+            self._graph.nodes[_p_node]['ap'] = self._trans_sys._graph.nodes[ts_node].get('ap')
 
             # self._graph.add_node(_p_node, ts=ts_node, dfa=auto_node, obs=self._trans_sys._graph.nodes[_p_node]['ap'])
 

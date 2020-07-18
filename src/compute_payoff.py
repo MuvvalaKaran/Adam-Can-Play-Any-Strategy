@@ -1,3 +1,4 @@
+import math
 import copy
 import networkx as nx
 import statistics
@@ -42,6 +43,7 @@ class payoff_value():
             'inf': min,
             'sup': max,
             'mean': statistics.mean,
+            'cumul': sum
         }
 
         try:
@@ -117,6 +119,42 @@ class payoff_value():
 
         return self.__payoff_func(loop_edge_w)
 
+    def _compute_cumulative_payoff(self, stack: List) -> str:
+        """
+        A helper method to compute the finite value of a loop given a stack
+
+        Sample : [v1, v2, v4, v5, v5]
+        edges weights : []
+        :param stack: a list of nodes (each of type tuple)
+        :return: The finite quantitative value associated with a loop
+        """
+
+        # a container to hold all the edges
+        loop_edge_w = []
+
+        # if its self-loop then consider it once only
+        if stack[-1] == stack[-2]:
+            for ix in range(0, len(stack)-1):
+                loop_edge_w.append(float(self.graph[stack[ix]][stack[ix + 1]][0].get('weight')))
+        # if its a loop between two nodes then we need to check if all the weights in the loop sum up to be zero.
+        # if not we assign the loop a value of positive infinity
+        else:
+            initial_index = stack.index(stack[-1])
+            # get the edge weights between the repeated nodes
+            for i in range(initial_index, len(stack) - 1):
+                loop_edge_w.append(float(self.graph[stack[i]][stack[i + 1]][0].get('weight')))
+
+            if sum(loop_edge_w) == 0:
+                for ix in range(0, initial_index):
+                    loop_edge_w.append(float(self.graph[stack[i]][stack[i + 1]][0].get('weight')))
+                return self.__payoff_func(loop_edge_w)
+
+            else:
+                # its not a well defined loop - sum of edges is infinity.
+                return str(math.inf)
+
+        return self.__payoff_func(loop_edge_w)
+
     def cycle_main(self) -> Dict[Tuple, str]:
         """
         A method to compute the all the possible loop values for a given graph with an init node. Before calling this
@@ -162,8 +200,16 @@ class payoff_value():
         for neighbour in self.graph.neighbors(node):
             if visitStack[neighbour]:
                 nodeStack = copy.copy((nodeStack))
-                nodeStack.append(neighbour)
-                loop_value: str = self._compute_loop_value(nodeStack)
+                # for a state with a self-loop, when we start from the same state, it then adds the state thrice.
+                # we would like to avoid that using this flag
+                if nodeStack.count(neighbour) != 2:
+                    nodeStack.append(neighbour)
+                # a different logic to cumulative payoff as it is defined for finite traces unlike other payoffs
+                # that are defined over infinite traces
+                if self._raw_payoff_value == "cumul":
+                    loop_value: str = self._compute_cumulative_payoff(nodeStack)
+                else:
+                    loop_value: str = self._compute_loop_value(nodeStack)
                 loop_dict.update({tuple(nodeStack): loop_value})
                 nodeStack.pop()
                 continue
@@ -193,7 +239,7 @@ class payoff_value():
 
         if play_dict:
             # find the max of the value
-            max_play = max(play_dict, key=lambda key: play_dict[key])
+            max_play = min(play_dict, key=lambda key: play_dict[key])
             if debug:
                 print(f"The cVal from the node {vertex}")
                 print(f"for the play {max_play} is {play_dict[max_play]}")

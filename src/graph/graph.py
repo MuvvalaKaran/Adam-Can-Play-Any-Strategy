@@ -13,6 +13,7 @@ from typing import List, Tuple, Dict
 from helper_methods import deprecated
 from src.graph.Parser import parse as parse_guard
 
+
 class Graph(abc.ABC):
     def __init__(self, config_yaml, graph, save_flag: bool = False):
         # self._filename: str = filename
@@ -779,11 +780,12 @@ class ProductAutomaton(TwoPlayerGraph):
                                     else:
                                         self._graph.add_weighted_edges_from([(_u_prod_node,
                                                                               _v_prod_node,
-                                                                              str(-1 * float(max_w)))])
+                                                                              max_w)])
+                                                                              # str(-1 * float(max_w)))])
                                 else:
                                     self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node,
-                                                                          # weight)])
-                                                                          str(-1* float(weight)))])
+                                                                          weight)])
+                                                                          # str(-1* float(weight)))])
 
     def add_prod_state(self, _p_node, auto_node) -> None:
         """
@@ -1093,11 +1095,11 @@ class GraphFactory:
             trans_sys.add_state_attribute('s2', 'ap', 'a')
             trans_sys.add_state_attribute('s3', 'ap', 'c')
 
-            trans_sys.add_edge('s1', 's2', actions='s12', weight='1')
-            trans_sys.add_edge('s2', 's1', actions='s21', weight='1')
-            trans_sys.add_edge('s2', 's3', actions='s23', weight='1')
-            trans_sys.add_edge('s3', 's1', actions='s31', weight='1')
-            trans_sys.add_edge('s1', 's3', actions='s13', weight='1')
+            trans_sys.add_edge('s1', 's2', actions='s12', weight='0')
+            trans_sys.add_edge('s2', 's1', actions='s21', weight='2')
+            trans_sys.add_edge('s2', 's3', actions='s23', weight='3')
+            trans_sys.add_edge('s3', 's1', actions='s31', weight='5')
+            trans_sys.add_edge('s1', 's3', actions='s13', weight='3')
 
             trans_sys.add_initial_state('s2')
 
@@ -1215,5 +1217,5 @@ if __name__ == "__main__":
     # GraphFactory._construct_dfa_graph(use_alias=False)
 
     # build the product automaton
-    GraphFactory._construct_product_automaton_graph(scLTL_formula="!d U g", debug=True,
-                                                    plot=True, prune=True, absorbing=True)
+    GraphFactory._construct_product_automaton_graph(scLTL_formula="!b U c", debug=False,
+                                                    plot=True, prune=False, absorbing=True)

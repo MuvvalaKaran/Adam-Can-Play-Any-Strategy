@@ -15,7 +15,7 @@ from src.graph.Parser import parse as parse_guard
 
 
 class Graph(abc.ABC):
-    def __init__(self, config_yaml, graph, save_flag: bool = False):
+    def __init__(self, config_yaml, graph=None, save_flag: bool = False):
         # self._filename: str = filename
         self._graph_yaml = None
         self._config_yaml: str = config_yaml
@@ -893,7 +893,6 @@ class ProductAutomaton(TwoPlayerGraph):
                     print(f"Adding self loop of weight - {max_w} to the node {_n}")
                     print("=====================================")
                 self._graph.add_weighted_edges_from([(_n, _n, str(-1 * float(max_w)))])
-
 
     def prune_edges(self, debug):
         # A helper function to remove edges without the "prune" attribute

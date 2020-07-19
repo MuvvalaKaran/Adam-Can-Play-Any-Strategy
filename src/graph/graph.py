@@ -6,12 +6,12 @@ import random
 import re
 
 from collections import deque, defaultdict
-from src.graph.promela import parse as parse_ltl, find_states, find_symbols
-from src.graph.spot import run_spot
+from src.spot.promela import parse as parse_ltl, find_states, find_symbols
+from src.spot.spot import run_spot
 from graphviz import Digraph
 from typing import List, Tuple, Dict
 from helper_methods import deprecated
-from src.graph.Parser import parse as parse_guard
+from src.spot.Parser import parse as parse_guard
 
 
 class Graph(abc.ABC):
@@ -476,13 +476,13 @@ class TwoPlayerGraph(Graph):
 
     def print_edges(self):
         print("=====================================")
-        print(f"Printing {self._graph_name} edges \n")
+        print(f"Printing {self._graph_name} edges :\n")
         super().print_edges()
         print("=====================================")
 
     def print_nodes(self):
         print("=====================================")
-        print(f"Printing {self._graph_name} nodes \n")
+        print(f"Printing {self._graph_name} nodes :\n")
         super().print_edges()
         print("=====================================")
 

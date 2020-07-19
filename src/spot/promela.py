@@ -12,6 +12,7 @@ This code is used to interpret an output in Neverclaim format in Promela which i
 ########################################################
 import re
 
+
 class Parser(object):
     # Expression for the eat_whitespace function
     white_regx  = re.compile(r"\s+")
@@ -67,12 +68,15 @@ class Parser(object):
             raise ParseException("Input not fully parsed. Remainder: %s" % self.instring[self.pos:])
         return edges
 
+
 class ParseException(Exception):
     pass
+
 
 def parse(promela):
     parser = Parser(promela)
     return parser.parse()
+
 
 def find_states(edges):
     states = set()
@@ -87,6 +91,7 @@ def find_states(edges):
         if state.endswith("init"):
             initial.add(state)
     return (list(states), list(initial), list(accept))
+
 
 def find_symbols(formula):
     regex = re.compile(r"[a-z]+[a-z0-9]*")

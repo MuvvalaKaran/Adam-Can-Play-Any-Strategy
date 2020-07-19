@@ -9,9 +9,9 @@ from .product import ProductAutomaton, ProductBuilder
 from .factory import GraphCollection
 
 graph = GraphCollection()
-graph.register_builder('TS', TransitionSystemBuilder)
-graph.register_builder('DFA', DFABuilder)
+graph.register_builder('TS', TransitionSystemBuilder())
+graph.register_builder('DFA', DFABuilder())
 graph.register_builder('GMin', GMinBuilder())
-graph.register_builder('GMax', GMaxBuilder)
+graph.register_builder('GMax', GMaxBuilder())
 graph.register_builder('TwoPlayerGraph', TwoPlayerGraphBuilder())
-graph.register_builder('ProductGraph', ProductBuilder)
+graph.register_builder('ProductGraph', ProductBuilder())

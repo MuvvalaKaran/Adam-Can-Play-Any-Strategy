@@ -1,7 +1,7 @@
 import warnings
 from subprocess import Popen, PIPE
 from codecs import getdecoder
-from src.graph.promela import Parser
+from src.spot.promela import Parser
 
 
 def run_spot(formula: str, debug=False):

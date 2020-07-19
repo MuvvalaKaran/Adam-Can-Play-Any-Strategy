@@ -3,7 +3,6 @@ import networkx as nx
 import yaml
 import warnings
 
-from src.factory.builder import Builder
 from graphviz import Digraph
 from typing import List, Tuple
 from helper_methods import deprecated
@@ -14,16 +13,17 @@ class Graph(abc.ABC):
     This is the abstract base class that describes a graph.
 
     NODE ATTRIBUTES:
+    -----------------
         - ap
         - init
         - strategy
 
-    NODE ATTRIBUTES:
+    EDGE ATTRIBUTES:
     ------------------
         - actions : a label (action) that enables the transition from one state to another
         - weight
     """
-    def __init__(self, config_yaml, graph, save_flag: bool = False):
+    def __init__(self, config_yaml, graph=None, save_flag: bool = False):
         self._graph_yaml = None
         self._config_yaml: str = config_yaml
         self._save_flag: bool = save_flag

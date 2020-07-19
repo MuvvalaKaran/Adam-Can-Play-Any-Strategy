@@ -1,7 +1,7 @@
 import networkx as nx
 
 # local packages
-from .graph import Graph
+from .base import Graph
 from src.factory.builder import Builder
 
 from graphviz import Digraph
@@ -129,15 +129,16 @@ class TwoPlayerGraphBuilder(Builder):
 
     def __call__(self, graph_name: str, config_yaml: str, save_flag: bool = False, **kwargs) -> TwoPlayerGraph:
         """
-        Return an intialized TwoPlayerGraph instance given the configuration data
+        Return an initialized TwoPlayerGraph instance given the configuration data
         :param graph_name : Name of the graph
-        :return:
+        :return: A concrete/active instance of the TwoPlayerGraph
         """
         self.pre_built = kwargs['pre_built']
 
-        if not self.pre_built:
-            self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
-        else:
+        # if not self.pre_built:
+        self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
+
+        if self.pre_built:
             self._instance = TwoPlayerGraph.build_running_ex(graph_name, config_yaml, save_flag)
 
         return self._instance

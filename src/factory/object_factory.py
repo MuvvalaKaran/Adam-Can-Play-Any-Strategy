@@ -1,7 +1,6 @@
 # generic object factory
 from .builder import Builder
 
-
 class ObjectFactory:
     """
     Generic Object factory to leverage the generic Builder interface to create all/any kinds of objects
@@ -25,7 +24,7 @@ class ObjectFactory:
         """
         self._builders[key] = builder
 
-    def create(self, key, **kwargs) -> Builder:
+    def create(self, key, **kwargs):
         """
         Returns an instance object built with the keyed builder key and the constructor arguments in kwargs
         :param key: The name of the builder registered as key in the _builder dict

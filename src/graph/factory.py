@@ -1,6 +1,7 @@
 # local packages
 from src.factory.object_factory import ObjectFactory
-from src.graph.base import Graph
+from src.factory.builder import Builder
+from .base import Graph
 
 
 class GraphCollection(ObjectFactory):

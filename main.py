@@ -11,7 +11,7 @@ import operator
 
 from collections import defaultdict
 from typing import List, Tuple, Dict, Any
-from src.compute_payoff import payoff_value
+from src.payoff import payoff_value
 from src.graph.graph import GraphFactory
 from src.graph.graph import TwoPlayerGraph, ProductAutomaton
 
@@ -725,7 +725,7 @@ def _play_loop(graph: nx.MultiDiGraph, play: List[Tuple], payoff_func: str) -> s
 
     # add init node
     str_graph.nodes[play[0]]['init'] = True
-    # add this graph to compute_payoff class
+    # add this graph to payoff class
     tmp_p_handle = payoff_value(str_graph, payoff_func)
     _loop_vals = tmp_p_handle.cycle_main()
     play_key = tuple(play)

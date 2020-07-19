@@ -69,7 +69,7 @@ class TwoPlayerGraph(Graph):
     def print_nodes(self):
         print("=====================================")
         print(f"Printing {self._graph_name} nodes \n")
-        super().print_edges()
+        super().print_nodes()
         print("=====================================")
 
     @classmethod

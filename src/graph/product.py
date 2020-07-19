@@ -1,89 +1,336 @@
+import networkx as nx
+
+from typing import List, Tuple, Dict
+from collections import deque, defaultdict
+
+# import local packages
+from .base import Graph
 from .two_player_graph import TwoPlayerGraph
 from .trans_sys import FiniteTransSys
 from .dfa import DFAGraph
 from src.factory.builder import Builder
 
-from typing import List, Tuple, Dict
-from collections import deque, defaultdict
-import networkx as nx
 
 class ProductAutomaton(TwoPlayerGraph):
 
-    def __init__(self, trans_sys_graph: FiniteTransSys, automaton: DFAGraph,
-               graph_name: str, config_name, save_flag: bool = False):
+    def __init__(self,
+                 trans_sys_graph: Graph,
+                 automaton: DFAGraph,
+                 graph_name: str,
+                 config_name,
+                 save_flag: bool = False) -> 'ProductAutomaton()':
         self._trans_sys = trans_sys_graph
         self._auto_graph = automaton
-        self._graph_name = graph_name
-        self._config_yaml = config_name
-        self._save_flag = save_flag
+        TwoPlayerGraph.__init__(self,
+                                graph_name=graph_name,
+                                config_yaml=config_name,
+                                save_flag=save_flag)
+        # self._graph_name = graph_name
+        # self._config_yaml = config_name
+        # self._save_flag = save_flag
 
     def construct_graph(self, absorbing: bool = False):
+
         super().construct_graph()
-        max_w: str = self._trans_sys.get_max_weight()
+
+        if absorbing:
+            self.construct_product_absorbing()
+
+        else:
+            self.construct_product()
+
+        # max_w: str = self._trans_sys.get_max_weight()
+        #
+        # for _u_ts_node in self._trans_sys._graph.nodes():
+        #     for _u_a_node in self._auto_graph._graph.nodes():
+        #         if not absorbing:
+        #             _u_prod_node = self.composition(_u_ts_node, _u_a_node)
+        #         else:
+        #             if _u_a_node in self._auto_graph.get_absorbing_states():
+        #                 _u_prod_node = self.add_prod_state(_u_a_node, _u_a_node)
+        #             else:
+        #                 _u_prod_node = self.composition(_u_ts_node, _u_a_node)
+        #
+        #         for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
+        #             for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
+        #                 if not absorbing:
+        #                     _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+        #                 else:
+        #                     if _v_a_node in self._auto_graph.get_absorbing_states():
+        #                         _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
+        #                     else:
+        #                         _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+        #
+        #                 label = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
+        #                 if self._trans_sys._graph.nodes[_u_ts_node].get("player") == "eve":
+        #                     weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
+        #                 else:
+        #                     weight = '0'
+        #                 auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
+        #
+        #                 if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
+        #                     if auto_label.formula == "(true)" or auto_label.formula == "1":
+        #                         truth = True
+        #                     else:
+        #                         truth = auto_label.check(label)
+        #
+        #                 # if the node belongs to adam
+        #                 else:
+        #                     _v_a_node = _u_a_node
+        #                     if not absorbing:
+        #                         _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+        #                     else:
+        #                         if _v_a_node in self._auto_graph.get_absorbing_states():
+        #                             _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
+        #                         else:
+        #                             _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+        #                     truth = True
+        #
+        #                 if truth:
+        #                     if not self._graph.has_edge(_u_prod_node, _v_prod_node):
+        #                         if _u_prod_node in self._auto_graph.get_absorbing_states():
+        #                             if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
+        #                                 self._graph.add_weighted_edges_from([(_u_prod_node,
+        #                                                                       _v_prod_node, '0')])
+        #                             else:
+        #                                 self._graph.add_weighted_edges_from([(_u_prod_node,
+        #                                                                       _v_prod_node,
+        #                                                                       max_w)])
+        #                                                                       # str(-1 * float(max_w)))])
+        #                         else:
+        #                             self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node,
+        #                                                                   weight)])
+        #                                                                   # str(-1* float(weight)))])
+
+    def construct_product(self):
+        """
+        A function that helps build the composition of TS and DFA
+        :return: The composed graph
+        """
+        # get max weight from the transition system
+        # max_w: str = self._trans_sys.get_max_weight()
+
         for _u_ts_node in self._trans_sys._graph.nodes():
             for _u_a_node in self._auto_graph._graph.nodes():
-                if not absorbing:
-                    _u_prod_node = self.composition(_u_ts_node, _u_a_node)
-                else:
-                    if _u_a_node in self._auto_graph.get_absorbing_states():
-                        _u_prod_node = self.add_prod_state(_u_a_node, _u_a_node)
-                    else:
-                        _u_prod_node = self.composition(_u_ts_node, _u_a_node)
+
+                _u_prod_node = self.composition(_u_ts_node, _u_a_node)
 
                 for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
                     for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
-                        if not absorbing:
-                            _v_prod_node = self.composition(_v_ts_node, _v_a_node)
-                        else:
-                            if _v_a_node in self._auto_graph.get_absorbing_states():
-                                _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
-                            else:
-                                _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+                        _v_prod_node = self.composition(_v_ts_node, _v_a_node)
 
-                        label = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
-                        if self._trans_sys._graph.nodes[_u_ts_node].get("player") == "eve":
-                            weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
-                        else:
-                            weight = '0'
-                        auto_label = self._auto_graph._graph.get_edge_data(_u_a_node, _v_a_node)[0]['guard']
+                        # get relevant details that need to be added to the composed node and edge
+                        ap, weight, action = self._get_edge_and_node_data( _u_ts_node,
+                                                                           _v_ts_node,
+                                                                           _u_a_node,
+                                                                           _v_a_node)
 
-                        if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
-                            if auto_label.formula == "(true)" or auto_label.formula == "1":
-                                truth = True
-                            else:
-                                truth = auto_label.check(label)
+                        # determine if a transition is possible or not, if yes then add that edge
+                        exists, _v_prod_node = self._check_transition(_u_ts_node,
+                                                                      _v_ts_node,
+                                                                      _u_a_node,
+                                                                      _v_a_node,
+                                                                      _v_prod_node,
+                                                                      action=action,
+                                                                      obs=ap)
 
-                        # if the node belongs to adam
-                        else:
-                            _v_a_node = _u_a_node
-                            if not absorbing:
-                                _v_prod_node = self.composition(_v_ts_node, _v_a_node)
-                            else:
-                                if _v_a_node in self._auto_graph.get_absorbing_states():
-                                    _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
-                                else:
-                                    _v_prod_node = self.composition(_v_ts_node, _v_a_node)
-                            truth = True
+                        if exists:
+                            self._add_transition(_u_prod_node, _v_prod_node, weight=weight)
 
-                        if truth:
-                            if not self._graph.has_edge(_u_prod_node, _v_prod_node):
-                                if _u_prod_node in self._auto_graph.get_absorbing_states():
-                                    if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
-                                        self._graph.add_weighted_edges_from([(_u_prod_node,
-                                                                              _v_prod_node, '0')])
-                                    else:
-                                        self._graph.add_weighted_edges_from([(_u_prod_node,
-                                                                              _v_prod_node,
-                                                                              max_w)])
-                                                                              # str(-1 * float(max_w)))])
-                                else:
-                                    self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node,
-                                                                          weight)])
-                                                                          # str(-1* float(weight)))])
-
-    def add_prod_state(self, _p_node, auto_node) -> None:
+    def construct_product_absorbing(self):
         """
-        A helper method which is called when we use the absorbing flag to add manually created node to the product graph
+        A function that helps build the composition of TS and DFA where we compress the all
+         absorbing nodes (A node that only has a transition to itself) in product automation
+
+         There are always two these - one accepting node and the other one is the "trap" state
+        :return:
+        """
+        # get max weight from the transition system
+        max_w: str = self._trans_sys.get_max_weight()
+
+        for _u_ts_node in self._trans_sys._graph.nodes():
+            for _u_a_node in self._auto_graph._graph.nodes():
+
+                # if the current node an absorbing state, then we don't compose u_ts_node and u_a_node
+                if _u_a_node in self._auto_graph._get_absorbing_states():
+                    _u_prod_node = self.add_prod_state(_u_a_node, _u_a_node)
+
+                else:
+                    _u_prod_node = self.composition(_u_ts_node, _u_a_node)
+
+                for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
+                    for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
+
+                        # if the next node is an absorbing state, then we don't compose v_ts_node and v_a_node
+                        if _v_a_node in self._auto_graph._get_absorbing_states():
+                            _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
+                        else:
+                            _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+
+                        # get relevant details that need to be added to the composed node and edge
+                        ap, weight, action = self._get_edge_and_node_data(_u_ts_node,
+                                                                          _v_ts_node,
+                                                                          _u_a_node,
+                                                                          _v_a_node)
+
+                        exists, _v_prod_node = self._check_transition_absorbing(_u_ts_node,
+                                                                                _v_ts_node,
+                                                                                _u_a_node,
+                                                                                _v_a_node,
+                                                                                _v_prod_node,
+                                                                                action=action,
+                                                                                obs=ap)
+                        if exists:
+
+                            # # _v_prod_node is empty if _u_ts_node belongs to eve
+                            # if _v_prod_node is None:
+                            #     # if the next node is an absorbing state, then we don't compose v_ts_node and v_a_node
+                            #     if _v_a_node in self._auto_graph._get_absorbing_states():
+                            #         _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
+                            #     else:
+                            #         _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+
+                            self._add_transition_absorbing(_u_prod_node,
+                                                           _v_prod_node,
+                                                           weight=weight,
+                                                           max_weight=max_w)
+
+
+
+
+
+    def _add_transition(self, _u_prod_node, _v_prod_node, weight: str):
+        """
+        A helper method to add an edge if it alredy does not exists given the current product node
+        (composition of current TS and current DFA node) and the next product node.
+        :param _u_prod_node:
+        :param _v_prod_node:
+        :return: Updated the graph with the edge
+        """
+
+        if not self._graph.has_edge(_u_prod_node, _v_prod_node):
+            self._graph.add_weighted_edges_from([(_u_prod_node,
+                                                  _v_prod_node,
+                                                  weight)])
+
+    def _add_transition_absorbing(self, _u_prod_node, _v_prod_node, weight: str, max_weight: str):
+
+        if not self._graph.has_edge(_u_prod_node, _v_prod_node):
+            if _u_prod_node in self._auto_graph._get_absorbing_states():
+                if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
+                    self._graph.add_weighted_edges_from([(_u_prod_node,
+                                                          _v_prod_node, '0')])
+                else:
+                    self._graph.add_weighted_edges_from([(_u_prod_node,
+                                                          _v_prod_node,
+                                                          max_weight)])
+                                                        # str(-1 * float(max_w)))])
+            else:
+                self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node,
+                                                      weight)])
+                                                    # str(-1* float(weight)))])
+
+    def _check_transition(self, _u_ts_node,
+                          _v_ts_node,
+                          _u_a_node,
+                          _v_a_node,
+                          _v_prod_node,
+                          action,
+                          obs) -> Tuple[bool, Tuple]:
+        """
+        A helper method that check if a transition between the composed nodes exists or not.
+        :param _u_ts_node:
+        :param _v_ts_node:
+        :param action:
+        :param obs:
+        :param _v_a_node:
+        :param _u_a_node:
+        :return: True if there is a transition else False
+        """
+
+        # if the current node in TS belongs to eve
+        if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
+            if action.formula == "(true)" or action.formula == "1":
+                return True, _v_prod_node
+            else:
+                return action.check(obs), _v_prod_node
+
+        # if the current node in TS belongs to adam
+        else:
+            # we force the next node in automaton to be the current node and add that transition
+            _v_a_node = _u_a_node
+            _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+            return True, _v_prod_node
+
+    def _check_transition_absorbing(self, _u_ts_node,
+                                    _v_ts_node,
+                                    _u_a_node,
+                                    _v_a_node,
+                                    _v_prod_node,
+                                    action,
+                                    obs) -> Tuple[bool, Tuple]:
+        """
+        A helper method that check if a transition between the composed nodes exists or not.
+        :param _u_ts_node:
+        :param _v_ts_node:
+        :param _v_a_node:
+        :param _u_a_node:
+        :param action:
+        :param obs:
+        :return: True if there is a transition else False
+        """
+
+        # if the current node in TS belongs to eve
+        if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
+            if action.formula == "(true)" or action.formula == "1":
+                return True, _v_prod_node
+            else:
+                return action.check(obs), _v_prod_node
+
+        # if the current node in TS belongs to adam
+        else:
+            # we force the next node in automaton to be the current node and add that transition
+            _v_a_node = _u_a_node
+            # if the next node belongs to an absorbing state
+            if _v_a_node in self._auto_graph._get_absorbing_states():
+                _v_prod_node = self.add_prod_state(_v_a_node, _v_a_node)
+
+            else:
+                _v_prod_node = self.composition(_v_ts_node, _v_a_node)
+
+            return True, _v_prod_node
+
+
+    def _get_edge_and_node_data(self, _u_ts_node, _v_ts_node, _u_auto_node, _v_auto_node) -> Tuple:
+        """
+        A helper method that returns
+
+            1. observation at the current node in TS (i.e at -observation at _u_ts_node)
+            2. weight : The edges weight from the TS between _u_ts_node and _v_ts_node
+                NOTE: all edges that belong to the env(adam/human) have edge weight zero
+            3. transition label : The transition label from the automation between _u_auto_node and _v_auto_node
+        :param _u_ts_node: The current node in TS
+        :param _v_ts_node:  Neighbour/successor of the current node in TS
+        :param _u_auto_node: The current node in Automation - DFA
+        :param _v_auto_node: Neighbour/successor of the current node in DFA
+        :return: A tuple of observation, weight, and transition label
+        """
+
+        obs = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
+
+        if self._trans_sys._graph.nodes[_u_ts_node].get("player") == "eve":
+            weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
+        else:
+            weight = '0'
+
+        auto_label = self._auto_graph._graph.get_edge_data(_u_auto_node, _v_auto_node)[0]['guard']
+
+        return obs, weight, auto_label
+
+    def add_prod_state(self, _p_node, auto_node) -> Tuple:
+        """
+        A helper method which is called when we use the absorbing flag to add manually
+         created node to the product graph
         """
         if not self._graph.has_node(_p_node):
             self._graph.add_node(_p_node)
@@ -126,7 +373,7 @@ class ProductAutomaton(TwoPlayerGraph):
     def prune_graph(self, debug: bool = False):
         # initialize queue (deque is part of std library and allows O(1) append() and pop() at either end)
         queue = deque()
-        regions = defaultdict(lambda : -1)
+        regions = defaultdict(lambda: -1)
         attr = []  # the attractor region
         eve_str = {}
 
@@ -209,9 +456,57 @@ class ProductAutomaton(TwoPlayerGraph):
 
 
 class ProductBuilder(Builder):
+    """
+    Implements the generic graph builder class for TwoPlayerGraph
+    """
 
-    def __init__(self):
+    def __init__(self) -> 'ProductBuilder()':
+        """
+        Constructs a new instance of the Product automaton builder
+        """
         Builder.__init__(self)
 
-    def __call__(self, **kwargs):
-        pass
+    def __call__(self,
+                 graph_name: str,
+                 config_yaml: str,
+                 trans_sys: Graph,
+                 dfa: DFAGraph,
+                 save_flag: bool = False,
+                 prune: bool = False,
+                 debug: bool = False,
+                 absorbing: bool = False,
+                 plot: bool = False):
+        """
+        A function that takes as input a
+
+            1. Transition system of type TwoPlayerGraph (Manually constructed TS) or
+            FiniteTransitionSystem (constructed using a raw TS (with only system nodes))
+            2. DFA - Automaton representing a ltl formula build using SPOT
+
+        effect : Composes trans_sys and dfa and returns the concrete instace of ProductAutomaton
+        :param graph_name:
+        :param config_yaml:
+        :param trans_sys:
+        :param dfa:
+        :param save_flag:
+        :param prune:
+        :param debug:
+        :param absorbing:
+        :return: A concrete and active instance of ProductAutomaton that is the composition TS and DFA
+        """
+
+        self._instance = ProductAutomaton(trans_sys_graph=trans_sys,
+                                          automaton=dfa,
+                                          graph_name=graph_name,
+                                          config_name=config_yaml,
+                                          save_flag=save_flag)
+
+        self._instance.construct_graph(absorbing=absorbing)
+
+        if prune:
+            self._instance.prune_graph(debug=debug)
+
+        if plot:
+            self._instance.plot_graph()
+
+        return self._instance

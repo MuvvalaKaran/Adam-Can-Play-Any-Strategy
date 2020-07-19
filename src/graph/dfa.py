@@ -86,10 +86,10 @@ class DFAGraph(Graph):
         for _, _s in _new_states_map.items():
             self.add_state(_s)
 
-            if _s == "T0_init":
+            if _s == "q1":
                 self.add_initial_state(_s)
 
-            if _s == "accept_all":
+            if _s == "q0":
                 self.add_accepting_state(_s)
 
         # add edges

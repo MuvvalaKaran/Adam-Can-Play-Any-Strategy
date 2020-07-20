@@ -300,6 +300,15 @@ class Graph(abc.ABC):
     def add_edge_attributes(self, u, v, attribute_key, attribute_value):
         self.add_edge(u, v, attribute_key=attribute_value)
 
+    def set_edge_attribute(self, attr, attr_value):
+        """
+        A method that add an @attr to all the nodes in the graph and set their value to attr_value
+        :param attr:
+        :param attr_value:
+        :return:
+        """
+        nx.set_edge_attributes(self._graph, attr_value, attr)
+
     def get_edge_attributes(self, u, v, attribute: str):
         """
         A function to get an attribute associated with an edge (u, v)

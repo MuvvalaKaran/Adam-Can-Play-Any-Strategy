@@ -2,6 +2,7 @@ import math
 import copy
 import warnings
 import random
+import sys
 
 from _collections import defaultdict
 from typing import Dict, List, Tuple, Union, Optional
@@ -11,6 +12,10 @@ from src.graph import Graph, graph_factory
 from src.graph import TwoPlayerGraph
 from src.graph import ProductAutomaton
 from src.payoff import Payoff, payoff_factory
+from helper_methods import deprecated
+
+# asserts that this code is tested in linux
+assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
 
 class RegretMinimizationStrategySynthesis:
@@ -325,39 +330,8 @@ class RegretMinimizationStrategySynthesis:
         for b in set(w_prime.values()) - {-1 * math.inf}:
             # if we haven't computed a strategy for this b value then proceed ahead
             if str_dict.get(b) is None:
-                # eve_str: Dict[Tuple, Tuple] = {}
-                # adam_str: Dict[Tuple, Tuple] = {}
-                # # update adam's strategy from v0 to v1 and eve's strategy from v1 to (vI, ,b)
-                # adam_str.update({"v0": "v1"})
-                # eve_str.update({'v1': ((init_node[0][0]), b)})
-                # eve_str.update({'vT': 'vT'})
-                # for node in g_hat._graph.nodes():
-                #
-                #     # I manually add the initial transitions of node 0 and 1 of g_hat graph
-                #     if isinstance(node, tuple) and float(node[1]) == float(b):
-                #
-                #         # if the node belongs to adam
-                #         if g_hat._graph.nodes[node]['player'] == 'adam':
-                #             # get the next node and update
-                #             adam_str.update({node: self._get_next_node(g_hat,
-                #                                                        node,
-                #                                                        min,
-                #                                                        optimistic=optimistic)})
-                #
-                #         # if node belongs to eve
-                #         elif g_hat._graph.nodes[node]['player'] == 'eve':
-                #             eve_str.update({node: self._get_next_node(g_hat,
-                #                                                       node,
-                #                                                       max,
-                #                                                       optimistic=optimistic)})
-                #
-                #         else:
-                #             raise warnings.warn(
-                #                 f"The node {node} does not belong either to eve or adam. This should have "
-                #                 f"never happened")
 
                 # update the str dict
-
                 _eve_str, _adam_str = self._update_strategy_g_hat(b,
                                                                   g_hat=g_hat,
                                                                   optimistic=optimistic)
@@ -379,27 +353,11 @@ class RegretMinimizationStrategySynthesis:
 
                 else:
                     reg = plays_and_vals.get_reg_and_str()
-                # if optimistic:
-                #     plays: List[List[Tuple]] = _compute_all_plays(g_hat, {**eve_str, **adam_str})
-                #     # if there is only one possible play then that means the str we have is already deterministic
-                #     if len(plays) == 1:
-                #         reg = -1 * float(_play_loop(g_hat, plays[0], _Val_func))
-                #     else:
-                #         reg, adam_str, eve_str = _find_optimal_str(plays, g_hat, _Val_func, adam_str, eve_str)
-                #         str_dict[b]['eve'] = eve_str
-                #         str_dict[b]['adam'] = adam_str
-                #
-                #     str_dict[b].update({'reg': reg})
-                #
-                # else:
-                #     plays: List[List[Tuple]] = _compute_all_plays(g_hat, {**eve_str, **adam_str})
-                #     reg = -1 * float(_play_loop(g_hat, plays[0], _Val_func))
-                #     str_dict[b]['eve'] = eve_str
-                #     str_dict[b]['adam'] = adam_str
-                #     str_dict[b].update({'reg': reg})
+
                 str_dict[b]['reg'] = reg
 
-                self._check_str_validity(str_dict[b])
+            # check validity for every strategy in g_b(s)
+            self._check_str_validity(str_dict[b])
 
         # create a tmp dict of strategies that have reg <= reg_threshold
         __tmp_dict = {}
@@ -418,8 +376,11 @@ class RegretMinimizationStrategySynthesis:
 
     def _get_least_reg_str(self, reg_dict: Dict[float, Dict]) -> Dict:
         """
-        A helper method that returns the least regret strategy that is also valid given a reg diction which is of the fomr
-        {b_value :
+        A helper method that returns the least regret strategy that is also valid given a reg dictionary
+         which is of the format:
+
+        {
+        b_value :
                 eve: strategy
                 adam: strategy
                 reg: value
@@ -441,7 +402,7 @@ class RegretMinimizationStrategySynthesis:
                 str_dict.update({'adam': reg_dict[ib]['adam']})
 
                 assert str_dict.get('valid') == True, \
-                    "Returing an Invalid Strategy. This means that there exists atleast " \
+                    "Returning an invalid strategy. This means that there exists at-least " \
                     "one transition from eve's state to the terminal state vT"
                 return str_dict
 
@@ -529,45 +490,11 @@ class RegretMinimizationStrategySynthesis:
         :param w_prime: the set of bs
         :return: A Tuple cflag; True if Reg > 0 else False
         """
-        # get init_node of the original graph
-        init_node = self.graph.get_initial_states()
-
         for b in set(w_prime.values()) - {-1 * math.inf}:
 
             _eve_str, _adam_str = self._update_strategy_g_hat(b,
                                                               g_hat=graph_g_hat,
                                                               optimistic=optimistic)
-            # _eve_str: Dict[Tuple, Tuple] = {}
-            # _adam_str: Dict[Tuple, Tuple] = {}
-            # # assume adam takes v0 to v1 edge - accordingly update the strategy
-            # _adam_str.update({"v0": "v1"})
-            # # add this transition to the strategy of eve and then play in the respective copy of G_b
-            # _eve_str.update({'v1': ((init_node[0][0]), b)})
-            # _eve_str.update({'vT': 'vT'})
-            #
-            # for node in graph_g_hat.nodes():
-            #
-            #     # I manually add the initial transitions of node 0 and 1 of g_hat graph
-            #     if isinstance(node, tuple) and float(node[1]) == float(b):
-            #
-            #         # if the node belongs to adam
-            #         if graph_g_hat.nodes[node]['player'] == 'adam':
-            #             # get the next node and update
-            #             _adam_str.update({node: self._get_next_node(graph_g_hat,
-            #                                                         node,
-            #                                                         min,
-            #                                                         optimistic=optimistic)})
-            #
-            #         # if node belongs to eve
-            #         elif graph_g_hat.nodes[node]['player'] == 'eve':
-            #             _eve_str.update({node: self._get_next_node(graph_g_hat,
-            #                                                        node,
-            #                                                        max,
-            #                                                        optimistic=optimistic)})
-            #
-            #         else:
-            #             raise warnings.warn(f"The node {node} does not belong either to eve or adam. This should have "
-            #                                 f"never happened")
             # update str_dict
             str_dict.update({b: {'eve': _eve_str}})
             str_dict[b].update({'adam': _adam_str})
@@ -576,8 +503,6 @@ class RegretMinimizationStrategySynthesis:
             plays_and_vals = ComputePlaysAndVals(graph=graph_g_hat,
                                                  strategy={**_eve_str, **_adam_str},
                                                  payoff=self.payoff)
-
-            # plays_and_vals._compute_all_plays()
 
             # get regret value and the respective strategy
             if optimistic:
@@ -591,39 +516,11 @@ class RegretMinimizationStrategySynthesis:
 
             str_dict[b]['reg'] = reg
 
+            # check validity for every strategy in g_b(s)
+            self._check_str_validity(str_dict[b])
+
             if reg > 0:
                 return str_dict, True
-
-
-            # if optimistic:
-            #     # compute the regret value for this b
-            #     plays: List[List[Tuple]] = _compute_all_plays(graph_g_hat, {**_eve_str, **_adam_str})
-            #
-            #     # if there is only possible play then that means the str we have is already deterministic
-            #     if len(plays) == 1:
-            #         reg = -1 * float(_play_loop(graph_g_hat, plays[0], value_func))
-            #
-            #     else:
-            #         reg, _adam_str, _eve_str = _find_optimal_str(plays, graph_g_hat, value_func, _adam_str, _eve_str)
-            #         str_dict[b]['eve'] = _eve_str
-            #         str_dict[b]['adam'] = _adam_str
-            #
-            #     str_dict[b].update({'reg': reg})
-            #     check_str_validuty(str_dict[b])
-            #
-            #     if reg > 0:
-            #         return str_dict, True
-            # else:
-            #     plays: List[List[Tuple]] = _compute_all_plays(graph_g_hat, {**_eve_str, **_adam_str})
-            #     reg = -1 * float(_play_loop(graph_g_hat, plays[0], value_func))
-            #     str_dict[b]['eve'] = _eve_str
-            #     str_dict[b]['adam'] = _adam_str
-            #     str_dict[b].update({'reg': reg})
-            #
-            #     check_str_validuty(str_dict[b])
-            #
-            #     if reg > 0:
-            #         return str_dict, True
 
         return str_dict, False
 
@@ -647,6 +544,174 @@ class RegretMinimizationStrategySynthesis:
             next_node = random.choice([k[1] for k in wt_list if wt_list[k] == threshold_value])
             return [next_node]
 
+    def _get_set_of_valid_states(self, str_dict: Dict) -> List[Dict]:
+        """
+        A helper method that return a list of set of valid strategies.
+
+        This method loops throught the strategy dictionary, check if the a str_dict[b]['valid'] is True or not
+         and adds it a to a list.
+        :param str_dict:
+        :return:
+        """
+        combined_strategy = []
+        for str_b in str_dict.items():
+            if str_b[1].get('valid'):
+                combined_strategy.append({**str_b[1]['eve'], **str_b[1]['adam']})
+
+        return combined_strategy
+
+    def _add_strategy_flag(self,
+                           g_hat: Union[TwoPlayerGraph, ProductAutomaton, Graph],
+                           combined_strategy):
+        """
+        A helper method that adds a strategy attribute to the nodes of g_hat that belong to the strategy dict computed.
+
+        Effect : Adds a new attribute "strategy" as False and loops over the dict and updated attribute
+         to True if that node exists in the strategy dict.
+        :param g_hat: The graph on which we compute the regret minimizing strategy
+        :param combined_strategy: Combined dictionary of sys(eve)'s and env(adam)'s strategy
+        :return:
+        """
+
+        for curr_node, next_node in combined_strategy.items():
+            if isinstance(next_node, list):
+                for n_node in next_node:
+                    g_hat._graph.edges[curr_node, n_node, 0]['strategy'] = True
+            else:
+                g_hat._graph.edges[curr_node, next_node, 0]['strategy'] = True
+
+    def _add_strategy_flag_only_eve(self,
+                                    g_hat: Union[TwoPlayerGraph, ProductAutomaton, Graph],
+                                    combined_strategy):
+        """
+        A helper method that adds a strategy attribute to the nodes of g_hat that belong to the strategy dict computed.
+
+        Effect : Adds a new attribute "strategy" as False and loops over the dict and updated attribute
+         to True if that node exists in the strategy dict and belongs to eve ONLY.
+
+        :param g_hat: The graph on which we compute the regret minimizing strategy
+        :param combined_strategy: Combined dictionary of sys(eve)'s and env(adam)'s strategy
+        :return:
+        """
+
+        for curr_node, next_node in combined_strategy.items():
+                if g_hat._graph.nodes[curr_node].get("player") == "eve":
+                    if isinstance(next_node, list):
+                        for n_node in next_node:
+                            g_hat._graph.edges[curr_node, n_node, 0]['strategy'] = True
+                    else:
+                        g_hat._graph.edges[curr_node, next_node, 0]['strategy'] = True
+    @deprecated
+    def _from_str_b_final_play_to_str(self, g_hat: TwoPlayerGraph, combined_str: Dict):
+        """
+        A helper method to map back the final play least regret strategy from g_hat to the original graph
+        :param g_hat:
+        :param combined_str:
+        :return:
+        """
+        # compute final loop str in g_hat
+        g_hat_queue = [] # a stack that keeps tracks of nodes visited
+        g_hat_str = {}
+
+        original_str = {}
+
+        # preprocess strategy to remove lists that have only node in them
+        for k, v in combined_str.items():
+            if len(v) == 1:
+                combined_str[k] = v[0]
+
+        curr_node = g_hat.get_initial_states()[0][0]
+        g_hat_queue.append(curr_node)
+        next_node = combined_str[curr_node]
+        g_hat_str.update({curr_node: next_node})
+
+        while next_node not in g_hat_queue:
+            g_hat_queue.append(next_node)
+            curr_node = next_node
+            next_node = combined_str[curr_node]
+            g_hat_str.update({curr_node: next_node})
+
+        for u_node, v_node in g_hat_str.items():
+            if self.graph._graph.has_edge(u_node[0], v_node[0]):
+                original_str.update({u_node[0]: v_node[0]})
+
+        return original_str
+
+    def _from_str_b_to_str(self, g_hat: TwoPlayerGraph, combined_str: Dict):
+        original_str = {}
+
+        for k, v in combined_str.items():
+            if len(v) == 1:
+                combined_str[k] = v[0]
+
+        for u_node, v_node in combined_str.items():
+            if self.graph._graph.has_edge(u_node[0], v_node[0]):
+                    original_str.update({u_node[0]: v_node[0]})
+
+        return original_str
+
+    def plot_all_str_g_hat(self,
+                           g_hat: TwoPlayerGraph,
+                           str_dict: Dict,
+                           only_eve: bool = False,
+                           plot: bool = False):
+        """
+        A helper method that plots all the VALID strategies computed on g_hat on g_hat. It then maps back the
+         least regret strategy back to the original strategy.
+        :return:
+        """
+
+        g_hat.set_edge_attribute('strategy', False)
+
+        valid_strs = self._get_set_of_valid_states(str_dict=str_dict)
+
+        for str in valid_strs:
+            if only_eve:
+                self._add_strategy_flag_only_eve(g_hat, str)
+
+            else:
+                self._add_strategy_flag(g_hat, str)
+
+        # get the least reg str from g_hat as we can only map that back the original graph
+        least_reg_str = self._get_least_reg_str(str_dict)
+
+        org_str = self._from_str_b_to_str(g_hat, {**least_reg_str['eve'], **least_reg_str['adam']})
+
+        if only_eve:
+            self._add_strategy_flag_only_eve(self.graph, org_str)
+
+        else:
+            self._add_strategy_flag(self.graph, org_str)
+
+        if plot:
+            g_hat.plot_graph()
+            self.graph.plot_graph()
+
+    def plot_str_g_hat(self,g_hat: TwoPlayerGraph,
+                           str_dict: Dict,
+                           only_eve: bool = False,
+                           plot: bool = False):
+
+        g_hat.set_edge_attribute('strategy', False)
+        str = {**str_dict['eve'], **str_dict['adam']}
+
+        if only_eve:
+            self._add_strategy_flag_only_eve(g_hat, str)
+
+        else:
+            self._add_strategy_flag(g_hat, str)
+
+        org_str = self._from_str_b_to_str(g_hat, str)
+
+        if only_eve:
+            self._add_strategy_flag_only_eve(self.graph, org_str)
+
+        else:
+            self._add_strategy_flag(self.graph, org_str)
+
+        if plot:
+            g_hat.plot_graph()
+            self.graph.plot_graph()
 
 class ComputePlaysAndVals:
     """
@@ -681,7 +746,7 @@ class ComputePlaysAndVals:
     def _compute_all_plays_utils(self,
                                  n,
                                  play,
-                                 play_lst) -> List[Tuple]:
+                                 play_lst):
 
         if not isinstance(self.strategy[n], list):
             play.append(self.strategy[n])
@@ -705,10 +770,9 @@ class ComputePlaysAndVals:
         """
         A helper method to find the most optimal strategy in a non-deterministic strategy
         :param      plays:          a list of plays(tuple)
-        :param      value_func:     the value function to determine a finite quantity of an
-                                    infinite play (e.f sup, mean, liminf)
         :param      adam_str:       A dict mapping each node that belongs to adam to the next node
         :param      eve_str:        A dict mapping each node that belongs to eve to the next node
+
         :return: A tuple of the min reg value, the corresponding DETERMINISTIC strategy for eve and adam
         """
         # a temp regret dict of format {play: reg_value}
@@ -730,10 +794,11 @@ class ComputePlaysAndVals:
                              eve_str: Dict[Tuple, Tuple] = None):
         """
         A helper method to find the most optimal strategy in a non-deterministic strategy
-        with bais towards accepting states
+        with bias towards accepting states
+
+        If there exists an accepting state in a play, this function will return any ones of those plays
+         (if there exists multiple)
         :param      plays:          a list of plays(tuple)
-        :param      value_func:     the value function to determine a finite quantity of an
-                                    infinite play (e.f sup, mean, liminf)
         :param      adam_str:       A dict mapping each node that belongs to adam to the next node
         :param      eve_str:        A dict mapping each node that belongs to eve to the next node
         :return: A tuple of the min reg value, the corresponding DETERMINISTIC strategy for eve and adam
@@ -777,9 +842,6 @@ class ComputePlaysAndVals:
         :param min_play:
         :return:
         """
-        # adam_str: Dict[Optional[tuple, str], Optional[tuple, str]] = {}
-        # eve_str: Dict[Optional[tuple, str], Optional[tuple, str]] = {}
-
         # update the strategy
         for inx, node in enumerate(play):
             # only proceed up to to the second last node
@@ -799,8 +861,7 @@ class ComputePlaysAndVals:
     def _play_loop(self, play: List[Tuple]) -> str:
         """
         helper method to compute the loop value for a given payoff function
-        :param graph: graph g_hat
-        :param strategy: A mapping from a each node of g_hat to the next node
+        :param play:
         :return: The value of the loop when following the strategy @strategy
         """
         # # add nodes to this stack and as soon as a loop is found we break
@@ -844,8 +905,6 @@ class ComputePlaysAndVals:
          final regret value, strategy for eve and adam respectively
         :return:
         """
-        # eve_str = None
-        # adam_str = None
         plays: List[List[Tuple]] = self._compute_all_plays()
 
         # if deterministic strategy
@@ -866,8 +925,6 @@ class ComputePlaysAndVals:
          final regret value, strategy for eve and adam respectively
         :return:
         """
-        eve_str = None
-        adam_str = None
         plays: List[List[Tuple]] = self._compute_all_plays()
         reg = -1 * float(self._play_loop(plays[0]))
 

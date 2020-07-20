@@ -24,9 +24,6 @@ class DFAGraph(Graph):
         self._graph_name = graph_name
         self._use_alias = use_alias
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
-        # self._config_yaml = config_yaml
-        # self._save_flag = save_flag
-        # self._absorbing_states = self.get_absorbing_states()
 
     def construct_graph(self, plot: bool = False):
         buchi = nx.MultiDiGraph(name=self._graph_name)
@@ -171,6 +168,19 @@ class DFAGraph(Graph):
         (states, initial, accepts) = find_states(edges)
 
         return states, edges, initial, accepts
+
+    def _get_symbols(self) -> List[str]:
+        """
+        A method that returns the set symbols that constitute a formula
+        :param sc_ltl: The input formula to SPOT based on which we construct an automaton.
+         Ideal an ltl formula should be composed of a set of symbols which are observations or atomic propositions
+          associated with each states in the Transition system. Generally ap represent the truth value assigned to a
+           variable
+        :return:
+        """
+        symbols = find_symbols(self._formula)
+
+        return symbols
 
     def _get_absorbing_states(self) -> List[Tuple]:
         abs_states = []

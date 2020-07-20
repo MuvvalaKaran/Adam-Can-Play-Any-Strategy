@@ -1,10 +1,10 @@
 from .base import Graph
-from .dfa import DFABuilder
-from .two_player_graph import TwoPlayerGraphBuilder
-from .gmin import GMinBuilder
-from .gmax import GMaxBuilder
-from .trans_sys import TransitionSystemBuilder
-from .product import ProductBuilder
+from .dfa import DFAGraph, DFABuilder
+from .two_player_graph import TwoPlayerGraph, TwoPlayerGraphBuilder
+from .gmin import GMinGraph, GMinBuilder
+from .gmax import GMaxGraph, GMaxBuilder
+from .trans_sys import TwoPlayerGraph, TransitionSystemBuilder
+from .product import ProductAutomaton, ProductBuilder
 
 from .factory import GraphCollection
 

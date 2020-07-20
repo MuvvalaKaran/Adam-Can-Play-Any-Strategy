@@ -11,9 +11,7 @@ from src.factory.builder import Builder
 class FiniteTransSys(TwoPlayerGraph):
 
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
-        self._graph_name = graph_name
-        self._config_yaml = config_yaml
-        self._save_flag = save_flag
+        TwoPlayerGraph.__init__(self, graph_name, config_yaml, save_flag)
 
     def construct_graph(self):
         super().construct_graph()
@@ -46,8 +44,6 @@ class FiniteTransSys(TwoPlayerGraph):
 
         # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
-            # ap_u = self._graph.nodes[edge[0]].get('ap')
-            # ap_v = self._graph.nodes[edge[1]].get('ap')
             if edge[2].get('strategy') is True:
                 dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')),
                          _attributes={'color': 'red'})
@@ -81,7 +77,7 @@ class FiniteTransSys(TwoPlayerGraph):
 
         two_player_graph_ts.add_states_from(eve_node_lst, player='eve')
 
-        # for each edge create a human node and then alter the orginal edge to go through the human node
+        # for each edge create a human node and then alter the original edge to go through the human node
         for e in self._graph.edges():
             for i in range(k):
                 # lets create a human edge with huv,k naming convention
@@ -130,6 +126,18 @@ class FiniteTransSys(TwoPlayerGraph):
                 max_weight = int(_e[2])
 
         return str(max_weight)
+
+    def _get_set_ap(self) -> set:
+        """
+        A helper method that return a set of observations associated with each state in the transition system
+        :return:
+        """
+
+        atomic_propositions: set = set()
+        for _n in self._graph.nodes.data():
+            atomic_propositions.add(_n[1].get('ap'))
+
+        return atomic_propositions
 
     @classmethod
     def from_raw_ts(cls, raw_ts: TwoPlayerGraph,

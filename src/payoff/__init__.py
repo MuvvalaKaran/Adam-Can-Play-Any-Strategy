@@ -1,5 +1,5 @@
 from .factory import PayoffCollection
-from .base import PayoffBuilder
+from .base import Payoff, PayoffBuilder
 
 payoff_factory = PayoffCollection()
 payoff_factory.register_builder("sup", PayoffBuilder())

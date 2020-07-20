@@ -72,6 +72,17 @@ class TwoPlayerGraph(Graph):
         super().print_nodes()
         print("=====================================")
 
+    def get_max_weight(self) -> str:
+        # NOTE: WE assuming that the edge weights are purely integer
+
+        max_weight: int = -1
+        # loop through all the edges and return the max weight
+        for _e in self._graph.edges.data("weight"):
+            if int(_e[2]) > max_weight:
+                max_weight = int(_e[2])
+
+        return str(max_weight)
+
     @classmethod
     def build_running_ex(cls: 'TwoPlayerGraph',
                          graph_name: str,
@@ -124,21 +135,24 @@ class TwoPlayerGraphBuilder(Builder):
 
         Builder.__init__(self)
 
-        self.pre_built: bool = False
-        self.two_player_graphs = {}
-
-    def __call__(self, graph_name: str, config_yaml: str, save_flag: bool = False, **kwargs) -> TwoPlayerGraph:
+    def __call__(self,
+                 graph_name: str,
+                 config_yaml: str,
+                 save_flag: bool = False,
+                 pre_built: bool=False,
+                 plot: bool = False) -> TwoPlayerGraph:
         """
         Return an initialized TwoPlayerGraph instance given the configuration data
         :param graph_name : Name of the graph
         :return: A concrete/active instance of the TwoPlayerGraph
         """
-        self.pre_built = kwargs['pre_built']
-
-        # if not self.pre_built:
         self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
+        self._instance.construct_graph()
 
-        if self.pre_built:
+        if pre_built:
             self._instance = TwoPlayerGraph.build_running_ex(graph_name, config_yaml, save_flag)
+
+        if plot:
+            self._instance.plot_graph()
 
         return self._instance

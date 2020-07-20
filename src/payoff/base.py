@@ -70,7 +70,7 @@ class Payoff:
         except KeyError:
             raise KeyError(f"Please ensure that {node} is a valid node of Graph {self.graph._graph_name}")
 
-        self._init_node = node
+        self.init_node = node
 
     # @payoff_func.setter
     # def payoff_func(self, value):
@@ -120,11 +120,11 @@ class Payoff:
         loop_dict: Dict[Tuple, str] = {}
 
         # visit each neighbour of the init node
-        for node in self.graph._graph.neighbors(self._init_node):
+        for node in self.graph._graph.neighbors(self.init_node):
             visitStack: Dict[Tuple, bool] = defaultdict(lambda: False)
-            visitStack[self._init_node] = True
+            visitStack[self.init_node] = True
             nodeStack: List[Tuple] = []
-            nodeStack.append(self._init_node)
+            nodeStack.append(self.init_node)
             self._cycle_util(node, visitStack, loop_dict, nodeStack)
 
         self.__loop_vals = loop_dict
@@ -185,7 +185,7 @@ class Payoff:
 
         if play_dict:
             # find the max of the value
-            max_play = min(play_dict, key=lambda key: play_dict[key])
+            max_play = max(play_dict, key=lambda key: play_dict[key])
             if debug:
                 print(f"The cVal from the node {vertex}")
                 print(f"for the play {max_play} is {play_dict[max_play]}")
@@ -202,7 +202,7 @@ class PayoffBuilder(Builder):
 
     def __init__(self):
 
-        # class the parent class init to initialize _instance attr to None
+        # call to the parent class init to initialize _instance attr to None
         Builder.__init__(self)
 
     def __call__(self,
@@ -215,8 +215,12 @@ class PayoffBuilder(Builder):
         :return:
         """
 
+        payoff_val = self._get_payoff_val(payoff_string)
+
+        print(f"Using payoff function : {payoff_string}")
+
         self._instance = Payoff(graph=graph,
-                                payoff=self._get_payoff_val(payoff_string))
+                                payoff=payoff_val)
 
         return self._instance
 

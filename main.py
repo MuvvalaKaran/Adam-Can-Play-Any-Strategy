@@ -14,6 +14,7 @@ from typing import List, Tuple, Dict, Any
 from src.payoff import payoff_value
 from src.graph.graph import GraphFactory
 from src.graph.graph import TwoPlayerGraph, ProductAutomaton
+from helper_methods import deprecated
 
 # asserts that this code is tested in linux
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
@@ -52,6 +53,7 @@ visualize the strategy with the least regret on g_hat.
 NOTE: the strategy on the original graph is still the least regret strategy   
 """
 plot_all = True
+
 
 def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = False,
                     scLTL_formula: str = "", plot: bool = False, prune: bool = False,
@@ -102,7 +104,7 @@ def construct_graph(payoff_func: str, debug: bool = False, use_alias: bool = Fal
                                                                      absorbing=absorbing)
     return _graph
 
-
+@deprecated
 def construct_alt_game(graph: nx.MultiDiGraph, edge: Tuple[Tuple, Tuple]) -> nx.MultiDiGraph:
     """
     A helper method to construct an temporary alternate game without the org edge @edge
@@ -506,7 +508,7 @@ def check_str_validuty(str_dict: Dict) -> None:
 
 def _get_least_reg_str(reg_dict: Dict[int, Dict]) -> Dict:
     """
-    A helper method that returns the least regret strategy that also valid given a reg diction which is of the fomr
+    A helper method that returns the least regret strategy that is also valid given a reg diction which is of the fomr
     {b_value :
             eve: strategy
             adam: strategy

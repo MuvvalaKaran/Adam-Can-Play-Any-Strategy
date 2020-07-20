@@ -1,8 +1,13 @@
-from src.payoff import payoff_factory
+# main script file that
+
 from src.graph import graph_factory
+from src.payoff import payoff_factory
+from src.strategy_synthesis import RegMinStrSyn
+
 
 if __name__ == "__main__":
-    # build the transition system
+
+    # build a graph
     trans_sys = graph_factory.get('TS',
                                   raw_trans_sys=None,
                                   graph_name="trans_sys",
@@ -11,9 +16,8 @@ if __name__ == "__main__":
                                   built_in_ts_name="three_state_ts",
                                   save_flag=False,
                                   debug=False,
-                                  plot=True,
-                                  human_intervention=1,
-                                  plot_raw_ts=False)
+                                  plot=False,
+                                  human_intervention=1)
 
     # build the dfa
     dfa = graph_factory.get('DFA',
@@ -22,7 +26,7 @@ if __name__ == "__main__":
                             save_flag=False,
                             sc_ltl="!b U c",
                             use_alias=False,
-                            plot=True)
+                            plot=False)
 
     # build the product automaton
     prod = graph_factory.get('ProductGraph',
@@ -30,15 +34,21 @@ if __name__ == "__main__":
                              config_yaml='config/product_automaton',
                              trans_sys=trans_sys,
                              dfa=dfa,
-                             save_flag=True,
+                             save_flag=False,
                              prune=False,
                              debug=False,
                              absorbing=True,
-                             plot=True)
+                             plot=False)
 
-    limsup = payoff_factory.get("mean",
-                                graph=prod)
+    # build the payoff function
+    payoff = payoff_factory.get("mean", graph=prod)
 
-    loop_vals = limsup.cycle_main()
-    for k, v in loop_vals.items():
-        print(f"Play: {k} : val: {v} ")
+    # build an instance of strategy minimization class
+    reg_syn_handle = RegMinStrSyn(prod, payoff)
+
+    w_prime = reg_syn_handle.compute_W_prime()
+
+    g_hat = reg_syn_handle.construct_g_hat(w_prime)
+    # g_hat.plot_graph()
+
+    reg_dict = reg_syn_handle.compute_aval(g_hat, "", w_prime, optimistic=True)

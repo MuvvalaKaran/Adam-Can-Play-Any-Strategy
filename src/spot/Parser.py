@@ -4,6 +4,7 @@ import itertools
 
 class Expression(object):
     name = "Expression"
+
     def __iter__(self):
         raise NotImplementedError()
 
@@ -15,6 +16,7 @@ class Expression(object):
 
     def nnf(self):
         return self
+
 
 class SymbolExpression(Expression):
     def __init__(self, name):
@@ -40,6 +42,7 @@ class SymbolExpression(Expression):
         else:
             return 1
 
+
 class NotSymbolExpression(Expression):
     def __init__(self, name):
         self.name = "!%s" % name
@@ -64,8 +67,10 @@ class NotSymbolExpression(Expression):
         else:
             return 1
 
+
 class TrueExpression(Expression):
     name = "TRUE"
+
     def __init__(self):
         pass
 
@@ -85,8 +90,10 @@ class TrueExpression(Expression):
     def distance(self, label):
         return 0
 
+
 class NotExpression(Expression):
     name = "NOT"
+
     def __init__(self, inner):
         self.inner = inner
 
@@ -119,6 +126,7 @@ class NotExpression(Expression):
             return s
         raise Exception("Unexpected child of NotExpression")
 
+
 class BinExpression(Expression):
     def __init__(self, left, right):
         self.left = left
@@ -136,8 +144,10 @@ class BinExpression(Expression):
         self.right = self.right.nnf()
         return self
 
+
 class ORExpression(BinExpression):
     name = "OR"
+
     def __repr__(self):
         return "ORExpression(%s, %s)" % (str(self.left), str(self.right))
 
@@ -149,8 +159,10 @@ class ORExpression(BinExpression):
         rdist = self.right.distance(label)
         return min([ldist, rdist])
 
+
 class ANDExpression(BinExpression):
     name = "AND"
+
     def __repr__(self):
         return "ANDExpression(%s, %s)" % (str(self.left), str(self.right))
 
@@ -159,6 +171,7 @@ class ANDExpression(BinExpression):
 
     def distance(self, label):
         return self.left.distance(label) + self.right.distance(label)
+
 
 class Parser(object):
     def __init__(self, formula):
@@ -235,6 +248,7 @@ class Parser(object):
         else:
             raise Exception("Expected LPAREN or SYMBOL but got %s" % self.tokens[0])
         return expr
+
 
 def parse(formula):
     parser = Parser(formula)

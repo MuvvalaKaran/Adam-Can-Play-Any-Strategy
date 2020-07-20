@@ -409,6 +409,18 @@ class Graph(abc.ABC):
 
         return _accp_state
 
+    def remove_state_attr(self, state: Tuple, attr: str):
+        """
+        A function to remove an attr associated with a state
+        :param state:
+        :param attr:
+        :return:
+        """
+        try:
+            self._graph.nodes[state].pop(attr, None)
+        except KeyError:
+            raise KeyError(f"Please ensure that {state} is a valid node of graph {self._graph_name}")
+
     def print_edges(self):
         print(self.get_transitions())
 

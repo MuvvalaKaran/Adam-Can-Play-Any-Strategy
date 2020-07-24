@@ -1,4 +1,5 @@
 import networkx as nx
+import math
 
 # local packages
 from .base import Graph
@@ -78,7 +79,7 @@ class TwoPlayerGraph(Graph):
         max_weight: int = -1
         # loop through all the edges and return the max weight
         for _e in self._graph.edges.data("weight"):
-            if int(_e[2]) > max_weight:
+            if _e[2] != math.inf and float(_e[2]) > max_weight:
                 max_weight = int(_e[2])
 
         return str(max_weight)

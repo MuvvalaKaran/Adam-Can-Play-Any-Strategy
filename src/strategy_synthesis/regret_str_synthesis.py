@@ -34,6 +34,108 @@ class RegretMinimizationStrategySynthesis:
         self.graph = graph
         self.payoff = payoff
 
+    def compute_W_prime_finite(self):
+        """
+        A method to compute w_prime function based on Algo 2. pseudocode.
+        This function is a mapping from each edge to a real valued number - b
+
+        b represents the best alternate value that a eve can achieve assuming Adam plays cooperatively in this
+        alternate strategy game. This is slightly different in finite payoffs in that we add that edge (u,v')
+        that we skip in infinite payoff computation. In that case its fine, as it's the edges that we encounter
+        infinitely often. But, for finite payoff computation skipping edge will effect the W_prime. Computation
+
+        Changes : We manually add the edge weight associated with (u, v') that we skip.
+        """
+
+        print("*****************Constructing W_prime*****************")
+        coop_dict = self._compute_cval_finite()
+
+        w_prime: Dict[Tuple: str] = {}
+
+        for edge in self.graph._graph.edges():
+
+            # if the node belongs to adam, then the corresponding edge is assigned -inf
+            if self.graph._graph.nodes(data='player')[edge[0]] == 'adam':
+                w_prime.update({edge: -1 * math.inf})
+
+            else:
+                # a list to save all the alternate strategy cVals from a node and then selecting
+                # the max of it
+                tmp_cvals = []
+                out_going_edge = set(self.graph._graph.out_edges(edge[0])) - set([edge])
+                for alt_e in out_going_edge:
+                    # get the edge weight associated with this edge
+                    curr_w = self.graph.get_edge_weight(alt_e[0],
+                                               alt_e[1])
+
+                    # if the coop_dict == inf or -inf then we don't care
+                    if (coop_dict[alt_e[1]][0] == -math.inf) or (coop_dict[alt_e[1]][0] == math.inf):
+                        tmp_cvals.append(coop_dict[alt_e[1]][0])
+                    # if coop_dict is a finite value, then check if the current edge was already encountered or not
+                    else:
+                        if self.__check_edge_in_cval_play(alt_e, coop_dict[edge[1]][1]):
+                            tmp_cvals.append(coop_dict[alt_e[1]][0])
+                        else:
+                            tmp_cvals.append(coop_dict[alt_e[1]][0] + float(curr_w))
+
+
+                if len(tmp_cvals) != 0:
+                    w_prime.update({edge: min(tmp_cvals)})
+                else:
+                    w_prime.update({edge: coop_dict[edge[1]][0]})
+
+        print(f"the value of b are {set(w_prime.values())}")
+
+        return w_prime
+
+    def __check_edge_in_cval_play(self, edge: Tuple, play: List[Tuple]):
+        """
+        A helper method to check if an edge already exists in the play associated with a node in the coop dict
+        :return: Return True id that exists else false
+        """
+
+        try:
+            u_idx = play.index(edge[0])
+            if play[u_idx + 1] == edge[1]:
+                return True
+        except ValueError:
+            return False
+        return False
+
+    def _compute_cval_finite(self) -> Dict:
+        """
+        A method that pre computes all the cVals for every node in the graph and stores them in a dictionary.
+        :return: A dictionary of cVal stores in dict
+        """
+
+        max_coop_val = defaultdict(lambda: '-1')
+        for n in self.graph._graph.nodes():
+            max_coop_val[n] = (self._compute_max_cval_from_v(n))
+
+        return max_coop_val
+
+    def _compute_max_cval_from_v_finite(self, node: Tuple) -> str:
+        """
+        A helper method to compute the cVal from a given vertex (@node) for a give graph @graph
+        :param graph: The graph on which would like to compute the cVal
+        :param payoff_handle: instance of the @compute_value() to compute the cVal
+        :param node: The node from which we would like to compute the cVal
+        :return: returns a single max value. If multiple plays have the max_value then the very first occurance is returned
+        """
+        tmp_copied_graph = copy.deepcopy(self.graph)
+        tmp_payoff_handle = copy.deepcopy(self.payoff)
+        tmp_payoff_handle.graph = tmp_copied_graph
+        # construct a new graph with node as the initial vertex and compute loop_vals again
+        # 1. remove the current init node of the graph
+        # 2. add @node as the new init vertex
+        # 3. compute the loop-vals for this new graph
+        # tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
+        tmp_payoff_handle.remove_attribute(tmp_payoff_handle.get_init_node(), 'init')
+        tmp_payoff_handle.set_init_node(node)
+        tmp_payoff_handle.cycle_main()
+
+        return tmp_payoff_handle.compute_cVal(node)
+
     def compute_W_prime(self):
         """
         A method to compute w_prime function based on Algo 2. pseudocode.
@@ -173,7 +275,7 @@ class RegretMinimizationStrategySynthesis:
         g_hat.add_weighted_edges_from([('v0', 'v0', '0'),
                                        ('v0', 'v1', '0'),
                                        ('vT', 'vT', str(-2 * float(self.graph.get_max_weight()) - 1))])
-
+                                       # ('vT', 'vT', str(math.inf))])
         return g_hat
 
     def construct_g_hat(self,
@@ -200,7 +302,7 @@ class RegretMinimizationStrategySynthesis:
         org_init_nodes = self.graph.get_initial_states()
 
         # construct g_b
-        for b in w_set:
+        for b in w_set - {math.inf}:
             self._construct_g_b(G_hat, b, w_prime, org_init_nodes, accp_nodes)
 
         # add edges between v1 of G_hat and init nodes(v1_b/ ((v1, 1), b) of graph G_b with edge weights 0
@@ -267,7 +369,9 @@ class RegretMinimizationStrategySynthesis:
                      w_prime: Dict,
                      optimistic: bool = False,
                      plot_all: bool = False,
-                     bypass_implementation: bool = False) -> Dict[str, Dict]:
+                     bypass_implementation: bool = False,
+                     print_reg: bool = False,
+                     not_validity_check : bool = False) -> Dict[str, Dict]:
         """
         A function to compute the regret value according to algorithm 4 : Reg = -1 * Val(.,.) on g_hat
         :param g_hat: a directed multi-graph constructed using construct_g_hat()
@@ -291,20 +395,22 @@ class RegretMinimizationStrategySynthesis:
         str_dict, reg_flag = self._check_non_zero_regret(graph_g_hat=g_hat,
                                                          w_prime=w_prime,
                                                          str_dict=str_dict,
-                                                         optimistic=optimistic)
+                                                         optimistic=optimistic,
+                                                         not_validity_check=not_validity_check)
         if reg_flag:
             print("A non-zero regret exists and thus adam will play from v0 to v1 in g_hat")
         else:
             print("A non-zero regret does NOT exist and thus adam will play v0 to v0")
             if bypass_implementation:
-                # after computing all the reg value find the str with the least reg
-                min_reg_b = min(str_dict, key=lambda key: str_dict[key]['reg'])
-
-                # return the corresponding str and reg value
-                final_str_dict.update({'reg': str_dict[min_reg_b]['reg']})
-                final_str_dict.update({'eve': str_dict[min_reg_b]['eve']})
-                final_str_dict.update({'adam': str_dict[min_reg_b]['adam']})
-                return final_str_dict
+                # # after computing all the reg value find the str with the least reg
+                # min_reg_b = min(str_dict, key=lambda key: str_dict[key]['reg'])
+                #
+                # # return the corresponding str and reg value
+                # final_str_dict.update({'reg': str_dict[min_reg_b]['reg']})
+                # final_str_dict.update({'eve': str_dict[min_reg_b]['eve']})
+                # final_str_dict.update({'adam': str_dict[min_reg_b]['adam']})
+                # return final_str_dict
+                return str_dict
             else:
                 return {}
 
@@ -327,7 +433,7 @@ class RegretMinimizationStrategySynthesis:
         # update strategy for each node
         # 1. adam picks the edge with the min value
         # 2. eve picks the edge with the max value
-        for b in set(w_prime.values()) - {-1 * math.inf}:
+        for b in set(w_prime.values()) - {-1 * math.inf} - {math.inf}:
             # if we haven't computed a strategy for this b value then proceed ahead
             if str_dict.get(b) is None:
 
@@ -356,8 +462,9 @@ class RegretMinimizationStrategySynthesis:
 
                 str_dict[b]['reg'] = reg
 
-            # check validity for every strategy in g_b(s)
-            self._check_str_validity(str_dict[b])
+            if not_validity_check:
+                # check validity for every strategy in g_b(s)
+                self._check_str_validity(str_dict[b], not_validity_check)
 
         # create a tmp dict of strategies that have reg <= reg_threshold
         __tmp_dict = {}
@@ -367,12 +474,30 @@ class RegretMinimizationStrategySynthesis:
 
         if len(list(__tmp_dict.keys())) == 0:
             print(f"There does not exist any strategy within the given threshold: {reg_threshold}")
-            return {}
+            # return {}
+
+        # sanity check to replace all reg with -inf value with +inf
+        self._str_dict_sanity_check(str_dict)
+
+        if print_reg:
+            self._print_reg_values(str_dict, plot_all=plot_all)
 
         if plot_all:
             return str_dict
         else:
             return self._get_least_reg_str(reg_dict=str_dict)
+
+    def _str_dict_sanity_check(self, str_dict):
+
+        # if plot_all:
+        if len(list(str_dict.keys())) != 0:
+            for k, v in str_dict.items():
+                if v['reg'] == -1 * math.inf:
+                    v['reg'] = math.inf
+        # else:
+        #     if len(list(str_dict.keys())) != 0:
+        #         if str_dict['reg'] == -1 * math.inf:
+        #             str_dict['reg'] = math.inf
 
     def _get_least_reg_str(self, reg_dict: Dict[float, Dict]) -> Dict:
         """
@@ -406,7 +531,7 @@ class RegretMinimizationStrategySynthesis:
                     "one transition from eve's state to the terminal state vT"
                 return str_dict
 
-    def _check_str_validity(self, str_dict: Dict) -> None:
+    def _check_str_validity(self, str_dict: Dict, not_validity_check: bool = False) -> None:
         """
         A helper to add update the flag - true if the given strategy is valid else false
         :param str: A dictionary which is a mapping from each state to the next state
@@ -420,13 +545,14 @@ class RegretMinimizationStrategySynthesis:
         # NOTE: there is an exception that we manually the vT to vT loop.
         str = {**str_dict['eve'], **str_dict['adam']}
         str_dict.update({'valid': True})
-        for k, v in str.items():
-            if 'vT' in v:
-                if k == 'vT':
-                    continue
-                else:
-                    str_dict['valid'] = False
-                    return
+        if not not_validity_check :
+            for k, v in str.items():
+                if 'vT' in v:
+                    if k == 'vT':
+                        continue
+                    else:
+                        str_dict['valid'] = False
+                        return
 
     def _update_strategy_g_hat(self,
                                b: str,
@@ -483,14 +609,15 @@ class RegretMinimizationStrategySynthesis:
                                graph_g_hat: TwoPlayerGraph,
                                w_prime,
                                str_dict,
-                               optimistic: bool = False) -> Tuple[Dict[float, Dict], bool]:
+                               optimistic: bool = False,
+                               not_validity_check: bool = False) -> Tuple[Dict[float, Dict], bool]:
         """
         A helper method to check if there exist non-zero regret in the game g_hat. If yes return true else False
         :param graph_g_hat: graph g_hat on which we would like to compute the regret value
         :param w_prime: the set of bs
         :return: A Tuple cflag; True if Reg > 0 else False
         """
-        for b in set(w_prime.values()) - {-1 * math.inf}:
+        for b in set(w_prime.values()) - {-1 * math.inf} - {math.inf}:
 
             _eve_str, _adam_str = self._update_strategy_g_hat(b,
                                                               g_hat=graph_g_hat,
@@ -516,8 +643,9 @@ class RegretMinimizationStrategySynthesis:
 
             str_dict[b]['reg'] = reg
 
-            # check validity for every strategy in g_b(s)
-            self._check_str_validity(str_dict[b])
+            if not_validity_check:
+                # check validity for every strategy in g_b(s)
+                self._check_str_validity(str_dict[b], not_validity_check)
 
             if reg > 0:
                 return str_dict, True
@@ -544,7 +672,7 @@ class RegretMinimizationStrategySynthesis:
             next_node = random.choice([k[1] for k in wt_list if wt_list[k] == threshold_value])
             return [next_node]
 
-    def _get_set_of_valid_states(self, str_dict: Dict) -> List[Dict]:
+    def _get_set_of_valid_strs(self, str_dict: Dict) -> List[Dict]:
         """
         A helper method that return a list of set of valid strategies.
 
@@ -663,7 +791,7 @@ class RegretMinimizationStrategySynthesis:
 
         g_hat.set_edge_attribute('strategy', False)
 
-        valid_strs = self._get_set_of_valid_states(str_dict=str_dict)
+        valid_strs = self._get_set_of_valid_strs(str_dict=str_dict)
 
         for str in valid_strs:
             if only_eve:
@@ -712,6 +840,22 @@ class RegretMinimizationStrategySynthesis:
         if plot:
             g_hat.plot_graph()
             self.graph.plot_graph()
+
+    def _print_reg_values(self, str_dict, plot_all: bool = False):
+        """
+        A helper method to print the regret value for strategies in all g_b.
+        :return:
+        """
+        # if plot_all:
+        if len(list(str_dict.keys())) != 0:
+            for k, v in str_dict.items():
+                print(f"Reg Value for b = {k} is : {v['reg']} \n")
+        # else:
+        #     if len(list(str_dict.keys())) != 0:
+        #         b: float = str_dict['v1'][1]
+        #         print(f"Reg Value for b = {b} is : {str_dict['reg']} \n")
+                # for k, v in str_dict.items():
+                #     print(f"{k}: {v['reg']}")
 
 class ComputePlaysAndVals:
     """

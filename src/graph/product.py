@@ -1,5 +1,6 @@
 import networkx as nx
 import warnings
+import math
 
 from typing import List, Tuple, Dict, Set
 from collections import deque, defaultdict
@@ -76,10 +77,10 @@ class ProductAutomaton(TwoPlayerGraph):
                         _v_prod_node = self.composition(_v_ts_node, _v_a_node)
 
                         # get relevant details that need to be added to the composed node and edge
-                        ap, weight, action = self._get_edge_and_node_data( _u_ts_node,
-                                                                           _v_ts_node,
-                                                                           _u_a_node,
-                                                                           _v_a_node)
+                        ap, weight, action = self._get_edge_and_node_data(_u_ts_node,
+                                                                          _v_ts_node,
+                                                                          _u_a_node,
+                                                                          _v_a_node)
 
                         # determine if a transition is possible or not, if yes then add that edge
                         exists, _v_prod_node = self._check_transition(_u_ts_node,
@@ -137,7 +138,6 @@ class ProductAutomaton(TwoPlayerGraph):
                                                                                 action=action,
                                                                                 obs=ap)
                         if exists:
-
                             self._add_transition_absorbing(_u_prod_node,
                                                            _v_prod_node,
                                                            weight=weight,
@@ -167,12 +167,13 @@ class ProductAutomaton(TwoPlayerGraph):
                 else:
                     self._graph.add_weighted_edges_from([(_u_prod_node,
                                                           _v_prod_node,
+                                                          # math.inf)])
                                                           max_weight)])
-                                                        # str(-1 * float(max_w)))])
+                    # str(-1 * float(max_w)))])
             else:
                 self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node,
                                                       weight)])
-                                                    # str(-1* float(weight)))])
+                # str(-1* float(weight)))])
 
     def _check_transition(self, _u_ts_node,
                           _v_ts_node,
@@ -243,7 +244,6 @@ class ProductAutomaton(TwoPlayerGraph):
                 _v_prod_node = self.composition(_v_ts_node, _v_a_node)
 
             return True, _v_prod_node
-
 
     def _get_edge_and_node_data(self, _u_ts_node, _v_ts_node, _u_auto_node, _v_auto_node) -> Tuple:
         """
@@ -370,14 +370,17 @@ class ProductAutomaton(TwoPlayerGraph):
     def _sanity_check(self, debug: bool = False):
         # check is the graph is total or not by loop through every node and add a self-loop of weight max(W)
         # to every node that does not  have a successor
-        max_w : str = self._trans_sys.get_max_weight()
+        max_w: str = self._trans_sys.get_max_weight()
         for _n in self._graph.nodes():
             if len(list(self._graph.successors(_n))) == 0:
                 if debug:
                     print("=====================================")
                     print(f"Adding self loop of weight - {max_w} to the node {_n}")
                     print("=====================================")
-                self._graph.add_weighted_edges_from([(_n, _n, str(-1 * float(max_w)))])
+                self._graph.add_weighted_edges_from([(_n,
+                                                      _n,
+                                                      math.inf)])
+                # str(-1 * float(max_w)))])
 
     def prune_edges(self, debug):
         # A helper function to remove edges without the "prune" attribute
@@ -445,7 +448,7 @@ class ProductBuilder(Builder):
                                           config_name=config_yaml,
                                           save_flag=save_flag)
 
-        if trans_sys != None and dfa != None:
+        if trans_sys is not None and dfa is not None:
             self._instance.construct_graph()
             self._instance.compose_graph(absorbing=absorbing)
 

@@ -1,0 +1,646 @@
+graph:
+  edges:
+  - !!python/tuple
+    - &id001 !!python/tuple
+      - &id002 !!python/tuple
+        - s1
+        - 0
+      - '0'
+    - &id033 !!python/tuple
+      - &id003 !!python/tuple
+        - h12
+        - '0'
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - *id001
+    - &id005 !!python/tuple
+      - &id008 !!python/tuple
+        - h13
+        - '0'
+      - '3'
+    - weight: '3'
+  - !!python/tuple
+    - &id004 !!python/tuple
+      - *id002
+      - '3'
+    - &id035 !!python/tuple
+      - *id003
+      - '3'
+    - weight: '3'
+  - !!python/tuple
+    - *id004
+    - *id005
+    - weight: '3'
+  - !!python/tuple
+    - &id006 !!python/tuple
+      - *id002
+      - '2'
+    - &id036 !!python/tuple
+      - *id003
+      - '2'
+    - weight: '2'
+  - !!python/tuple
+    - *id006
+    - *id005
+    - weight: '3'
+  - !!python/tuple
+    - &id007 !!python/tuple
+      - *id002
+      - '5'
+    - &id038 !!python/tuple
+      - *id003
+      - '5'
+    - weight: '5'
+  - !!python/tuple
+    - *id007
+    - &id042 !!python/tuple
+      - *id008
+      - '5'
+    - weight: '5'
+  - !!python/tuple
+    - &id009 !!python/tuple
+      - &id010 !!python/tuple
+        - s1
+        - 1
+      - '0'
+    - &id026 !!python/tuple
+      - &id011 !!python/tuple
+        - s2
+        - 1
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - *id009
+    - &id013 !!python/tuple
+      - &id016 !!python/tuple
+        - s3
+        - 1
+      - '3'
+    - weight: '3'
+  - !!python/tuple
+    - &id012 !!python/tuple
+      - *id010
+      - '3'
+    - &id027 !!python/tuple
+      - *id011
+      - '3'
+    - weight: '3'
+  - !!python/tuple
+    - *id012
+    - *id013
+    - weight: '3'
+  - !!python/tuple
+    - &id014 !!python/tuple
+      - *id010
+      - '2'
+    - &id028 !!python/tuple
+      - *id011
+      - '2'
+    - weight: '2'
+  - !!python/tuple
+    - *id014
+    - *id013
+    - weight: '3'
+  - !!python/tuple
+    - &id015 !!python/tuple
+      - *id010
+      - '5'
+    - &id029 !!python/tuple
+      - *id011
+      - '5'
+    - weight: '5'
+  - !!python/tuple
+    - *id015
+    - &id030 !!python/tuple
+      - *id016
+      - '5'
+    - weight: '5'
+  - !!python/tuple
+    - &id017 !!python/tuple
+      - &id018 !!python/tuple
+        - s2
+        - 0
+      - '0'
+    - &id022 !!python/tuple
+      - &id019 !!python/tuple
+        - h21
+        - '0'
+      - '2'
+    - weight: '2'
+  - !!python/tuple
+    - *id017
+    - &id021 !!python/tuple
+      - &id025 !!python/tuple
+        - h23
+        - '0'
+      - '3'
+    - weight: '3'
+  - !!python/tuple
+    - &id020 !!python/tuple
+      - *id018
+      - '3'
+    - &id045 !!python/tuple
+      - *id019
+      - '3'
+    - weight: '3'
+  - !!python/tuple
+    - *id020
+    - *id021
+    - weight: '3'
+  - !!python/tuple
+    - &id023 !!python/tuple
+      - *id018
+      - '2'
+    - *id022
+    - weight: '2'
+  - !!python/tuple
+    - *id023
+    - *id021
+    - weight: '3'
+  - !!python/tuple
+    - &id024 !!python/tuple
+      - *id018
+      - '5'
+    - &id046 !!python/tuple
+      - *id019
+      - '5'
+    - weight: '5'
+  - !!python/tuple
+    - *id024
+    - &id049 !!python/tuple
+      - *id025
+      - '5'
+    - weight: '5'
+  - !!python/tuple
+    - *id026
+    - *id014
+    - weight: '2'
+  - !!python/tuple
+    - *id026
+    - *id013
+    - weight: '3'
+  - !!python/tuple
+    - *id027
+    - *id012
+    - weight: '3'
+  - !!python/tuple
+    - *id027
+    - *id013
+    - weight: '3'
+  - !!python/tuple
+    - *id028
+    - *id014
+    - weight: '2'
+  - !!python/tuple
+    - *id028
+    - *id013
+    - weight: '3'
+  - !!python/tuple
+    - *id029
+    - *id015
+    - weight: '5'
+  - !!python/tuple
+    - *id029
+    - *id030
+    - weight: '5'
+  - !!python/tuple
+    - &id054 !!python/tuple
+      - &id031 !!python/tuple
+        - s3
+        - 0
+      - '0'
+    - &id032 !!python/tuple
+      - &id050 !!python/tuple
+        - h31
+        - '0'
+      - '5'
+    - weight: '5'
+  - !!python/tuple
+    - &id040 !!python/tuple
+      - *id031
+      - '3'
+    - *id032
+    - weight: '5'
+  - !!python/tuple
+    - &id055 !!python/tuple
+      - *id031
+      - '2'
+    - *id032
+    - weight: '5'
+  - !!python/tuple
+    - &id043 !!python/tuple
+      - *id031
+      - '5'
+    - *id032
+    - weight: '5'
+  - !!python/tuple
+    - &id034 !!python/tuple
+      - *id016
+      - '0'
+    - *id015
+    - weight: '5'
+  - !!python/tuple
+    - *id013
+    - *id015
+    - weight: '5'
+  - !!python/tuple
+    - &id037 !!python/tuple
+      - *id016
+      - '2'
+    - *id015
+    - weight: '5'
+  - !!python/tuple
+    - *id030
+    - *id015
+    - weight: '5'
+  - !!python/tuple
+    - *id033
+    - *id009
+    - weight: '0'
+  - !!python/tuple
+    - *id033
+    - *id017
+    - weight: '0'
+  - !!python/tuple
+    - *id033
+    - *id034
+    - weight: '0'
+  - !!python/tuple
+    - *id035
+    - *id012
+    - weight: '3'
+  - !!python/tuple
+    - *id035
+    - *id020
+    - weight: '3'
+  - !!python/tuple
+    - *id035
+    - *id013
+    - weight: '3'
+  - !!python/tuple
+    - *id036
+    - *id014
+    - weight: '2'
+  - !!python/tuple
+    - *id036
+    - *id023
+    - weight: '2'
+  - !!python/tuple
+    - *id036
+    - *id037
+    - weight: '2'
+  - !!python/tuple
+    - *id038
+    - *id015
+    - weight: '5'
+  - !!python/tuple
+    - *id038
+    - *id024
+    - weight: '5'
+  - !!python/tuple
+    - *id038
+    - *id030
+    - weight: '5'
+  - !!python/tuple
+    - &id039 !!python/tuple
+      - *id008
+      - '0'
+    - *id009
+    - weight: '0'
+  - !!python/tuple
+    - *id039
+    - *id026
+    - weight: '0'
+  - !!python/tuple
+    - *id039
+    - *id040
+    - weight: '3'
+  - !!python/tuple
+    - *id005
+    - *id012
+    - weight: '3'
+  - !!python/tuple
+    - *id005
+    - *id027
+    - weight: '3'
+  - !!python/tuple
+    - *id005
+    - *id040
+    - weight: '3'
+  - !!python/tuple
+    - &id041 !!python/tuple
+      - *id008
+      - '2'
+    - *id014
+    - weight: '2'
+  - !!python/tuple
+    - *id041
+    - *id028
+    - weight: '2'
+  - !!python/tuple
+    - *id041
+    - *id040
+    - weight: '3'
+  - !!python/tuple
+    - *id042
+    - *id015
+    - weight: '5'
+  - !!python/tuple
+    - *id042
+    - *id029
+    - weight: '5'
+  - !!python/tuple
+    - *id042
+    - *id043
+    - weight: '5'
+  - !!python/tuple
+    - &id044 !!python/tuple
+      - *id019
+      - '0'
+    - *id006
+    - weight: '2'
+  - !!python/tuple
+    - *id044
+    - *id026
+    - weight: '0'
+  - !!python/tuple
+    - *id044
+    - *id034
+    - weight: '0'
+  - !!python/tuple
+    - *id045
+    - *id004
+    - weight: '3'
+  - !!python/tuple
+    - *id045
+    - *id027
+    - weight: '3'
+  - !!python/tuple
+    - *id045
+    - *id013
+    - weight: '3'
+  - !!python/tuple
+    - *id022
+    - *id006
+    - weight: '2'
+  - !!python/tuple
+    - *id022
+    - *id028
+    - weight: '2'
+  - !!python/tuple
+    - *id022
+    - *id037
+    - weight: '2'
+  - !!python/tuple
+    - *id046
+    - *id007
+    - weight: '5'
+  - !!python/tuple
+    - *id046
+    - *id029
+    - weight: '5'
+  - !!python/tuple
+    - *id046
+    - *id030
+    - weight: '5'
+  - !!python/tuple
+    - &id047 !!python/tuple
+      - *id025
+      - '0'
+    - *id009
+    - weight: '0'
+  - !!python/tuple
+    - *id047
+    - *id026
+    - weight: '0'
+  - !!python/tuple
+    - *id047
+    - *id040
+    - weight: '3'
+  - !!python/tuple
+    - *id021
+    - *id012
+    - weight: '3'
+  - !!python/tuple
+    - *id021
+    - *id027
+    - weight: '3'
+  - !!python/tuple
+    - *id021
+    - *id040
+    - weight: '3'
+  - !!python/tuple
+    - &id048 !!python/tuple
+      - *id025
+      - '2'
+    - *id014
+    - weight: '2'
+  - !!python/tuple
+    - *id048
+    - *id028
+    - weight: '2'
+  - !!python/tuple
+    - *id048
+    - *id040
+    - weight: '3'
+  - !!python/tuple
+    - *id049
+    - *id015
+    - weight: '5'
+  - !!python/tuple
+    - *id049
+    - *id029
+    - weight: '5'
+  - !!python/tuple
+    - *id049
+    - *id043
+    - weight: '5'
+  - !!python/tuple
+    - &id051 !!python/tuple
+      - *id050
+      - '0'
+    - *id007
+    - weight: '5'
+  - !!python/tuple
+    - *id051
+    - *id026
+    - weight: '0'
+  - !!python/tuple
+    - *id051
+    - *id034
+    - weight: '0'
+  - !!python/tuple
+    - &id052 !!python/tuple
+      - *id050
+      - '3'
+    - *id007
+    - weight: '5'
+  - !!python/tuple
+    - *id052
+    - *id027
+    - weight: '3'
+  - !!python/tuple
+    - *id052
+    - *id013
+    - weight: '3'
+  - !!python/tuple
+    - &id053 !!python/tuple
+      - *id050
+      - '2'
+    - *id007
+    - weight: '5'
+  - !!python/tuple
+    - *id053
+    - *id028
+    - weight: '2'
+  - !!python/tuple
+    - *id053
+    - *id037
+    - weight: '2'
+  - !!python/tuple
+    - *id032
+    - *id007
+    - weight: '5'
+  - !!python/tuple
+    - *id032
+    - *id029
+    - weight: '5'
+  - !!python/tuple
+    - *id032
+    - *id030
+    - weight: '5'
+  vertices:
+  - !!python/tuple
+    - *id001
+    - player: eve
+  - !!python/tuple
+    - *id004
+    - player: eve
+  - !!python/tuple
+    - *id006
+    - player: eve
+  - !!python/tuple
+    - *id007
+    - player: eve
+  - !!python/tuple
+    - *id009
+    - player: eve
+  - !!python/tuple
+    - *id012
+    - player: eve
+  - !!python/tuple
+    - *id014
+    - player: eve
+  - !!python/tuple
+    - *id015
+    - player: eve
+  - !!python/tuple
+    - *id017
+    - player: eve
+  - !!python/tuple
+    - *id020
+    - player: eve
+  - !!python/tuple
+    - *id023
+    - player: eve
+  - !!python/tuple
+    - *id024
+    - init: true
+      player: eve
+  - !!python/tuple
+    - *id026
+    - player: eve
+  - !!python/tuple
+    - *id027
+    - player: eve
+  - !!python/tuple
+    - *id028
+    - player: eve
+  - !!python/tuple
+    - *id029
+    - player: eve
+  - !!python/tuple
+    - *id054
+    - player: eve
+  - !!python/tuple
+    - *id040
+    - player: eve
+  - !!python/tuple
+    - *id055
+    - player: eve
+  - !!python/tuple
+    - *id043
+    - player: eve
+  - !!python/tuple
+    - *id034
+    - player: eve
+  - !!python/tuple
+    - *id013
+    - player: eve
+  - !!python/tuple
+    - *id037
+    - player: eve
+  - !!python/tuple
+    - *id030
+    - player: eve
+  - !!python/tuple
+    - *id033
+    - player: adam
+  - !!python/tuple
+    - *id035
+    - player: adam
+  - !!python/tuple
+    - *id036
+    - player: adam
+  - !!python/tuple
+    - *id038
+    - player: adam
+  - !!python/tuple
+    - *id039
+    - player: adam
+  - !!python/tuple
+    - *id005
+    - player: adam
+  - !!python/tuple
+    - *id041
+    - player: adam
+  - !!python/tuple
+    - *id042
+    - player: adam
+  - !!python/tuple
+    - *id044
+    - player: adam
+  - !!python/tuple
+    - *id045
+    - player: adam
+  - !!python/tuple
+    - *id022
+    - player: adam
+  - !!python/tuple
+    - *id046
+    - player: adam
+  - !!python/tuple
+    - *id047
+    - player: adam
+  - !!python/tuple
+    - *id021
+    - player: adam
+  - !!python/tuple
+    - *id048
+    - player: adam
+  - !!python/tuple
+    - *id049
+    - player: adam
+  - !!python/tuple
+    - *id051
+    - player: adam
+  - !!python/tuple
+    - *id052
+    - player: adam
+  - !!python/tuple
+    - *id053
+    - player: adam
+  - !!python/tuple
+    - *id032
+    - player: adam

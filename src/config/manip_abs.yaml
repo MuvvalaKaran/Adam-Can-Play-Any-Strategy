@@ -1,0 +1,4552 @@
+# number of symbols in TS alphabet
+alphabet_size: 840 
+
+# number of states in TS state space
+num_states: 144 
+
+# number of discrete state observations in TS obs. space
+num_obs: 3 
+
+# unique start state string label of TS
+start_state: '1' 
+
+nodes:
+
+   '0':
+      observation: 'P1rP2t'
+
+   '1':
+      observation: 'P2l'
+
+   '2':
+      observation: 'P2l'
+
+   '3':
+      observation: 'P2rP1l'
+
+   '4':
+      observation: 'P2lP0r'
+
+   '5':
+      observation: 'P2tP1l'
+
+   '6':
+      observation: 'P1t'
+
+   '7':
+      observation: 'P1t'
+
+   '8':
+      observation: 'P1rP0tP2l'
+
+   '9':
+      observation: 'P1rP0l'
+
+   '10':
+      observation: 'P0tP1l'
+
+   '11':
+      observation: 'P0r'
+
+   '12':
+      observation: 'P0r'
+
+   '13':
+      observation: 'P0l'
+
+   '14':
+      observation: 'P0l'
+
+   '15':
+      observation: 'P2tP0l'
+
+   '16':
+      observation: 'P0lP1t'
+
+   '17':
+      observation: 'P1rP2l'
+
+   '18':
+      observation: 'P0t'
+
+   '19':
+      observation: 'P2tP0r'
+
+   '20':
+      observation: 'P0t'
+
+   '21':
+      observation: 'P1t'
+
+   '22':
+      observation: 'P1t'
+
+   '23':
+      observation: 'P0tP1l'
+
+   '24':
+      observation: 'P2tP0r'
+
+   '25':
+      observation: 'P2lP1t'
+
+   '26':
+      observation: 'P2rP1l'
+
+   '27':
+      observation: 'P2rP0lP1t'
+
+   '28':
+      observation: 'P1rP2l'
+
+   '29':
+      observation: 'P2lP0r'
+
+   '30':
+      observation: 'P1rP0l'
+
+   '31':
+      observation: 'P1rP0t'
+
+   '32':
+      observation: 'P1rP2t'
+
+   '33':
+      observation: 'P2r'
+
+   '34':
+      observation: 'P2r'
+
+   '35':
+      observation: 'P1rP2tP0l'
+
+   '36':
+      observation: 'P0rP1l'
+
+   '37':
+      observation: 'P2rP1l'
+
+   '38':
+      observation: 'P0rP1t'
+
+   '39':
+      observation: 'P2lP0t'
+
+   '40':
+      observation: 'P1rP0tP2l'
+
+   '41':
+      observation: 'P0rP1l'
+
+   '42':
+      observation: 'P1rP0t'
+
+   '43':
+      observation: 'P2t'
+
+   '44':
+      observation: 'P2t'
+
+   '45':
+      observation: 'P1rP2t'
+
+   '46':
+      observation: 'P0tP1l'
+
+   '47':
+      observation: 'P2rP0tP1l'
+
+   '48':
+      observation: 'P2tP0rP1l'
+
+   '49':
+      observation: 'P1l'
+
+   '50':
+      observation: 'P1l'
+
+   '51':
+      observation: 'P0tP1l'
+
+   '52':
+      observation: 'P0lP1t'
+
+   '53':
+      observation: 'P2lP0r'
+
+   '54':
+      observation: 'P2rP1t'
+
+   '55':
+      observation: 'P2tP1l'
+
+   '56':
+      observation: 'P0rP1t'
+
+   '57':
+      observation: 'P2tP0rP1l'
+
+   '58':
+      observation: 'P1l'
+
+   '59':
+      observation: 'P1l'
+
+   '60':
+      observation: 'P2rP1l'
+
+   '61':
+      observation: 'P1r'
+
+   '62':
+      observation: 'P1r'
+
+   '63':
+      observation: 'P2tP0l'
+
+   '64':
+      observation: 'P1rP2tP0l'
+
+   '65':
+      observation: 'P0rP1l'
+
+   '66':
+      observation: 'P2lP0t'
+
+   '67':
+      observation: 'P2tP1l'
+
+   '68':
+      observation: 'P2tP0rP1l'
+
+   '69':
+      observation: 'P2rP0t'
+
+   '70':
+      observation: 'P1rP2l'
+
+   '71':
+      observation: 'P2lP0r'
+
+   '72':
+      observation: 'P0t'
+
+   '73':
+      observation: 'P0t'
+
+   '74':
+      observation: 'P2lP0rP1t'
+
+   '75':
+      observation: 'P1rP2l'
+
+   '76':
+      observation: 'P2rP0lP1t'
+
+   '77':
+      observation: 'P2tP0r'
+
+   '78':
+      observation: 'P2rP0l'
+
+   '79':
+      observation: 'P2tP0l'
+
+   '80':
+      observation: 'P0l'
+
+   '81':
+      observation: 'P0l'
+
+   '82':
+      observation: 'P1rP0t'
+
+   '83':
+      observation: 'P0rP1t'
+
+   '84':
+      observation: 'P2rP0t'
+
+   '85':
+      observation: 'P1rP0t'
+
+   '86':
+      observation: 'P2rP0l'
+
+   '87':
+      observation: 'P2rP1l'
+
+   '88':
+      observation: 'P0tP1l'
+
+   '89':
+      observation: 'P2tP0l'
+
+   '90':
+      observation: 'P0rP1l'
+
+   '91':
+      observation: 'P2rP0t'
+
+   '92':
+      observation: 'P1rP0l'
+
+   '93':
+      observation: 'P2rP1t'
+
+   '94':
+      observation: 'P2r'
+
+   '95':
+      observation: 'P2r'
+
+   '96':
+      observation: 'P0lP1t'
+
+   '97':
+      observation: 'P2lP0t'
+
+   '98':
+      observation: 'P1rP0tP2l'
+
+   '99':
+      observation: 'P2rP1t'
+
+   '100':
+      observation: 'P0rP1l'
+
+   '101':
+      observation: 'P2tP0r'
+
+   '102':
+      observation: 'P2lP0t'
+
+   '103':
+      observation: 'P1rP2t'
+
+   '104':
+      observation: 'P1rP0t'
+
+   '105':
+      observation: 'P1rP0l'
+
+   '106':
+      observation: 'P2lP1t'
+
+   '107':
+      observation: 'P2rP0tP1l'
+
+   '108':
+      observation: 'P0lP1t'
+
+   '109':
+      observation: 'P2rP1t'
+
+   '110':
+      observation: 'P2lP1t'
+
+   '111':
+      observation: 'P1rP2t'
+
+   '112':
+      observation: 'P2tP0r'
+
+   '113':
+      observation: 'P2tP1l'
+
+   '114':
+      observation: 'P2rP0l'
+
+   '115':
+      observation: 'P0r'
+
+   '116':
+      observation: 'P2lP0rP1t'
+
+   '117':
+      observation: 'P0r'
+
+   '118':
+      observation: 'P0lP1t'
+
+   '119':
+      observation: 'P2lP1t'
+
+   '120':
+      observation: 'P2rP1t'
+
+   '121':
+      observation: 'P2tP0l'
+
+   '122':
+      observation: 'P2rP0t'
+
+   '123':
+      observation: 'P1rP0l'
+
+   '124':
+      observation: 'P2rP0l'
+
+   '125':
+      observation: 'P1rP2tP0l'
+
+   '126':
+      observation: 'P2t'
+
+   '127':
+      observation: 'P2t'
+
+   '128':
+      observation: 'P0rP1t'
+
+   '129':
+      observation: 'P2rP0t'
+
+   '130':
+      observation: 'P2tP1l'
+
+   '131':
+      observation: 'P2lP1t'
+
+   '132':
+      observation: 'P2rP0lP1t'
+
+   '133':
+      observation: 'P2rP0l'
+
+   '134':
+      observation: 'P2l'
+
+   '135':
+      observation: 'P2lP0r'
+
+   '136':
+      observation: 'P1rP2l'
+
+   '137':
+      observation: 'P2lP0t'
+
+   '138':
+      observation: 'P0rP1t'
+
+   '139':
+      observation: 'P2l'
+
+   '140':
+      observation: 'P2lP0rP1t'
+
+   '141':
+      observation: 'P1r'
+
+   '142':
+      observation: 'P1r'
+
+   '143':
+      observation: 'P2rP0tP1l'
+
+edges: 
+
+   '0':
+
+      '0'
+         symbols:
+           - 'transit_p0e_p1r_pt'
+
+
+      '45'
+         symbols:
+           - 'grab_p0e_p1r_pt'
+
+
+      '111'
+         symbols:
+           - 'grab_p0e_p1r_pt'
+
+   '1':
+
+      '0'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '8'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '35'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '70'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '82'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '123'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+   '2':
+
+      '29'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '38'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '48'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '65'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '77'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '116'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+   '3':
+
+      '1'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '33'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '43'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '94'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '126'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '139'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+   '4':
+
+      '29'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '69'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '77'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '89'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '114'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '137'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+   '5':
+
+      '5'
+         symbols:
+           - 'transit_p0e_p1l_pt'
+
+
+      '55'
+         symbols:
+           - 'grab_p0e_p1l_pt'
+
+
+      '67'
+         symbols:
+           - 'grab_p0e_p1l_pt'
+
+   '6':
+
+      '27'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '60'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '69'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '99'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '114'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '143'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+   '7':
+
+      '29'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '38'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '48'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '65'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '77'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '116'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+   '8':
+
+      '8'
+         symbols:
+           - 'transit_p0t_p1r_pl'
+
+
+      '40'
+         symbols:
+           - 'grab_p0t_p1r_pl'
+
+
+      '98'
+         symbols:
+           - 'grab_p0t_p1r_pl'
+
+   '9':
+
+      '38'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '51'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '52'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '65'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '82'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '123'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+   '10':
+
+      '38'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '51'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '52'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '65'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '82'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '123'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+   '11':
+
+      '0'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '5'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '35'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '48'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '77'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '89'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+   '12':
+
+      '27'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '38'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '52'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '99'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '116'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '131'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+   '13':
+
+      '0'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '5'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '35'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '48'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '77'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '89'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+   '14':
+
+      '27'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '38'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '52'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '99'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '116'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '131'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+   '15':
+
+      '29'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '69'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '77'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '89'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '114'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '137'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+   '16':
+
+      '27'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '60'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '69'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '99'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '114'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '143'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+   '17':
+
+      '28'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '32'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '62'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '75'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '103'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '142'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+   '18':
+
+      '27'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '60'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '69'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '99'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '114'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '143'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+   '19':
+
+      '4'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '12'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '24'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '53'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '112'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '117'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+   '20':
+
+      '0'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '8'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '35'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '70'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '82'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '123'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+   '21':
+
+      '8'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '29'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '70'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '116'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '131'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+
+      '137'
+         symbols:
+           - 'drop_p0e_p1t_pg'
+
+   '22':
+
+      '27'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '35'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '52'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '89'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '114'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+
+      '123'
+         symbols:
+           - 'drop_p0g_p1t_pe'
+
+   '23':
+
+      '37'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '50'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '59'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '87'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '113'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '130'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+   '24':
+
+      '29'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '69'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '77'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '89'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '114'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '137'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+   '25':
+
+      '29'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '38'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '48'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '65'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '77'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '116'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+   '26':
+
+      '37'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '50'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '59'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '87'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '113'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+
+      '130'
+         symbols:
+           - 'transfer_p0e_p1l_pr'
+
+   '27':
+
+      '27'
+         symbols:
+           - 'transit_p0l_p1t_pr'
+
+
+      '76'
+         symbols:
+           - 'grab_p0l_p1t_pr'
+
+
+      '132'
+         symbols:
+           - 'grab_p0l_p1t_pr'
+
+   '28':
+
+      '0'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '5'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '60'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '70'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '99'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '131'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+   '29':
+
+      '29'
+         symbols:
+           - 'transit_p0r_p1e_pl'
+
+
+      '71'
+         symbols:
+           - 'grab_p0r_p1e_pl'
+
+
+      '135'
+         symbols:
+           - 'grab_p0r_p1e_pl'
+
+   '30':
+
+      '14'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '15'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '81'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '86'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '121'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '124'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+   '31':
+
+      '8'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '29'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '70'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '116'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '131'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '137'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+   '32':
+
+      '0'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '5'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '60'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '70'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '99'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '131'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+   '33':
+
+      '27'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '38'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '52'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '99'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '116'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '131'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+   '34':
+
+      '8'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '51'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '69'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '82'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '137'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '143'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+   '35':
+
+      '35'
+         symbols:
+           - 'transit_p0l_p1r_pt'
+
+
+      '64'
+         symbols:
+           - 'grab_p0l_p1r_pt'
+
+
+      '125'
+         symbols:
+           - 'grab_p0l_p1r_pt'
+
+   '36':
+
+      '4'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '12'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '24'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '53'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '112'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '117'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+   '37':
+
+      '0'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '5'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '60'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '70'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '99'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '131'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+   '38':
+
+      '38'
+         symbols:
+           - 'transit_p0r_p1t_pe'
+
+
+      '56'
+         symbols:
+           - 'grab_p0r_p1t_pe'
+
+
+      '138'
+         symbols:
+           - 'grab_p0r_p1t_pe'
+
+   '39':
+
+      '2'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '34'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '44'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '95'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '127'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '134'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+   '40':
+
+      '20'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '73'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '84'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '97'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '102'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '129'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+   '41':
+
+      '38'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '51'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '52'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '65'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '82'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '123'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+   '42':
+
+      '28'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '32'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '62'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '75'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '103'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '142'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+   '43':
+
+      '0'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '8'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '35'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '70'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '82'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '123'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+   '44':
+
+      '29'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '38'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '48'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '65'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '77'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '116'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+   '45':
+
+      '1'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '33'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '43'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '94'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '126'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '139'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+   '46':
+
+      '20'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '73'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '84'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '97'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '102'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+
+      '129'
+         symbols:
+           - 'transfer_p0t_p1l_pe'
+
+   '47':
+
+      '20'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '73'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '84'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '97'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '102'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '129'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+   '48':
+
+      '48'
+         symbols:
+           - 'transit_p0r_p1l_pt'
+
+
+      '57'
+         symbols:
+           - 'grab_p0r_p1l_pt'
+
+
+      '68'
+         symbols:
+           - 'grab_p0r_p1l_pt'
+
+   '49':
+
+      '0'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '5'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '35'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '48'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '77'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '89'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+   '50':
+
+      '8'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '51'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '69'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '82'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '137'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '143'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+   '51':
+
+      '23'
+         symbols:
+           - 'grab_p0t_p1l_pe'
+
+
+      '46'
+         symbols:
+           - 'grab_p0t_p1l_pe'
+
+
+      '51'
+         symbols:
+           - 'transit_p0t_p1l_pe'
+
+   '52':
+
+      '52'
+         symbols:
+           - 'transit_p0l_p1t_pe'
+
+
+      '96'
+         symbols:
+           - 'grab_p0l_p1t_pe'
+
+
+      '108'
+         symbols:
+           - 'grab_p0l_p1t_pe'
+
+   '53':
+
+      '27'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '38'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '52'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '99'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '116'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+
+      '131'
+         symbols:
+           - 'drop_p0r_p1g_pl'
+
+   '54':
+
+      '1'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '33'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '43'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '94'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '126'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '139'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+   '55':
+
+      '1'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '33'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '43'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '94'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '126'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '139'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+   '56':
+
+      '4'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '12'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '24'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '53'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '112'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '117'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+   '57':
+
+      '4'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '12'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '24'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '53'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '112'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '117'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+   '58':
+
+      '27'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '60'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '69'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '99'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '114'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+
+      '143'
+         symbols:
+           - 'drop_p0e_p1l_pg'
+
+   '59':
+
+      '29'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '38'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '48'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '65'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '77'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+
+      '116'
+         symbols:
+           - 'drop_p0g_p1l_pe'
+
+   '60':
+
+      '3'
+         symbols:
+           - 'grab_p0e_p1l_pr'
+
+
+      '26'
+         symbols:
+           - 'grab_p0e_p1l_pr'
+
+
+      '60'
+         symbols:
+           - 'transit_p0e_p1l_pr'
+
+   '61':
+
+      '0'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '5'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '35'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '48'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '77'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '89'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+   '62':
+
+      '8'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '51'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '69'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '82'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '137'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '143'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+   '63':
+
+      '14'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '15'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '81'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '86'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '121'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '124'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+   '64':
+
+      '14'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '15'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '81'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '86'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '121'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '124'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+   '65':
+
+      '36'
+         symbols:
+           - 'grab_p0r_p1l_pe'
+
+
+      '65'
+         symbols:
+           - 'transit_p0r_p1l_pe'
+
+
+      '100'
+         symbols:
+           - 'grab_p0r_p1l_pe'
+
+   '66':
+
+      '20'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '73'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '84'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '97'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '102'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+
+      '129'
+         symbols:
+           - 'transfer_p0t_p1e_pl'
+
+   '67':
+
+      '37'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '50'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '59'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '87'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '113'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+
+      '130'
+         symbols:
+           - 'transfer_p0e_p1l_pt'
+
+   '68':
+
+      '37'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '50'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '59'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '87'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '113'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+
+      '130'
+         symbols:
+           - 'transfer_p0r_p1l_pt'
+
+   '69':
+
+      '69'
+         symbols:
+           - 'transit_p0t_p1e_pr'
+
+
+      '91'
+         symbols:
+           - 'grab_p0t_p1e_pr'
+
+
+      '122'
+         symbols:
+           - 'grab_p0t_p1e_pr'
+
+   '70':
+
+      '17'
+         symbols:
+           - 'grab_p0e_p1r_pl'
+
+
+      '70'
+         symbols:
+           - 'transit_p0e_p1r_pl'
+
+
+      '136'
+         symbols:
+           - 'grab_p0e_p1r_pl'
+
+   '71':
+
+      '4'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '12'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '24'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '53'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '112'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '117'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+   '72':
+
+      '8'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '29'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '70'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '116'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '131'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+
+      '137'
+         symbols:
+           - 'drop_p0t_p1e_pg'
+
+   '73':
+
+      '5'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '48'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '51'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '60'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '65'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+
+      '143'
+         symbols:
+           - 'drop_p0t_p1g_pe'
+
+   '74':
+
+      '4'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '12'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '24'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '53'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '112'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '117'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+   '75':
+
+      '8'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '51'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '69'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '82'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '137'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+
+      '143'
+         symbols:
+           - 'drop_p0g_p1r_pl'
+
+   '76':
+
+      '14'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '15'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '81'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '86'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '121'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '124'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+   '77':
+
+      '19'
+         symbols:
+           - 'grab_p0r_p1e_pt'
+
+
+      '77'
+         symbols:
+           - 'transit_p0r_p1e_pt'
+
+
+      '101'
+         symbols:
+           - 'grab_p0r_p1e_pt'
+
+   '78':
+
+      '14'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '15'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '81'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '86'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '121'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '124'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+   '79':
+
+      '2'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '34'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '44'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '95'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '127'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+
+      '134'
+         symbols:
+           - 'transfer_p0l_p1e_pt'
+
+   '80':
+
+      '27'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '60'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '69'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '99'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '114'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+
+      '143'
+         symbols:
+           - 'drop_p0l_p1e_pg'
+
+   '81':
+
+      '0'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '8'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '35'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '70'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '82'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+
+      '123'
+         symbols:
+           - 'drop_p0l_p1g_pe'
+
+   '82':
+
+      '42'
+         symbols:
+           - 'grab_p0t_p1r_pe'
+
+
+      '82'
+         symbols:
+           - 'transit_p0t_p1r_pe'
+
+
+      '85'
+         symbols:
+           - 'grab_p0t_p1r_pe'
+
+   '83':
+
+      '8'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '29'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '70'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '116'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '131'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '137'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+   '84':
+
+      '29'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '69'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '77'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '89'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '114'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '137'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+   '85':
+
+      '20'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '73'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '84'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '97'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '102'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+
+      '129'
+         symbols:
+           - 'transfer_p0t_p1r_pe'
+
+   '86':
+
+      '27'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '38'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '52'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '99'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '116'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '131'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+   '87':
+
+      '8'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '51'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '69'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '82'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '137'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+
+      '143'
+         symbols:
+           - 'drop_p0g_p1l_pr'
+
+   '88':
+
+      '27'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '60'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '69'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '99'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '114'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+
+      '143'
+         symbols:
+           - 'drop_p0t_p1l_pg'
+
+   '89':
+
+      '63'
+         symbols:
+           - 'grab_p0l_p1e_pt'
+
+
+      '79'
+         symbols:
+           - 'grab_p0l_p1e_pt'
+
+
+      '89'
+         symbols:
+           - 'transit_p0l_p1e_pt'
+
+   '90':
+
+      '0'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '5'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '35'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '48'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '77'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+
+      '89'
+         symbols:
+           - 'drop_p0r_p1l_pg'
+
+   '91':
+
+      '2'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '34'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '44'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '95'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '127'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '134'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+   '92':
+
+      '28'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '32'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '62'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '75'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '103'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+
+      '142'
+         symbols:
+           - 'transfer_p0l_p1r_pe'
+
+   '93':
+
+      '27'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '35'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '52'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '89'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '114'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '123'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+   '94':
+
+      '5'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '48'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '51'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '60'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '65'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+
+      '143'
+         symbols:
+           - 'drop_p0e_p1g_pr'
+
+   '95':
+
+      '27'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '35'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '52'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '89'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '114'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+
+      '123'
+         symbols:
+           - 'drop_p0g_p1e_pr'
+
+   '96':
+
+      '14'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '15'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '81'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '86'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '121'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '124'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+   '97':
+
+      '29'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '69'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '77'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '89'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '114'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '137'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+   '98':
+
+      '28'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '32'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '62'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '75'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '103'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+
+      '142'
+         symbols:
+           - 'transfer_p0t_p1r_pl'
+
+   '99':
+
+      '54'
+         symbols:
+           - 'grab_p0e_p1t_pr'
+
+
+      '99'
+         symbols:
+           - 'transit_p0e_p1t_pr'
+
+
+      '120'
+         symbols:
+           - 'grab_p0e_p1t_pr'
+
+   '100':
+
+      '37'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '50'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '59'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '87'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '113'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+
+      '130'
+         symbols:
+           - 'transfer_p0r_p1l_pe'
+
+   '101':
+
+      '2'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '34'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '44'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '95'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '127'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+
+      '134'
+         symbols:
+           - 'transfer_p0r_p1e_pt'
+
+   '102':
+
+      '0'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '8'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '35'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '70'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '82'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+
+      '123'
+         symbols:
+           - 'drop_p0t_p1g_pl'
+
+   '103':
+
+      '27'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '35'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '52'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '89'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '114'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+
+      '123'
+         symbols:
+           - 'drop_p0g_p1r_pt'
+
+   '104':
+
+      '38'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '51'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '52'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '65'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '82'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+
+      '123'
+         symbols:
+           - 'drop_p0t_p1r_pg'
+
+   '105':
+
+      '0'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '5'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '35'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '48'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '77'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+
+      '89'
+         symbols:
+           - 'drop_p0l_p1r_pg'
+
+   '106':
+
+      '1'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '33'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '43'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '94'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '126'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '139'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+   '107':
+
+      '37'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '50'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '59'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '87'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '113'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+
+      '130'
+         symbols:
+           - 'transfer_p0t_p1l_pr'
+
+   '108':
+
+      '7'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '22'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '25'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '93'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '109'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+
+      '110'
+         symbols:
+           - 'transfer_p0l_p1t_pe'
+
+   '109':
+
+      '0'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '5'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '60'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '70'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '99'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+
+      '131'
+         symbols:
+           - 'drop_p0g_p1t_pr'
+
+   '110':
+
+      '0'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '5'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '60'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '70'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '99'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+
+      '131'
+         symbols:
+           - 'drop_p0g_p1t_pl'
+
+   '111':
+
+      '28'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '32'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '62'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '75'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '103'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+
+      '142'
+         symbols:
+           - 'transfer_p0e_p1r_pt'
+
+   '112':
+
+      '5'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '48'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '51'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '60'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '65'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+
+      '143'
+         symbols:
+           - 'drop_p0r_p1g_pt'
+
+   '113':
+
+      '29'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '38'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '48'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '65'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '77'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '116'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+   '114':
+
+      '78'
+         symbols:
+           - 'grab_p0l_p1e_pr'
+
+
+      '114'
+         symbols:
+           - 'transit_p0l_p1e_pr'
+
+
+      '133'
+         symbols:
+           - 'grab_p0l_p1e_pr'
+
+   '115':
+
+      '8'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '29'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '70'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '116'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '131'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+
+      '137'
+         symbols:
+           - 'drop_p0r_p1e_pg'
+
+   '116':
+
+      '74'
+         symbols:
+           - 'grab_p0r_p1t_pl'
+
+
+      '116'
+         symbols:
+           - 'transit_p0r_p1t_pl'
+
+
+      '140'
+         symbols:
+           - 'grab_p0r_p1t_pl'
+
+   '117':
+
+      '5'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '48'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '51'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '60'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '65'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+
+      '143'
+         symbols:
+           - 'drop_p0r_p1g_pe'
+
+   '118':
+
+      '38'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '51'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '52'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '65'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '82'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+
+      '123'
+         symbols:
+           - 'drop_p0l_p1t_pg'
+
+   '119':
+
+      '7'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '22'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '25'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '93'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '109'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+
+      '110'
+         symbols:
+           - 'transfer_p0e_p1t_pl'
+
+   '120':
+
+      '7'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '22'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '25'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '93'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '109'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+
+      '110'
+         symbols:
+           - 'transfer_p0e_p1t_pr'
+
+   '121':
+
+      '0'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '8'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '35'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '70'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '82'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+
+      '123'
+         symbols:
+           - 'drop_p0l_p1g_pt'
+
+   '122':
+
+      '20'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '73'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '84'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '97'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '102'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+
+      '129'
+         symbols:
+           - 'transfer_p0t_p1e_pr'
+
+   '123':
+
+      '30'
+         symbols:
+           - 'grab_p0l_p1r_pe'
+
+
+      '92'
+         symbols:
+           - 'grab_p0l_p1r_pe'
+
+
+      '123'
+         symbols:
+           - 'transit_p0l_p1r_pe'
+
+   '124':
+
+      '29'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '69'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '77'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '89'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '114'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+
+      '137'
+         symbols:
+           - 'drop_p0l_p1g_pr'
+
+   '125':
+
+      '28'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '32'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '62'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '75'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '103'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+
+      '142'
+         symbols:
+           - 'transfer_p0l_p1r_pt'
+
+   '126':
+
+      '5'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '48'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '51'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '60'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '65'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+
+      '143'
+         symbols:
+           - 'drop_p0e_p1g_pt'
+
+   '127':
+
+      '27'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '35'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '52'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '89'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '114'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+
+      '123'
+         symbols:
+           - 'drop_p0g_p1e_pt'
+
+   '128':
+
+      '38'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '51'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '52'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '65'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '82'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+
+      '123'
+         symbols:
+           - 'drop_p0r_p1t_pg'
+
+   '129':
+
+      '5'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '48'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '51'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '60'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '65'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+
+      '143'
+         symbols:
+           - 'drop_p0t_p1g_pr'
+
+   '130':
+
+      '0'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '5'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '60'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '70'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '99'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+
+      '131'
+         symbols:
+           - 'drop_p0g_p1l_pt'
+
+   '131':
+
+      '106'
+         symbols:
+           - 'grab_p0e_p1t_pl'
+
+
+      '119'
+         symbols:
+           - 'grab_p0e_p1t_pl'
+
+
+      '131'
+         symbols:
+           - 'transit_p0e_p1t_pl'
+
+   '132':
+
+      '7'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '22'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '25'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '93'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '109'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+
+      '110'
+         symbols:
+           - 'transfer_p0l_p1t_pr'
+
+   '133':
+
+      '2'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '34'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '44'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '95'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '127'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+
+      '134'
+         symbols:
+           - 'transfer_p0l_p1e_pr'
+
+   '134':
+
+      '8'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '51'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '69'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '82'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '137'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+
+      '143'
+         symbols:
+           - 'drop_p0g_p1e_pl'
+
+   '135':
+
+      '2'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '34'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '44'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '95'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '127'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+
+      '134'
+         symbols:
+           - 'transfer_p0r_p1e_pl'
+
+   '136':
+
+      '1'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '33'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '43'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '94'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '126'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+
+      '139'
+         symbols:
+           - 'transfer_p0e_p1r_pl'
+
+   '137':
+
+      '39'
+         symbols:
+           - 'grab_p0t_p1e_pl'
+
+
+      '66'
+         symbols:
+           - 'grab_p0t_p1e_pl'
+
+
+      '137'
+         symbols:
+           - 'transit_p0t_p1e_pl'
+
+   '138':
+
+      '7'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '22'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '25'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '93'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '109'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+
+      '110'
+         symbols:
+           - 'transfer_p0r_p1t_pe'
+
+   '139':
+
+      '27'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '38'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '52'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '99'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '116'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+
+      '131'
+         symbols:
+           - 'drop_p0e_p1g_pl'
+
+   '140':
+
+      '7'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '22'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '25'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '93'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '109'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+
+      '110'
+         symbols:
+           - 'transfer_p0r_p1t_pl'
+
+   '141':
+
+      '8'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '29'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '70'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '116'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '131'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+
+      '137'
+         symbols:
+           - 'drop_p0e_p1r_pg'
+
+   '142':
+
+      '27'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '35'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '52'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '89'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '114'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+
+      '123'
+         symbols:
+           - 'drop_p0g_p1r_pe'
+
+   '143':
+
+      '47'
+         symbols:
+           - 'grab_p0t_p1l_pr'
+
+
+      '107'
+         symbols:
+           - 'grab_p0t_p1l_pr'
+
+
+      '143'
+         symbols:
+           - 'transit_p0t_p1l_pr'
+

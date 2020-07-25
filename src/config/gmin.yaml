@@ -1,0 +1,1110 @@
+graph:
+  edges:
+  - !!python/tuple
+    - &id001 !!python/tuple
+      - &id002 !!python/tuple
+        - &id017 !!python/tuple
+          - s1
+          - 0
+        - T0_S2
+      - '-1'
+    - &id003 !!python/tuple
+      - &id006 !!python/tuple
+        - &id021 !!python/tuple
+          - h12
+          - '0'
+        - T0_S2
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id001
+    - &id005 !!python/tuple
+      - &id012 !!python/tuple
+        - &id037 !!python/tuple
+          - h13
+          - '0'
+        - T0_S2
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - &id004 !!python/tuple
+      - *id002
+      - '0'
+    - *id003
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id004
+    - *id005
+    - weight: '-1'
+  - !!python/tuple
+    - *id003
+    - &id011 !!python/tuple
+      - &id007 !!python/tuple
+        - &id024 !!python/tuple
+          - s1
+          - 1
+        - T0_S2
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id003
+    - &id058 !!python/tuple
+      - &id009 !!python/tuple
+        - &id022 !!python/tuple
+          - s3
+          - 1
+        - T0_S2
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - *id003
+    - &id069 !!python/tuple
+      - &id010 !!python/tuple
+        - &id025 !!python/tuple
+          - s2
+          - 0
+        - T0_S2
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - &id008 !!python/tuple
+      - *id006
+      - '0'
+    - &id013 !!python/tuple
+      - *id007
+      - '0'
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id008
+    - &id060 !!python/tuple
+      - *id009
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - *id008
+    - &id070 !!python/tuple
+      - *id010
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - *id005
+    - *id011
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id005
+    - &id057 !!python/tuple
+      - &id015 !!python/tuple
+        - &id038 !!python/tuple
+          - s2
+          - 1
+        - T0_S2
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - *id005
+    - &id075 !!python/tuple
+      - &id016 !!python/tuple
+        - &id041 !!python/tuple
+          - s3
+          - 0
+        - T0_S2
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - &id014 !!python/tuple
+      - *id012
+      - '0'
+    - *id013
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id014
+    - &id059 !!python/tuple
+      - *id015
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - *id014
+    - &id078 !!python/tuple
+      - *id016
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - &id018 !!python/tuple
+      - &id019 !!python/tuple
+        - *id017
+        - T0_init
+      - '-1'
+    - *id003
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id018
+    - *id005
+    - weight: '-1'
+  - !!python/tuple
+    - &id020 !!python/tuple
+      - *id019
+      - '0'
+    - *id003
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id020
+    - *id005
+    - weight: '-1'
+  - !!python/tuple
+    - &id023 !!python/tuple
+      - &id026 !!python/tuple
+        - *id021
+        - accept_all
+      - '-1'
+    - &id062 !!python/tuple
+      - &id027 !!python/tuple
+        - *id022
+        - accept_all
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id023
+    - &id040 !!python/tuple
+      - &id029 !!python/tuple
+        - *id024
+        - accept_all
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - *id023
+    - &id099 !!python/tuple
+      - &id030 !!python/tuple
+        - *id025
+        - accept_all
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - &id028 !!python/tuple
+      - *id026
+      - '0'
+    - &id067 !!python/tuple
+      - *id027
+      - '0'
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id028
+    - &id045 !!python/tuple
+      - *id029
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - *id028
+    - &id100 !!python/tuple
+      - *id030
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - &id031 !!python/tuple
+      - &id032 !!python/tuple
+        - *id021
+        - T0_init
+      - '-1'
+    - &id047 !!python/tuple
+      - &id033 !!python/tuple
+        - *id024
+        - T0_init
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id031
+    - &id065 !!python/tuple
+      - &id035 !!python/tuple
+        - *id022
+        - T0_init
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - *id031
+    - &id079 !!python/tuple
+      - &id036 !!python/tuple
+        - *id025
+        - T0_init
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - &id034 !!python/tuple
+      - *id032
+      - '0'
+    - &id050 !!python/tuple
+      - *id033
+      - '0'
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id034
+    - &id068 !!python/tuple
+      - *id035
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - *id034
+    - &id082 !!python/tuple
+      - *id036
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - &id039 !!python/tuple
+      - &id042 !!python/tuple
+        - *id037
+        - accept_all
+      - '-1'
+    - &id061 !!python/tuple
+      - &id043 !!python/tuple
+        - *id038
+        - accept_all
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id039
+    - *id040
+    - weight: '-1'
+  - !!python/tuple
+    - *id039
+    - &id091 !!python/tuple
+      - &id046 !!python/tuple
+        - *id041
+        - accept_all
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - &id044 !!python/tuple
+      - *id042
+      - '0'
+    - &id063 !!python/tuple
+      - *id043
+      - '0'
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id044
+    - *id045
+    - weight: '0'
+  - !!python/tuple
+    - *id044
+    - &id094 !!python/tuple
+      - *id046
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - &id048 !!python/tuple
+      - &id049 !!python/tuple
+        - *id037
+        - T0_init
+      - '-1'
+    - *id047
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id048
+    - &id064 !!python/tuple
+      - &id052 !!python/tuple
+        - *id038
+        - T0_init
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - *id048
+    - &id095 !!python/tuple
+      - &id053 !!python/tuple
+        - *id041
+        - T0_init
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - &id051 !!python/tuple
+      - *id049
+      - '0'
+    - *id050
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id051
+    - &id066 !!python/tuple
+      - *id052
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - *id051
+    - &id098 !!python/tuple
+      - *id053
+      - '0'
+    - weight: '0'
+  - !!python/tuple
+    - &id054 !!python/tuple
+      - &id055 !!python/tuple
+        - *id017
+        - accept_all
+      - '-1'
+    - *id023
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id054
+    - *id039
+    - weight: '-1'
+  - !!python/tuple
+    - &id056 !!python/tuple
+      - *id055
+      - '0'
+    - *id023
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id056
+    - *id039
+    - weight: '-1'
+  - !!python/tuple
+    - *id011
+    - *id057
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id011
+    - *id058
+    - weight: '-1'
+  - !!python/tuple
+    - *id013
+    - *id057
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id013
+    - *id058
+    - weight: '-1'
+  - !!python/tuple
+    - *id057
+    - *id011
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id057
+    - *id058
+    - weight: '-1'
+  - !!python/tuple
+    - *id059
+    - *id011
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id059
+    - *id058
+    - weight: '-1'
+  - !!python/tuple
+    - *id058
+    - *id011
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id060
+    - *id011
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id047
+    - *id057
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id047
+    - *id058
+    - weight: '-1'
+  - !!python/tuple
+    - *id050
+    - *id057
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id050
+    - *id058
+    - weight: '-1'
+  - !!python/tuple
+    - *id061
+    - *id062
+    - weight: '-1'
+  - !!python/tuple
+    - *id061
+    - *id040
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id063
+    - *id062
+    - weight: '-1'
+  - !!python/tuple
+    - *id063
+    - *id040
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id064
+    - *id047
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id064
+    - *id065
+    - weight: '-1'
+  - !!python/tuple
+    - *id066
+    - *id047
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id066
+    - *id065
+    - weight: '-1'
+  - !!python/tuple
+    - *id062
+    - *id040
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id067
+    - *id040
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id065
+    - *id040
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id068
+    - *id040
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id040
+    - *id061
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id040
+    - *id062
+    - weight: '-1'
+  - !!python/tuple
+    - *id045
+    - *id061
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id045
+    - *id062
+    - weight: '-1'
+  - !!python/tuple
+    - *id069
+    - &id071 !!python/tuple
+      - &id073 !!python/tuple
+        - &id080 !!python/tuple
+          - h21
+          - '0'
+        - T0_S2
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id069
+    - &id072 !!python/tuple
+      - &id076 !!python/tuple
+        - &id081 !!python/tuple
+          - h23
+          - '0'
+        - T0_S2
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - *id070
+    - *id071
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id070
+    - *id072
+    - weight: '-1'
+  - !!python/tuple
+    - *id071
+    - *id001
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id071
+    - *id057
+    - weight: '-1'
+  - !!python/tuple
+    - *id071
+    - *id058
+    - weight: '-1'
+  - !!python/tuple
+    - &id074 !!python/tuple
+      - *id073
+      - '0'
+    - *id004
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id074
+    - *id059
+    - weight: '0'
+  - !!python/tuple
+    - *id074
+    - *id060
+    - weight: '0'
+  - !!python/tuple
+    - *id072
+    - *id011
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id072
+    - *id057
+    - weight: '-1'
+  - !!python/tuple
+    - *id072
+    - *id075
+    - weight: '-1'
+  - !!python/tuple
+    - &id077 !!python/tuple
+      - *id076
+      - '0'
+    - *id013
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id077
+    - *id059
+    - weight: '0'
+  - !!python/tuple
+    - *id077
+    - *id078
+    - weight: '0'
+  - !!python/tuple
+    - *id079
+    - &id083 !!python/tuple
+      - &id088 !!python/tuple
+        - *id080
+        - T0_init
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id079
+    - &id084 !!python/tuple
+      - &id096 !!python/tuple
+        - *id081
+        - T0_init
+      - '-1'
+    - weight: '-1'
+  - !!python/tuple
+    - *id082
+    - *id083
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id082
+    - *id084
+    - weight: '-1'
+  - !!python/tuple
+    - &id085 !!python/tuple
+      - &id086 !!python/tuple
+        - *id080
+        - accept_all
+      - '-1'
+    - *id054
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id085
+    - *id061
+    - weight: '-1'
+  - !!python/tuple
+    - *id085
+    - *id062
+    - weight: '-1'
+  - !!python/tuple
+    - &id087 !!python/tuple
+      - *id086
+      - '0'
+    - *id056
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id087
+    - *id063
+    - weight: '0'
+  - !!python/tuple
+    - *id087
+    - *id067
+    - weight: '0'
+  - !!python/tuple
+    - *id083
+    - *id018
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id083
+    - *id064
+    - weight: '-1'
+  - !!python/tuple
+    - *id083
+    - *id065
+    - weight: '-1'
+  - !!python/tuple
+    - &id089 !!python/tuple
+      - *id088
+      - '0'
+    - *id020
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id089
+    - *id066
+    - weight: '0'
+  - !!python/tuple
+    - *id089
+    - *id068
+    - weight: '0'
+  - !!python/tuple
+    - &id090 !!python/tuple
+      - &id092 !!python/tuple
+        - *id081
+        - accept_all
+      - '-1'
+    - *id061
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id090
+    - *id040
+    - weight: '-1'
+  - !!python/tuple
+    - *id090
+    - *id091
+    - weight: '-1'
+  - !!python/tuple
+    - &id093 !!python/tuple
+      - *id092
+      - '0'
+    - *id063
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id093
+    - *id045
+    - weight: '0'
+  - !!python/tuple
+    - *id093
+    - *id094
+    - weight: '0'
+  - !!python/tuple
+    - *id084
+    - *id047
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id084
+    - *id064
+    - weight: '-1'
+  - !!python/tuple
+    - *id084
+    - *id095
+    - weight: '-1'
+  - !!python/tuple
+    - &id097 !!python/tuple
+      - *id096
+      - '0'
+    - *id050
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id097
+    - *id066
+    - weight: '0'
+  - !!python/tuple
+    - *id097
+    - *id098
+    - weight: '0'
+  - !!python/tuple
+    - *id099
+    - *id085
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id099
+    - *id090
+    - weight: '-1'
+  - !!python/tuple
+    - *id100
+    - *id085
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id100
+    - *id090
+    - weight: '-1'
+  - !!python/tuple
+    - *id075
+    - &id101 !!python/tuple
+      - &id102 !!python/tuple
+        - &id104 !!python/tuple
+          - h31
+          - '0'
+        - T0_S2
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id078
+    - *id101
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id101
+    - *id001
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id101
+    - *id057
+    - weight: '-1'
+  - !!python/tuple
+    - *id101
+    - *id058
+    - weight: '-1'
+  - !!python/tuple
+    - &id103 !!python/tuple
+      - *id102
+      - '0'
+    - *id004
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id103
+    - *id059
+    - weight: '0'
+  - !!python/tuple
+    - *id103
+    - *id060
+    - weight: '0'
+  - !!python/tuple
+    - *id095
+    - &id105 !!python/tuple
+      - &id106 !!python/tuple
+        - *id104
+        - accept_all
+      - '-1'
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id098
+    - *id105
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id105
+    - *id054
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id105
+    - *id061
+    - weight: '-1'
+  - !!python/tuple
+    - *id105
+    - *id062
+    - weight: '-1'
+  - !!python/tuple
+    - &id107 !!python/tuple
+      - *id106
+      - '0'
+    - *id056
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id107
+    - *id063
+    - weight: '0'
+  - !!python/tuple
+    - *id107
+    - *id067
+    - weight: '0'
+  - !!python/tuple
+    - &id108 !!python/tuple
+      - &id109 !!python/tuple
+        - *id104
+        - T0_init
+      - '-1'
+    - *id018
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id108
+    - *id064
+    - weight: '-1'
+  - !!python/tuple
+    - *id108
+    - *id065
+    - weight: '-1'
+  - !!python/tuple
+    - &id110 !!python/tuple
+      - *id109
+      - '0'
+    - *id020
+    - strategy: true
+      weight: '0'
+  - !!python/tuple
+    - *id110
+    - *id066
+    - weight: '0'
+  - !!python/tuple
+    - *id110
+    - *id068
+    - weight: '0'
+  - !!python/tuple
+    - *id091
+    - *id105
+    - strategy: true
+      weight: '-1'
+  - !!python/tuple
+    - *id094
+    - *id105
+    - strategy: true
+      weight: '-1'
+  vertices:
+  - !!python/tuple
+    - *id001
+    - player: eve
+  - !!python/tuple
+    - *id004
+    - player: eve
+  - !!python/tuple
+    - *id003
+    - player: adam
+  - !!python/tuple
+    - *id008
+    - player: adam
+  - !!python/tuple
+    - *id005
+    - player: adam
+  - !!python/tuple
+    - *id014
+    - player: adam
+  - !!python/tuple
+    - *id018
+    - player: eve
+  - !!python/tuple
+    - *id020
+    - player: eve
+  - !!python/tuple
+    - *id023
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id028
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id031
+    - player: adam
+  - !!python/tuple
+    - *id034
+    - player: adam
+  - !!python/tuple
+    - *id039
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id044
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id048
+    - player: adam
+  - !!python/tuple
+    - *id051
+    - player: adam
+  - !!python/tuple
+    - *id054
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id056
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id011
+    - player: eve
+  - !!python/tuple
+    - *id013
+    - player: eve
+  - !!python/tuple
+    - *id057
+    - player: eve
+  - !!python/tuple
+    - *id059
+    - player: eve
+  - !!python/tuple
+    - *id058
+    - player: eve
+  - !!python/tuple
+    - *id060
+    - player: eve
+  - !!python/tuple
+    - *id047
+    - player: eve
+  - !!python/tuple
+    - *id050
+    - player: eve
+  - !!python/tuple
+    - *id061
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id063
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id064
+    - player: eve
+  - !!python/tuple
+    - *id066
+    - player: eve
+  - !!python/tuple
+    - *id062
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id067
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id065
+    - player: eve
+  - !!python/tuple
+    - *id068
+    - player: eve
+  - !!python/tuple
+    - *id040
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id045
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id069
+    - player: eve
+  - !!python/tuple
+    - *id070
+    - player: eve
+  - !!python/tuple
+    - *id071
+    - player: adam
+  - !!python/tuple
+    - *id074
+    - player: adam
+  - !!python/tuple
+    - *id072
+    - player: adam
+  - !!python/tuple
+    - *id077
+    - player: adam
+  - !!python/tuple
+    - *id079
+    - player: eve
+  - !!python/tuple
+    - *id082
+    - init: true
+      player: eve
+  - !!python/tuple
+    - *id085
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id087
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id083
+    - player: adam
+  - !!python/tuple
+    - *id089
+    - player: adam
+  - !!python/tuple
+    - *id090
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id093
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id084
+    - player: adam
+  - !!python/tuple
+    - *id097
+    - player: adam
+  - !!python/tuple
+    - *id099
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id100
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id075
+    - player: eve
+  - !!python/tuple
+    - *id078
+    - player: eve
+  - !!python/tuple
+    - *id101
+    - player: adam
+  - !!python/tuple
+    - *id103
+    - player: adam
+  - !!python/tuple
+    - *id095
+    - player: eve
+  - !!python/tuple
+    - *id098
+    - player: eve
+  - !!python/tuple
+    - *id105
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id107
+    - accepting: true
+      player: adam
+  - !!python/tuple
+    - *id108
+    - player: adam
+  - !!python/tuple
+    - *id110
+    - player: adam
+  - !!python/tuple
+    - *id091
+    - accepting: true
+      player: eve
+  - !!python/tuple
+    - *id094
+    - accepting: true
+      player: eve

@@ -1,0 +1,38 @@
+graph:
+  edges:
+  - !!python/tuple
+    - s1
+    - s2
+    - actions: s12
+      weight: '0'
+  - !!python/tuple
+    - s1
+    - s3
+    - actions: s13
+      weight: '3'
+  - !!python/tuple
+    - s2
+    - s1
+    - actions: s21
+      weight: '2'
+  - !!python/tuple
+    - s2
+    - s3
+    - actions: s23
+      weight: '3'
+  - !!python/tuple
+    - s3
+    - s1
+    - actions: s31
+      weight: '5'
+  vertices:
+  - !!python/tuple
+    - s1
+    - ap: b
+  - !!python/tuple
+    - s2
+    - ap: a
+      init: true
+  - !!python/tuple
+    - s3
+    - ap: c

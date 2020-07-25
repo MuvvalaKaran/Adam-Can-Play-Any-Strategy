@@ -153,31 +153,7 @@ The terminal will prompt you to enter either 1 or 2. Enter 1 if you want to use 
 
 ## Results
 
-<!-- ![](src/graph/org_graph.jpg "org_graph") -->
-<p align="center">
-	<img src="src/graph_plots/org_graph.jpg" alt="org_graph" width="500" height="500">
-</p>
-
----
-<p align="center">
-<!-- ![](src/graph/Gmax_graph.jpg "gmax_graph") -->
-	<img src="src/graph_plots/Gmax_graph.jpg" alt="gmax_graph" width="500" height="500">
-</p>
-
----
-<p align="center">
-<!-- ![](src/graph/Gmin_graph.jpg "gmin_graph") -->
-	<img src="src/graph_plots/Gmin_graph.jpg" alt="gmin_graph" width="500" height="500">
-</p>
-
----
-<p align="center">
-<!-- ![](src/graph/G_hat.jpg "g_hat_graph") -->
-	<img src="src/graph_plots/G_hat.jpg" alt="g_hat_graph" width="300" height="600">
-</p>
-
----
-
+**Stay tuned for updates**
 
 ## References
 

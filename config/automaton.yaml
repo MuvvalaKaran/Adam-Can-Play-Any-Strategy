@@ -1,57 +1,147 @@
 graph:
   edges:
   - !!python/tuple
-    - accept_all
-    - accept_all
-    - guard: !!python/object:src.spot.Parser.TrueExpression
-        formula: '1'
-      guard_formula: '1'
-  - !!python/tuple
-    - T0_S2
-    - T0_S2
+    - T0_S4
+    - T0_S4
     - guard: !!python/object:src.spot.Parser.SymbolExpression
         formula: (true)
         name: 'true'
         symbol: 'true'
       guard_formula: (true)
   - !!python/tuple
-    - T0_init
+    - T0_S1
     - accept_all
     - guard: !!python/object:src.spot.Parser.SymbolExpression
-        formula: (c)
-        name: c
-        symbol: c
-      guard_formula: (c)
+        formula: (g)
+        name: g
+        symbol: g
+      guard_formula: (g)
   - !!python/tuple
-    - T0_init
-    - T0_init
+    - T0_S1
+    - T0_S1
     - guard: !!python/object:src.spot.Parser.ANDExpression
-        formula: ((!(b)) && (!(c)))
+        formula: ((!(d)) && (!(g)))
         left: !!python/object:src.spot.Parser.NotSymbolExpression
-          name: '!b'
-          symbol: b
+          name: '!d'
+          symbol: d
         right: !!python/object:src.spot.Parser.NotSymbolExpression
-          name: '!c'
-          symbol: c
-      guard_formula: ((!(b)) && (!(c)))
+          name: '!g'
+          symbol: g
+      guard_formula: ((!(d)) && (!(g)))
+  - !!python/tuple
+    - T0_S1
+    - T0_S4
+    - guard: !!python/object:src.spot.Parser.ANDExpression
+        formula: ((d) && (!(g)))
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: d
+          symbol: d
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!g'
+          symbol: g
+      guard_formula: ((d) && (!(g)))
+  - !!python/tuple
+    - accept_all
+    - accept_all
+    - guard: !!python/object:src.spot.Parser.TrueExpression
+        formula: '1'
+      guard_formula: '1'
+  - !!python/tuple
+    - T0_S3
+    - accept_all
+    - guard: !!python/object:src.spot.Parser.SymbolExpression
+        formula: (i)
+        name: i
+        symbol: i
+      guard_formula: (i)
+  - !!python/tuple
+    - T0_S3
+    - T0_S3
+    - guard: !!python/object:src.spot.Parser.NotSymbolExpression
+        formula: (!(i))
+        name: '!i'
+        symbol: i
+      guard_formula: (!(i))
   - !!python/tuple
     - T0_init
-    - T0_S2
+    - accept_all
     - guard: !!python/object:src.spot.Parser.ANDExpression
-        formula: ((b) && (!(c)))
+        formula: ((g) && (i))
         left: !!python/object:src.spot.Parser.SymbolExpression
-          name: b
-          symbol: b
+          name: g
+          symbol: g
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: i
+          symbol: i
+      guard_formula: ((g) && (i))
+  - !!python/tuple
+    - T0_init
+    - T0_S1
+    - guard: !!python/object:src.spot.Parser.ANDExpression
+        formula: ((!(d)) && (!(g)) && (i))
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!d'
+            symbol: d
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!g'
+            symbol: g
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: i
+          symbol: i
+      guard_formula: ((!(d)) && (!(g)) && (i))
+  - !!python/tuple
+    - T0_init
+    - T0_init
+    - guard: !!python/object:src.spot.Parser.ANDExpression
+        formula: ((!(d)) && (!(g)) && (!(i)))
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!d'
+            symbol: d
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!g'
+            symbol: g
         right: !!python/object:src.spot.Parser.NotSymbolExpression
-          name: '!c'
-          symbol: c
-      guard_formula: ((b) && (!(c)))
+          name: '!i'
+          symbol: i
+      guard_formula: ((!(d)) && (!(g)) && (!(i)))
+  - !!python/tuple
+    - T0_init
+    - T0_S3
+    - guard: !!python/object:src.spot.Parser.ANDExpression
+        formula: ((g) && (!(i)))
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: g
+          symbol: g
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!i'
+          symbol: i
+      guard_formula: ((g) && (!(i)))
+  - !!python/tuple
+    - T0_init
+    - T0_S4
+    - guard: !!python/object:src.spot.Parser.ANDExpression
+        formula: ((d) && (!(g)))
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: d
+          symbol: d
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!g'
+          symbol: g
+      guard_formula: ((d) && (!(g)))
   vertices:
+  - !!python/tuple
+    - T0_S4
+    - {}
+  - !!python/tuple
+    - T0_S1
+    - {}
   - !!python/tuple
     - accept_all
     - accepting: true
   - !!python/tuple
-    - T0_S2
+    - T0_S3
     - {}
   - !!python/tuple
     - T0_init

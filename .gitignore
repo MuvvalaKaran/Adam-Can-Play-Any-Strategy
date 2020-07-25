@@ -1,5 +1,9 @@
 # ignore pycharm ide files
 *.idea
+*.pdf
+
+# ignore "ignore tracking" in the plots directory
+!plots/
 
 # ignore the code profiles directory
 code_profiles/

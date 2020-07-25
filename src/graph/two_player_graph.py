@@ -138,7 +138,7 @@ class TwoPlayerGraphBuilder(Builder):
                  graph_name: str,
                  config_yaml: str,
                  save_flag: bool = False,
-                 pre_built: bool=False,
+                 pre_built: bool = False,
                  plot: bool = False) -> TwoPlayerGraph:
         """
         Return an initialized TwoPlayerGraph instance given the configuration data

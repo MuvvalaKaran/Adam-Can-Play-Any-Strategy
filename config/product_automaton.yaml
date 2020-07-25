@@ -45,7 +45,7 @@ graph:
     - *id002
     - !!python/tuple
       - &id011 !!python/tuple
-        - s5
+        - s4
         - 1
       - T0_S1
     - weight: '0'
@@ -53,7 +53,7 @@ graph:
     - *id002
     - !!python/tuple
       - &id012 !!python/tuple
-        - s3
+        - s5
         - 1
       - T0_S1
     - weight: '0'
@@ -61,7 +61,7 @@ graph:
     - *id002
     - !!python/tuple
       - &id013 !!python/tuple
-        - s4
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -89,7 +89,7 @@ graph:
     - *id003
     - !!python/tuple
       - &id018 !!python/tuple
-        - s5
+        - s2
         - 1
       - T0_S1
     - weight: '0'
@@ -97,7 +97,7 @@ graph:
     - *id003
     - !!python/tuple
       - &id019 !!python/tuple
-        - s3
+        - s5
         - 1
       - T0_S1
     - weight: '0'
@@ -105,7 +105,7 @@ graph:
     - *id003
     - !!python/tuple
       - &id020 !!python/tuple
-        - s2
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -457,22 +457,6 @@ graph:
     - *id041
     - !!python/tuple
       - &id051 !!python/tuple
-        - s5
-        - 1
-      - T0_S1
-    - weight: '0'
-  - !!python/tuple
-    - *id041
-    - !!python/tuple
-      - &id052 !!python/tuple
-        - s3
-        - 1
-      - T0_S1
-    - weight: '0'
-  - !!python/tuple
-    - *id041
-    - !!python/tuple
-      - &id053 !!python/tuple
         - s4
         - 1
       - T0_S1
@@ -480,8 +464,24 @@ graph:
   - !!python/tuple
     - *id041
     - !!python/tuple
-      - &id054 !!python/tuple
+      - &id052 !!python/tuple
         - s2
+        - 1
+      - T0_S1
+    - weight: '0'
+  - !!python/tuple
+    - *id041
+    - !!python/tuple
+      - &id053 !!python/tuple
+        - s5
+        - 1
+      - T0_S1
+    - weight: '0'
+  - !!python/tuple
+    - *id041
+    - !!python/tuple
+      - &id054 !!python/tuple
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -505,14 +505,6 @@ graph:
     - *id042
     - !!python/tuple
       - &id059 !!python/tuple
-        - s5
-        - 1
-      - T0_S1
-    - weight: '0'
-  - !!python/tuple
-    - *id042
-    - !!python/tuple
-      - &id060 !!python/tuple
         - s4
         - 1
       - T0_S1
@@ -520,8 +512,16 @@ graph:
   - !!python/tuple
     - *id042
     - !!python/tuple
-      - &id061 !!python/tuple
+      - &id060 !!python/tuple
         - s2
+        - 1
+      - T0_S1
+    - weight: '0'
+  - !!python/tuple
+    - *id042
+    - !!python/tuple
+      - &id061 !!python/tuple
+        - s5
         - 1
       - T0_S1
     - weight: '0'
@@ -545,14 +545,6 @@ graph:
     - *id043
     - !!python/tuple
       - &id066 !!python/tuple
-        - s3
-        - 1
-      - T0_S1
-    - weight: '0'
-  - !!python/tuple
-    - *id043
-    - !!python/tuple
-      - &id067 !!python/tuple
         - s4
         - 1
       - T0_S1
@@ -560,8 +552,16 @@ graph:
   - !!python/tuple
     - *id043
     - !!python/tuple
-      - &id068 !!python/tuple
+      - &id067 !!python/tuple
         - s2
+        - 1
+      - T0_S1
+    - weight: '0'
+  - !!python/tuple
+    - *id043
+    - !!python/tuple
+      - &id068 !!python/tuple
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -904,7 +904,7 @@ graph:
     - *id078
     - !!python/tuple
       - &id087 !!python/tuple
-        - s5
+        - s4
         - 1
       - T0_S1
     - weight: '0'
@@ -912,7 +912,7 @@ graph:
     - *id078
     - !!python/tuple
       - &id088 !!python/tuple
-        - s3
+        - s5
         - 1
       - T0_S1
     - weight: '0'
@@ -920,7 +920,7 @@ graph:
     - *id078
     - !!python/tuple
       - &id089 !!python/tuple
-        - s4
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -944,7 +944,7 @@ graph:
     - *id079
     - !!python/tuple
       - &id094 !!python/tuple
-        - s5
+        - s2
         - 1
       - T0_S1
     - weight: '0'
@@ -952,7 +952,7 @@ graph:
     - *id079
     - !!python/tuple
       - &id095 !!python/tuple
-        - s3
+        - s5
         - 1
       - T0_S1
     - weight: '0'
@@ -960,7 +960,7 @@ graph:
     - *id079
     - !!python/tuple
       - &id096 !!python/tuple
-        - s2
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -1151,14 +1151,6 @@ graph:
     - *id099
     - !!python/tuple
       - &id110 !!python/tuple
-        - s5
-        - 1
-      - T0_S1
-    - weight: '0'
-  - !!python/tuple
-    - *id099
-    - !!python/tuple
-      - &id111 !!python/tuple
         - s4
         - 1
       - T0_S1
@@ -1166,8 +1158,16 @@ graph:
   - !!python/tuple
     - *id099
     - !!python/tuple
-      - &id112 !!python/tuple
+      - &id111 !!python/tuple
         - s2
+        - 1
+      - T0_S1
+    - weight: '0'
+  - !!python/tuple
+    - *id099
+    - !!python/tuple
+      - &id112 !!python/tuple
+        - s5
         - 1
       - T0_S1
     - weight: '0'
@@ -1187,22 +1187,6 @@ graph:
     - *id100
     - !!python/tuple
       - &id116 !!python/tuple
-        - s5
-        - 1
-      - T0_S1
-    - weight: '0'
-  - !!python/tuple
-    - *id100
-    - !!python/tuple
-      - &id117 !!python/tuple
-        - s3
-        - 1
-      - T0_S1
-    - weight: '0'
-  - !!python/tuple
-    - *id100
-    - !!python/tuple
-      - &id118 !!python/tuple
         - s4
         - 1
       - T0_S1
@@ -1210,8 +1194,24 @@ graph:
   - !!python/tuple
     - *id100
     - !!python/tuple
-      - &id119 !!python/tuple
+      - &id117 !!python/tuple
         - s2
+        - 1
+      - T0_S1
+    - weight: '0'
+  - !!python/tuple
+    - *id100
+    - !!python/tuple
+      - &id118 !!python/tuple
+        - s5
+        - 1
+      - T0_S1
+    - weight: '0'
+  - !!python/tuple
+    - *id100
+    - !!python/tuple
+      - &id119 !!python/tuple
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -1239,14 +1239,6 @@ graph:
     - *id101
     - !!python/tuple
       - &id124 !!python/tuple
-        - s3
-        - 1
-      - T0_S1
-    - weight: '0'
-  - !!python/tuple
-    - *id101
-    - !!python/tuple
-      - &id125 !!python/tuple
         - s4
         - 1
       - T0_S1
@@ -1254,8 +1246,16 @@ graph:
   - !!python/tuple
     - *id101
     - !!python/tuple
-      - &id126 !!python/tuple
+      - &id125 !!python/tuple
         - s2
+        - 1
+      - T0_S1
+    - weight: '0'
+  - !!python/tuple
+    - *id101
+    - !!python/tuple
+      - &id126 !!python/tuple
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -1520,7 +1520,7 @@ graph:
     - *id129
     - !!python/tuple
       - &id136 !!python/tuple
-        - s5
+        - s2
         - 1
       - T0_S1
     - weight: '0'
@@ -1528,7 +1528,7 @@ graph:
     - *id129
     - !!python/tuple
       - &id137 !!python/tuple
-        - s3
+        - s5
         - 1
       - T0_S1
     - weight: '0'
@@ -1536,7 +1536,7 @@ graph:
     - *id129
     - !!python/tuple
       - &id138 !!python/tuple
-        - s2
+        - s3
         - 1
       - T0_S1
     - weight: '0'
@@ -1564,7 +1564,7 @@ graph:
     - *id130
     - !!python/tuple
       - &id144 !!python/tuple
-        - s5
+        - s4
         - 1
       - T0_S1
     - weight: '0'
@@ -1572,7 +1572,7 @@ graph:
     - *id130
     - !!python/tuple
       - &id145 !!python/tuple
-        - s3
+        - s5
         - 1
       - T0_S1
     - weight: '0'
@@ -1580,7 +1580,7 @@ graph:
     - *id130
     - !!python/tuple
       - &id146 !!python/tuple
-        - s4
+        - s3
         - 1
       - T0_S1
     - weight: '0'

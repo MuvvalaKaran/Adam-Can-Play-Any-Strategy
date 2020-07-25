@@ -1,6 +1,9 @@
 # ignore pycharm ide files
 *.idea
 
+# ignore the code profiles directory
+code_profiles/
+
 # ignore lib/ directory changes on the branch add_feature_factory_class_implementation
 lib/ 
 

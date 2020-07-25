@@ -9,9 +9,9 @@ from bidict import bidict
 # import local packages
 # from src.graph import Graph
 
-CONFIG_DIR = "src/mpg/"
+CONFIG_DIR = "mpg/"
 MPG_ABS_DIR = "/home/karan-m/Documents/mean_payoff_games/gpumpg/bin/"
-MPG_OP_ABS_DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/src/mpg/"
+MPG_OP_ABS_DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/mpg/"
 
 
 def deprecated(func):

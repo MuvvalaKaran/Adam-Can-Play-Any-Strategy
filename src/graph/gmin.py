@@ -1,7 +1,7 @@
 import warnings
 
 from .two_player_graph import TwoPlayerGraph
-from .graph import Graph
+from .base import Graph
 from .product import ProductAutomaton, ProductBuilder
 from .trans_sys import FiniteTransSys, TransitionSystemBuilder
 from .dfa import DFAGraph, DFABuilder

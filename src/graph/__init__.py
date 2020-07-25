@@ -3,7 +3,7 @@ from .dfa import DFAGraph, DFABuilder
 from .two_player_graph import TwoPlayerGraph, TwoPlayerGraphBuilder
 from .gmin import GMinGraph, GMinBuilder
 from .gmax import GMaxGraph, GMaxBuilder
-from .trans_sys import TwoPlayerGraph, TransitionSystemBuilder
+from .trans_sys import FiniteTransSys, TransitionSystemBuilder
 from .product import ProductAutomaton, ProductBuilder
 
 from .factory import GraphCollection

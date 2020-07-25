@@ -44,7 +44,7 @@ class Graph(abc.ABC):
         :return: A path to the script we are running
         """
         # return os.path.dirname(os.path.realpath(__file__))
-        return "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/src/"
+        return "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy"
 
     def read_yaml_file(self) -> None:
         """
@@ -75,7 +75,7 @@ class Graph(abc.ABC):
         if view:
             dot_object.view(cleanup=True)
 
-        dot_object.render(Graph._get_current_working_directory() + f'/graph_plots/{graph_name}', view=view,
+        dot_object.render(Graph._get_current_working_directory() + f'/plots/{graph_name}', view=view,
                           cleanup=True)
 
     def dump_to_yaml(self) -> None:

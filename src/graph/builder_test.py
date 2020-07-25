@@ -5,7 +5,7 @@ if __name__ == "__main__":
     two_player_graph = graph_factory.get("TwoPlayerGraph",
                                          graph_name="two_player_graph",
                                          config_yaml="config/two_player_graph",
-                                         save_flag=False,
+                                         save_flag=True,
                                          pre_built=True)
     # two_player_graph.plot_graph()
 

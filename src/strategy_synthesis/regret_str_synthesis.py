@@ -274,7 +274,8 @@ class RegretMinimizationStrategySynthesis:
         # add the edges with the weights
         g_hat.add_weighted_edges_from([('v0', 'v0', '0'),
                                        ('v0', 'v1', '0'),
-                                       ('vT', 'vT', str(-2 * float(self.graph.get_max_weight()) - 1))])
+                                       # ('vT', 'vT', -100000)])
+                                       ('vT', 'vT', str(-2 * abs(float(self.graph.get_max_weight())) - 1))])
                                        # ('vT', 'vT', str(math.inf))])
         return g_hat
 
@@ -286,9 +287,9 @@ class RegretMinimizationStrategySynthesis:
         # construct new graph according to the pseudocode 3
 
         G_hat: ProductAutomaton = graph_factory.get("ProductGraph",
-                                                  graph_name="G_hat",
-                                                  config_yaml="config/G_hat",
-                                                  save_flag=True)
+                                                    graph_name="G_hat",
+                                                    config_yaml="config/G_hat",
+                                                    save_flag=True)
         G_hat.construct_graph()
 
         # build g_hat
@@ -480,7 +481,7 @@ class RegretMinimizationStrategySynthesis:
         self._str_dict_sanity_check(str_dict)
 
         if print_reg:
-            self._print_reg_values(str_dict, plot_all=plot_all)
+            self._print_reg_values(str_dict)
 
         if plot_all:
             return str_dict
@@ -765,6 +766,31 @@ class RegretMinimizationStrategySynthesis:
 
         return original_str
 
+    def _from_str_mpg_to_str(self, combined_str: Dict):
+        original_str = {}
+        # follow the strategy from the mpg toolbox
+        node_stack = []
+        curr_node = "v1"
+        b_val = combined_str[curr_node][1]
+
+        for u_node, v_node in combined_str.items():
+            if self.graph._graph.has_node(u_node[0]):
+                if u_node[1] == b_val and v_node[1] == b_val:
+                    if self.graph._graph.has_edge(u_node[0], v_node[0]):
+                            original_str.update({u_node[0]: v_node[0]})
+
+
+        # for u_node, v_node in combined_str.items():
+        # while curr_node not in node_stack:
+        #     node_stack.append(curr_node)
+        #     curr_node = combined_str[curr_node]
+
+        # for i in range(len(node_stack) - 1):
+        #     original_str.update({node_stack[i]: node_stack[i+1]})
+
+        return original_str
+
+
     def _from_str_b_to_str(self, g_hat: TwoPlayerGraph, combined_str: Dict):
         original_str = {}
 
@@ -777,6 +803,43 @@ class RegretMinimizationStrategySynthesis:
                     original_str.update({u_node[0]: v_node[0]})
 
         return original_str
+
+    def plot_str_from_mgp(self,
+                          g_hat: TwoPlayerGraph,
+                          str_dict: Dict,
+                          only_eve: bool = False,
+                          plot: bool = False):
+        """
+        A helper method that plots all the VALID strategies computed on g_hat on g_hat. It then maps back the
+         least regret strategy back to the original strategy.
+        :return:
+        """
+
+        g_hat.set_edge_attribute('strategy', False)
+
+        # valid_strs = self._get_set_of_valid_strs(str_dict=str_dict)
+
+        # for str in valid_strs:
+        if only_eve:
+            self._add_strategy_flag_only_eve(g_hat, str_dict)
+
+        else:
+            self._add_strategy_flag(g_hat, str_dict)
+
+        # get the least reg str from g_hat as we can only map that back the original graph
+        # least_reg_str = self._get_least_reg_str(str_dict)
+
+        org_str = self._from_str_mpg_to_str(str_dict)
+
+        if only_eve:
+            self._add_strategy_flag_only_eve(self.graph, org_str)
+
+        else:
+            self._add_strategy_flag(self.graph, org_str)
+
+        if plot:
+            g_hat.plot_graph()
+            self.graph.plot_graph()
 
     def plot_all_str_g_hat(self,
                            g_hat: TwoPlayerGraph,
@@ -815,21 +878,21 @@ class RegretMinimizationStrategySynthesis:
             g_hat.plot_graph()
             self.graph.plot_graph()
 
-    def plot_str_g_hat(self,g_hat: TwoPlayerGraph,
-                           str_dict: Dict,
-                           only_eve: bool = False,
-                           plot: bool = False):
+    def plot_str_g_hat(self, g_hat: TwoPlayerGraph,
+                       str_dict: Dict,
+                       only_eve: bool = False,
+                       plot: bool = False):
 
         g_hat.set_edge_attribute('strategy', False)
-        str = {**str_dict['eve'], **str_dict['adam']}
+        # str = {**str_dict['eve'], **str_dict['adam']}
 
         if only_eve:
-            self._add_strategy_flag_only_eve(g_hat, str)
+            self._add_strategy_flag_only_eve(g_hat, str_dict)
 
         else:
-            self._add_strategy_flag(g_hat, str)
+            self._add_strategy_flag(g_hat, str_dict)
 
-        org_str = self._from_str_b_to_str(g_hat, str)
+        org_str = self._from_str_b_to_str(g_hat, str_dict)
 
         if only_eve:
             self._add_strategy_flag_only_eve(self.graph, org_str)
@@ -841,21 +904,14 @@ class RegretMinimizationStrategySynthesis:
             g_hat.plot_graph()
             self.graph.plot_graph()
 
-    def _print_reg_values(self, str_dict, plot_all: bool = False):
+    def _print_reg_values(self, str_dict):
         """
         A helper method to print the regret value for strategies in all g_b.
         :return:
         """
-        # if plot_all:
         if len(list(str_dict.keys())) != 0:
             for k, v in str_dict.items():
                 print(f"Reg Value for b = {k} is : {v['reg']} \n")
-        # else:
-        #     if len(list(str_dict.keys())) != 0:
-        #         b: float = str_dict['v1'][1]
-        #         print(f"Reg Value for b = {b} is : {str_dict['reg']} \n")
-                # for k, v in str_dict.items():
-                #     print(f"{k}: {v['reg']}")
 
 class ComputePlaysAndVals:
     """

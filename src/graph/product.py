@@ -167,13 +167,12 @@ class ProductAutomaton(TwoPlayerGraph):
                 else:
                     self._graph.add_weighted_edges_from([(_u_prod_node,
                                                           _v_prod_node,
-                                                          # math.inf)])
                                                           max_weight)])
-                    # str(-1 * float(max_w)))])
+                                                          # str(-1 * float(max_weight)))])
             else:
                 self._graph.add_weighted_edges_from([(_u_prod_node, _v_prod_node,
                                                       weight)])
-                # str(-1* float(weight)))])
+                                                      # str(-1 * float(weight)))])
 
     def _check_transition(self, _u_ts_node,
                           _v_ts_node,

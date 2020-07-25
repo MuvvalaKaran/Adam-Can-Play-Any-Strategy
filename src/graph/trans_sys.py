@@ -1,4 +1,5 @@
 import warnings
+import math
 
 from graphviz import Digraph
 from typing import List, Tuple, Dict
@@ -117,13 +118,11 @@ class FiniteTransSys(TwoPlayerGraph):
         return two_player_graph_ts
 
     def get_max_weight(self) -> str:
-        # NOTE: WE assuming that the edge weights are purely integer
-
-        max_weight: int = -1
+        max_weight: int = 0
         # loop through all the edges and return the max weight
         for _e in self._graph.edges.data("weight"):
-            if int(_e[2]) > max_weight:
-                max_weight = int(_e[2])
+            if abs(float(_e[2])) != math.inf and abs(float(_e[2])) > abs(max_weight):
+                max_weight = float(_e[2])
 
         return str(max_weight)
 
@@ -209,12 +208,16 @@ class FiniteTransSys(TwoPlayerGraph):
         trans_sys.add_state_attribute('s1', 'ap', 'b')
         trans_sys.add_state_attribute('s2', 'ap', 'a')
         trans_sys.add_state_attribute('s3', 'ap', 'c')
-
-        trans_sys.add_edge('s1', 's2', actions='s12', weight='0')
-        trans_sys.add_edge('s2', 's1', actions='s21', weight='2')
-        trans_sys.add_edge('s2', 's3', actions='s23', weight='3')
-        trans_sys.add_edge('s3', 's1', actions='s31', weight='5')
-        trans_sys.add_edge('s1', 's3', actions='s13', weight='3')
+        # trans_sys.add_edge('s1', 's2', actions='s12', weight='-0')
+        # trans_sys.add_edge('s2', 's1', actions='s21', weight='-2')
+        # trans_sys.add_edge('s2', 's3', actions='s23', weight='-3')
+        # trans_sys.add_edge('s3', 's1', actions='s31', weight='-5')
+        # trans_sys.add_edge('s1', 's3', actions='s13', weight='-3')
+        trans_sys.add_edge('s1', 's2', actions='s12', weight='-1')
+        trans_sys.add_edge('s2', 's1', actions='s21', weight='-1')
+        trans_sys.add_edge('s2', 's3', actions='s23', weight='-1')
+        trans_sys.add_edge('s3', 's1', actions='s31', weight='-1')
+        trans_sys.add_edge('s1', 's3', actions='s13', weight='-1')
 
         trans_sys.add_initial_state('s2')
 
@@ -265,18 +268,18 @@ class FiniteTransSys(TwoPlayerGraph):
         trans_sys.add_state_attribute('s4', 'ap', 'g')
         trans_sys.add_state_attribute('s5', 'ap', 'd')
         # E = 4 ; W = 2; S = 3 ; N = 9
-        trans_sys.add_edge('s1', 's2', actions='E', weight='4')
-        trans_sys.add_edge('s2', 's1', actions='W', weight='2')
-        trans_sys.add_edge('s3', 's2', actions='N', weight='9')
-        trans_sys.add_edge('s2', 's3', actions='S', weight='3')
-        trans_sys.add_edge('s3', 's4', actions='S', weight='3')
-        trans_sys.add_edge('s4', 's3', actions='N', weight='9')
-        trans_sys.add_edge('s1', 's4', actions='W', weight='2')
-        trans_sys.add_edge('s4', 's1', actions='W', weight='2')
-        trans_sys.add_edge('s4', 's5', actions='E', weight='4')
-        trans_sys.add_edge('s5', 's4', actions='S', weight='3')
-        trans_sys.add_edge('s2', 's5', actions='E', weight='4')
-        trans_sys.add_edge('s5', 's2', actions='N', weight='9')
+        trans_sys.add_edge('s1', 's2', actions='E', weight='-4')
+        trans_sys.add_edge('s2', 's1', actions='W', weight='-2')
+        trans_sys.add_edge('s3', 's2', actions='N', weight='-9')
+        trans_sys.add_edge('s2', 's3', actions='S', weight='-3')
+        trans_sys.add_edge('s3', 's4', actions='S', weight='-3')
+        trans_sys.add_edge('s4', 's3', actions='N', weight='-9')
+        trans_sys.add_edge('s1', 's4', actions='W', weight='-2')
+        trans_sys.add_edge('s4', 's1', actions='W', weight='-2')
+        trans_sys.add_edge('s4', 's5', actions='E', weight='-4')
+        trans_sys.add_edge('s5', 's4', actions='S', weight='-3')
+        trans_sys.add_edge('s2', 's5', actions='E', weight='-4')
+        trans_sys.add_edge('s5', 's2', actions='N', weight='-9')
 
         trans_sys.add_initial_state('s1')
 

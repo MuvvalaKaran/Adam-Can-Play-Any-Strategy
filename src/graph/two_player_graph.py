@@ -74,13 +74,11 @@ class TwoPlayerGraph(Graph):
         print("=====================================")
 
     def get_max_weight(self) -> str:
-        # NOTE: WE assuming that the edge weights are purely integer
-
-        max_weight: int = -1
+        max_weight: int = 0
         # loop through all the edges and return the max weight
         for _e in self._graph.edges.data("weight"):
-            if _e[2] != math.inf and float(_e[2]) > max_weight:
-                max_weight = int(_e[2])
+            if abs(float(_e[2])) != math.inf and abs(float(_e[2])) > abs(max_weight):
+                max_weight = float(_e[2])
 
         return str(max_weight)
 

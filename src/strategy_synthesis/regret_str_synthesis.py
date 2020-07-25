@@ -11,7 +11,7 @@ from typing import Dict, List, Tuple, Union, Optional
 from src.graph import Graph, graph_factory
 from src.graph import TwoPlayerGraph
 from src.graph import ProductAutomaton
-from src.payoff import Payoff, payoff_factory
+from src.payoff import Payoff
 from helper_methods import deprecated
 
 # asserts that this code is tested in linux
@@ -434,83 +434,13 @@ class RegretMinimizationStrategySynthesis:
 
         g_hat.set_edge_attribute('strategy', False)
 
-        # valid_strs = self._get_set_of_valid_strs(str_dict=str_dict)
-
-        # for str in valid_strs:
         if only_eve:
             self._add_strategy_flag_only_eve(g_hat, str_dict)
 
         else:
             self._add_strategy_flag(g_hat, str_dict)
-
-        # get the least reg str from g_hat as we can only map that back the original graph
-        # least_reg_str = self._get_least_reg_str(str_dict)
 
         org_str = self._from_str_mpg_to_str(str_dict)
-
-        if only_eve:
-            self._add_strategy_flag_only_eve(self.graph, org_str)
-
-        else:
-            self._add_strategy_flag(self.graph, org_str)
-
-        if plot:
-            g_hat.plot_graph()
-            self.graph.plot_graph()
-
-    @deprecated
-    def plot_all_str_g_hat(self,
-                           g_hat: TwoPlayerGraph,
-                           str_dict: Dict,
-                           only_eve: bool = False,
-                           plot: bool = False):
-        """
-        A helper method that plots all the VALID strategies computed on g_hat on g_hat. It then maps back the
-         least regret strategy back to the original strategy.
-        :return:
-        """
-
-        g_hat.set_edge_attribute('strategy', False)
-
-        valid_strs = self._get_set_of_valid_strs(str_dict=str_dict)
-
-        for str in valid_strs:
-            if only_eve:
-                self._add_strategy_flag_only_eve(g_hat, str)
-
-            else:
-                self._add_strategy_flag(g_hat, str)
-
-        # get the least reg str from g_hat as we can only map that back the original graph
-        least_reg_str = self._get_least_reg_str(str_dict)
-
-        org_str = self._from_str_b_to_str(g_hat, {**least_reg_str['eve'], **least_reg_str['adam']})
-
-        if only_eve:
-            self._add_strategy_flag_only_eve(self.graph, org_str)
-
-        else:
-            self._add_strategy_flag(self.graph, org_str)
-
-        if plot:
-            g_hat.plot_graph()
-            self.graph.plot_graph()
-
-    def plot_str_g_hat(self, g_hat: TwoPlayerGraph,
-                       str_dict: Dict,
-                       only_eve: bool = False,
-                       plot: bool = False):
-
-        g_hat.set_edge_attribute('strategy', False)
-        # str = {**str_dict['eve'], **str_dict['adam']}
-
-        if only_eve:
-            self._add_strategy_flag_only_eve(g_hat, str_dict)
-
-        else:
-            self._add_strategy_flag(g_hat, str_dict)
-
-        org_str = self._from_str_b_to_str(g_hat, str_dict)
 
         if only_eve:
             self._add_strategy_flag_only_eve(self.graph, org_str)

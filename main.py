@@ -1,4 +1,3 @@
-# main script file that
 from src.graph import graph_factory
 from src.payoff import payoff_factory
 from src.strategy_synthesis import RegMinStrSyn
@@ -7,7 +6,6 @@ from helper_methods import create_mpg_file, read_mpg_op, run_save_output_mpg
 
 if __name__ == "__main__":
 
-    plot_all = False
     finite = False
     # build the TS
     trans_sys = graph_factory.get('TS',
@@ -71,5 +69,4 @@ if __name__ == "__main__":
     g_hat = reg_syn_handle.construct_g_hat(w_prime, acc_min_edge_weight=False)
     reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True)
     # g_hat.plot_graph()
-
     reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=True, plot=True)

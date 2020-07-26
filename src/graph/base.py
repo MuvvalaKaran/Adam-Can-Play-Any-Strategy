@@ -78,6 +78,40 @@ class Graph(abc.ABC):
         dot_object.render(Graph._get_current_working_directory() + f'plots/{graph_name}', view=view,
                           cleanup=True)
 
+    def build_graph_from_file(self):
+        """
+        A method to build the graph from a config file. Before we run this method we need to make sure that the
+        graph data like nodes and edges and their respective attributes have been store in a self._graph_yaml attribute.
+        :return: updates the graph with the respective nodes and the edges
+        """
+
+        if self._graph_yaml is None:
+            warnings.warn("Please ensure that you have first loaded the config data. You can do this by"
+                          "setting the respective True in the builder instance.")
+
+        _nodes = self._graph_yaml['nodes']
+
+        # each node has an atomic proposition and a player associated with it. Some states also init and
+        # accepting attributes associated with them
+        for _n in _nodes:
+            state_name = _n[0]
+            ap = _n[1].get('ap')
+            player = _n[1].get('player')
+            self.add_state(state_name, ap=ap, player=player)
+
+            if _n[1].get('accepting'):
+                self.add_initial_state(state_name)
+
+            if _n[1].get('init'):
+                self.add_initial_state(state_name)
+
+        _edges = self._graph_yaml['edges']
+
+        for _e in _edges:
+            _weight = _e[2].get('weight')
+            _action = _e[2].get('actions')
+            self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
+
     def dump_to_yaml(self) -> None:
         """
         A method to dump the contents of the @self._graph in to @self._file_name yaml document which the Graph()

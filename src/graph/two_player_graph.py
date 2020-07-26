@@ -138,6 +138,7 @@ class TwoPlayerGraphBuilder(Builder):
                  graph_name: str,
                  config_yaml: str,
                  save_flag: bool = False,
+                 from_file: bool = False,
                  pre_built: bool = False,
                  plot: bool = False) -> TwoPlayerGraph:
         """
@@ -148,6 +149,9 @@ class TwoPlayerGraphBuilder(Builder):
         self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
         self._instance.construct_graph()
 
+        if from_file:
+            self._instance._graph_yaml = self._from_yaml(config_yaml)
+
         if pre_built:
             self._instance = TwoPlayerGraph.build_running_ex(graph_name, config_yaml, save_flag)
 
@@ -155,3 +159,10 @@ class TwoPlayerGraphBuilder(Builder):
             self._instance.plot_graph()
 
         return self._instance
+
+    def _from_yaml(self, config_file_name: str) -> dict:
+
+        # config_file_name = config_file_name + ".yaml"
+        config_data = self.load_YAML_config_data(config_file_name)
+
+        return config_data

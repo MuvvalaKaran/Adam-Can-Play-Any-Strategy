@@ -32,6 +32,8 @@ class Builder(ABC):
         :return:
         """
 
+        DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/"
+        config_file_name = DIR + config_file_name + ".yaml"
         with open(config_file_name, 'r') as stream:
             config_data = yaml.load(stream, Loader=yaml.Loader)
 

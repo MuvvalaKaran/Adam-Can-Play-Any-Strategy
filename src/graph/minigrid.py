@@ -12,11 +12,11 @@ class MiniGrid(FiniteTransSys):
     def construct_graph(self):
         super().construct_graph()
 
-    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+    def fancy_graph(self, color=()) -> None:
         """
-               Method to create a illustration of the graph
-               :return: Diagram of the graph
-               """
+        Method to create a illustration of the graph
+        :return: Diagram of the graph
+        """
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
         for n in nodes:

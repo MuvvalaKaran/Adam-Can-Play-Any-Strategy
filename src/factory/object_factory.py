@@ -1,6 +1,7 @@
 # generic object factory
 from .builder import Builder
 
+
 class ObjectFactory:
     """
     Generic Object factory to leverage the generic Builder interface to create all/any kinds of objects

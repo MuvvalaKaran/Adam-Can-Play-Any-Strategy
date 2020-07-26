@@ -38,8 +38,6 @@ class Payoff(abc.ABC):
         """
         for node in self.graph._graph.nodes.data():
             if node[1].get('init'):
-                # self._init_node = node[0]
-                # self.init_node = node[0]
                 self.set_init_node(node[0])
                 break
 
@@ -74,10 +72,6 @@ class Payoff(abc.ABC):
 
         self.init_node = node
 
-    # @payoff_func.setter
-    # def payoff_func(self, value):
-    #     self._payoff_func = value
-
     def remove_attribute(self, tnode: Tuple, attr: str) -> None:
         """
         A method to remove a attribute @attr associated with a node @tnode. e.g weights, init are stored as dict keys
@@ -94,81 +88,15 @@ class Payoff(abc.ABC):
     @abstractmethod
     def _compute_loop_value(self, stack: List) -> str:
         pass
-        # """
-        # A helper method to compute the value of a loop
-        # :param stack: a List of nodes (of type tuple)
-        # :return: The value associate with a play (nodes in stack) given a payoff function
-        # """
-        # # get the index of the repeated node when it first appeared
-        # initial_index = stack.index(stack[-1])
-        # loop_edge_w = []
-        # # get the edge weights between the repeated nodes
-        # for i in range(initial_index, len(stack) - 1):
-        #     # create the edge tuple up to the very last element
-        #     loop_edge_w.append(float(self.graph._graph[stack[i]][stack[i + 1]][0].get('weight')))
-        #
-        # return self.payoff_func(loop_edge_w)
 
     @abstractmethod
     def cycle_main(self) -> Dict[Tuple, str]:
         pass
-        # """
-        # A method to compute the all the possible loop values for a given graph with an init node. Before calling this
-        # function make sure you have already updated the init node and then call this function.
-        # :return: A dict consisting all the loops that exist in a graph with a given init node and its corresponding
-        # values for a given payoff function
-        # """
-        # # NOTE: the data player and the init flag cannot be accessed as graph[node]['init'/ 'player'] you have to first
-        # #  access the data as graph.nodes.data() and loop over the list each element in that list is a tuple
-        # #  (NOT A DICT) of the form (node_name, {key: value})
-        #
-        # # create a dict to hold values of the loops as str for a corresponding play which is a str too
-        # loop_dict: Dict[Tuple, str] = {}
-        #
-        # # visit each neighbour of the init node
-        # for node in self.graph._graph.neighbors(self.init_node):
-        #     visitStack: Dict[Tuple, bool] = defaultdict(lambda: False)
-        #     visitStack[self.init_node] = True
-        #     nodeStack: List[Tuple] = []
-        #     nodeStack.append(self.init_node)
-        #     self._cycle_util(node, visitStack, loop_dict, nodeStack)
-        #
-        # self.__loop_vals = loop_dict
-        # return loop_dict
 
     @abstractmethod
     def _cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, str],
                     nodeStack: List[Tuple]) -> None:
         pass
-        # """
-        # A method to help with detecting loop and updating the loop dict accordingly.
-        # :param node: Tuple which is a node that belong to the self.graph
-        # :param visitStack: A dict that keeps track of all the nodes visited and updates the flag to True if so
-        # :param loop_dict: A dict that holds values to all possible loops that can be computed for a given graph and for
-        # a given payoff function
-        # :param nodeStack: A list that holds all the nodes we visit along a play (nodes can and do repeat in this
-        # "stack")
-        # :return: A dict @loop_dict that holds the values of all the possible loops that can be computed for a given
-        # payoff function @ self.__payoff_func.
-        # """
-        # visitStack = copy.copy(visitStack)
-        # visitStack[node] = True
-        # nodeStack = copy.copy((nodeStack))
-        # nodeStack.append(node)
-        # for neighbour in self.graph._graph.neighbors(node):
-        #     if visitStack[neighbour]:
-        #         nodeStack = copy.copy((nodeStack))
-        #         # for a state with a self-loop, when we start from the same state, it then adds the state thrice.
-        #         # we would like to avoid that using this flag
-        #         if nodeStack.count(neighbour) != 2:
-        #             nodeStack.append(neighbour)
-        #
-        #         loop_value: str = self._compute_loop_value(nodeStack)
-        #         loop_dict.update({tuple(nodeStack): loop_value})
-        #         nodeStack.pop()
-        #         continue
-        #     else:
-        #         self._cycle_util(neighbour, visitStack, loop_dict, nodeStack)
 
     def _find_vertex_in_play(self, v: Tuple, play: Tuple) -> bool:
         """

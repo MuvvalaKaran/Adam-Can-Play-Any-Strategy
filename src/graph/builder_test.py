@@ -3,7 +3,6 @@ import gym
 
 from src.graph import graph_factory
 from wombats.systems import StaticMinigridTSWrapper
-from wombats.automaton import MinigridTransitionSystem
 from wombats.automaton import active_automata
 
 DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/config/"
@@ -17,19 +16,8 @@ def test_build_from_file(config_file_name):
                                                    save_flag=True,
                                                    from_file=True)
 
-    # config_data = two_player_graph_from_file.load_YAML_config_data(config_file_name="config/two_player_graph")
-    # two_player_graph_from_file._graph_yaml = config_data
     two_player_graph_from_file.build_graph_from_file()
     two_player_graph_from_file.fancy_graph()
-
-
-def _from_yaml(config_file_name):
-    # allowed_exts = ['.yaml', '.yml']
-    # if file_name in allowed_exts:
-    with open(config_file_name, 'r') as stream:
-        config_data = yaml.load(stream, Loader=yaml.Loader)
-
-    return config_data
 
 
 def run_wombats():

@@ -119,6 +119,21 @@ class FiniteTransSys(TwoPlayerGraph):
 
         return two_player_graph_ts
 
+    def _sanity_check(self, debug: bool = False):
+        """
+        A helper method that loops through every node and checks if it has an outgoing edge or not.
+         If not then we add action "self" with weight 0.
+        :return:
+        """
+
+        for _n in self._graph.nodes():
+            if len(list(self._graph.successors(_n))) == 0:
+                if debug:
+                    print("=====================================")
+                    print(f"Adding self loop of weight - {0} to the node {_n} in {self._graph.name}")
+                    print("=====================================")
+                self._graph.add_edge(_n, _n, weight=0, actions="self")
+
     def get_max_weight(self) -> str:
         max_weight: int = 0
         # loop through all the edges and return the max weight
@@ -165,6 +180,7 @@ class FiniteTransSys(TwoPlayerGraph):
         raw_trans_name = "raw" + graph_name
         trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}", save_flag=save_flag)
         trans_sys._graph = raw_ts._graph
+        trans_sys._sanity_check(debug=debug)
 
         if plot_raw_ts:
             trans_sys.plot_graph()

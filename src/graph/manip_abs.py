@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 from src.graph import FiniteTransSys
 
+
 class Node:
     def __init__(self):
         self._no_of_objects: int = 0

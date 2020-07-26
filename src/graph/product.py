@@ -367,7 +367,7 @@ class ProductAutomaton(TwoPlayerGraph):
         self._sanity_check(debug=debug)
 
     def _sanity_check(self, debug: bool = False):
-        # check is the graph is total or not by loop through every node and add a self-loop of weight max(W)
+        # check is the graph is total or not by looping through every node and add a self-loop of weight max(W)
         # to every node that does not  have a successor
         max_w: str = self._trans_sys.get_max_weight()
         for _n in self._graph.nodes():

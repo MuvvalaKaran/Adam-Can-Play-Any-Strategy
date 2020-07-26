@@ -1,38 +1,245 @@
-graph:
-  edges:
-  - !!python/tuple
-    - s1
-    - s2
-    - actions: s12
-      weight: '0'
-  - !!python/tuple
-    - s1
-    - s3
-    - actions: s13
-      weight: '3'
-  - !!python/tuple
-    - s2
-    - s1
-    - actions: s21
-      weight: '2'
-  - !!python/tuple
-    - s2
-    - s3
-    - actions: s23
-      weight: '3'
-  - !!python/tuple
-    - s3
-    - s1
-    - actions: s31
-      weight: '5'
-  vertices:
-  - !!python/tuple
-    - s1
-    - ap: b
-  - !!python/tuple
-    - s2
-    - ap: a
-      init: true
-  - !!python/tuple
-    - s3
-    - ap: c
+alphabet_size: 36
+edges:
+- !!python/tuple
+  - (1, 1), right
+  - (1, 1), up
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (1, 1), right
+  - (1, 1), down
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (1, 1), right
+  - (2, 1), right
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (1, 1), up
+  - (1, 1), left
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (1, 1), up
+  - (1, 1), right
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (1, 1), up
+  - (1, 1), up
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (1, 1), down
+  - (1, 1), right
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (1, 1), down
+  - (1, 1), left
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (1, 1), down
+  - (1, 2), down
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (2, 1), right
+  - (2, 1), up
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (2, 1), right
+  - (2, 1), down
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (2, 1), right
+  - (2, 1), right
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (1, 1), left
+  - (1, 1), down
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (1, 1), left
+  - (1, 1), up
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (1, 1), left
+  - (1, 1), left
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (1, 2), down
+  - (1, 2), right
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (1, 2), down
+  - (1, 2), left
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (1, 2), down
+  - (1, 2), down
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (2, 1), up
+  - (2, 1), left
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (2, 1), up
+  - (2, 1), right
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (2, 1), up
+  - (2, 1), up
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (2, 1), down
+  - (2, 1), right
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (2, 1), down
+  - (2, 1), left
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (2, 1), down
+  - (2, 2), down
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (1, 2), right
+  - (1, 2), up
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (1, 2), right
+  - (1, 2), down
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (1, 2), right
+  - (2, 2), right
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (1, 2), left
+  - (1, 2), down
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (1, 2), left
+  - (1, 2), up
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (1, 2), left
+  - (1, 2), left
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (2, 1), left
+  - (2, 1), down
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (2, 1), left
+  - (2, 1), up
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (2, 1), left
+  - (1, 1), left
+  - actions: forward
+    weight: null
+- !!python/tuple
+  - (1, 2), up
+  - (1, 2), left
+  - actions: left
+    weight: null
+- !!python/tuple
+  - (1, 2), up
+  - (1, 2), right
+  - actions: right
+    weight: null
+- !!python/tuple
+  - (1, 2), up
+  - (1, 1), up
+  - actions: forward
+    weight: null
+nodes:
+- !!python/tuple
+  - (1, 1), right
+  - ap: empty_red_open
+    init: true
+    player: eve
+- !!python/tuple
+  - (1, 1), up
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (1, 1), down
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 1), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (1, 1), left
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (1, 2), down
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 1), up
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 1), down
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (1, 2), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (1, 2), left
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 1), left
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 2), down
+  - accepting: true
+    ap: goal_green_open
+    player: eve
+- !!python/tuple
+  - (1, 2), up
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 2), right
+  - accepting: true
+    ap: goal_green_open
+    player: eve
+num_obs: 3
+num_states: 14
+start_state: (1, 1), right

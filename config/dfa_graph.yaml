@@ -1,6 +1,17 @@
 graph:
   edges:
   - !!python/tuple
+<<<<<<< Updated upstream:config/dfa_graph.yaml
+=======
+    - T0_S2
+    - T0_S2
+    - guard: !!python/object:src.graph.Parser.SymbolExpression
+        formula: (true)
+        name: 'true'
+        symbol: 'true'
+      guard_formula: (true)
+  - !!python/tuple
+>>>>>>> Stashed changes:src/config/dfa_graph.yaml
     - accept_all
     - accept_all
     - guard: !!python/object:src.graph.Parser.TrueExpression
@@ -48,6 +59,12 @@ graph:
       guard_formula: (true)
   vertices:
   - !!python/tuple
+<<<<<<< Updated upstream:config/dfa_graph.yaml
+=======
+    - T0_S2
+    - {}
+  - !!python/tuple
+>>>>>>> Stashed changes:src/config/dfa_graph.yaml
     - accept_all
     - accepting: true
   - !!python/tuple

@@ -7,7 +7,11 @@
 
 # ignore the code profiles directory
 code_profiles/
+
+# ignore wombats and all log files created by Wombats
 wombats/
+minigrid_env_logs/
+automaton_data/
 
 # ignore lib/ directory changes on the branch add_feature_factory_class_implementation
 lib/ 

@@ -100,7 +100,7 @@ class Graph(abc.ABC):
             self.add_state(state_name, ap=ap, player=player)
 
             if _n[1].get('accepting'):
-                self.add_initial_state(state_name)
+                self.add_accepting_state(state_name)
 
             if _n[1].get('init'):
                 self.add_initial_state(state_name)

@@ -1,3 +1,5 @@
+import warnings
+
 from graphviz import Digraph
 
 from src.graph import FiniteTransSys
@@ -11,6 +13,49 @@ class MiniGrid(FiniteTransSys):
 
     def construct_graph(self):
         super().construct_graph()
+
+    def build_graph_from_file(self):
+        """
+        A method to build the graph from a config file. Before we run this method we need to make sure that the
+        graph data like nodes and edges and their respective attributes have been store in a self._graph_yaml attribute.
+        :return: updates the graph with the respective nodes and the edges
+        """
+
+        if self._graph_yaml is None:
+            warnings.warn("Please ensure that you have first loaded the config data. You can do this by"
+                          "setting the respective True in the builder instance.")
+
+        _nodes = self._graph_yaml['nodes']
+        _start_state = self._graph_yaml['start_state']
+
+        # each node has an atomic proposition and a player associated with it. Some states also init and
+        # accepting attributes associated with them
+        for _n in _nodes:
+            state_name = _n[0]
+            ap = _n[1].get('observation')
+            # all nodes we get from the gym minigrid be default belong to system/eve
+            # player = _n[1].get('player')
+            self.add_state(state_name, ap=ap, player="eve")
+
+            if _n[1].get('is_accepting'):
+                self.add_accepting_state(state_name)
+
+        self.add_initial_state(_start_state)
+
+        _edges = self._graph_yaml['edges']
+
+        # as originally the minigrid world does not have weight associated with its actions,
+        # we will manually assign a weight here
+
+        # NOTE : ALL actions have the same cost of 1 unless specified in the yaml specifically
+        for _e in _edges:
+            _weight = _e[2].get('weight')
+            _action = _e[2].get('label')
+
+            if _weight is None:
+                self.add_edge(_e[0], _e[1], weight=1, actions=_action)
+            else:
+                self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
 
     def fancy_graph(self, color=()) -> None:
         """

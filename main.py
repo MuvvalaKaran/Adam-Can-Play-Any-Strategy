@@ -19,6 +19,8 @@ DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/con
 Note: When you create a NxN world, two units of width and height are consumed for drawing the boundary.
 So a 4x4 world will be a 2x2 env and 5x5 will be a 3x3 env respectively.  
 """
+
+
 class MiniGridEmptyEnv(enum.Enum):
     env_3 = 'MiniGrid-Empty-3x3-v0'
     env_4 = 'MiniGrid-Empty-4x4-v0'

@@ -1,5 +1,6 @@
-from abc import ABC, abstractmethod
+import yaml
 
+from abc import ABC, abstractmethod
 
 class Builder(ABC):
     """
@@ -22,3 +23,16 @@ class Builder(ABC):
         :return: a concrete instance of the object to be built
         """
         return NotImplementedError
+
+    @staticmethod
+    def load_YAML_config_data(config_file_name: str) -> dict:
+        """
+        read in the configuration parameters to build a graph from a yaml config file
+        :param config_file_name: The YAML configuration file name
+        :return:
+        """
+
+        with open(config_file_name, 'r') as stream:
+            config_data = yaml.load(stream, Loader=yaml.Loader)
+
+        return config_data

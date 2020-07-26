@@ -1,4 +1,5 @@
 graph:
+  alphabet_size: 84
   edges:
   - !!python/tuple
     - &id001 !!python/tuple
@@ -207,6 +208,13 @@ graph:
   - !!python/tuple
     - *id011
     - !!python/tuple
+      - s4
+      - 1
+    - actions: m
+      weight: '0'
+  - !!python/tuple
+    - *id011
+    - !!python/tuple
       - s3
       - 1
     - actions: m
@@ -215,13 +223,6 @@ graph:
     - *id011
     - !!python/tuple
       - s1
-      - 1
-    - actions: m
-      weight: '0'
-  - !!python/tuple
-    - *id011
-    - !!python/tuple
-      - s4
       - 1
     - actions: m
       weight: '0'
@@ -244,6 +245,13 @@ graph:
   - !!python/tuple
     - *id012
     - !!python/tuple
+      - s2
+      - 1
+    - actions: m
+      weight: '0'
+  - !!python/tuple
+    - *id012
+    - !!python/tuple
       - s3
       - 1
     - actions: m
@@ -252,13 +260,6 @@ graph:
     - *id012
     - !!python/tuple
       - s1
-      - 1
-    - actions: m
-      weight: '0'
-  - !!python/tuple
-    - *id012
-    - !!python/tuple
-      - s2
       - 1
     - actions: m
       weight: '0'
@@ -281,7 +282,7 @@ graph:
   - !!python/tuple
     - *id013
     - !!python/tuple
-      - s3
+      - s2
       - 1
     - actions: m
       weight: '0'
@@ -295,7 +296,7 @@ graph:
   - !!python/tuple
     - *id013
     - !!python/tuple
-      - s2
+      - s3
       - 1
     - actions: m
       weight: '0'
@@ -318,7 +319,7 @@ graph:
   - !!python/tuple
     - *id014
     - !!python/tuple
-      - s1
+      - s2
       - 1
     - actions: m
       weight: '0'
@@ -332,7 +333,7 @@ graph:
   - !!python/tuple
     - *id014
     - !!python/tuple
-      - s2
+      - s1
       - 1
     - actions: m
       weight: '0'
@@ -348,14 +349,14 @@ graph:
   - !!python/tuple
     - *id015
     - !!python/tuple
-      - s3
+      - s1
       - 1
     - actions: m
       weight: '0'
   - !!python/tuple
     - *id015
     - !!python/tuple
-      - s1
+      - s2
       - 1
     - actions: m
       weight: '0'
@@ -369,7 +370,7 @@ graph:
   - !!python/tuple
     - *id015
     - !!python/tuple
-      - s2
+      - s3
       - 1
     - actions: m
       weight: '0'
@@ -392,6 +393,13 @@ graph:
   - !!python/tuple
     - *id016
     - !!python/tuple
+      - s4
+      - 1
+    - actions: m
+      weight: '0'
+  - !!python/tuple
+    - *id016
+    - !!python/tuple
       - s3
       - 1
     - actions: m
@@ -400,13 +408,6 @@ graph:
     - *id016
     - !!python/tuple
       - s1
-      - 1
-    - actions: m
-      weight: '0'
-  - !!python/tuple
-    - *id016
-    - !!python/tuple
-      - s4
       - 1
     - actions: m
       weight: '0'
@@ -429,6 +430,13 @@ graph:
   - !!python/tuple
     - *id017
     - !!python/tuple
+      - s2
+      - 1
+    - actions: m
+      weight: '0'
+  - !!python/tuple
+    - *id017
+    - !!python/tuple
       - s3
       - 1
     - actions: m
@@ -437,13 +445,6 @@ graph:
     - *id017
     - !!python/tuple
       - s1
-      - 1
-    - actions: m
-      weight: '0'
-  - !!python/tuple
-    - *id017
-    - !!python/tuple
-      - s2
       - 1
     - actions: m
       weight: '0'
@@ -466,7 +467,7 @@ graph:
   - !!python/tuple
     - *id018
     - !!python/tuple
-      - s1
+      - s2
       - 1
     - actions: m
       weight: '0'
@@ -480,7 +481,7 @@ graph:
   - !!python/tuple
     - *id018
     - !!python/tuple
-      - s2
+      - s1
       - 1
     - actions: m
       weight: '0'
@@ -503,7 +504,7 @@ graph:
   - !!python/tuple
     - *id019
     - !!python/tuple
-      - s3
+      - s2
       - 1
     - actions: m
       weight: '0'
@@ -517,7 +518,7 @@ graph:
   - !!python/tuple
     - *id019
     - !!python/tuple
-      - s2
+      - s3
       - 1
     - actions: m
       weight: '0'
@@ -533,14 +534,14 @@ graph:
   - !!python/tuple
     - *id020
     - !!python/tuple
-      - s3
+      - s1
       - 1
     - actions: m
       weight: '0'
   - !!python/tuple
     - *id020
     - !!python/tuple
-      - s1
+      - s2
       - 1
     - actions: m
       weight: '0'
@@ -554,7 +555,7 @@ graph:
   - !!python/tuple
     - *id020
     - !!python/tuple
-      - s2
+      - s3
       - 1
     - actions: m
       weight: '0'
@@ -577,6 +578,13 @@ graph:
   - !!python/tuple
     - *id021
     - !!python/tuple
+      - s2
+      - 1
+    - actions: m
+      weight: '0'
+  - !!python/tuple
+    - *id021
+    - !!python/tuple
       - s3
       - 1
     - actions: m
@@ -585,13 +593,6 @@ graph:
     - *id021
     - !!python/tuple
       - s1
-      - 1
-    - actions: m
-      weight: '0'
-  - !!python/tuple
-    - *id021
-    - !!python/tuple
-      - s2
       - 1
     - actions: m
       weight: '0'
@@ -614,6 +615,13 @@ graph:
   - !!python/tuple
     - *id022
     - !!python/tuple
+      - s4
+      - 1
+    - actions: m
+      weight: '0'
+  - !!python/tuple
+    - *id022
+    - !!python/tuple
       - s3
       - 1
     - actions: m
@@ -625,14 +633,7 @@ graph:
       - 1
     - actions: m
       weight: '0'
-  - !!python/tuple
-    - *id022
-    - !!python/tuple
-      - s4
-      - 1
-    - actions: m
-      weight: '0'
-  vertices:
+  nodes:
   - !!python/tuple
     - *id001
     - ap: b
@@ -710,3 +711,6 @@ graph:
   - !!python/tuple
     - *id022
     - player: adam
+  num_obs: 3
+  num_states: 22
+  start_state: *id001

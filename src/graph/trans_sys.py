@@ -23,21 +23,23 @@ class FiniteTransSys(TwoPlayerGraph):
         :return: Diagram of the graph
         """
         dot: Digraph = Digraph(name="graph")
-        nodes = self._graph_yaml["vertices"]
+        nodes = self._graph_yaml["nodes"]
         for n in nodes:
             # default color for all the nodes is grey
             ap = n[1].get('ap')
             ap = "{" + str(ap) + "}"
-            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0], "xlabel": ap})
+            dot.node(str(n[0]), _attributes={"style": "filled",
+                                             "fillcolor": color[0],
+                                             "xlabel": ap,
+                                             "shape": "rectangle"})
             if n[1].get('init'):
                 # default color for init node is red
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": ap})
             if n[1].get('accepting'):
-                # default color for accepting node is purple
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
             if n[1].get('player') == 'eve':
                 dot.node(str(n[0]), _attributes={"shape": "rectangle", "xlabel": ap})
-            else:
+            if n[1].get('player') == 'adam':
                 dot.node(str(n[0]), _attributes={"shape": "circle", "xlabel": ap})
 
         # add all the edges
@@ -312,6 +314,7 @@ class TransitionSystemBuilder(Builder):
                  raw_trans_sys: FiniteTransSys,
                  graph_name: str,
                  config_yaml: str,
+                 from_file: bool = False,
                  pre_built: bool = True,
                  built_in_ts_name: str = "",
                  save_flag: bool = False,
@@ -363,9 +366,8 @@ class TransitionSystemBuilder(Builder):
                                            human_intervention,
                                            plot_raw_ts,
                                            debug)
-        else:
-            # TODO: ADD method to build graph from config files
-            pass
+        elif from_file:
+            self._instance._graph_yaml = self._from_yaml(config_yaml)
 
         return self._instance
 
@@ -436,3 +438,9 @@ class TransitionSystemBuilder(Builder):
         except KeyError:
             raise KeyError(f"Make sure you enter the correct name to access the pre built TS."
                             f" The built TS names are : {[i for i in self._pre_built.keys()]}")
+
+    def _from_yaml(self, config_file_name: str) -> dict:
+
+        config_data = self.load_YAML_config_data(config_file_name)
+
+        return config_data

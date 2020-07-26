@@ -25,21 +25,21 @@ class TwoPlayerGraph(Graph):
         :return: Diagram of the graph
         """
         dot: Digraph = Digraph(name="graph")
-        nodes = self._graph_yaml["vertices"]
+        nodes = self._graph_yaml["nodes"]
         for n in nodes:
-            # default color for all the nodes is grey
             ap = n[1].get('ap')
             ap = "{" + str(ap) + "}"
-            dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[0], "xlabel": ap})
+            dot.node(str(n[0]), _attributes={"style": "filled",
+                                             "fillcolor": color[0],
+                                             "xlabel": ap,
+                                             "shape": "rectangle"})
             if n[1].get('init'):
-                # default color for init node is red
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": ap})
             if n[1].get('accepting'):
-                # default color for accepting node is purple
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
             if n[1].get('player') == 'eve':
                 dot.node(str(n[0]), _attributes={"shape": "rectangle"})
-            else:
+            if n[1].get('player') == 'adam':
                 dot.node(str(n[0]), _attributes={"shape": "circle"})
 
         # add all the edges

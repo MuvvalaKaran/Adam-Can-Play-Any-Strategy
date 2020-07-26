@@ -63,7 +63,7 @@ class Graph(abc.ABC):
                 print(error)
                 print(f"The file {file_name} does not exist")
 
-            self._graph_yaml = graph_data['graph']
+            self._graph_yaml = graph_data
 
     def save_dot_graph(self, dot_object: Digraph, graph_name: str, view: bool = False) -> None:
         """
@@ -92,22 +92,26 @@ class Graph(abc.ABC):
         >>>    edges:
         >>>        parent_node, child_node, edge_weight
         """
-
-        data = dict(
-            graph=dict(
-                vertices=[node for node in self._graph.nodes.data()],
-                edges=[edge for edge in self._graph.edges.data()]
-            )
-        )
-
         config_file_name: str = str(self._config_yaml + '.yaml')
         config_file_add = Graph._get_current_working_directory() + config_file_name
+
+        data_dict = dict(
+                alphabet_size=len(self._graph.edges()),
+                num_states=len(self._graph.nodes),
+                num_obs=3,
+                start_state=self.get_initial_states()[0][0],
+                nodes=[node for node in self._graph.nodes.data()],
+                edges=[edge for edge in self._graph.edges.data()]
+        )
+
         try:
             with open(config_file_add, 'w') as outfile:
-                yaml.dump(data, outfile, default_flow_style=False)
+                yaml.dump(data_dict, outfile, default_flow_style=False)
+
         except FileNotFoundError:
             print(FileNotFoundError)
-            print(f"The file {config_file_name} could not be found")
+            print(f"The file {config_file_name} could not be found."
+                  f" This could be because I could not find the folder to dump in")
 
     def plot_graph(self):
         """

@@ -100,7 +100,7 @@ class DFAGraph(Graph):
 
     def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
         dot: Digraph = Digraph(name="graph")
-        nodes = self._graph_yaml["vertices"]
+        nodes = self._graph_yaml["nodes"]
 
         for n in nodes:
             # default color for all the nodes is grey

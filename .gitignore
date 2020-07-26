@@ -7,6 +7,7 @@
 
 # ignore the code profiles directory
 code_profiles/
+wombats/
 
 # ignore lib/ directory changes on the branch add_feature_factory_class_implementation
 lib/ 

@@ -1,9 +1,12 @@
 import gym
 import enum
 
+from typing import Tuple
+
 # import wombats packages
 from wombats.systems import StaticMinigridTSWrapper
 from wombats.automaton import active_automata
+from wombats.automaton import MinigridTransitionSystem
 
 # import local packages
 from src.graph import graph_factory
@@ -42,13 +45,13 @@ class MiniGridLavaEnv(enum.Enum):
     env_5 = 'MiniGrid-LavaGapS7-v0'
 
 
-def get_TS_from_wombats() -> MiniGrid:
+def get_TS_from_wombats() -> Tuple[MiniGrid, MinigridTransitionSystem]:
     # ENV_ID = 'MiniGrid-LavaComparison_noDryingOff-v0'
     # ENV_ID = 'MiniGrid-AlternateLavaComparison_AllCorridorsOpen-v0'
     # ENV_ID = 'MiniGrid-DistShift1-v0'
     # ENV_ID = 'MiniGrid-LavaGapS5-v0'
     # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-    ENV_ID = MiniGridEmptyEnv.env_4.value
+    ENV_ID = MiniGridEmptyEnv.env_5.value
 
     env = gym.make(ENV_ID)
     env = StaticMinigridTSWrapper(env, actions_type='static')
@@ -70,14 +73,17 @@ def get_TS_from_wombats() -> MiniGrid:
 
     regret_minigrid_TS.build_graph_from_file()
 
-    return regret_minigrid_TS
+    return regret_minigrid_TS, wombats_minigrid_TS
 
+def execute_str(wombats_minigrid_TS, controls):
+    # actions = [controls.forward, controls.right, controls.forward]
+    wombats_minigrid_TS.run(controls, record_video=True)
 
 if __name__ == "__main__":
 
     finite = False
     # build the TS
-    raw_trans_sys = get_TS_from_wombats()
+    raw_trans_sys, wombats_minigrid_TS = get_TS_from_wombats()
 
     trans_sys = graph_factory.get('TS',
                                   raw_trans_sys=raw_trans_sys,
@@ -135,9 +141,13 @@ if __name__ == "__main__":
     if finite:
         w_prime = reg_syn_handle.compute_W_prime_finite()
     else:
-        w_prime = reg_syn_handle.compute_W_prime()
+        w_prime = reg_syn_handle.compute_W_prime(multi_thread=False)
 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, acc_min_edge_weight=False)
     reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True)
     # g_hat.plot_graph()
-    reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=True)
+    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
+    controls = reg_syn_handle.get_controls_from_str(org_str)
+
+    # map back str to minigrid env
+    execute_str(wombats_minigrid_TS, controls=controls)

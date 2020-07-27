@@ -1,9 +1,12 @@
 import math
 import copy
+import multiprocessing
 import warnings
 import random
 import sys
 
+from tqdm import tqdm
+from joblib import Parallel, delayed
 from _collections import defaultdict
 from typing import Dict, List, Tuple, Union, Optional
 
@@ -16,6 +19,9 @@ from helper_methods import deprecated
 
 # asserts that this code is tested in linux
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
+
+# needed for multi-threading w' computation
+NUM_CORES = multiprocessing.cpu_count()
 
 
 class RegretMinimizationStrategySynthesis:
@@ -136,7 +142,7 @@ class RegretMinimizationStrategySynthesis:
 
         return tmp_payoff_handle.compute_cVal(node)
 
-    def compute_W_prime(self):
+    def compute_W_prime(self, multi_thread: bool = False):
         """
         A method to compute w_prime function based on Algo 2. pseudocode.
         This function is a mapping from each edge to a real valued number - b
@@ -146,7 +152,12 @@ class RegretMinimizationStrategySynthesis:
         """
 
         print("*****************Constructing W_prime*****************")
-        coop_dict = self._compute_cval()
+        # runner = Parallel(n_jobs=NUM_CORES, verbose=50)
+        # job = delayed(self._compute_cval)
+        # coop_dict = runner(job)
+        print("*****************Start Parallel Processing*****************")
+        coop_dict = self._compute_cval(multi_thread=multi_thread)
+        print("*****************Stop Parallel Processing*****************")
 
         w_prime: Dict[Tuple: str] = {}
 
@@ -173,15 +184,25 @@ class RegretMinimizationStrategySynthesis:
 
         return w_prime
 
-    def _compute_cval(self) -> Dict:
+    def _compute_cval(self, multi_thread: bool = False) -> Dict:
         """
         A method that pre computes all the cVals for every node in the graph and stores them in a dictionary.
         :return: A dictionary of cVal stores in dict
         """
-
         max_coop_val = defaultdict(lambda: '-1')
-        for n in self.graph._graph.nodes():
-            max_coop_val[n] = self._compute_max_cval_from_v(n)
+
+        if not multi_thread:
+            for n in self.graph._graph.nodes():
+                max_coop_val[n] = self._compute_max_cval_from_v(n)
+
+            return max_coop_val
+        else:
+            runner = Parallel(n_jobs=NUM_CORES, verbose=50)
+            job = delayed(self._compute_max_cval_from_v)
+            results = runner(job(n) for n in self.graph._graph.nodes())
+
+        for _n, _r in zip(self.graph._graph.nodes(), results):
+            max_coop_val[_n] = _r
 
         return max_coop_val
 
@@ -421,11 +442,31 @@ class RegretMinimizationStrategySynthesis:
                             original_str.update({u_node[0]: v_node[0]})
         return original_str
 
+    def get_controls_from_str(self, str_dict: Dict) -> List[str]:
+        """
+        A helper method to return a list of actions (edge labels) associated with the strategy found
+        :param str_dict: The regret minimizing strategy
+        :return: A sequence of labels that to be executed by the robot
+        """
+
+        start_state = self.graph.get_initial_states()[0][0]
+        accepting_state = self.graph.get_accepting_states()[0]
+        controls = []
+
+        curr_state = start_state
+        next_state = str_dict[curr_state]
+        while next_state != accepting_state:
+            controls.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
+            curr_state = next_state
+            next_state = str_dict[curr_state]
+
+        return controls
+
     def plot_str_from_mgp(self,
                           g_hat: TwoPlayerGraph,
                           str_dict: Dict,
                           only_eve: bool = False,
-                          plot: bool = False):
+                          plot: bool = False) -> Dict:
         """
         A helper method that plots all the VALID strategies computed on g_hat on g_hat. It then maps back the
          least regret strategy back to the original strategy.
@@ -451,6 +492,8 @@ class RegretMinimizationStrategySynthesis:
         if plot:
             g_hat.plot_graph()
             self.graph.plot_graph()
+
+        return org_str
 
     def _print_reg_values(self, str_dict):
         """

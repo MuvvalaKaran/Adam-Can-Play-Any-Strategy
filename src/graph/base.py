@@ -443,7 +443,7 @@ class Graph(abc.ABC):
     def get_accepting_states(self) -> List:
         """
         A function to get the accepting state or a set of accepting states (if multiple)
-        :return: a list of state - # of elements >= 0
+        :return: a list of states - # of elements >= 0
         """
         _accp_state = []
 

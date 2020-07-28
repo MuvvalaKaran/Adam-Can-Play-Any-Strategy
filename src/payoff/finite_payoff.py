@@ -43,6 +43,15 @@ class FinitePayoff(Payoff):
             visitStack[self.init_node] = True
             nodeStack: List[Tuple] = []
             nodeStack.append(self.init_node)
+
+            # check if the init node and the current node are same then directly compute the loop value and
+            # store the self play in the loop dict
+            if node == self.init_node:
+                nodeStack.append(node)
+                loop_value: str = self._compute_loop_value(nodeStack)
+                loop_dict.update({tuple(nodeStack): loop_value})
+                continue
+
             self._cycle_util(node, visitStack, loop_dict, nodeStack)
 
         self._loop_vals = loop_dict
@@ -130,7 +139,7 @@ class FinitePayoff(Payoff):
 
         if play_dict:
             # find the max of the value
-            max_play = min(play_dict, key=lambda key: play_dict[key])
+            max_play = max(play_dict, key=lambda key: play_dict[key])
             if debug:
                 print(f"The cVal from the node {vertex}")
                 print(f"for the play {max_play} is {play_dict[max_play]}")

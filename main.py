@@ -52,7 +52,7 @@ def get_TS_from_wombats() -> Tuple[MiniGrid, MinigridTransitionSystem]:
     # ENV_ID = 'MiniGrid-DistShift1-v0'
     # ENV_ID = 'MiniGrid-LavaGapS5-v0'
     # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-    # ENV_ID = MiniGridEmptyEnv.env_4.value
+    # ENV_ID = MiniGridEmptyEnv.env_5.value
     ENV_ID = MiniGridLavaEnv.env_6.value
 
     env = gym.make(ENV_ID)
@@ -68,45 +68,80 @@ def get_TS_from_wombats() -> Tuple[MiniGrid, MinigridTransitionSystem]:
     wombats_minigrid_TS.to_yaml_file(DIR + file_name + ".yaml")
 
     regret_minigrid_TS = graph_factory.get('MiniGrid',
-                                           graph_name="minigris_TS",
+                                           graph_name="minigrid_TS",
                                            config_yaml=f"config/{file_name}",
                                            save_flag=True,
-                                           plot=False)
+                                           plot=True)
 
     regret_minigrid_TS.build_graph_from_file()
 
     return regret_minigrid_TS, wombats_minigrid_TS
 
+
 def execute_str(wombats_minigrid_TS, controls):
-    # actions = [controls.forward, controls.right, controls.forward]
     wombats_minigrid_TS.run(controls, record_video=True)
+
 
 if __name__ == "__main__":
 
     finite = False
-    # build the TS
-    raw_trans_sys, wombats_minigrid_TS = get_TS_from_wombats()
+    go_fast = True
+    gym_minigrid = False
 
-    trans_sys = graph_factory.get('TS',
-                                  raw_trans_sys=raw_trans_sys,
-                                  graph_name="trans_sys",
-                                  config_yaml="config/trans_sys",
-                                  pre_built=False,
-                                  built_in_ts_name="",
-                                  save_flag=True,
-                                  debug=False,
-                                  plot=False,
-                                  human_intervention=0,
-                                  plot_raw_ts=False)
+    if gym_minigrid:
+        # build the TS
+        raw_trans_sys, wombats_minigrid_TS = get_TS_from_wombats()
 
-    # build the dfa
-    dfa = graph_factory.get('DFA',
-                            graph_name="automaton",
-                            config_yaml="config/automaton",
-                            save_flag=True,
-                            sc_ltl="!(lava_red_open) U (goal_green_open)",
-                            use_alias=False,
-                            plot=False)
+        trans_sys = graph_factory.get('TS',
+                                      raw_trans_sys=raw_trans_sys,
+                                      graph_name="trans_sys",
+                                      config_yaml="config/trans_sys",
+                                      pre_built=False,
+                                      built_in_ts_name="",
+                                      save_flag=True,
+                                      debug=False,
+                                      plot=False,
+                                      human_intervention=0,
+                                      finite=finite,
+                                      plot_raw_ts=False)
+
+        # build the dfa
+        dfa = graph_factory.get('DFA',
+                                graph_name="automaton",
+                                config_yaml="config/automaton",
+                                save_flag=True,
+                                sc_ltl="!(lava_red_open) U (goal_green_open)",
+                                use_alias=False,
+                                plot=False)
+
+    else:
+        # trans_sys = graph_factory.get("TwoPlayerGraph",
+        #                               graph_name="two_player_graph",
+        #                               config_yaml="config/two_player_graph",
+        #                               save_flag=True,
+        #                               pre_built=True,
+        #                               plot=False)
+
+        trans_sys = graph_factory.get('TS',
+                                      raw_trans_sys=None,
+                                      graph_name="trans_sys",
+                                      config_yaml="config/trans_sys",
+                                      pre_built=True,
+                                      built_in_ts_name="five_state_ts",
+                                      save_flag=True,
+                                      debug=False,
+                                      plot=False,
+                                      human_intervention=1,
+                                      finite=finite,
+                                      plot_raw_ts=False)
+        # # build the dfa
+        dfa = graph_factory.get('DFA',
+                                graph_name="automaton",
+                                config_yaml="config/automaton",
+                                save_flag=True,
+                                sc_ltl="!d U g",
+                                use_alias=False,
+                                plot=False)
 
     # build the product automaton
     prod = graph_factory.get('ProductGraph',
@@ -118,7 +153,8 @@ if __name__ == "__main__":
                              prune=False,
                              debug=False,
                              absorbing=True,
-                             plot=True)
+                             finite=finite,
+                             plot=False)
 
     # gmin = graph_factory.get('GMin', graph=prod,
     #                          graph_name="gmin",
@@ -126,13 +162,13 @@ if __name__ == "__main__":
     #                          debug=False,
     #                          save_flag=False,
     #                          plot=True)
-    #
+
     # game = graph_factory.get("TwoPlayerGraph",
     #                          graph_name="two_player_graph",
     #                          config_yaml="config/two_player_graph",
     #                          save_flag=True,
     #                          pre_built=True,
-    #                          plot=True)
+    #                          plot=False)
 
     # build the payoff function
     payoff = payoff_factory.get("mean", graph=prod)
@@ -141,15 +177,16 @@ if __name__ == "__main__":
     reg_syn_handle = RegMinStrSyn(prod, payoff)
 
     if finite:
-        w_prime = reg_syn_handle.compute_W_prime_finite()
+        w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=go_fast)
     else:
-        w_prime = reg_syn_handle.compute_W_prime(multi_thread=True)
+        w_prime = reg_syn_handle.compute_W_prime(multi_thread=go_fast)
 
-    g_hat = reg_syn_handle.construct_g_hat(w_prime, acc_min_edge_weight=False)
-    reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True)
+    g_hat = reg_syn_handle.construct_g_hat(w_prime, acc_min_edge_weight=False, finite=finite)
+    reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True, debug=False)
     # g_hat.plot_graph()
-    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
-    controls = reg_syn_handle.get_controls_from_str(org_str)
+    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=True)
 
-    # map back str to minigrid env
-    execute_str(wombats_minigrid_TS, controls=controls)
+    if gym_minigrid:
+        # map back str to minigrid env
+        controls = reg_syn_handle.get_controls_from_str(org_str)
+        execute_str(wombats_minigrid_TS, controls=controls)

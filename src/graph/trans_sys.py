@@ -122,17 +122,44 @@ class FiniteTransSys(TwoPlayerGraph):
     def _sanity_check(self, debug: bool = False):
         """
         A helper method that loops through every node and checks if it has an outgoing edge or not.
-         If not then we add action "self" with weight 0.
+        If not then we add action "self" with weight 0 if its an accepting states else -1 * |max_weight|.
         :return:
         """
         max_weight = self.get_max_weight()
+        accn_states = self.get_accepting_states()
         for _n in self._graph.nodes():
             if len(list(self._graph.successors(_n))) == 0:
                 if debug:
-                    print("=====================================")
-                    print(f"Adding self loop of weight - {0} to the node {_n} in {self._graph.name}")
-                    print("=====================================")
-                self._graph.add_edge(_n, _n, weight=max_weight, actions="self")
+                    print("====================================")
+                    print(f"Adding a self loop to state {_n} in {self._graph.name}")
+                    print("====================================")
+                # if its an accepting state
+                if _n in accn_states:
+                    self._graph.add_edge(_n, _n, weight=0, actions="self")
+                # if its a trap state
+                else:
+                    self._graph.add_edge(_n, _n, weight=max_weight, actions="self")
+
+    def _sanity_check_finite(self, debug: bool = False):
+        """
+        A helper method that loops through every node and checks if it has an outgoing edge or not.
+        If not then we add action "self" with weight {}.
+        :return:
+        """
+        max_weight = repr(-1 * math.inf)
+        accn_states = self.get_accepting_states()
+        for _n in self._graph.nodes():
+            if len(list(self._graph.successors(_n))) == 0:
+                if debug:
+                    print("====================================")
+                    print(f"Adding a self loop to state {_n} in {self._graph.name}")
+                    print("====================================")
+                # if its an accepting state
+                if _n in accn_states:
+                    self._graph.add_edge(_n, _n, weight=0, actions="self")
+                # if its a trap state
+                else:
+                    self._graph.add_edge(_n, _n, weight=max_weight, actions="self")
 
     def get_max_weight(self) -> str:
         max_weight: int = 0
@@ -143,27 +170,28 @@ class FiniteTransSys(TwoPlayerGraph):
 
         return str(max_weight)
 
-    def _get_set_ap(self) -> set:
-        """
-        A helper method that return a set of observations associated with each state in the transition system
-        :return:
-        """
-
-        atomic_propositions: set = set()
-        for _n in self._graph.nodes.data():
-            atomic_propositions.add(_n[1].get('ap'))
-
-        return atomic_propositions
+    # def _get_set_ap(self) -> set:
+    #     """
+    #     A helper method that return a set of observations associated with each state in the transition system
+    #     :return:
+    #     """
+    #
+    #     atomic_propositions: set = set()
+    #     for _n in self._graph.nodes.data():
+    #         atomic_propositions.add(_n[1].get('ap'))
+    #
+    #     return atomic_propositions
 
     @classmethod
     def from_raw_ts(cls, raw_ts: TwoPlayerGraph,
-                     graph_name: str,
-                     config_yaml: str,
-                     save_flag: bool = False,
-                     plot: bool = False,
-                     human_intervention: int = 1,
-                     plot_raw_ts: bool = False,
-                     debug: bool = False):
+                    graph_name: str,
+                    config_yaml: str,
+                    save_flag: bool = False,
+                    plot: bool = False,
+                    human_intervention: int = 1,
+                    plot_raw_ts: bool = False,
+                    finite: bool = False,
+                    debug: bool = False):
         """
         Return a concrete instance of a FiniteTransSys given a basic transition system with nodes
         that belong only to the system(eve)
@@ -180,7 +208,10 @@ class FiniteTransSys(TwoPlayerGraph):
         raw_trans_name = "raw" + graph_name
         trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}", save_flag=save_flag)
         trans_sys._graph = raw_ts._graph
-        trans_sys._sanity_check(debug=debug)
+        if finite:
+            trans_sys._sanity_check_finite(debug=debug)
+        else:
+            trans_sys._sanity_check(debug=debug)
 
         if plot_raw_ts:
             trans_sys.plot_graph()
@@ -337,6 +368,7 @@ class TransitionSystemBuilder(Builder):
                  debug: bool = False,
                  plot: bool = False,
                  human_intervention: int = 1,
+                 finite: bool = False,
                  plot_raw_ts: bool = False) -> 'FiniteTransSys':
         """
         A method to create an instance of a finite transition system consisting of two players - eve and system .
@@ -381,6 +413,7 @@ class TransitionSystemBuilder(Builder):
                                            save_flag, plot,
                                            human_intervention,
                                            plot_raw_ts,
+                                           finite,
                                            debug)
         elif from_file:
             self._instance._graph_yaml = self._from_yaml(config_yaml)
@@ -394,6 +427,7 @@ class TransitionSystemBuilder(Builder):
                  plot: bool = False,
                  human_intervention: int = 1,
                  plot_raw_ts: bool = False,
+                 finite: bool = False,
                  debug: bool = False):
         """
         Returns  a Two Player transition system give a transition system with nodes that belong to eve only.
@@ -414,6 +448,7 @@ class TransitionSystemBuilder(Builder):
                                           plot=plot,
                                           human_intervention=human_intervention,
                                           plot_raw_ts=plot_raw_ts,
+                                          finite=finite,
                                           debug=debug)
 
     def _load_pre_built(self):

@@ -82,6 +82,18 @@ class TwoPlayerGraph(Graph):
 
         return str(max_weight)
 
+    def _get_set_ap(self) -> set:
+        """
+        A helper method that return a set of observations associated with each state in the transition system
+        :return:
+        """
+
+        atomic_propositions: set = set()
+        for _n in self._graph.nodes.data():
+            atomic_propositions.add(_n[1].get('ap'))
+
+        return atomic_propositions
+
     @classmethod
     def build_running_ex(cls: 'TwoPlayerGraph',
                          graph_name: str,

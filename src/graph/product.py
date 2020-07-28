@@ -31,14 +31,14 @@ class ProductAutomaton(TwoPlayerGraph):
     def construct_graph(self):
         super().construct_graph()
 
-    def compose_graph(self, absorbing: bool = False):
+    def compose_graph(self, absorbing: bool = False, finite: bool = False):
 
         # throw a warning if the DFA does NOT contain any symbol that appears in the set of observations in TS
         if not self._check_ts_ltl_compatability():
             warnings.warn("Please make sure that the formula is composed of symbols that are part of the aps in the TS")
 
         if absorbing:
-            self.construct_product_absorbing()
+            self.construct_product_absorbing(finite=finite)
 
         else:
             self.construct_product()
@@ -99,7 +99,7 @@ class ProductAutomaton(TwoPlayerGraph):
                                                  weight=weight,
                                                  action=ts_action)
 
-    def construct_product_absorbing(self):
+    def construct_product_absorbing(self, finite: bool):
         """
         A function that helps build the composition of TS and DFA where we compress the all
          absorbing nodes (A node that only has a transition to itself) in product automation
@@ -109,8 +109,6 @@ class ProductAutomaton(TwoPlayerGraph):
         """
         # get max weight from the transition system
         max_w: str = self._trans_sys.get_max_weight()
-        # self._graph.set_edge_attributes(self._graph, "actions", None)
-        # self.set_edge_attribute("actions", None)
 
         for _u_ts_node in self._trans_sys._graph.nodes():
             for _u_a_node in self._auto_graph._graph.nodes():
@@ -147,16 +145,26 @@ class ProductAutomaton(TwoPlayerGraph):
                                                                                 action=auto_action,
                                                                                 obs=ap)
                         if exists:
-                            self._add_transition_absorbing(_u_prod_node,
-                                                           _v_prod_node,
-                                                           weight=weight,
-                                                           max_weight=max_w,
-                                                           action=ts_action)
+                            if finite:
+                                self._add_transition_absorbing_finite(_u_prod_node,
+                                                                      _v_prod_node,
+                                                                      weight=weight,
+                                                                      max_weight=max_w,
+                                                                      action=ts_action)
+                            else:
+                                self._add_transition_absorbing(_u_prod_node,
+                                                               _v_prod_node,
+                                                               weight=weight,
+                                                               max_weight=max_w,
+                                                               action=ts_action)
 
     def _add_transition(self, _u_prod_node, _v_prod_node, weight: str, action: str):
         """
-        A helper method to add an edge if it alredy does not exists given the current product node
+        A helper method to add an edge if it already does not exists given the current product node
         (composition of current TS and current DFA node) and the next product node.
+        
+        This method is invoked when the absrobing flag is false. We do not represent all absorbing
+        (accepting and trap states) as a single state
         :param _u_prod_node:
         :param _v_prod_node:
         :return: Updated the graph with the edge
@@ -166,15 +174,59 @@ class ProductAutomaton(TwoPlayerGraph):
             self.add_edge(_u_prod_node, _v_prod_node,
                           weight=weight,
                           actions=action)
+    
+    def _add_transition_absorbing_finite(self, _u_prod_node, _v_prod_node, weight: str, max_weight: str, action: str):
+        """
+        A helper method to add an edge if it already does not exists given the current product node
+        (composition of current TS and current DFA node) and the next product node.
 
-    def _add_transition_absorbing(self, _u_prod_node, _v_prod_node, weight: str, max_weight: str, action: str):
-
+        This method is invoked when the absorbing flag is True and finite flag is true. In this method accepting
+        states are manually added a self loop of weight 0 (assuming all the other edge weight are negative)
+        and the trap state has a self loop of weight -inf. This is done because, in cumulative payoffs,
+        loops can have payoff as -inf (note : the edge weights are considered to be negative)
+        
+        :param _u_prod_node:
+        :param _v_prod_node:
+        :return: Updated the graph with the edge
+        """
         if not self._graph.has_edge(_u_prod_node, _v_prod_node):
             if _u_prod_node in self._auto_graph._get_absorbing_states():
+                # accepting state
                 if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
                     self.add_edge(_u_prod_node, _v_prod_node,
                                   weight='0',
                                   actions=action)
+                else:
+                # trap state
+                    self.add_edge(_u_prod_node, _v_prod_node,
+                                  weight=-1*math.inf,
+                                  actions=action)
+            else:
+                self.add_edge(_u_prod_node, _v_prod_node,
+                              weight=weight,
+                              actions=action)
+
+    def _add_transition_absorbing(self, _u_prod_node, _v_prod_node, weight: str, max_weight: str, action: str):
+        """
+        A helper method to add an edge if it already does not exists given the current product node
+        (composition of current TS and current DFA node) and the next product node.
+
+        This method is invoked when the absorbing flag is True. In this method accepting
+        states are manually added a self loop of weight 0 (assuming all the other edge weight are negative)
+        and the trap state has a self loop of weight -1*|max_weight| 
+        
+        :param _u_prod_node:
+        :param _v_prod_node:
+        :return: Updated the graph with the edge
+        """
+        if not self._graph.has_edge(_u_prod_node, _v_prod_node):
+            if _u_prod_node in self._auto_graph._get_absorbing_states():
+                # accepting state
+                if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
+                    self.add_edge(_u_prod_node, _v_prod_node,
+                                  weight='0',
+                                  actions=action)
+                # trap state
                 else:
                     self.add_edge(_u_prod_node, _v_prod_node,
                                   weight=max_weight,
@@ -431,7 +483,8 @@ class ProductBuilder(Builder):
                  prune: bool = False,
                  debug: bool = False,
                  absorbing: bool = False,
-                 plot: bool = False):
+                 plot: bool = False,
+                 finite: bool = False):
         """
         A function that takes as input a
 
@@ -459,7 +512,7 @@ class ProductBuilder(Builder):
 
         if trans_sys is not None and dfa is not None:
             self._instance.construct_graph()
-            self._instance.compose_graph(absorbing=absorbing)
+            self._instance.compose_graph(absorbing=absorbing, finite=finite)
 
         if prune:
             self._instance.prune_graph(debug=debug)

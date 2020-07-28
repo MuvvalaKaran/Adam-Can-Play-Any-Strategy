@@ -2,13 +2,17 @@
 import warnings
 import re
 import subprocess as sp
+import math
 
-from typing import Dict
+from typing import Dict, Tuple
 from bidict import bidict
 
 # import local packages
 # from src.graph import Graph
+# value to replcae with if you have inf/-inf as edge weight in g_hat : can happen for cumulative payoff
+MAX_CONST = -1000000
 
+# absolute addresses of mpg solver toolbox and where to read the g_hat.mpg file and dump the strategy in
 CONFIG_DIR = "mpg/"
 MPG_ABS_DIR = "/home/karan-m/Documents/mean_payoff_games/gpumpg/bin/"
 MPG_OP_ABS_DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/mpg/"
@@ -28,7 +32,7 @@ def deprecated(func):
     return newFunc
 
 
-def create_mpg_file(graph, name: str):
+def create_mpg_file(graph, name: str) -> Tuple[bidict, list]:
     """
     A method to create a file which adheres to the input file
     format used by the mean payoff games toolbox.
@@ -59,6 +63,9 @@ def create_mpg_file(graph, name: str):
     # for inode, node in enumerate(graph._graph.nodes()):
     #     graph._graph.nodes[node]['map'] = inode
 
+    # get all the initial nodes of g_b(s)
+    g_b_init_nodes = [_s for _s in graph._graph.successors("v1")]
+
     # start dumping
     for node in graph._graph.nodes():
         if graph._graph.nodes[node]["player"] == "adam":
@@ -71,9 +78,11 @@ def create_mpg_file(graph, name: str):
 
         # get outgoing edges of a graph
         for ie, e in enumerate(graph._graph.edges(node)):
-            # mapped_next_node = graph._graph.nodes[e[1]]['map']
             mapped_next_node = _node_index_map[e[1]]
             edge_weight = float(graph._graph[e[0]][e[1]][0]['weight'])
+
+            if edge_weight == math.inf or edge_weight == -1 * math.inf:
+                edge_weight = MAX_CONST
 
             if ie == len(graph._graph.edges(node)) - 1:
                 f.write(f"{mapped_next_node}:{int(edge_weight)}; \n")
@@ -81,10 +90,10 @@ def create_mpg_file(graph, name: str):
             else:
                 f.write(f"{mapped_next_node}:{int(edge_weight)}, ")
 
-    return _node_index_map
+    return _node_index_map, g_b_init_nodes
 
 
-def read_mpg_op(_node_index_map: bidict, file_name: str, debug : bool = False):
+def read_mpg_op(_node_index_map: bidict, file_name: str, _g_b_init_nodes: list, debug : bool = False):
     """
     A method that reads the output of the mean payoff game tool and returns a dictionary
 
@@ -93,23 +102,28 @@ def read_mpg_op(_node_index_map: bidict, file_name: str, debug : bool = False):
     :param name: The name of the file to read
     :return:
     """
+    # get the number associated with 'v1'
+    # NODE_V1_IDX: int = _node_index_map.inverse["v1"]
 
-    # file_name = CONFIG_DIR + name + ".txt"
+    # dictionary to hold reg values
+    reg_dict: Dict[int, float] = {}
 
     f = open(file_name, "r")
     str_dict = {}
 
-    # start reading
     for line in f.readlines():
-        curr_node = re.findall(r"(\d+) M", line)[0]
-        next_node = re.findall(r"(MIN)\s+(\d+)", line)
-        if next_node != []:
-            next_node = next_node[0][1]
-        else:
-            next_node = re.findall(r"(MAX)\s+(\d+)", line)[0][1]
+        curr_node, _, next_node, mean_val = line.split()
 
         str_dict.update({_node_index_map.inverse[int(curr_node)]:
                          _node_index_map.inverse[int(next_node)]})
+
+        reg_dict.update({curr_node: mean_val})
+
+    b_val = str_dict["v1"][1]
+    print("******************printing Reg value********************")
+    print(f"Playing in graph g_b = {b_val}")
+    for _n in _g_b_init_nodes:
+        print(f"Reg value from node {_n} is -1 * {reg_dict[str(_node_index_map[_n])]}")
 
     if debug:
         for curr_n, next_n in str_dict.items():
@@ -118,7 +132,7 @@ def read_mpg_op(_node_index_map: bidict, file_name: str, debug : bool = False):
     return str_dict
 
 
-def run_save_output_mpg(graph, name: str, go_fast: bool = True) -> Dict:
+def run_save_output_mpg(graph, name: str, go_fast: bool = True, debug: bool = False) -> Dict:
     """
     A helper method to run the mpg solver through terminal given a graph.
 
@@ -132,7 +146,7 @@ def run_save_output_mpg(graph, name: str, go_fast: bool = True) -> Dict:
     """
     print("**************************Computing Reg Minimizing Strategy on G_hat*************************")
     # dump the graph
-    _node_index_map = create_mpg_file(graph, name)
+    _node_index_map, _g_b_init_nodes = create_mpg_file(graph, name)
 
     ip_file_name = CONFIG_DIR + name + ".mpg"
     op_file_name = MPG_OP_ABS_DIR + f"{name}_str.txt"
@@ -153,7 +167,7 @@ def run_save_output_mpg(graph, name: str, go_fast: bool = True) -> Dict:
         call_string = completed_process.stdout.decode()
         print('%s' % call_string)
 
-    str_dict = read_mpg_op(_node_index_map, op_file_name)
+    str_dict = read_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
 
     return str_dict
 
@@ -165,7 +179,7 @@ def _read_mpg_file(file_name: str):
     :return:
     """
 
-    try :
+    try:
         with open(file_name) as fh:
             return fh.readlines()
 

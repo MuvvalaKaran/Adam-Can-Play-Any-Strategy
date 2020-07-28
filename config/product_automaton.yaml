@@ -1,317 +1,774 @@
-alphabet_size: 39
+alphabet_size: 86
 edges:
 - !!python/tuple
+  - T0_S2
+  - T0_S2
+  - actions: north
+    weight: '-4.0'
+- !!python/tuple
   - &id001 !!python/tuple
-    - &id015 !!python/tuple
+    - &id025 !!python/tuple
       - (1, 1), right
       - 0
     - T0_init
-  - &id002 !!python/tuple
-    - &id016 !!python/tuple
-      - (1, 1), up
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 1), right
       - 0
     - T0_init
-  - weight: 1
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id001
+  - &id002 !!python/tuple
+    - &id026 !!python/tuple
+      - (1, 2), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
 - !!python/tuple
   - *id001
   - &id003 !!python/tuple
-    - &id017 !!python/tuple
-      - (1, 1), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id001
-  - &id004 !!python/tuple
-    - &id018 !!python/tuple
+    - &id027 !!python/tuple
       - (2, 1), right
       - 0
     - T0_init
-  - weight: 1
+  - actions: east
+    weight: -3
 - !!python/tuple
   - accept_all
   - accept_all
-  - weight: '0'
+  - actions: north
+    weight: '0'
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id002
+  - &id004 !!python/tuple
+    - &id028 !!python/tuple
+      - (1, 3), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
 - !!python/tuple
   - *id002
   - &id005 !!python/tuple
-    - &id019 !!python/tuple
-      - (1, 1), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id002
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), right
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id002
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), up
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id003
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), right
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id003
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id003
-  - &id006 !!python/tuple
-    - &id020 !!python/tuple
-      - (1, 2), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id004
-  - &id007 !!python/tuple
-    - &id021 !!python/tuple
-      - (2, 1), up
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id004
-  - &id008 !!python/tuple
-    - &id022 !!python/tuple
-      - (2, 1), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id004
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), right
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id005
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id005
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), up
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id005
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id006
-  - &id009 !!python/tuple
-    - &id023 !!python/tuple
-      - (1, 2), right
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id006
-  - &id010 !!python/tuple
-    - &id024 !!python/tuple
-      - (1, 2), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id006
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 2), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id007
-  - &id011 !!python/tuple
-    - &id025 !!python/tuple
-      - (2, 1), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id007
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), right
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id007
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), up
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id008
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), right
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id008
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id008
-  - &id012 !!python/tuple
-    - &id026 !!python/tuple
-      - (2, 2), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id009
-  - &id013 !!python/tuple
-    - &id027 !!python/tuple
-      - (1, 2), up
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id009
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 2), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id009
-  - &id014 !!python/tuple
-    - &id028 !!python/tuple
+    - &id029 !!python/tuple
       - (2, 2), right
       - 0
     - T0_init
-  - weight: 1
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id010
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 2), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id010
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 2), up
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id010
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 2), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id011
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), down
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id011
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), up
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id011
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id012
-  - accept_all
-  - weight: 0
-- !!python/tuple
-  - *id013
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 2), left
-      - 0
-    - T0_init
-  - weight: 1
-- !!python/tuple
-  - *id013
+  - *id002
   - !!python/tuple
     - !!python/tuple
       - (1, 2), right
       - 0
     - T0_init
-  - weight: 1
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 2), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id003
+  - &id006 !!python/tuple
+    - &id030 !!python/tuple
+      - (3, 1), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 1), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 2), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id004
+  - &id007 !!python/tuple
+    - &id031 !!python/tuple
+      - (1, 4), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id004
+  - &id008 !!python/tuple
+    - &id032 !!python/tuple
+      - (2, 3), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 3), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 3), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id005
+  - &id009 !!python/tuple
+    - &id033 !!python/tuple
+      - (3, 2), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 2), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 2), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id006
+  - &id010 !!python/tuple
+    - &id034 !!python/tuple
+      - (4, 1), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 1), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 3), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id007
+  - &id011 !!python/tuple
+    - &id035 !!python/tuple
+      - (1, 5), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id007
+  - &id012 !!python/tuple
+    - &id036 !!python/tuple
+      - (2, 4), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 4), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 2), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 4), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id008
+  - &id013 !!python/tuple
+    - &id037 !!python/tuple
+      - (3, 3), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 3), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 3), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id009
+  - &id014 !!python/tuple
+    - &id038 !!python/tuple
+      - (4, 2), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 2), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 2), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id010
+  - &id015 !!python/tuple
+    - &id039 !!python/tuple
+      - (5, 1), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 1), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id011
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 4), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id011
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 5), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id011
+  - &id016 !!python/tuple
+    - &id040 !!python/tuple
+      - (2, 5), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 3), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 5), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id012
+  - &id017 !!python/tuple
+    - &id041 !!python/tuple
+      - (3, 4), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 4), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
 - !!python/tuple
   - *id013
   - !!python/tuple
     - !!python/tuple
-      - (1, 1), up
+      - (3, 2), right
       - 0
     - T0_init
-  - weight: 1
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id013
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 4), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id013
+  - &id018 !!python/tuple
+    - &id042 !!python/tuple
+      - (4, 3), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id013
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 3), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
 - !!python/tuple
   - *id014
-  - accept_all
-  - weight: 0
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 3), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id014
+  - &id019 !!python/tuple
+    - &id043 !!python/tuple
+      - (5, 2), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 2), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - !!python/tuple
+      - (5, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - !!python/tuple
+      - (5, 2), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 1), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 4), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 5), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id016
+  - &id020 !!python/tuple
+    - &id044 !!python/tuple
+      - (3, 5), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - (1, 5), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id017
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 3), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id017
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 5), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id017
+  - &id021 !!python/tuple
+    - &id045 !!python/tuple
+      - (4, 4), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id017
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 4), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id018
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 2), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id018
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 4), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id018
+  - &id022 !!python/tuple
+    - &id046 !!python/tuple
+      - (5, 3), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id018
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 3), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id019
+  - !!python/tuple
+    - !!python/tuple
+      - (5, 1), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id019
+  - !!python/tuple
+    - !!python/tuple
+      - (5, 3), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id019
+  - !!python/tuple
+    - !!python/tuple
+      - (5, 2), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id019
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 2), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id020
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 4), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id020
+  - !!python/tuple
+    - !!python/tuple
+      - (3, 5), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id020
+  - &id023 !!python/tuple
+    - &id047 !!python/tuple
+      - (4, 5), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id020
+  - !!python/tuple
+    - !!python/tuple
+      - (2, 5), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id021
+  - T0_S2
+  - actions: self
+    weight: '-4.0'
+- !!python/tuple
+  - *id022
+  - !!python/tuple
+    - !!python/tuple
+      - (5, 2), right
+      - 0
+    - T0_init
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id022
+  - &id024 !!python/tuple
+    - &id048 !!python/tuple
+      - (5, 4), right
+      - 0
+    - T0_init
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id022
+  - !!python/tuple
+    - !!python/tuple
+      - (5, 3), right
+      - 0
+    - T0_init
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id022
+  - !!python/tuple
+    - !!python/tuple
+      - (4, 3), right
+      - 0
+    - T0_init
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - *id023
+  - T0_S2
+  - actions: self
+    weight: '-4.0'
+- !!python/tuple
+  - *id024
+  - T0_S2
+  - actions: self
+    weight: '-4.0'
 nodes:
+- !!python/tuple
+  - T0_S2
+  - {}
 - !!python/tuple
   - *id001
   - ap: empty_red_open
     dfa: T0_init
     init: true
     player: eve
-    ts: *id015
+    ts: *id025
 - !!python/tuple
   - accept_all
   - accepting: true
@@ -320,79 +777,139 @@ nodes:
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id016
+    ts: *id026
 - !!python/tuple
   - *id003
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id017
+    ts: *id027
 - !!python/tuple
   - *id004
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id018
+    ts: *id028
 - !!python/tuple
   - *id005
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id019
+    ts: *id029
 - !!python/tuple
   - *id006
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id020
+    ts: *id030
 - !!python/tuple
   - *id007
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id021
+    ts: *id031
 - !!python/tuple
   - *id008
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id022
+    ts: *id032
 - !!python/tuple
   - *id009
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id023
+    ts: *id033
 - !!python/tuple
   - *id010
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id024
+    ts: *id034
 - !!python/tuple
   - *id011
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id025
+    ts: *id035
 - !!python/tuple
   - *id012
-  - ap: goal_green_open
+  - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id026
+    ts: *id036
 - !!python/tuple
   - *id013
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id027
+    ts: *id037
 - !!python/tuple
   - *id014
-  - ap: goal_green_open
+  - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id028
+    ts: *id038
+- !!python/tuple
+  - *id015
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id039
+- !!python/tuple
+  - *id016
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id040
+- !!python/tuple
+  - *id017
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id041
+- !!python/tuple
+  - *id018
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id042
+- !!python/tuple
+  - *id019
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id043
+- !!python/tuple
+  - *id020
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id044
+- !!python/tuple
+  - *id021
+  - ap: lava_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id045
+- !!python/tuple
+  - *id022
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id046
+- !!python/tuple
+  - *id023
+  - ap: lava_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id047
+- !!python/tuple
+  - *id024
+  - ap: lava_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id048
 num_obs: 3
-num_states: 15
+num_states: 26
 start_state: *id001

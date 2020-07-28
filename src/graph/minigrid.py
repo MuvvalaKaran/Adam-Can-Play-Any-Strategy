@@ -47,13 +47,20 @@ class MiniGrid(FiniteTransSys):
         # as originally the minigrid world does not have weight associated with its actions,
         # we will manually assign a weight here
 
+        ACTION_STR_TO_WT = {
+            'north': -1,
+            'south': -2,
+            'east': -3,
+            'west': -4
+        }
+
         # NOTE : ALL actions have the same cost of 1 unless specified in the yaml specifically
         for _e in _edges:
             _weight = _e[2].get('weight')
             _action = _e[2].get('label')
 
             if _weight is None:
-                self.add_edge(_e[0], _e[1], weight=-1, actions=_action)
+                self.add_edge(_e[0], _e[1], weight=ACTION_STR_TO_WT[_action], actions=_action)
             else:
                 self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
 

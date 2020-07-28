@@ -125,14 +125,14 @@ class FiniteTransSys(TwoPlayerGraph):
          If not then we add action "self" with weight 0.
         :return:
         """
-
+        max_weight = self.get_max_weight()
         for _n in self._graph.nodes():
             if len(list(self._graph.successors(_n))) == 0:
                 if debug:
                     print("=====================================")
                     print(f"Adding self loop of weight - {0} to the node {_n} in {self._graph.name}")
                     print("=====================================")
-                self._graph.add_edge(_n, _n, weight=0, actions="self")
+                self._graph.add_edge(_n, _n, weight=max_weight, actions="self")
 
     def get_max_weight(self) -> str:
         max_weight: int = 0

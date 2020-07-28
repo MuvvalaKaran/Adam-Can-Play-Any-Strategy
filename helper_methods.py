@@ -130,7 +130,7 @@ def run_save_output_mpg(graph, name: str, go_fast: bool = True) -> Dict:
                  NOTE: The output of mpgsolver toolbox will be saved as <name>_str.txt
     :return: The final str dictionary
     """
-
+    print("**************************Computing Reg Minimizing Strategy on G_hat*************************")
     # dump the graph
     _node_index_map = create_mpg_file(graph, name)
 

@@ -451,16 +451,19 @@ class RegretMinimizationStrategySynthesis:
 
         start_state = self.graph.get_initial_states()[0][0]
         accepting_state = self.graph.get_accepting_states()[0]
-        controls = []
+        control_sequence = []
 
         curr_state = start_state
         next_state = str_dict[curr_state]
-        while next_state != accepting_state:
-            controls.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
+        control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
+        while curr_state != next_state:
             curr_state = next_state
             next_state = str_dict[curr_state]
+            if next_state == accepting_state:
+                break
+            control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
 
-        return controls
+        return control_sequence
 
     def plot_str_from_mgp(self,
                           g_hat: TwoPlayerGraph,

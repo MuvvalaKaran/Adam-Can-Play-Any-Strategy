@@ -43,6 +43,7 @@ class MiniGridLavaEnv(enum.Enum):
     env_3 = 'MiniGrid-LavaGapS5-v0'
     env_4 = 'MiniGrid-LavaGapS6-v0'
     env_5 = 'MiniGrid-LavaGapS7-v0'
+    env_6 = 'MiniGrid-Lava_NoEntry-v0'
 
 
 def get_TS_from_wombats() -> Tuple[MiniGrid, MinigridTransitionSystem]:
@@ -51,10 +52,11 @@ def get_TS_from_wombats() -> Tuple[MiniGrid, MinigridTransitionSystem]:
     # ENV_ID = 'MiniGrid-DistShift1-v0'
     # ENV_ID = 'MiniGrid-LavaGapS5-v0'
     # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-    ENV_ID = MiniGridEmptyEnv.env_5.value
+    # ENV_ID = MiniGridEmptyEnv.env_4.value
+    ENV_ID = MiniGridLavaEnv.env_6.value
 
     env = gym.make(ENV_ID)
-    env = StaticMinigridTSWrapper(env, actions_type='static')
+    env = StaticMinigridTSWrapper(env, actions_type='simple_static')
     env.render()
 
     wombats_minigrid_TS = active_automata.get(automaton_type='TS',
@@ -102,7 +104,7 @@ if __name__ == "__main__":
                             graph_name="automaton",
                             config_yaml="config/automaton",
                             save_flag=True,
-                            sc_ltl="F(goal_green_open)",
+                            sc_ltl="!(lava_red_open) U (goal_green_open)",
                             use_alias=False,
                             plot=False)
 
@@ -116,7 +118,7 @@ if __name__ == "__main__":
                              prune=False,
                              debug=False,
                              absorbing=True,
-                             plot=False)
+                             plot=True)
 
     # gmin = graph_factory.get('GMin', graph=prod,
     #                          graph_name="gmin",
@@ -141,7 +143,7 @@ if __name__ == "__main__":
     if finite:
         w_prime = reg_syn_handle.compute_W_prime_finite()
     else:
-        w_prime = reg_syn_handle.compute_W_prime(multi_thread=False)
+        w_prime = reg_syn_handle.compute_W_prime(multi_thread=True)
 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, acc_min_edge_weight=False)
     reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True)

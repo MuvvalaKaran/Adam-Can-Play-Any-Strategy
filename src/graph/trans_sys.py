@@ -170,18 +170,6 @@ class FiniteTransSys(TwoPlayerGraph):
 
         return str(max_weight)
 
-    # def _get_set_ap(self) -> set:
-    #     """
-    #     A helper method that return a set of observations associated with each state in the transition system
-    #     :return:
-    #     """
-    #
-    #     atomic_propositions: set = set()
-    #     for _n in self._graph.nodes.data():
-    #         atomic_propositions.add(_n[1].get('ap'))
-    #
-    #     return atomic_propositions
-
     @classmethod
     def from_raw_ts(cls, raw_ts: TwoPlayerGraph,
                     graph_name: str,

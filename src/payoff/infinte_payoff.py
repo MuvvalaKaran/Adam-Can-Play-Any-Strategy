@@ -23,12 +23,6 @@ class InfinitePayoff(Payoff):
     """
 
     def __init__(self, graph: Graph, payoff: callable) -> 'Payoff()':
-        # self.graph = graph
-        # self.__V = self.graph._graph.nodes
-        # self.payoff_func: callable = payoff
-        # self.__loop_vals = None
-        # self.init_node = None
-        # self.initialize_init_node()
         Payoff.__init__(self, graph=graph, payoff=payoff)
 
     def _compute_loop_value(self, stack: List) -> float:

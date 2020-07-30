@@ -5,6 +5,7 @@ import warnings
 import random
 import sys
 
+import numpy as np
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from _collections import defaultdict
@@ -481,7 +482,7 @@ class RegretMinimizationStrategySynthesis:
                             original_str.update({u_node[0]: v_node[0]})
         return original_str
 
-    def get_controls_from_str(self, str_dict: Dict) -> List[str]:
+    def get_controls_from_str(self, str_dict: Dict, debug: bool = False) -> List[str]:
         """
         A helper method to return a list of actions (edge labels) associated with the strategy found
         :param str_dict: The regret minimizing strategy
@@ -490,17 +491,71 @@ class RegretMinimizationStrategySynthesis:
 
         start_state = self.graph.get_initial_states()[0][0]
         accepting_state = self.graph.get_accepting_states()[0]
+        trap_state = self.graph.get_trap_states()[0]
         control_sequence = []
 
         curr_state = start_state
         next_state = str_dict[curr_state]
+        # if self.graph._graph.nodes[next_state].get("player") == "adam":
+        #     curr_state = str_dict[next_state]
+        #     next_state = str_dict[curr_state]
+        #     x, y = curr_state[0][0].split("(")[1].split(")")[0].split(",")
+        #     control_sequence.append(("rand", np.array([int(x), int(y)])))
+        # else:
         control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
         while curr_state != next_state:
+            if next_state == accepting_state or next_state == trap_state:
+                break
+
             curr_state = next_state
             next_state = str_dict[curr_state]
-            if next_state == accepting_state:
-                break
+            # if self.graph._graph.nodes[next_state].get("player") == "adam":
+            #     curr_state = str_dict[next_state]
+            #     next_state = str_dict[curr_state]
+            #     x, y = curr_state[0][0].split("(")[1].split(")")[0].split(",")
+            #     control_sequence.append(("rand", np.array([int(x), int(y)])))
+            # else:
             control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
+
+        if debug:
+            print([_n for _n in control_sequence])
+
+        return control_sequence
+
+    def get_controls_from_str_minigrid(self, str_dict: Dict) -> List[str]:
+        """
+        A helper method to return a list of actions (edge labels) associated with the strategy found
+        :param str_dict: The regret minimizing strategy
+        :return: A sequence of labels that to be executed by the robot
+        """
+
+        start_state = self.graph.get_initial_states()[0][0]
+        accepting_state = self.graph.get_accepting_states()[0]
+        trap_state = self.graph.get_trap_states()[0]
+        control_sequence = []
+
+        curr_state = start_state
+        next_state = str_dict[curr_state]
+        if self.graph._graph.nodes[next_state].get("player") == "adam":
+            curr_state = str_dict[next_state]
+            next_state = str_dict[curr_state]
+            x, y = curr_state[0][0].split("(")[1].split(")")[0].split(",")
+            control_sequence.append(("rand", np.array([int(x), int(y)])))
+        else:
+            control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
+        while curr_state != next_state:
+            if next_state == accepting_state or next_state == trap_state:
+                break
+
+            if self.graph._graph.nodes[next_state].get("player") == "adam":
+                curr_state = str_dict[next_state]
+                next_state = str_dict[curr_state]
+                x, y = curr_state[0][0].split("(")[1].split(")")[0].split(",")
+                control_sequence.append(("rand", np.array([int(x), int(y)])))
+            else:
+                control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
+                curr_state = next_state
+                next_state = str_dict[curr_state]
 
         return control_sequence
 
@@ -536,12 +591,3 @@ class RegretMinimizationStrategySynthesis:
             self.graph.plot_graph()
 
         return org_str
-
-    def _print_reg_values(self, str_dict):
-        """
-        A helper method to print the regret value for strategies in all g_b.
-        :return:
-        """
-        if len(list(str_dict.keys())) != 0:
-            for k, v in str_dict.items():
-                print(f"Reg Value for b = {k} is : {v['reg']} \n")

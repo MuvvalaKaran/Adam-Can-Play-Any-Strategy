@@ -93,18 +93,11 @@ edges:
     symbol: north
 - !!python/tuple
   - (1, 4), right
-  - (1, 5), right
+  - (1, 4), right
   - fontcolor: blue
     label: south
     probability: 0.25
     symbol: south
-- !!python/tuple
-  - (1, 4), right
-  - (2, 4), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
 - !!python/tuple
   - (1, 4), right
   - (1, 4), right
@@ -113,85 +106,36 @@ edges:
     probability: 0.25
     symbol: west
 - !!python/tuple
-  - (1, 5), right
   - (1, 4), right
-  - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
-- !!python/tuple
-  - (1, 5), right
-  - (1, 5), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (1, 5), right
-  - (1, 5), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (1, 5), right
-  - (2, 5), right
+  - (2, 4), right
   - fontcolor: blue
     label: east
     probability: 0.25
     symbol: east
 - !!python/tuple
-  - (2, 4), right
   - (2, 3), right
+  - (2, 2), right
   - fontcolor: blue
     label: north
     probability: 0.25
     symbol: north
 - !!python/tuple
+  - (2, 3), right
   - (2, 4), right
-  - (2, 5), right
   - fontcolor: blue
     label: south
     probability: 0.25
     symbol: south
 - !!python/tuple
-  - (2, 4), right
-  - (3, 4), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
-- !!python/tuple
-  - (2, 4), right
-  - (1, 4), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (3, 4), right
+  - (2, 3), right
   - (3, 3), right
   - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
-- !!python/tuple
-  - (3, 4), right
-  - (3, 5), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (3, 4), right
-  - (4, 4), right
-  - fontcolor: blue
     label: east
     probability: 0.25
     symbol: east
 - !!python/tuple
-  - (3, 4), right
-  - (2, 4), right
+  - (2, 3), right
+  - (1, 3), right
   - fontcolor: blue
     label: west
     probability: 0.25
@@ -220,62 +164,6 @@ edges:
 - !!python/tuple
   - (3, 3), right
   - (2, 3), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (3, 5), right
-  - (3, 4), right
-  - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
-- !!python/tuple
-  - (3, 5), right
-  - (3, 5), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (3, 5), right
-  - (4, 5), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
-- !!python/tuple
-  - (3, 5), right
-  - (2, 5), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (4, 4), right
-  - (4, 3), right
-  - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
-- !!python/tuple
-  - (4, 4), right
-  - (4, 5), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (4, 4), right
-  - (5, 4), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
-- !!python/tuple
-  - (4, 4), right
-  - (3, 4), right
   - fontcolor: blue
     label: west
     probability: 0.25
@@ -309,6 +197,34 @@ edges:
     probability: 0.25
     symbol: west
 - !!python/tuple
+  - (3, 4), right
+  - (3, 3), right
+  - fontcolor: blue
+    label: north
+    probability: 0.25
+    symbol: north
+- !!python/tuple
+  - (3, 4), right
+  - (3, 4), right
+  - fontcolor: blue
+    label: south
+    probability: 0.25
+    symbol: south
+- !!python/tuple
+  - (3, 4), right
+  - (4, 4), right
+  - fontcolor: blue
+    label: east
+    probability: 0.25
+    symbol: east
+- !!python/tuple
+  - (3, 4), right
+  - (2, 4), right
+  - fontcolor: blue
+    label: west
+    probability: 0.25
+    symbol: west
+- !!python/tuple
   - (4, 3), right
   - (4, 2), right
   - fontcolor: blue
@@ -324,7 +240,7 @@ edges:
     symbol: south
 - !!python/tuple
   - (4, 3), right
-  - (5, 3), right
+  - (4, 3), right
   - fontcolor: blue
     label: east
     probability: 0.25
@@ -332,62 +248,6 @@ edges:
 - !!python/tuple
   - (4, 3), right
   - (3, 3), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (4, 5), right
-  - (4, 4), right
-  - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
-- !!python/tuple
-  - (4, 5), right
-  - (4, 5), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (4, 5), right
-  - (5, 5), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
-- !!python/tuple
-  - (4, 5), right
-  - (3, 5), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (5, 4), right
-  - (5, 3), right
-  - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
-- !!python/tuple
-  - (5, 4), right
-  - (5, 5), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (5, 4), right
-  - (5, 4), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
-- !!python/tuple
-  - (5, 4), right
-  - (4, 4), right
   - fontcolor: blue
     label: west
     probability: 0.25
@@ -436,7 +296,7 @@ edges:
     symbol: south
 - !!python/tuple
   - (4, 2), right
-  - (5, 2), right
+  - (4, 2), right
   - fontcolor: blue
     label: east
     probability: 0.25
@@ -449,40 +309,19 @@ edges:
     probability: 0.25
     symbol: west
 - !!python/tuple
-  - (5, 3), right
-  - (5, 2), right
+  - (4, 1), right
+  - (4, 1), right
   - fontcolor: blue
     label: north
     probability: 0.25
     symbol: north
 - !!python/tuple
-  - (5, 3), right
-  - (5, 4), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (5, 3), right
-  - (5, 3), right
+  - (4, 1), right
+  - (4, 1), right
   - fontcolor: blue
     label: east
     probability: 0.25
     symbol: east
-- !!python/tuple
-  - (5, 3), right
-  - (4, 3), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (4, 1), right
-  - (4, 1), right
-  - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
 - !!python/tuple
   - (4, 1), right
   - (4, 2), right
@@ -490,72 +329,9 @@ edges:
     label: south
     probability: 0.25
     symbol: south
-- !!python/tuple
-  - (4, 1), right
-  - (5, 1), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
 - !!python/tuple
   - (4, 1), right
   - (3, 1), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (5, 2), right
-  - (5, 1), right
-  - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
-- !!python/tuple
-  - (5, 2), right
-  - (5, 3), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (5, 2), right
-  - (5, 2), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
-- !!python/tuple
-  - (5, 2), right
-  - (4, 2), right
-  - fontcolor: blue
-    label: west
-    probability: 0.25
-    symbol: west
-- !!python/tuple
-  - (5, 1), right
-  - (5, 1), right
-  - fontcolor: blue
-    label: north
-    probability: 0.25
-    symbol: north
-- !!python/tuple
-  - (5, 1), right
-  - (5, 1), right
-  - fontcolor: blue
-    label: east
-    probability: 0.25
-    symbol: east
-- !!python/tuple
-  - (5, 1), right
-  - (5, 2), right
-  - fontcolor: blue
-    label: south
-    probability: 0.25
-    symbol: south
-- !!python/tuple
-  - (5, 1), right
-  - (4, 1), right
   - fontcolor: blue
     label: west
     probability: 0.25
@@ -645,50 +421,50 @@ nodes:
                 - 0
               - false
               - !!binary |
-                AAAAgC66tQpMTzS367qNM7HJr52oBXPhDM6km3xZinvb0RUpNF1vaxi/gOgnXqHLQVa/+HGdalTo
-                JiBMJ3wxbYLgLF5vtvQIl3mvFBvdvW/7xKUmsZNq0TAhWJ2jZZXFgn2Mwc5mlSJ07iwahEhCbpd+
-                qeDbwsAwc5H7RlfaAayMUmLiKPCzIQPQ+0eXyHF2ATWfTA8H1Fz+cNbhxw6xPvENv7ubMcAGZ1Z/
-                M0ZwQIsisFx0QqBZgHxbNM1/uen3fGVSiRSFj1qIezBrWC1+5X2nozBjgri7qGJAmwH2t3tTlN0d
-                sK/rKtX6DZ3S9pSaGcOnkJOziGyhgqmdpd9zTLQA2v51Lu5G/uWGeAtabW5OVFAL8Vcq/wRwrB47
-                gc38dLG6En4BJa+oWzBnVKHSATAsziX/w+SO+Rgxw6wHustG0uibf7bkwP8ox34R/7filsnIVHJ2
-                qbC35d/w50nR8jzJMm7tirY2Z5w/IXhgvpHTQO2JUT9KSRUunWLJfZ+MaAuGcKE9OsgfEufS6QYP
-                77EjL1dYPIPjXKh0TlJzJHjbCZXoUigJs8n70RHAgMYGSiI0vYDSm7brVaMeKlC82YGVr2KsXzdc
-                zHZ0Q3AsVp8ISdYrEkrJtwb+7rQVm6Oz4v9se8kOkudS2Yo1V3cRwNKTbP3A2tttxgDO2Jd0Qfqu
-                tcD8qbwyMFYYLgbk74Iw5xz5xuzKN8q+ThYNP5nJQVOQnU5NsBaiu6Ej3Okyb5l1xIsw2yLAxxpJ
-                0lmI4p5lsuQcgCUVvo9U1mwtdu/QZ6pB9KlqqLH25kaObGq8XGrVp9uFW5gAuGowMtK7Wn3mqn2U
-                GUIpWScsJaQ4e08tI8DaLgwow7Nu3RQlsdHkN/DC5FwbEsjJv4/Ap78vgFlmea83ozY/bSwvKTea
-                VDpSK3nmB5xCPVkBbaIlnj+yqXajGo2IndAGa+b7XmVoM06tW4eFGtuSAMdmfY6CncArA+CnbkiP
-                dNQVWoeCsgA5RjubCCUREDULfnNDe676SyzC/keQ0wD0m7D9DYWOCS1vpx4dAPjS2QkdxAdss4ke
-                fy2mOmizazwwthovgq2WeBDOFijoZ/oo4UFFPo03GFYOFCsShf0Js5LhSpFyTWl2z4WDu90YM6To
-                lp/69yF9x0s2qYKnj4bZ3UGK19K0320Z6oNivZ2oz7MtUYDZEmesMUvWizgqkn0JrDFqyay9iFu3
-                5CN62bs4YMMZczGH9EGCgOAOrsnF756YBdIdyry3uivfdqGTOYkiCYFkyZWKoRxeto+YEmGT+kwI
-                6LALCj4stzgI5mCunXW0l25/tsyJetfNwkMouB3j2AE32Y3fVJkZTkzweC9cNL8+FDYK9lMg11ty
-                NR1DOdhRuT3BEW2KC79uB3BnXdiGxILYKlGS2GRWwGsOX9NmiIiywioJRkPAgkGYvzJ1J24moyNr
-                HbuCrX8mOYgzQCzbWjSXDBZvq8n1N/tppWBku6602twqgXa3eku3RU9B2Bokh7jfEKSGYtRNeHNS
-                Wo5B9NHgWSuzZ+UFG4P1790aRpP93QUWqkxMJhChjiQOsdUiqSWBIGiQHgy7iPV6Bgld5o+8l6Xf
-                qtmNhC367aucsMRVbx0FmoYMvCh/BtcBTZraoxIbFnbMULj9pCMHH+HEIOR2DBvi9lQP4oBs1brp
-                4dSds0VoFaJTOoBUPhvHhNzjLYcllIJWVCkFrWsXqtgx+K7q1nsrtk1WXLJCabdebL5QP/idhQRz
-                7dz6EpXkJ79B3t1GDQYAgMwIuPYtVfVOcOosIqOx0qdq+eRXcZC9C5PQ2eizuGUerHCsLgVA5Zur
-                vs/WhmOhVYbBH89sB25cGolx0UACesRnHLwieXFAar4HJ49nyd2fAHDwnjfNSFb1vflFTRA29qPs
-                tHI0Lcz22zuuE/RGSTA+/UCz7TBdaw68jaTTAdkHa+gQlotR2kpGqEbguckpX1xDTG0Pb2b0bezo
-                VIHiscTu5Qs71V2vhurVvT0DupYMAmmZ51ljTzjuh8JfYlVCE6GRlS9vEogJd6JaqpboeD4CMLJe
-                J9z3R2OCxfr3iYbvDbzSojQXasxSHEy0O8qAPMRY7pb0/F+nlcF4WUmWeRCurcdTNwQJHxTewRYF
-                la+D3LQxGhHhRXonu2+DQGIHxDPekID0SdWSMzPqW7TVP+N9UjFcby5kdbzimrrs2GEeibOvjc8P
-                YxT1h4UPdC+Hed8vQcHTiLsTzjx7xKJfurl6p6Y53T085pMhhQl2iuv8uSYzaOu11O4fn+yHi9Xy
-                089UdipwhI6f+kDpCBkibLTcp4iJxqDzOzB5LcG/wkHkC2s7tZIiAfncDPTkp0IE9CvrxGV/QaMa
-                ummPsSa85PrKusYE04Jqmem9FLXV148B+iyxQlG77CCgZa4dGV6/OIklUTswMDjrdMF+aXZL6L13
-                5o4o2+GruunOlVZjpUUjp4p+dDUPABSxHZTVKaUKsyTzNF0PZdT+zrNmi7a5Mh+tc34tYT2u5sSB
-                4+nMSxF9TCKeLNcoTnMevPDk5+V3I8R9EkOZSbhSov/7d70P8VkiVt64Mw7VlUw4cMDK35M5eLht
-                JmuBPFq/9oPey4Gc97F/qjGpV+kMlkwpVIV8IHrotRfL9qTtv+V30z92ZfbzHX6kUP28kid1bh7W
-                6e1sy1lNIpPGIE37LP9BF23XAWHLiewHypLzyT4xwemvNThzQa2cE6zbIsA5icGBEzdR4SH8BpIt
-                5kl9ObXSzfIJi29qqDG27W1ltsE+f5aCjfF7C9RCGkKBC9r9o/E7jsAsRsFat6SB2krBwy+w50II
-                ZR6MKzuF/ReKjLQEVTzgcojUgtVuiwQi0PnSzt2muZjjrptQy14Pwp6ZmuPFu9kuXOgiigm0L+T6
-                /0h/6feWv8Xpi68KQbIgJbt04KAYf0Hop/6tOTM42vwBJ00bZSJfeSlxwQqPtEB1G4L9y+VGrjio
-                azMXTVtgO3vbceo59GUW8zARij9+JPC/b2Ij2hsoxg7mSwOVHCnR8iiNu2Ua2gFsZPWLexoEXl8b
-                3QEFbukRr9WDkj1JjJuXBOj74Dzo1T6+aMIGxCFuukYbz2MKWGE+7TnwJxdGXJ00D5CnhgZc8AkY
-                T9bk+kChLgwZlF3TsFVItB1KjIrHkQoJ5cGGVvNAVw8BoVDhk3plhfq9pARooh0YZEZBD1/U2Uva
-                I2cd6it5kiSci/GMqvDPU5e2IDjmca78kK3iePlOCHWAgbnj7yqTp30kPmGlFABD+IsL5O2lxMta
-                N7EOapEH9C96fwYJ5TMXff6Ged0ieEVgV+Rh4r+LNPUTFaEOhSUubf3IDF5t
+                AAAAgNXP+JOW7Ou2R5XIxo8rTJikmIlhk0PuRKbq6Rxg+yNim+W246CZHRE9YfIILekuKWNgTsOF
+                HzjaZWLqsnwV/6Xrica5IMTd1IMOjP2t8m7Flk+7AsidNTbn+CihKtBpZCuqBjB4t0WIfsgxVfSQ
+                95vCme8VHmYjav2q8rKD8wAXDrsj0iTxWeSYXxecOLb7lHpiVzRzBg6UHFJTUHc8NDRN82AAk2ou
+                P2KJrRwaUhl9+xXW9bDnDZd6zPVklpsVBPmo1FW8PEHXaYBmuf/0PAJY/XWXXRugQ+4CId0X5lQV
+                gGutbNR56WMQSl8pCtkJA7x2kb84owUU4dTu2hntmn6XVrrg/xeCZVQL28JwHrOvC7AmQ53Y4Ccq
+                I2VbGl1Z2mWTSHP6Y0fT3J4TdQAyAxxCZm979TVIyIISDYzfxlxYQbRsPkrUt3yS450WksxRCXae
+                W5nmzBvv4Uwug8NRgHNbCHb82HDlZyE/blTgpeOsFl872VgzZXfQPd8n2RVap7kflFyuVNP5bsLh
+                h6RSZ2If6DJ4uMjFQi75YenV7JYa8W7co32wwJ2NHULWdJR3KSiZBQMM77FH5JprcDLbsVYztB5j
+                K2jWqxr7FcB1eLYM5F7JuiRW2QaUFlvDkQHS0OsQxnGla5jJ3j6Rvw9BDAl//VI+5urbBfnj9vPi
+                wWEgKK4FPqol139/cfA67rMtLMfb6vY74EaXnSDSdmDlI4C5zZR33vljsUEMji1h72LDA9kuDg8E
+                siFsN+MXopAhbHdqWg5FrrgurCWjjrXgdqML+Cb5O9jGw3cduMySV9HXmEi1BmhHVXgI/0dS7Prv
+                bXzkUSSf+qJ2IW0uxWUT5gPEaen0vzfCQteHWJS70nh8pYGIi+DDncGeL9G9r7Hs9djW9XEawacE
+                +0I0z6IeoTV41lXCQW38vWnn5gfO2E0zpcGI8EiktX/tjOJ9Nuz17pFPvNH+zwMXKLTnIwhrS/QE
+                UCnrp46a9GflKGbYSNsOlUS4Odje5eml3qqwokIhjaYGi+wbOGYKJ3Oomv8QPA3cBvGh34OiPGHq
+                LnJ5NjoFKkkH3d6RY4Hi3C1/MNozYOmJxNivfBIhKT+mKWpU6Z6dcLDOhmR77J76kZfXfRRMYOdN
+                XHUTiHAtsOKfB2BErsBc7fSpnpRJI4ts6IQQhxVISWXzE5kuXYT8i1Z9Gf7nmiK3VaDT3V4e6JF9
+                qeVq+erqx65k7RnnmCTXrOwRr7MIaSXoSvD3HSlR5vpLskgbk1y+ElTm6e4Zv5bdx61EFEwmYS2f
+                TWKOwcrOeeGOIg64PZVls/FOIUmShrfME4/uGqI3t5HDrFFh5y4e1WzWOHvzVkSegaPufQdyd7Eb
+                MjaUwrkGS9E2G934UtO60nl5dWNYgtjipVVeuxG1sWfyRrq/l9FKxvfuGMbX99Gh0olA6G1jHxKi
+                h1bX2U9AE8M75mzL9HM5jlmuxqF9sK9zEOsvxhqeyGMTfSOyEmIGIboZVDRW3fbgaTUZenzz5PBn
+                uxGWZa1akKayP71fM4OwT1E7fOr56YSc2vZV/RSc1wYqeQdHJahYKm+CIEiLIMgw2wT2X1wE4cFX
+                u5gWxJvHrCy0AXwWZ6sni5ME47G+Mhnjm87+shpPgZZjmbJAa4MFUPJ9oE1YsBAe/tHZ9Gu3AI9k
+                ogslKRgTa1kkItfR1BNoVkXnMWgM/zyBMyd5F/rsGX80YUSAORL6XHU93uIdewCOLVVW2Sv2KSxm
+                PGgxK86/o5Lrxsh7yNVpGlroheujsmGfZAgwta2yKT1fk5gQjnTZWSv1NAjM9af6GudYJGXwmt11
+                NS/I/EZAiaebLdi3IaMM/7uUhiOX0tiRFlYVR2dGSigNgjCm/fzyni/mrMyh64yAgtP/nmnu5mNU
+                epfSNDQZTKfL2qHnx6jvxNmHt3v+VsuGfjsz4G0vzisIKK3tKMCq9Q1IxR7OkfwKO4k+eX9UQIt5
+                dlrvluBFbK2vUbdimm41JcgVyyIEv0/rDNKeyLMBT+9y/aVi6isegx1DRGppAa+KkkVcw1NrnL4f
+                52OyTkoH0Hp6rvUhFhua2I2bC7YevLrBrb5D8d1dzR4Aw9/u/ZFILOB3xLgtCeUK0d9R8u5Qo+12
+                PWuyUx+MnOhUjnmC5nYblpfqmJlZaJpD/ZHQeAga9SHfwhCr/7K82m/LQn0z0A5f43isvW8ZbGaA
+                O62TZwdaW9CZ31lCocG5teSYoeaJm2xne+hQIknhX3bJWzscFGH2Y0wsZrSE97g6LhchCGa1Q0nD
+                huZt9W5W3eLwHijqleor8qTa70ZsFWBZTcAXmOpjPuUxLAbcxaYq3AdaBCz5hNQyG23D0YDGkpu/
+                uGcZWjMmmmlRemJ5LGGHTOLsH9EYTdZC4Ex1zzIgGw1JgIL9ECjrp1puYa3E9a7YIZFe7NHaZ5WH
+                83+w1N3L8DfljVhNr0dgrNHB0mO0mJlh4xheFdICXSxmkuVQaQ9E6XlJhPFLE0SmGuLZW13OcG11
+                AYgymDZXQboH+VEO8SPh477eibBN/7b9dP4JxOTpRuDA3aTbV9SVU8DQtqLrj3RfGSK0IXmuFDnr
+                +n+zEZ49xZy4RtFSnvLgzaNnw7TuXYoRNyxjUqyhyqjJmUC/bYmNPzAXFFub8ZGqEuvbNfZGBcv4
+                2DJuPaXJcAoYLZUA1bdXSveIW0dmf1A8VemwxM1ULmncIe9urrSEtzgImiUFG2Ymad2b0qMlTKZZ
+                jnCjXAvkdo5gGO9r2McbVPXA2Alb6CZ/ARpOzG2QLglJhGRSAQ28lUUhimhGPEWcCCwlX4q+N4un
+                QSjxny0cnfh61Tri4B8gseu+OPUlNhIf3zLCgxF+qsW0Ck3fO5wPTMlho2t2Vjmjn+ziIAojAW8E
+                QliSQK/c2DXXDSWCpkYL+SaAGLNldkEwzpOxcHLSjrKj1CK5X5v1MrqQEHhTcJrvtyy5kAR1vMFz
+                tF1MXuOEt6kHcWvMC1SK2wI3rbQyHqEzbKmGVH0Sex1iDRLO5JVKuHB9hYBtxHELzqtp6LpC1m8B
+                bgVTj/Aav1k5MTqLod2MRBeTKtT50/Y9i4gI+6zygXQSlm+Upc0qZIVWRkfIJeXmv6jCp+iZp8Ha
+                zpmpaqhHGAEkvAS+knFZkGOTTfJI32Va1ue7nWES3zt6uAQXszqpb2CS+BPUHAGLgEilaKpFfWZB
+                m/LygD0vjeLO4BwBMcXBC/wsFuhZYxnIGkEDAS5XhBG5xQOuDFTwvnMMDPQhJ/XLiFZ3N/gSIzXg
+                JSiwBdB7MwapAppNagEGQlCW17tKa2HW3G0PomT7NfgoVdV4v5NFLt3WgFmK
             pos: 623
     xlabel: '{empty_red_open}'
 - !!python/tuple
@@ -856,8 +632,8 @@ nodes:
         values: !!python/tuple
         - - 3
           - 1
-          - 0
           - 2
+          - 0
         - - 0.25
           - 0.25
           - 0.25
@@ -866,41 +642,10 @@ nodes:
     xlabel: '{empty_red_open}'
 - !!python/tuple
   - (2, 3), right
-  - color: firebrick
-    fillcolor: firebrick
-    is_accepting: false
-    label: (2, 3), right
-    observation: lava_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          BAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          BAAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 4
-        - - 1.0
-      - *id002
-    xlabel: '{lava_red_open}'
-- !!python/tuple
-  - (1, 5), right
   - color: gray
     fillcolor: gray
     is_accepting: false
-    label: (1, 5), right
+    label: (2, 3), right
     observation: empty_red_open
     style: filled
     trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
@@ -924,8 +669,8 @@ nodes:
         values: !!python/tuple
         - - 3
           - 1
-          - 2
           - 0
+          - 2
         - - 0.25
           - 0.25
           - 0.25
@@ -934,47 +679,10 @@ nodes:
     xlabel: '{empty_red_open}'
 - !!python/tuple
   - (2, 4), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (2, 4), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
-  - (2, 5), right
   - color: firebrick
     fillcolor: firebrick
     is_accepting: false
-    label: (2, 5), right
+    label: (2, 4), right
     observation: lava_red_open
     style: filled
     trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
@@ -1001,122 +709,11 @@ nodes:
       - *id002
     xlabel: '{lava_red_open}'
 - !!python/tuple
-  - (3, 4), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (3, 4), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
   - (3, 3), right
   - color: gray
     fillcolor: gray
     is_accepting: false
     label: (3, 3), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
-  - (3, 5), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (3, 5), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
-  - (4, 4), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (4, 4), right
     observation: empty_red_open
     style: filled
     trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
@@ -1186,85 +783,48 @@ nodes:
       - *id002
     xlabel: '{empty_red_open}'
 - !!python/tuple
+  - (3, 4), right
+  - color: gray
+    fillcolor: gray
+    is_accepting: false
+    label: (3, 4), right
+    observation: empty_red_open
+    style: filled
+    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
+      state: !!python/tuple
+      - a: !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          AAAAAAAAAAA=
+        b: !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          AwAAAAAAAAA=
+        badvalue: .nan
+        extradoc: null
+        inc: 1
+        longname: null
+        moment_tol: 1.0e-08
+        name: transition
+        seed: null
+        shapes: null
+        values: !!python/tuple
+        - - 3
+          - 1
+          - 0
+          - 2
+        - - 0.25
+          - 0.25
+          - 0.25
+          - 0.25
+      - *id002
+    xlabel: '{empty_red_open}'
+- !!python/tuple
   - (4, 3), right
   - color: gray
     fillcolor: gray
     is_accepting: false
     label: (4, 3), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
-  - (4, 5), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (4, 5), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
-  - (5, 4), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (5, 4), right
     observation: empty_red_open
     style: filled
     trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
@@ -1371,48 +931,11 @@ nodes:
       - *id002
     xlabel: '{empty_red_open}'
 - !!python/tuple
-  - (5, 3), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (5, 3), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
-  - (5, 5), right
+  - (4, 4), right
   - color: darkseagreen1
     fillcolor: lawngreen
     is_accepting: true
-    label: (5, 5), right
+    label: (4, 4), right
     observation: goal_green_open
     peripheries: 2
     shape: doubleoctagon
@@ -1468,80 +991,6 @@ nodes:
         shapes: null
         values: !!python/tuple
         - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
-  - (5, 2), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (5, 2), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
-          - 1
-          - 0
-          - 2
-        - - 0.25
-          - 0.25
-          - 0.25
-          - 0.25
-      - *id002
-    xlabel: '{empty_red_open}'
-- !!python/tuple
-  - (5, 1), right
-  - color: gray
-    fillcolor: gray
-    is_accepting: false
-    label: (5, 1), right
-    observation: empty_red_open
-    style: filled
-    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
-      state: !!python/tuple
-      - a: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AAAAAAAAAAA=
-        b: !!python/object/apply:numpy.core.multiarray.scalar
-        - *id001
-        - !!binary |
-          AwAAAAAAAAA=
-        badvalue: .nan
-        extradoc: null
-        inc: 1
-        longname: null
-        moment_tol: 1.0e-08
-        name: transition
-        seed: null
-        shapes: null
-        values: !!python/tuple
-        - - 3
           - 0
           - 1
           - 2
@@ -1552,5 +1001,5 @@ nodes:
       - *id002
     xlabel: '{empty_red_open}'
 num_obs: 3
-num_states: 25
+num_states: 16
 start_state: (1, 1), right

@@ -1,4157 +1,644 @@
-alphabet_size: 576
+alphabet_size: 85
 edges:
 - !!python/tuple
   - &id001 !!python/tuple
     - (1, 1), right
     - 0
-  - !!python/tuple
-    - h1, 1), right1, 1), up
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id001
-  - !!python/tuple
-    - h1, 1), right1, 1), down
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id001
-  - !!python/tuple
-    - h1, 1), right2, 1), right
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
   - &id002 !!python/tuple
     - (1, 1), right
-    - 1
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: left
-    weight: null
+    - 0
+  - actions: north
+    weight: -1
 - !!python/tuple
+  - *id001
   - *id002
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: right
-    weight: null
+  - actions: west
+    weight: -4
 - !!python/tuple
-  - *id002
+  - *id001
+  - !!python/tuple
+    - (1, 2), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id001
   - !!python/tuple
     - (2, 1), right
-    - 1
-  - actions: forward
-    weight: null
+    - 0
+  - actions: east
+    weight: -3
 - !!python/tuple
   - &id003 !!python/tuple
-    - (1, 1), up
+    - (1, 2), right
     - 0
   - !!python/tuple
-    - h1, 1), up1, 1), left
-    - '0'
-  - actions: left
-    weight: null
+    - (1, 1), right
+    - 0
+  - actions: north
+    weight: -1
 - !!python/tuple
   - *id003
   - !!python/tuple
-    - h1, 1), up1, 1), right
-    - '0'
-  - actions: right
-    weight: null
+    - (1, 3), right
+    - 0
+  - actions: south
+    weight: -2
 - !!python/tuple
   - *id003
-  - !!python/tuple
-    - h1, 1), up1, 1), up
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id004 !!python/tuple
-    - (1, 1), up
-    - 1
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id004
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id004
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id005 !!python/tuple
-    - (1, 1), down
-    - 0
-  - !!python/tuple
-    - h1, 1), down1, 1), right
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id005
-  - !!python/tuple
-    - h1, 1), down1, 1), left
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id005
-  - !!python/tuple
-    - h1, 1), down1, 2), down
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id006 !!python/tuple
-    - (1, 1), down
-    - 1
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id006
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id006
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id007 !!python/tuple
-    - (2, 1), right
-    - 0
-  - !!python/tuple
-    - h2, 1), right2, 1), up
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id007
-  - !!python/tuple
-    - h2, 1), right2, 1), down
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id007
-  - !!python/tuple
-    - h2, 1), right2, 1), right
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id008 !!python/tuple
-    - (2, 1), right
-    - 1
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id008
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id008
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id009 !!python/tuple
-    - (1, 1), left
-    - 0
-  - !!python/tuple
-    - h1, 1), left1, 1), down
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id009
-  - !!python/tuple
-    - h1, 1), left1, 1), up
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id009
-  - !!python/tuple
-    - h1, 1), left1, 1), left
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id010 !!python/tuple
-    - (1, 1), left
-    - 1
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id010
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id010
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id011 !!python/tuple
-    - (1, 2), down
-    - 0
-  - !!python/tuple
-    - h1, 2), down1, 2), right
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id011
-  - !!python/tuple
-    - h1, 2), down1, 2), left
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id011
-  - !!python/tuple
-    - h1, 2), down1, 2), down
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id012 !!python/tuple
-    - (1, 2), down
-    - 1
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id012
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id012
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id013 !!python/tuple
-    - (2, 1), up
-    - 0
-  - !!python/tuple
-    - h2, 1), up2, 1), left
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id013
-  - !!python/tuple
-    - h2, 1), up2, 1), right
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id013
-  - !!python/tuple
-    - h2, 1), up2, 1), up
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id014 !!python/tuple
-    - (2, 1), up
-    - 1
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id014
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id014
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id015 !!python/tuple
-    - (2, 1), down
-    - 0
-  - !!python/tuple
-    - h2, 1), down2, 1), right
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id015
-  - !!python/tuple
-    - h2, 1), down2, 1), left
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id015
-  - !!python/tuple
-    - h2, 1), down2, 2), down
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id016 !!python/tuple
-    - (2, 1), down
-    - 1
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id016
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id016
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id017 !!python/tuple
-    - (1, 2), right
-    - 0
-  - !!python/tuple
-    - h1, 2), right1, 2), up
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id017
-  - !!python/tuple
-    - h1, 2), right1, 2), down
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id017
-  - !!python/tuple
-    - h1, 2), right2, 2), right
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id018 !!python/tuple
-    - (1, 2), right
-    - 1
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id018
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id018
   - !!python/tuple
     - (2, 2), right
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id019 !!python/tuple
-    - (1, 2), left
     - 0
-  - !!python/tuple
-    - h1, 2), left1, 2), down
-    - '0'
-  - actions: left
-    weight: null
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id019
+  - *id003
   - !!python/tuple
-    - h1, 2), left1, 2), up
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id019
-  - !!python/tuple
-    - h1, 2), left1, 2), left
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id020 !!python/tuple
-    - (1, 2), left
-    - 1
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id020
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id020
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id021 !!python/tuple
-    - (2, 1), left
+    - (1, 2), right
     - 0
-  - !!python/tuple
-    - h2, 1), left2, 1), down
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id021
-  - !!python/tuple
-    - h2, 1), left2, 1), up
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id021
-  - !!python/tuple
-    - h2, 1), left1, 1), left
-    - '0'
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id022 !!python/tuple
-    - (2, 1), left
-    - 1
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id022
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id022
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - &id023 !!python/tuple
-    - (1, 2), up
-    - 0
-  - !!python/tuple
-    - h1, 2), up1, 2), left
-    - '0'
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id023
-  - !!python/tuple
-    - h1, 2), up1, 2), right
-    - '0'
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id023
-  - !!python/tuple
-    - h1, 2), up1, 1), up
-    - '0'
-  - actions: forward
-    weight: null
+  - actions: west
+    weight: -4
 - !!python/tuple
   - &id024 !!python/tuple
-    - (1, 2), up
-    - 1
+    - (2, 1), right
+    - 0
   - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: left
-    weight: null
+    - (2, 1), right
+    - 0
+  - actions: self
+    weight: -inf
 - !!python/tuple
-  - *id024
+  - &id004 !!python/tuple
+    - (1, 3), right
+    - 0
   - !!python/tuple
     - (1, 2), right
-    - 1
-  - actions: right
-    weight: null
+    - 0
+  - actions: north
+    weight: -1
 - !!python/tuple
-  - *id024
+  - *id004
   - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: forward
-    weight: null
+    - (1, 4), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - (2, 3), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - (1, 3), right
+    - 0
+  - actions: west
+    weight: -4
 - !!python/tuple
   - &id025 !!python/tuple
-    - h1, 1), right1, 1), up
-    - '0'
-  - !!python/tuple
-    - (1, 1), up
+    - (2, 2), right
     - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id025
   - !!python/tuple
     - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
+    - 0
+  - actions: self
+    weight: -inf
+- !!python/tuple
+  - &id005 !!python/tuple
+    - (1, 4), right
+    - 0
+  - !!python/tuple
+    - (1, 3), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - (1, 5), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - (2, 4), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - (1, 4), right
+    - 0
+  - actions: west
+    weight: -4
 - !!python/tuple
   - &id026 !!python/tuple
-    - h1, 1), right1, 1), down
-    - '0'
-  - !!python/tuple
-    - (1, 1), down
+    - (2, 3), right
     - 0
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id026
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
+    - (2, 3), right
+    - 0
+  - actions: self
+    weight: -inf
 - !!python/tuple
-  - *id026
+  - &id006 !!python/tuple
+    - (1, 5), right
+    - 0
   - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
+    - (1, 4), right
+    - 0
+  - actions: north
+    weight: -1
 - !!python/tuple
-  - *id026
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
+  - *id006
+  - &id007 !!python/tuple
+    - (1, 5), right
+    - 0
+  - actions: south
+    weight: -2
 - !!python/tuple
-  - *id026
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
+  - *id006
+  - *id007
+  - actions: west
+    weight: -4
 - !!python/tuple
-  - *id026
+  - *id006
   - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
+    - (2, 5), right
+    - 0
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id026
+  - &id008 !!python/tuple
+    - (2, 4), right
+    - 0
   - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
+    - (2, 3), right
+    - 0
+  - actions: north
+    weight: -1
 - !!python/tuple
-  - *id026
+  - *id008
   - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
+    - (2, 5), right
+    - 0
+  - actions: south
+    weight: -2
 - !!python/tuple
-  - *id026
+  - *id008
   - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
+    - (3, 4), right
+    - 0
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id026
+  - *id008
   - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id026
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id026
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id026
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id026
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
+    - (1, 4), right
+    - 0
+  - actions: west
+    weight: -4
 - !!python/tuple
   - &id027 !!python/tuple
-    - h1, 1), right2, 1), right
-    - '0'
+    - (2, 5), right
+    - 0
+  - !!python/tuple
+    - (2, 5), right
+    - 0
+  - actions: self
+    weight: -inf
+- !!python/tuple
+  - &id009 !!python/tuple
+    - (3, 4), right
+    - 0
+  - !!python/tuple
+    - (3, 3), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - (3, 5), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - (4, 4), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - (2, 4), right
+    - 0
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - &id010 !!python/tuple
+    - (3, 3), right
+    - 0
+  - !!python/tuple
+    - (3, 2), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - (3, 4), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - (4, 3), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - (2, 3), right
+    - 0
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - &id011 !!python/tuple
+    - (3, 5), right
+    - 0
+  - !!python/tuple
+    - (3, 4), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id011
+  - !!python/tuple
+    - (3, 5), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id011
+  - !!python/tuple
+    - (4, 5), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id011
+  - !!python/tuple
+    - (2, 5), right
+    - 0
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - &id012 !!python/tuple
+    - (4, 4), right
+    - 0
+  - !!python/tuple
+    - (4, 3), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - (4, 5), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - (5, 4), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - (3, 4), right
+    - 0
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - &id013 !!python/tuple
+    - (3, 2), right
+    - 0
+  - !!python/tuple
+    - (3, 1), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id013
+  - !!python/tuple
+    - (3, 3), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id013
+  - !!python/tuple
+    - (4, 2), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id013
+  - !!python/tuple
+    - (2, 2), right
+    - 0
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - &id014 !!python/tuple
+    - (4, 3), right
+    - 0
+  - !!python/tuple
+    - (4, 2), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - (4, 4), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - (5, 3), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - (3, 3), right
+    - 0
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - &id015 !!python/tuple
+    - (4, 5), right
+    - 0
+  - !!python/tuple
+    - (4, 4), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - (4, 5), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - (5, 5), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - (3, 5), right
+    - 0
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - &id016 !!python/tuple
+    - (5, 4), right
+    - 0
+  - !!python/tuple
+    - (5, 3), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - (5, 5), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - (5, 4), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - (4, 4), right
+    - 0
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - &id017 !!python/tuple
+    - (3, 1), right
+    - 0
+  - !!python/tuple
+    - (3, 1), right
+    - 0
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - *id017
+  - !!python/tuple
+    - (3, 2), right
+    - 0
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - *id017
+  - !!python/tuple
+    - (4, 1), right
+    - 0
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - *id017
   - !!python/tuple
     - (2, 1), right
     - 0
-  - actions: forward
-    weight: null
+  - actions: west
+    weight: -4
 - !!python/tuple
-  - *id027
+  - &id018 !!python/tuple
+    - (4, 2), right
+    - 0
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
+    - (4, 1), right
+    - 0
+  - actions: north
+    weight: -1
 - !!python/tuple
-  - *id027
+  - *id018
   - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
+    - (4, 3), right
+    - 0
+  - actions: south
+    weight: -2
 - !!python/tuple
-  - *id027
+  - *id018
   - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
+    - (5, 2), right
+    - 0
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id027
+  - *id018
   - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
+    - (3, 2), right
+    - 0
+  - actions: west
+    weight: -4
 - !!python/tuple
-  - *id027
+  - &id019 !!python/tuple
+    - (5, 3), right
+    - 0
   - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
+    - (5, 2), right
+    - 0
+  - actions: north
+    weight: -1
 - !!python/tuple
-  - *id027
+  - *id019
   - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
+    - (5, 4), right
+    - 0
+  - actions: south
+    weight: -2
 - !!python/tuple
-  - *id027
+  - *id019
   - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
+    - (5, 3), right
+    - 0
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id027
+  - *id019
   - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id027
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id027
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id027
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id027
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id027
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
+    - (4, 3), right
+    - 0
+  - actions: west
+    weight: -4
 - !!python/tuple
   - &id028 !!python/tuple
-    - h1, 1), up1, 1), left
-    - '0'
-  - !!python/tuple
-    - (1, 1), left
+    - (5, 5), right
     - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id028
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id028
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id029 !!python/tuple
-    - h1, 1), up1, 1), right
-    - '0'
-  - !!python/tuple
-    - (1, 1), right
+    - (5, 5), right
     - 0
-  - actions: right
-    weight: null
+  - actions: self
+    weight: 0
 - !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id029
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id030 !!python/tuple
-    - h1, 1), up1, 1), up
-    - '0'
-  - !!python/tuple
-    - (1, 1), up
+  - &id020 !!python/tuple
+    - (4, 1), right
     - 0
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - *id030
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id030
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id031 !!python/tuple
-    - h1, 1), down1, 1), right
-    - '0'
-  - !!python/tuple
-    - (1, 1), right
+    - (4, 1), right
     - 0
-  - actions: left
-    weight: null
+  - actions: north
+    weight: -1
 - !!python/tuple
-  - *id031
+  - *id020
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id031
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id032 !!python/tuple
-    - h1, 1), down1, 1), left
-    - '0'
-  - !!python/tuple
-    - (1, 1), left
+    - (4, 2), right
     - 0
-  - actions: right
-    weight: null
+  - actions: south
+    weight: -2
 - !!python/tuple
-  - *id032
+  - *id020
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id032
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id033 !!python/tuple
-    - h1, 1), down1, 2), down
-    - '0'
-  - !!python/tuple
-    - (1, 2), down
+    - (5, 1), right
     - 0
-  - actions: forward
-    weight: null
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id033
+  - *id020
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id033
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id034 !!python/tuple
-    - h2, 1), right2, 1), up
-    - '0'
-  - !!python/tuple
-    - (2, 1), up
+    - (3, 1), right
     - 0
-  - actions: left
-    weight: null
+  - actions: west
+    weight: -4
 - !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id034
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id035 !!python/tuple
-    - h2, 1), right2, 1), down
-    - '0'
-  - !!python/tuple
-    - (2, 1), down
+  - &id021 !!python/tuple
+    - (5, 2), right
     - 0
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id035
   - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id035
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id036 !!python/tuple
-    - h2, 1), right2, 1), right
-    - '0'
-  - !!python/tuple
-    - (2, 1), right
+    - (5, 1), right
     - 0
-  - actions: forward
-    weight: null
+  - actions: north
+    weight: -1
 - !!python/tuple
-  - *id036
+  - *id021
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id036
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id037 !!python/tuple
-    - h1, 1), left1, 1), down
-    - '0'
-  - !!python/tuple
-    - (1, 1), down
+    - (5, 3), right
     - 0
-  - actions: left
-    weight: null
+  - actions: south
+    weight: -2
 - !!python/tuple
-  - *id037
+  - *id021
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id037
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id038 !!python/tuple
-    - h1, 1), left1, 1), up
-    - '0'
-  - !!python/tuple
-    - (1, 1), up
+    - (5, 2), right
     - 0
-  - actions: right
-    weight: null
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id038
+  - *id021
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id038
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id039 !!python/tuple
-    - h1, 1), left1, 1), left
-    - '0'
-  - !!python/tuple
-    - (1, 1), left
+    - (4, 2), right
     - 0
-  - actions: forward
-    weight: null
+  - actions: west
+    weight: -4
 - !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id039
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id040 !!python/tuple
-    - h1, 2), down1, 2), right
-    - '0'
-  - !!python/tuple
-    - (1, 2), right
+  - &id022 !!python/tuple
+    - (5, 1), right
     - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id040
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id041 !!python/tuple
-    - h1, 2), down1, 2), left
-    - '0'
-  - !!python/tuple
-    - (1, 2), left
+  - &id023 !!python/tuple
+    - (5, 1), right
     - 0
-  - actions: right
-    weight: null
+  - actions: north
+    weight: -1
 - !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
+  - *id022
+  - *id023
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - *id041
+  - *id022
   - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id041
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id042 !!python/tuple
-    - h1, 2), down1, 2), down
-    - '0'
-  - !!python/tuple
-    - (1, 2), down
+    - (5, 2), right
     - 0
-  - actions: forward
-    weight: null
+  - actions: south
+    weight: -2
 - !!python/tuple
-  - *id042
+  - *id022
   - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id042
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id043 !!python/tuple
-    - h2, 1), up2, 1), left
-    - '0'
-  - !!python/tuple
-    - (2, 1), left
+    - (4, 1), right
     - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id043
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id044 !!python/tuple
-    - h2, 1), up2, 1), right
-    - '0'
-  - !!python/tuple
-    - (2, 1), right
-    - 0
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id044
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id045 !!python/tuple
-    - h2, 1), up2, 1), up
-    - '0'
-  - !!python/tuple
-    - (2, 1), up
-    - 0
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id045
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id046 !!python/tuple
-    - h2, 1), down2, 1), right
-    - '0'
-  - !!python/tuple
-    - (2, 1), right
-    - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id046
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id047 !!python/tuple
-    - h2, 1), down2, 1), left
-    - '0'
-  - !!python/tuple
-    - (2, 1), left
-    - 0
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id047
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id048 !!python/tuple
-    - h2, 1), down2, 2), down
-    - '0'
-  - !!python/tuple
-    - (2, 2), down
-    - 0
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id048
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id049 !!python/tuple
-    - h1, 2), right1, 2), up
-    - '0'
-  - !!python/tuple
-    - (1, 2), up
-    - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id049
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id050 !!python/tuple
-    - h1, 2), right1, 2), down
-    - '0'
-  - !!python/tuple
-    - (1, 2), down
-    - 0
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id050
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id051 !!python/tuple
-    - h1, 2), right2, 2), right
-    - '0'
-  - !!python/tuple
-    - (2, 2), right
-    - 0
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id051
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id052 !!python/tuple
-    - h1, 2), left1, 2), down
-    - '0'
-  - !!python/tuple
-    - (1, 2), down
-    - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id052
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id053 !!python/tuple
-    - h1, 2), left1, 2), up
-    - '0'
-  - !!python/tuple
-    - (1, 2), up
-    - 0
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id053
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id054 !!python/tuple
-    - h1, 2), left1, 2), left
-    - '0'
-  - !!python/tuple
-    - (1, 2), left
-    - 0
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id054
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id055 !!python/tuple
-    - h2, 1), left2, 1), down
-    - '0'
-  - !!python/tuple
-    - (2, 1), down
-    - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id055
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id056 !!python/tuple
-    - h2, 1), left2, 1), up
-    - '0'
-  - !!python/tuple
-    - (2, 1), up
-    - 0
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id056
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id057 !!python/tuple
-    - h2, 1), left1, 1), left
-    - '0'
-  - !!python/tuple
-    - (1, 1), left
-    - 0
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id057
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id058 !!python/tuple
-    - h1, 2), up1, 2), left
-    - '0'
-  - !!python/tuple
-    - (1, 2), left
-    - 0
-  - actions: left
-    weight: null
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id058
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id059 !!python/tuple
-    - h1, 2), up1, 2), right
-    - '0'
-  - !!python/tuple
-    - (1, 2), right
-    - 0
-  - actions: right
-    weight: null
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (1, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id059
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - &id060 !!python/tuple
-    - h1, 2), up1, 1), up
-    - '0'
-  - !!python/tuple
-    - (1, 1), up
-    - 0
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (2, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (1, 2), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (1, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (1, 2), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (2, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (1, 2), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (2, 1), right
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (1, 2), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (1, 1), left
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (2, 1), up
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (1, 1), down
-    - 1
-  - actions: m
-    weight: '0'
-- !!python/tuple
-  - *id060
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - actions: m
-    weight: '0'
+  - actions: west
+    weight: -4
 nodes:
 - !!python/tuple
   - *id001
@@ -4159,32 +646,40 @@ nodes:
     init: true
     player: eve
 - !!python/tuple
-  - *id002
+  - *id003
   - ap: empty_red_open
     player: eve
 - !!python/tuple
-  - *id003
-  - ap: empty_red_open
+  - *id024
+  - ap: lava_red_open
     player: eve
 - !!python/tuple
   - *id004
   - ap: empty_red_open
     player: eve
 - !!python/tuple
+  - *id025
+  - ap: lava_red_open
+    player: eve
+- !!python/tuple
   - *id005
   - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - *id026
+  - ap: lava_red_open
     player: eve
 - !!python/tuple
   - *id006
   - ap: empty_red_open
     player: eve
 - !!python/tuple
-  - *id007
+  - *id008
   - ap: empty_red_open
     player: eve
 - !!python/tuple
-  - *id008
-  - ap: empty_red_open
+  - *id027
+  - ap: lava_red_open
     player: eve
 - !!python/tuple
   - *id009
@@ -4231,6 +726,10 @@ nodes:
   - ap: empty_red_open
     player: eve
 - !!python/tuple
+  - *id028
+  - ap: goal_green_open
+    player: eve
+- !!python/tuple
   - *id020
   - ap: empty_red_open
     player: eve
@@ -4242,146 +741,6 @@ nodes:
   - *id022
   - ap: empty_red_open
     player: eve
-- !!python/tuple
-  - !!python/tuple
-    - (2, 2), down
-    - 0
-  - ap: goal_green_open
-    player: eve
-- !!python/tuple
-  - !!python/tuple
-    - (2, 2), down
-    - 1
-  - ap: goal_green_open
-    player: eve
-- !!python/tuple
-  - *id023
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - *id024
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - !!python/tuple
-    - (2, 2), right
-    - 0
-  - ap: goal_green_open
-    player: eve
-- !!python/tuple
-  - !!python/tuple
-    - (2, 2), right
-    - 1
-  - ap: goal_green_open
-    player: eve
-- !!python/tuple
-  - *id025
-  - player: adam
-- !!python/tuple
-  - *id026
-  - player: adam
-- !!python/tuple
-  - *id027
-  - player: adam
-- !!python/tuple
-  - *id028
-  - player: adam
-- !!python/tuple
-  - *id029
-  - player: adam
-- !!python/tuple
-  - *id030
-  - player: adam
-- !!python/tuple
-  - *id031
-  - player: adam
-- !!python/tuple
-  - *id032
-  - player: adam
-- !!python/tuple
-  - *id033
-  - player: adam
-- !!python/tuple
-  - *id034
-  - player: adam
-- !!python/tuple
-  - *id035
-  - player: adam
-- !!python/tuple
-  - *id036
-  - player: adam
-- !!python/tuple
-  - *id037
-  - player: adam
-- !!python/tuple
-  - *id038
-  - player: adam
-- !!python/tuple
-  - *id039
-  - player: adam
-- !!python/tuple
-  - *id040
-  - player: adam
-- !!python/tuple
-  - *id041
-  - player: adam
-- !!python/tuple
-  - *id042
-  - player: adam
-- !!python/tuple
-  - *id043
-  - player: adam
-- !!python/tuple
-  - *id044
-  - player: adam
-- !!python/tuple
-  - *id045
-  - player: adam
-- !!python/tuple
-  - *id046
-  - player: adam
-- !!python/tuple
-  - *id047
-  - player: adam
-- !!python/tuple
-  - *id048
-  - player: adam
-- !!python/tuple
-  - *id049
-  - player: adam
-- !!python/tuple
-  - *id050
-  - player: adam
-- !!python/tuple
-  - *id051
-  - player: adam
-- !!python/tuple
-  - *id052
-  - player: adam
-- !!python/tuple
-  - *id053
-  - player: adam
-- !!python/tuple
-  - *id054
-  - player: adam
-- !!python/tuple
-  - *id055
-  - player: adam
-- !!python/tuple
-  - *id056
-  - player: adam
-- !!python/tuple
-  - *id057
-  - player: adam
-- !!python/tuple
-  - *id058
-  - player: adam
-- !!python/tuple
-  - *id059
-  - player: adam
-- !!python/tuple
-  - *id060
-  - player: adam
 num_obs: 3
-num_states: 64
+num_states: 25
 start_state: *id001

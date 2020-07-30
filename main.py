@@ -4,7 +4,7 @@ import abc
 import warnings
 import sys
 
-
+import numpy as np
 from typing import Tuple, Optional, Dict
 
 # import wombats packages
@@ -53,13 +53,22 @@ class MiniGridLavaEnv(enum.Enum):
 
 
 class GraphInstanceContructionBase(abc.ABC):
+    """
+    An abstract class acting as interface to build a graph which is the input the regret minimizing strategy class.
 
-    def __init__(self, _finite: bool):
+    finite: flag indicating that we are using finite/cumulative payoff which alters the transition system
+    and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
+    the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
+    """
+
+    def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
         self.finite = _finite
+        self.plot_ts = _plot_ts
+        self.plot_dfa = _plot_dfa
+        self.plot_product = _plot_prod
         self._trans_sys: Optional[FiniteTransSys] = None
         self._dfa: Optional[DFAGraph] = None
         self._product_automaton: Optional[ProductAutomaton] = None
-        self._wombats_minigrid_TS: Optional[MinigridTransitionSystem] = None
         self._build_ts()
         self._build_dfa()
         self._build_product()
@@ -83,30 +92,42 @@ class GraphInstanceContructionBase(abc.ABC):
                                                     debug=False,
                                                     absorbing=True,
                                                     finite=self.finite,
-                                                    plot=False)
+                                                    plot=self.plot_product)
 
     @property
     def product_automaton(self):
         return self._product_automaton
 
-    @property
-    def wombats_minigrid_TS(self):
-        return self._wombats_minigrid_TS
-
 
 class MinigridGraph(GraphInstanceContructionBase):
+    """
+    A concrete implementation of an instance of FiniteTransitionSystem from an env in gym-minigrid. Given an Env we
+    build a "raw transition system" that only includes system nodes. We then add human/env nodes by using an instance of
+    FiniteTransitionSystem(TS) and building the concrete instance. Given a fixed syntactically co-safe LTL formula, we
+    compose the TS and the DFA to get an instance of the product automaton(G). We compute a regret Minimizing strategy
+    on this Product Graph G.
 
-    def __init__(self, _finite: bool):
-        super().__init__(_finite=_finite)
+    wombat_minigrid_TS: An concrete instance of MiniGridTransitionSystem from wombats tool given an env.
+    """
+
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False,
+                 _plot_minigrid: bool = False):
+        self._wombats_minigrid_TS: Optional[MinigridTransitionSystem] = None
+        self._plot_minigrid = _plot_minigrid
+        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
 
     def __get_TS_from_wombats(self) -> Tuple[MiniGrid, MinigridTransitionSystem]:
         # ENV_ID = 'MiniGrid-LavaComparison_noDryingOff-v0'
         # ENV_ID = 'MiniGrid-AlternateLavaComparison_AllCorridorsOpen-v0'
-        ENV_ID = 'MiniGrid-DistShift1-v0'
+        # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_5.value
-        # ENV_ID = MiniGridLavaEnv.env_6.value
+        ENV_ID = MiniGridEmptyEnv.env_5.value
+        # ENV_ID = MiniGridLavaEnv.env_4.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -124,7 +145,7 @@ class MinigridGraph(GraphInstanceContructionBase):
                                                graph_name="minigrid_TS",
                                                config_yaml=f"config/{file_name}",
                                                save_flag=True,
-                                               plot=True)
+                                               plot=self._plot_minigrid)
 
         regret_minigrid_TS.build_graph_from_file()
 
@@ -144,8 +165,8 @@ class MinigridGraph(GraphInstanceContructionBase):
                                             built_in_ts_name="",
                                             save_flag=True,
                                             debug=False,
-                                            plot=False,
-                                            human_intervention=0,
+                                            plot=self.plot_ts,
+                                            human_intervention=1,
                                             finite=self.finite,
                                             plot_raw_ts=False)
 
@@ -156,13 +177,26 @@ class MinigridGraph(GraphInstanceContructionBase):
                                       save_flag=True,
                                       sc_ltl="!(lava_red_open) U (goal_green_open)",
                                       use_alias=False,
-                                      plot=False)
+                                      plot=self.plot_dfa)
+
+    @property
+    def wombats_minigrid_TS(self):
+        return self._wombats_minigrid_TS
 
 
 class VariantOneGraph(GraphInstanceContructionBase):
+    """
+    A class that constructs a concrete instance of the TwoPlayerGraph(G) based on the example on Pg 2. of the paper.
 
-    def __init__(self, _finite: bool):
-        super().__init__(_finite=_finite)
+    We then compute a regret minimizing strategy on G.
+    """
+
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False):
+        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
 
     def _build_dfa(self):
         pass
@@ -176,13 +210,22 @@ class VariantOneGraph(GraphInstanceContructionBase):
                                                     config_yaml="config/two_player_graph",
                                                     save_flag=True,
                                                     pre_built=True,
-                                                    plot=False)
+                                                    plot=self.plot_product)
 
 
 class ThreeStateExample(GraphInstanceContructionBase):
-
-    def __init__(self, _finite: bool):
-        super().__init__(_finite=_finite)
+    """
+    A class that implements the built-in three state raw transition system in the FiniteTransitionSystem class. We then
+    build a concrete instance of a transition system by augmenting the graph with human/env nodes. Given a fixed
+    syntactically co-safe LTL formula(!b U c) we construct the Product Automation (G) on which we then compute a regret
+    minimizing strategy.
+    """
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False):
+        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
 
     def _build_ts(self):
         self._trans_sys = graph_factory.get('TS',
@@ -193,7 +236,7 @@ class ThreeStateExample(GraphInstanceContructionBase):
                                             built_in_ts_name="three_state_ts",
                                             save_flag=True,
                                             debug=False,
-                                            plot=False,
+                                            plot=self.plot_ts,
                                             human_intervention=1,
                                             finite=self.finite,
                                             plot_raw_ts=False)
@@ -205,13 +248,22 @@ class ThreeStateExample(GraphInstanceContructionBase):
                                       save_flag=True,
                                       sc_ltl="!b U c",
                                       use_alias=False,
-                                      plot=False)
+                                      plot=self.plot_dfa)
 
 
 class FiveStateExample(GraphInstanceContructionBase):
-
-    def __init__(self, _finite: bool):
-        super().__init__(_finite=_finite)
+    """
+    A class that implements the built-in five state raw transition system in the FiniteTransitionSystem class. We then
+    build a concrete instance of a transition system by augmenting the graph with human/env nodes. Given a fixed
+    syntactically co-safe LTL formula(!d U g) we construct the Product Automation (G) on which we then compute a regret
+    minimizing strategy.
+    """
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False):
+        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
 
     def _build_ts(self):
         self._trans_sys = graph_factory.get('TS',
@@ -222,7 +274,7 @@ class FiveStateExample(GraphInstanceContructionBase):
                                             built_in_ts_name="five_state_ts",
                                             save_flag=True,
                                             debug=False,
-                                            plot=False,
+                                            plot=self.plot_ts,
                                             human_intervention=1,
                                             finite=self.finite,
                                             plot_raw_ts=False)
@@ -234,7 +286,83 @@ class FiveStateExample(GraphInstanceContructionBase):
                                       save_flag=True,
                                       sc_ltl="!d U g",
                                       use_alias=False,
-                                      plot=False)
+                                      plot=self.plot_dfa)
+
+
+class FrankaAbstractionGraph(GraphInstanceContructionBase):
+
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False):
+        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
+
+    def _build_graph_from_yaml(self):
+        if self._trans_sys._graph_yaml is None:
+            warnings.warn("Please ensure that you have first loaded the config data. You can do this by"
+                          "setting the respective True in the builder instance.")
+
+        _nodes = self._trans_sys._graph_yaml['nodes']
+        _start_state = self._trans_sys._graph_yaml['start_state']
+
+        # each node has an atomic proposition and a player associated with it. Some states also init and
+        # accepting attributes associated with them
+        for _n, _n_attr in _nodes.items():
+            state_name = _n
+            ap = _n_attr.get('observation')
+
+            self._trans_sys.add_state(state_name, ap=ap, player="eve")
+
+        self._trans_sys.add_initial_state(_start_state)
+
+        _edges = self._trans_sys._graph_yaml['edges']
+
+        for _u, _v in _edges.items():
+            if _v is not None:
+                for _n, _n_attr in _v.items():
+                    _action = _n_attr.get('symbols')
+                    self._trans_sys.add_edge(_u, _n, weight="-1", actions=_action)
+
+    def _build_ts(self):
+        self._trans_sys = graph_factory.get('TS',
+                                            raw_trans_sys=None,
+                                            graph_name="trans_sys",
+                                            config_yaml="config/franka_abs",
+                                            pre_built=False,
+                                            from_file=True,
+                                            built_in_ts_name="",
+                                            save_flag=True,
+                                            debug=False,
+                                            plot=self.plot_ts,
+                                            human_intervention=0,
+                                            finite=self.finite,
+                                            plot_raw_ts=False)
+
+        self._build_graph_from_yaml()
+        self._trans_sys = graph_factory.get('TS',
+                                            raw_trans_sys=self._trans_sys,
+                                            graph_name="trans_sys",
+                                            config_yaml="config/franka_abs",
+                                            pre_built=False,
+                                            from_file=False,
+                                            built_in_ts_name="",
+                                            save_flag=True,
+                                            debug=False,
+                                            plot=self.plot_ts,
+                                            human_intervention=0,
+                                            finite=self.finite,
+                                            plot_raw_ts=False)
+        # self._trans_sys.fancy_graph()
+
+    def _build_dfa(self):
+        self._dfa = graph_factory.get('DFA',
+                                      graph_name="automaton",
+                                      config_yaml="config/automaton",
+                                      save_flag=True,
+                                      sc_ltl="F(p04p10p22)",
+                                      use_alias=False,
+                                      plot=self.plot_dfa)
 
 
 if __name__ == "__main__":
@@ -244,10 +372,12 @@ if __name__ == "__main__":
     gym_minigrid = False
     three_state_ts = False
     five_state_ts = False
-    variant_1_paper = True
+    variant_1_paper = False
+    franka_abs = True
 
+    # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
-        miniGrid_instance = MinigridGraph(_finite=finite)
+        miniGrid_instance = MinigridGraph(_finite=finite, _plot_minigrid=True)
         trans_sys = miniGrid_instance.product_automaton
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
@@ -262,6 +392,12 @@ if __name__ == "__main__":
     elif variant_1_paper:
         variant_1_instance = VariantOneGraph(_finite=finite)
         trans_sys = variant_1_instance.product_automaton
+
+    elif franka_abs:
+        franka_instance = FrankaAbstractionGraph(_finite=finite)
+        trans_sys = franka_instance.product_automaton
+        print(f"No. of nodes in the product graph is :{len(trans_sys._graph.nodes())}")
+        print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
 
     else:
         warnings.warn("Please ensure at-least one of the flags is True")
@@ -281,9 +417,12 @@ if __name__ == "__main__":
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
     reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True, debug=False)
     # g_hat.plot_graph()
-    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=True)
+    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
 
     if gym_minigrid:
         # map back str to minigrid env
-        controls = reg_syn_handle.get_controls_from_str(org_str)
+        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str)
+        # controls = [("rand", np.array([2, 2])), ("rand", np.array([3, 3]))]
         miniGrid_instance.execute_str(_controls=controls)
+    else:
+        control = reg_syn_handle.get_controls_from_str(org_str, debug=True)

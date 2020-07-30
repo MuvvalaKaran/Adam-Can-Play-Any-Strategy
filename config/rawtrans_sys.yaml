@@ -1,185 +1,430 @@
-alphabet_size: 36
+alphabet_size: 85
 edges:
 - !!python/tuple
   - (1, 1), right
-  - (1, 1), up
-  - actions: left
-    weight: null
+  - (1, 1), right
+  - actions: north
+    weight: -1
 - !!python/tuple
   - (1, 1), right
-  - (1, 1), down
-  - actions: right
-    weight: null
+  - (1, 1), right
+  - actions: west
+    weight: -4
 - !!python/tuple
   - (1, 1), right
-  - (2, 1), right
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (1, 1), up
-  - (1, 1), left
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (1, 1), up
-  - (1, 1), right
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (1, 1), up
-  - (1, 1), up
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (1, 1), down
-  - (1, 1), right
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (1, 1), down
-  - (1, 1), left
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (1, 1), down
-  - (1, 2), down
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (2, 1), right
-  - (2, 1), up
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (2, 1), right
-  - (2, 1), down
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (2, 1), right
-  - (2, 1), right
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (1, 1), left
-  - (1, 1), down
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (1, 1), left
-  - (1, 1), up
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (1, 1), left
-  - (1, 1), left
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (1, 2), down
   - (1, 2), right
-  - actions: left
-    weight: null
+  - actions: south
+    weight: -2
 - !!python/tuple
-  - (1, 2), down
-  - (1, 2), left
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (1, 2), down
-  - (1, 2), down
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (2, 1), up
-  - (2, 1), left
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (2, 1), up
+  - (1, 1), right
   - (2, 1), right
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (2, 1), up
-  - (2, 1), up
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (2, 1), down
-  - (2, 1), right
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (2, 1), down
-  - (2, 1), left
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (2, 1), down
-  - (2, 2), down
-  - actions: forward
-    weight: null
+  - actions: east
+    weight: -3
 - !!python/tuple
   - (1, 2), right
-  - (1, 2), up
-  - actions: left
-    weight: null
+  - (1, 1), right
+  - actions: north
+    weight: -1
 - !!python/tuple
   - (1, 2), right
-  - (1, 2), down
-  - actions: right
-    weight: null
+  - (1, 3), right
+  - actions: south
+    weight: -2
 - !!python/tuple
   - (1, 2), right
   - (2, 2), right
-  - actions: forward
-    weight: null
+  - actions: east
+    weight: -3
 - !!python/tuple
-  - (1, 2), left
-  - (1, 2), down
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (1, 2), left
-  - (1, 2), up
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (1, 2), left
-  - (1, 2), left
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (2, 1), left
-  - (2, 1), down
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (2, 1), left
-  - (2, 1), up
-  - actions: right
-    weight: null
-- !!python/tuple
-  - (2, 1), left
-  - (1, 1), left
-  - actions: forward
-    weight: null
-- !!python/tuple
-  - (1, 2), up
-  - (1, 2), left
-  - actions: left
-    weight: null
-- !!python/tuple
-  - (1, 2), up
   - (1, 2), right
-  - actions: right
-    weight: null
+  - (1, 2), right
+  - actions: west
+    weight: -4
 - !!python/tuple
-  - (1, 2), up
-  - (1, 1), up
-  - actions: forward
-    weight: null
+  - (2, 1), right
+  - (2, 1), right
+  - actions: self
+    weight: -inf
+- !!python/tuple
+  - (1, 3), right
+  - (1, 2), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (1, 3), right
+  - (1, 4), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (1, 3), right
+  - (2, 3), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (1, 3), right
+  - (1, 3), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (2, 2), right
+  - (2, 2), right
+  - actions: self
+    weight: -inf
+- !!python/tuple
+  - (1, 4), right
+  - (1, 3), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (1, 4), right
+  - (1, 5), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (1, 4), right
+  - (2, 4), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (1, 4), right
+  - (1, 4), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (2, 3), right
+  - (2, 3), right
+  - actions: self
+    weight: -inf
+- !!python/tuple
+  - (1, 5), right
+  - (1, 4), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (1, 5), right
+  - (1, 5), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (1, 5), right
+  - (1, 5), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (1, 5), right
+  - (2, 5), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (2, 4), right
+  - (2, 3), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (2, 4), right
+  - (2, 5), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (2, 4), right
+  - (3, 4), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (2, 4), right
+  - (1, 4), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (2, 5), right
+  - (2, 5), right
+  - actions: self
+    weight: -inf
+- !!python/tuple
+  - (3, 4), right
+  - (3, 3), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (3, 4), right
+  - (3, 5), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (3, 4), right
+  - (4, 4), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (3, 4), right
+  - (2, 4), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (3, 3), right
+  - (3, 2), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (3, 3), right
+  - (3, 4), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (3, 3), right
+  - (4, 3), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (3, 3), right
+  - (2, 3), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (3, 5), right
+  - (3, 4), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (3, 5), right
+  - (3, 5), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (3, 5), right
+  - (4, 5), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (3, 5), right
+  - (2, 5), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (4, 4), right
+  - (4, 3), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (4, 4), right
+  - (4, 5), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (4, 4), right
+  - (5, 4), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (4, 4), right
+  - (3, 4), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (3, 2), right
+  - (3, 1), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (3, 2), right
+  - (3, 3), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (3, 2), right
+  - (4, 2), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (3, 2), right
+  - (2, 2), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (4, 3), right
+  - (4, 2), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (4, 3), right
+  - (4, 4), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (4, 3), right
+  - (5, 3), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (4, 3), right
+  - (3, 3), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (4, 5), right
+  - (4, 4), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (4, 5), right
+  - (4, 5), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (4, 5), right
+  - (5, 5), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (4, 5), right
+  - (3, 5), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (5, 4), right
+  - (5, 3), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (5, 4), right
+  - (5, 5), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (5, 4), right
+  - (5, 4), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (5, 4), right
+  - (4, 4), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (3, 1), right
+  - (3, 1), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (3, 1), right
+  - (3, 2), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (3, 1), right
+  - (4, 1), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (3, 1), right
+  - (2, 1), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (4, 2), right
+  - (4, 1), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (4, 2), right
+  - (4, 3), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (4, 2), right
+  - (5, 2), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (4, 2), right
+  - (3, 2), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (5, 3), right
+  - (5, 2), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (5, 3), right
+  - (5, 4), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (5, 3), right
+  - (5, 3), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (5, 3), right
+  - (4, 3), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (5, 5), right
+  - (5, 5), right
+  - actions: self
+    weight: 0
+- !!python/tuple
+  - (4, 1), right
+  - (4, 1), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (4, 1), right
+  - (4, 2), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (4, 1), right
+  - (5, 1), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (4, 1), right
+  - (3, 1), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (5, 2), right
+  - (5, 1), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (5, 2), right
+  - (5, 3), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (5, 2), right
+  - (5, 2), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (5, 2), right
+  - (4, 2), right
+  - actions: west
+    weight: -4
+- !!python/tuple
+  - (5, 1), right
+  - (5, 1), right
+  - actions: north
+    weight: -1
+- !!python/tuple
+  - (5, 1), right
+  - (5, 1), right
+  - actions: east
+    weight: -3
+- !!python/tuple
+  - (5, 1), right
+  - (5, 2), right
+  - actions: south
+    weight: -2
+- !!python/tuple
+  - (5, 1), right
+  - (4, 1), right
+  - actions: west
+    weight: -4
 nodes:
 - !!python/tuple
   - (1, 1), right
@@ -187,59 +432,102 @@ nodes:
     init: true
     player: eve
 - !!python/tuple
-  - (1, 1), up
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - (1, 1), down
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - (2, 1), right
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - (1, 1), left
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - (1, 2), down
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - (2, 1), up
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - (2, 1), down
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
   - (1, 2), right
   - ap: empty_red_open
     player: eve
 - !!python/tuple
-  - (1, 2), left
-  - ap: empty_red_open
+  - (2, 1), right
+  - ap: lava_red_open
     player: eve
 - !!python/tuple
-  - (2, 1), left
-  - ap: empty_red_open
-    player: eve
-- !!python/tuple
-  - (2, 2), down
-  - accepting: true
-    ap: goal_green_open
-    player: eve
-- !!python/tuple
-  - (1, 2), up
+  - (1, 3), right
   - ap: empty_red_open
     player: eve
 - !!python/tuple
   - (2, 2), right
+  - ap: lava_red_open
+    player: eve
+- !!python/tuple
+  - (1, 4), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 3), right
+  - ap: lava_red_open
+    player: eve
+- !!python/tuple
+  - (1, 5), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 4), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (2, 5), right
+  - ap: lava_red_open
+    player: eve
+- !!python/tuple
+  - (3, 4), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (3, 3), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (3, 5), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (4, 4), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (3, 2), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (4, 3), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (4, 5), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (5, 4), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (3, 1), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (4, 2), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (5, 3), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (5, 5), right
   - accepting: true
     ap: goal_green_open
     player: eve
+- !!python/tuple
+  - (4, 1), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (5, 2), right
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - (5, 1), right
+  - ap: empty_red_open
+    player: eve
 num_obs: 3
-num_states: 14
+num_states: 25
 start_state: (1, 1), right

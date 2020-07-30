@@ -7,11 +7,13 @@ edges:
 - !!python/tuple
   - v1
   - v3
-  - weight: '1'
+  - strategy: true
+    weight: '1'
 - !!python/tuple
   - v2
   - v1
-  - weight: '-1'
+  - strategy: true
+    weight: '-1'
 - !!python/tuple
   - v2
   - v4
@@ -19,7 +21,8 @@ edges:
 - !!python/tuple
   - v3
   - v3
-  - weight: '0.5'
+  - strategy: true
+    weight: '0.5'
 - !!python/tuple
   - v3
   - v5
@@ -27,11 +30,13 @@ edges:
 - !!python/tuple
   - v5
   - v5
-  - weight: '1'
+  - strategy: true
+    weight: '1'
 - !!python/tuple
   - v4
   - v4
-  - weight: '2'
+  - strategy: true
+    weight: '2'
 nodes:
 - !!python/tuple
   - v1

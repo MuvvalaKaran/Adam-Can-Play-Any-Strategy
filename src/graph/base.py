@@ -456,6 +456,24 @@ class Graph(abc.ABC):
 
         return _accp_state
 
+    def get_trap_states(self) -> List:
+        """
+        A function to get the trap state or a set of trap states (if multiple)
+        Trap states are state that do not have an outgoing edge and don't have the accepting attribute
+        :return: a list of states - # of elements >= 0
+        """
+        _trap_state = []
+
+        for n in self._graph.nodes():
+            if len(list(self._graph.successors(n))) == 1:
+                if not self._graph.nodes[n].get("accepting"):
+                    _trap_state.append(n)
+
+        if len(_trap_state) == 0:
+            warnings.warn("WARNING: The set of trap states is empty. Returning an empty list.")
+
+        return _trap_state
+
     def remove_state_attr(self, state: Tuple, attr: str):
         """
         A function to remove an attr associated with a state

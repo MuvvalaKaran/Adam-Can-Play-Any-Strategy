@@ -1,15 +1,12 @@
-import copy
 import warnings
 import sys
-import statistics
 import abc
 
+from bidict import bidict
 from abc import abstractmethod
-from collections import defaultdict
 from typing import Tuple, List, Dict
 
 # import local packages
-from src.factory.builder import Builder
 from src.graph.base import Graph
 
 
@@ -25,6 +22,7 @@ class Payoff(abc.ABC):
 
     def __init__(self, graph: Graph, payoff: callable) -> 'Payoff()':
         self.graph = graph
+        self.map_tuple_idx = bidict({})
         self.__V = self.graph._graph.nodes
         self.payoff_func: callable = payoff
         self._loop_vals = None
@@ -72,6 +70,20 @@ class Payoff(abc.ABC):
 
         self.init_node = node
 
+    def create_tuple_mapping(self, play: tuple):
+        """
+        A bidirectional dictionary that hashes a tuple and stores its hash value as the value
+        :return:
+        """
+
+        # if hash(play) not in list(self.map_tuple_idx.values()):
+        self.map_tuple_idx.update({play: hash(play)})
+        # else:
+        #     warnings.warn(f"HASH COLLISION: The hash value {hash(play)} for play :{play} already exists")
+
+    def get_map_tuple_idx(self) -> bidict:
+        return self.map_tuple_idx
+
     def remove_attribute(self, tnode: Tuple, attr: str) -> None:
         """
         A method to remove a attribute @attr associated with a node @tnode. e.g weights, init are stored as dict keys
@@ -105,7 +117,7 @@ class Payoff(abc.ABC):
         :param play: a sequence of nodes on the given graph
         :return: True if the vertex exist in the @play else False
         """
-        if v in play:
+        if v in self.map_tuple_idx.inverse[play]:
             return True
         return False
 

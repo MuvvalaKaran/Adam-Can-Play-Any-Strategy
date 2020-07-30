@@ -126,8 +126,8 @@ class MinigridGraph(GraphInstanceContructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        ENV_ID = MiniGridEmptyEnv.env_5.value
-        # ENV_ID = MiniGridLavaEnv.env_4.value
+        # ENV_ID = MiniGridEmptyEnv.env_5.value
+        ENV_ID = MiniGridLavaEnv.env_5.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -369,11 +369,11 @@ if __name__ == "__main__":
 
     finite = False
     go_fast = True
-    gym_minigrid = False
+    gym_minigrid = True
     three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
-    franka_abs = True
+    franka_abs = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:

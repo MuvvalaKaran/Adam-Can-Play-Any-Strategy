@@ -67,7 +67,8 @@ class InfinitePayoff(Payoff):
             if node == self.init_node:
                 nodeStack.append(node)
                 loop_value: str = self._compute_loop_value(nodeStack)
-                loop_dict.update({tuple(nodeStack): loop_value})
+                self.create_tuple_mapping(tuple(nodeStack))
+                loop_dict.update({self.map_tuple_idx[tuple(nodeStack)]: loop_value})
                 continue
 
             self._cycle_util(node, visitStack, loop_dict, nodeStack)
@@ -101,7 +102,8 @@ class InfinitePayoff(Payoff):
                     nodeStack.append(neighbour)
 
                 loop_value: str = self._compute_loop_value(nodeStack)
-                loop_dict.update({tuple(nodeStack): loop_value})
+                self.create_tuple_mapping(tuple(nodeStack))
+                loop_dict.update({self.map_tuple_idx[tuple(nodeStack)]: loop_value})
                 nodeStack.pop()
                 continue
             else:

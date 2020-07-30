@@ -228,19 +228,19 @@ class RegretMinimizationStrategySynthesis:
         :param node: The node from which we would like to compute the cVal
         :return: returns a single max value. If multiple plays have the max_value then the very first occurance is returned
         """
-        tmp_copied_graph = copy.deepcopy(self.graph)
-        tmp_payoff_handle = copy.deepcopy(self.payoff)
-        tmp_payoff_handle.graph = tmp_copied_graph
+        # tmp_copied_graph = copy.deepcopy(self.graph)
+        # tmp_payoff_handle = copy.deepcopy(self.payoff)
+        # tmp_payoff_handle.graph = tmp_copied_graph
         # construct a new graph with node as the initial vertex and compute loop_vals again
         # 1. remove the current init node of the graph
         # 2. add @node as the new init vertex
         # 3. compute the loop-vals for this new graph
         # tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
-        tmp_payoff_handle.remove_attribute(tmp_payoff_handle.get_init_node(), 'init')
-        tmp_payoff_handle.set_init_node(node)
-        tmp_payoff_handle.cycle_main()
+        self.payoff.remove_attribute(self.payoff.get_init_node(), 'init')
+        self.payoff.set_init_node(node)
+        self.payoff.cycle_main()
 
-        return tmp_payoff_handle.compute_cVal(node)
+        return self.payoff.compute_cVal(node)
 
     def _construct_g_b(self, g_hat: TwoPlayerGraph,
                        b: str,

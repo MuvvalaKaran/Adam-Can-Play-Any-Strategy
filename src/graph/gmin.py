@@ -13,13 +13,7 @@ class GMinGraph(TwoPlayerGraph):
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
         self._trans_sys = None
         self._auto_graph = None
-        # self._graph_name = graph_name
-        # self._config_yaml = config_yaml
-        # self._save_flag = save_flag
         TwoPlayerGraph.__init__(self, graph_name, config_yaml, save_flag)
-
-    def construct_graph(self):
-        super().construct_graph()
 
     @classmethod
     def construct_gmin_from_graph(cls, graph: Graph,
@@ -39,8 +33,8 @@ class GMinGraph(TwoPlayerGraph):
         # find the maximum weight in the og graph(G)
         # specifically adding self.graph.edges.data('weight') to a create to tuple where the
         # third element is the weight value
-        max_edge = max(dict(graph._graph.edges).items(), key=lambda x: x[1]['weight'])
-        W: str = max_edge[1].get('weight')
+        _edge_w_max_weight = max(dict(graph._graph.edges).items(), key=lambda x: x[1]['weight'])
+        _max_weight: str = _edge_w_max_weight[1].get('weight')
 
         # assign nodes to Gmin with player as attributes to each node
         for n in V_prime:
@@ -53,8 +47,7 @@ class GMinGraph(TwoPlayerGraph):
                 gmin_graph.add_state_attribute((n[0][0], n[1]), 'player', 'adam')
 
             # if the node has init attribute and n[1] == W then add it to the init vertex in Gmin
-            if n[0][1].get('init') and n[1] == W:
-                # Gmin.nodes[(n[0][0], n[1])]['init'] = True
+            if n[0][1].get('init') and n[1] == _max_weight:
                 gmin_graph.add_initial_state((n[0][0], n[1]))
             if n[0][1].get('accepting'):
                 gmin_graph.add_accepting_state((n[0][0], n[1]))
@@ -63,9 +56,8 @@ class GMinGraph(TwoPlayerGraph):
         for parent in gmin_graph._graph.nodes:
             for child in gmin_graph._graph.nodes:
                 if graph._graph.has_edge(parent[0], child[0]):
-                    if float(child[1]) == min(float(parent[1]),
-                                              float(graph._graph.get_edge_data(parent[0],
-                                                                                         child[0])[0]['weight'])):
+                    if child[1] == min(parent[1],
+                                       graph._graph.get_edge_data(parent[0], child[0])[0]['weight']):
                         gmin_graph._graph.add_edge(parent, child, weight=child[1])
 
         if debug:

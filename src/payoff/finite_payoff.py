@@ -23,7 +23,7 @@ class FinitePayoff(Payoff):
                         graph=graph,
                         payoff=payoff)
 
-    def cycle_main(self) -> Dict[Tuple, str]:
+    def cycle_main(self):
         """
         A method to compute the all the possible loop values for a given graph with an init node. Before calling this
         function make sure you have already updated the init node and then call this function.
@@ -55,7 +55,6 @@ class FinitePayoff(Payoff):
             self._cycle_util(node, visitStack, loop_dict, nodeStack)
 
         self._loop_vals = loop_dict
-        return loop_dict
 
     def _cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, str],
                     nodeStack: List[Tuple]) -> None:
@@ -83,7 +82,7 @@ class FinitePayoff(Payoff):
                     nodeStack.append(neighbour)
                 # a different logic to cumulative payoff as it is defined for finite traces unlike other payoffs
                 # that are defined over infinite traces
-                loop_value: str = self._compute_loop_value(nodeStack)
+                loop_value: float = self._compute_loop_value(nodeStack)
                 loop_dict.update({tuple(nodeStack): loop_value})
                 nodeStack.pop()
                 continue

@@ -19,15 +19,14 @@ class DFAGraph(Graph):
                  config_yaml: str,
                  save_flag: bool = False,
                  use_alias: bool = False):
-        # initialize the Graph class instance variables
         self._formula = formula
         self._graph_name = graph_name
         self._use_alias = use_alias
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
 
     def construct_graph(self, plot: bool = False):
-        buchi = nx.MultiDiGraph(name=self._graph_name)
-        self._graph = buchi
+        buchi_automaton = nx.MultiDiGraph(name=self._graph_name)
+        self._graph = buchi_automaton
 
         states, edges, initial, accepts = self._from_spot(self._formula)
         
@@ -169,7 +168,7 @@ class DFAGraph(Graph):
 
         return states, edges, initial, accepts
 
-    def _get_symbols(self) -> List[str]:
+    def get_symbols(self) -> List[str]:
         """
         A method that returns the set symbols that constitute a formula
         :param sc_ltl: The input formula to SPOT based on which we construct an automaton.
@@ -182,7 +181,7 @@ class DFAGraph(Graph):
 
         return symbols
 
-    def _get_absorbing_states(self) -> List[Tuple]:
+    def get_absorbing_states(self) -> List[Tuple]:
         abs_states = []
         for _n in self._graph.nodes():
             if len(list(self._graph.successors(_n))) == 1 and list(self._graph.successors(_n))[0] == _n:

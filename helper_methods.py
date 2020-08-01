@@ -59,10 +59,6 @@ def create_mpg_file(graph, name: str) -> Tuple[bidict, list]:
 
     f = open(directory_add, "w")
 
-    # create the hash value (int number in our case) for each node
-    # for inode, node in enumerate(graph._graph.nodes()):
-    #     graph._graph.nodes[node]['map'] = inode
-
     # get all the initial nodes of g_b(s)
     g_b_init_nodes = [_s for _s in graph._graph.successors("v1")]
 
@@ -79,7 +75,7 @@ def create_mpg_file(graph, name: str) -> Tuple[bidict, list]:
         # get outgoing edges of a graph
         for ie, e in enumerate(graph._graph.edges(node)):
             mapped_next_node = _node_index_map[e[1]]
-            edge_weight = float(graph._graph[e[0]][e[1]][0]['weight'])
+            edge_weight = graph._graph[e[0]][e[1]][0]['weight']
 
             if edge_weight == math.inf or edge_weight == -1 * math.inf:
                 edge_weight = MAX_CONST

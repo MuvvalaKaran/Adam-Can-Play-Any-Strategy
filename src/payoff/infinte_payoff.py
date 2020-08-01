@@ -37,11 +37,11 @@ class InfinitePayoff(Payoff):
         # get the edge weights between the repeated nodes
         for i in range(initial_index, len(stack) - 1):
             # create the edge tuple up to the very last element
-            loop_edge_w.append(float(self.graph._graph[stack[i]][stack[i + 1]][0].get('weight')))
+            loop_edge_w.append(self.graph._graph[stack[i]][stack[i + 1]][0].get('weight'))
 
         return self.payoff_func(loop_edge_w)
 
-    def cycle_main(self) -> Dict[Tuple, str]:
+    def cycle_main(self):
         """
         A method to compute the all the possible loop values for a given graph with an init node. Before calling this
         function make sure you have already updated the init node and then call this function.
@@ -66,14 +66,14 @@ class InfinitePayoff(Payoff):
             # store the self play in the loop dict
             if node == self.init_node:
                 nodeStack.append(node)
-                loop_value: str = self._compute_loop_value(nodeStack)
-                loop_dict.update({tuple(nodeStack): loop_value})
+                loop_value: float = self._compute_loop_value(nodeStack)
+                self.create_tuple_mapping(tuple(nodeStack))
+                loop_dict.update({self.map_tuple_idx[tuple(nodeStack)]: loop_value})
                 continue
 
             self._cycle_util(node, visitStack, loop_dict, nodeStack)
 
         self._loop_vals = loop_dict
-        return loop_dict
 
     def _cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, str],
                     nodeStack: List[Tuple]) -> None:
@@ -101,7 +101,8 @@ class InfinitePayoff(Payoff):
                     nodeStack.append(neighbour)
 
                 loop_value: str = self._compute_loop_value(nodeStack)
-                loop_dict.update({tuple(nodeStack): loop_value})
+                self.create_tuple_mapping(tuple(nodeStack))
+                loop_dict.update({self.map_tuple_idx[tuple(nodeStack)]: loop_value})
                 nodeStack.pop()
                 continue
             else:

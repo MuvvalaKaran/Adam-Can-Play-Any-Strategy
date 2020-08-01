@@ -22,6 +22,9 @@ from src.graph import ProductAutomaton
 from src.strategy_synthesis import RegMinStrSyn
 from helper_methods import run_save_output_mpg
 
+# asserts that this code is tested in linux
+assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
+
 # directory where we will be storing all the configuration files related to graphs
 DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/config/"
 
@@ -126,8 +129,8 @@ class MinigridGraph(GraphInstanceContructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        ENV_ID = MiniGridEmptyEnv.env_5.value
-        # ENV_ID = MiniGridLavaEnv.env_4.value
+        # ENV_ID = MiniGridEmptyEnv.env_5.value
+        ENV_ID = MiniGridLavaEnv.env_5.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -369,15 +372,15 @@ if __name__ == "__main__":
 
     finite = False
     go_fast = True
-    gym_minigrid = False
+    gym_minigrid = True
     three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
-    franka_abs = True
+    franka_abs = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
-        miniGrid_instance = MinigridGraph(_finite=finite, _plot_minigrid=True)
+        miniGrid_instance = MinigridGraph(_finite=finite, _plot_minigrid=False)
         trans_sys = miniGrid_instance.product_automaton
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
@@ -390,19 +393,18 @@ if __name__ == "__main__":
         trans_sys = five_state_ts.product_automaton
 
     elif variant_1_paper:
-        variant_1_instance = VariantOneGraph(_finite=finite)
+        variant_1_instance = VariantOneGraph(_finite=finite, _plot_prod=True)
         trans_sys = variant_1_instance.product_automaton
 
     elif franka_abs:
         franka_instance = FrankaAbstractionGraph(_finite=finite)
         trans_sys = franka_instance.product_automaton
-        print(f"No. of nodes in the product graph is :{len(trans_sys._graph.nodes())}")
-        print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
-
     else:
         warnings.warn("Please ensure at-least one of the flags is True")
         sys.exit(-1)
 
+    print(f"No. of nodes in the product graph is :{len(trans_sys._graph.nodes())}")
+    print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
     # build the payoff function
     payoff = payoff_factory.get("mean", graph=trans_sys)
 
@@ -417,12 +419,11 @@ if __name__ == "__main__":
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
     reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True, debug=False)
     # g_hat.plot_graph()
-    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
+    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=True)
 
     if gym_minigrid:
         # map back str to minigrid env
         controls = reg_syn_handle.get_controls_from_str_minigrid(org_str)
-        # controls = [("rand", np.array([2, 2])), ("rand", np.array([3, 3]))]
         miniGrid_instance.execute_str(_controls=controls)
-    else:
-        control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
+    # else:
+        # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)

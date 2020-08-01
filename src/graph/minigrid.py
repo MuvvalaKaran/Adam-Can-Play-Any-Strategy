@@ -11,9 +11,6 @@ class MiniGrid(FiniteTransSys):
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
         FiniteTransSys.__init__(self, graph_name, config_yaml, save_flag)
 
-    def construct_graph(self):
-        super().construct_graph()
-
     def build_graph_from_file(self):
         """
         A method to build the graph from a config file. Before we run this method we need to make sure that the

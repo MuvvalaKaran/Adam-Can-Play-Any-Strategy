@@ -13,13 +13,7 @@ class GMaxGraph(TwoPlayerGraph):
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
         self._trans_sys = None
         self._auto_graph = None
-        # self._graph_name = graph_name
-        # self._config_yaml = config_yaml
-        # self._save_flag = save_flag
         TwoPlayerGraph.__init__(self, graph_name, config_yaml, save_flag)
-
-    def construct_graph(self):
-        super().construct_graph()
 
     @classmethod
     def construct_gmax_from_graph(cls, graph: Graph,
@@ -28,6 +22,23 @@ class GMaxGraph(TwoPlayerGraph):
                                   save_flag: bool = False,
                                   debug: bool = False,
                                   plot: bool = False):
+        """
+        Method to construct a concrete instance of GmaxGraph such that for payoff function Sup : Reg(G) := Reg(Gmax)
+
+        V' = V x {w(e) | e belongs to the original set of Edges of G}
+        e = {(v, n) belongs to V' | v belongs to Ve(vertices that belong to Eve)}
+        v'_i = (vi, W) where W is the maximum weight value in G
+        An edge exists ((u, n), (v, m)) iff (u, v) belong to E and m = max{n, w(u, v)}
+        w'((u, n), (v, m)) = m
+
+        :param graph:
+        :param graph_name:
+        :param config_yaml:
+        :param save_flag:
+        :param debug:
+        :param plot:
+        :return:
+        """
         gmax_graph = GMaxGraph(graph_name, config_yaml, save_flag)
         gmax_graph.construct_graph()
 
@@ -38,8 +49,8 @@ class GMaxGraph(TwoPlayerGraph):
         # find the maximum weight in the og graph(G)
         # specifically adding self.graph.edges.data('weight') to a create to tuple where the
         # third element is the weight value
-        max_edge = max(dict(graph._graph.edges).items(), key=lambda x: x[1]['weight'])
-        W: str = max_edge[1].get('weight')
+        _edge_w_max_weight = max(dict(graph._graph.edges).items(), key=lambda x: x[1]['weight'])
+        _max_weight: float = _edge_w_max_weight[1].get('weight')
 
         # assign nodes to Gmax with player as attributes to each node
         for n in V_prime:
@@ -51,9 +62,8 @@ class GMaxGraph(TwoPlayerGraph):
                 gmax_graph.add_state((n[0][0], n[1]))
                 gmax_graph.add_state_attribute((n[0][0], n[1]), 'player', 'adam')
 
-            # if the node has init attribute and n[1] == W then add it to the init vertex in Gmin
-            if n[0][1].get('init') and n[1] == W:
-                # Gmax.nodes[(n[0][0], n[1])]['init'] = True
+            # if the node has init attribute and n[1] == W then add it to the init vertex in Gmax
+            if n[0][1].get('init') and n[1] == _max_weight:
                 gmax_graph.add_initial_state((n[0][0], n[1]))
             if n[0][1].get('accepting'):
                 gmax_graph.add_accepting_state((n[0][0], n[1]))
@@ -62,9 +72,8 @@ class GMaxGraph(TwoPlayerGraph):
         for parent in gmax_graph._graph.nodes:
             for child in gmax_graph._graph.nodes:
                 if graph._graph.has_edge(parent[0], child[0]):
-                    if float(child[1]) == max(float(parent[1]),
-                                              float(graph._graph.get_edge_data(parent[0],
-                                                                                         child[0])[0]['weight'])):
+                    if float(child[1]) == max(parent[1],
+                                              graph._graph.get_edge_data(parent[0], child[0])[0]['weight']):
                         gmax_graph.add_edge(parent, child, weight=child[1])
 
         if debug:

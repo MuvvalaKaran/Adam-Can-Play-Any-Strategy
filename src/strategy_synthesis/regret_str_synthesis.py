@@ -18,9 +18,6 @@ from src.graph import ProductAutomaton
 from src.payoff import Payoff
 from helper_methods import deprecated
 
-# asserts that this code is tested in linux
-assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
-
 # needed for multi-threading w' computation
 NUM_CORES = multiprocessing.cpu_count()
 
@@ -37,7 +34,7 @@ class RegretMinimizationStrategySynthesis:
     """
     def __init__(self,
                  graph: Graph,
-                 payoff: Payoff) -> 'RegretMinimizationStrategySynthesis':
+                 payoff: Payoff) -> 'RegretMinimizationStrategySynthesis()':
         self.graph = graph
         self.payoff = payoff
 
@@ -57,7 +54,7 @@ class RegretMinimizationStrategySynthesis:
         print("*****************Constructing W_prime finite*****************")
         coop_dict = self._compute_cval_finite(multi_thread=multi_thread)
 
-        w_prime: Dict[Tuple: str] = {}
+        w_prime: Dict[Tuple: float] = {}
 
         for edge in self.graph._graph.edges():
 
@@ -72,19 +69,17 @@ class RegretMinimizationStrategySynthesis:
                 out_going_edge = set(self.graph._graph.out_edges(edge[0])) - set([edge])
                 for alt_e in out_going_edge:
                     # get the edge weight associated with this edge
-                    curr_w = self.graph.get_edge_weight(alt_e[0],
-                                               alt_e[1])
+                    curr_w = self.graph.get_edge_weight(alt_e[0], alt_e[1])
 
                     # if the coop_dict == inf or -inf then we don't care
-                    if (coop_dict[alt_e[1]][0] == -math.inf) or (coop_dict[alt_e[1]][0] == math.inf):
+                    if (coop_dict[alt_e[1]][0] == -1*math.inf) or (coop_dict[alt_e[1]][0] == math.inf):
                         tmp_cvals.append(coop_dict[alt_e[1]][0])
                     # if coop_dict is a finite value, then check if the current edge was already encountered or not
                     else:
                         if self.__check_edge_in_cval_play(alt_e, coop_dict[edge[1]][1]):
                             tmp_cvals.append(coop_dict[alt_e[1]][0])
                         else:
-                            tmp_cvals.append(coop_dict[alt_e[1]][0] + float(curr_w))
-
+                            tmp_cvals.append(coop_dict[alt_e[1]][0] + curr_w)
 
                 if len(tmp_cvals) != 0:
                     w_prime.update({edge: max(tmp_cvals)})
@@ -114,7 +109,7 @@ class RegretMinimizationStrategySynthesis:
         A method that pre computes all the cVals for every node in the graph and stores them in a dictionary.
         :return: A dictionary of cVal stores in dict
         """
-        max_coop_val = defaultdict(lambda: '-1')
+        max_coop_val = defaultdict(lambda: -1)
         if not multi_thread:
             for n in self.graph._graph.nodes():
                 max_coop_val[n] = (self._compute_max_cval_from_v(n))
@@ -132,7 +127,7 @@ class RegretMinimizationStrategySynthesis:
 
         return max_coop_val
 
-    def _compute_max_cval_from_v_finite(self, node: Tuple) -> str:
+    def _compute_max_cval_from_v_finite(self, node: Tuple) -> float:
         """
         A helper method to compute the cVal from a given vertex (@node) for a give graph @graph
         :param graph: The graph on which would like to compute the cVal
@@ -164,14 +159,9 @@ class RegretMinimizationStrategySynthesis:
         """
 
         print("*****************Constructing W_prime*****************")
-        # runner = Parallel(n_jobs=NUM_CORES, verbose=50)
-        # job = delayed(self._compute_cval)
-        # coop_dict = runner(job)
-        # print("*****************Start Parallel Processing*****************")
         coop_dict = self._compute_cval(multi_thread=multi_thread)
-        # print("*****************Stop Parallel Processing*****************")
 
-        w_prime: Dict[Tuple: str] = {}
+        w_prime: Dict[Tuple: float] = {}
 
         for edge in self.graph._graph.edges():
 
@@ -190,9 +180,9 @@ class RegretMinimizationStrategySynthesis:
                 if len(tmp_cvals) != 0:
                     w_prime.update({edge: max(tmp_cvals)})
                 else:
-                    w_prime.update({edge: coop_dict[edge[1]]})
+                    w_prime.update({edge: -1*math.inf})
 
-        print(f"the value of b are {set(w_prime.values())}")
+        print(f"the values of b are {set(w_prime.values())}")
 
         return w_prime
 
@@ -201,7 +191,7 @@ class RegretMinimizationStrategySynthesis:
         A method that pre computes all the cVals for every node in the graph and stores them in a dictionary.
         :return: A dictionary of cVal stores in dict
         """
-        max_coop_val = defaultdict(lambda: '-1')
+        max_coop_val = defaultdict(lambda: -1)
 
         if not multi_thread:
             for n in self.graph._graph.nodes():
@@ -220,7 +210,7 @@ class RegretMinimizationStrategySynthesis:
 
         return max_coop_val
 
-    def _compute_max_cval_from_v(self, node: Tuple) -> str:
+    def _compute_max_cval_from_v(self, node: Tuple) -> float:
         """
         A helper method to compute the cVal from a given vertex (@node) for a give graph @graph
         :param graph: The graph on which would like to compute the cVal
@@ -228,22 +218,22 @@ class RegretMinimizationStrategySynthesis:
         :param node: The node from which we would like to compute the cVal
         :return: returns a single max value. If multiple plays have the max_value then the very first occurance is returned
         """
-        tmp_copied_graph = copy.deepcopy(self.graph)
-        tmp_payoff_handle = copy.deepcopy(self.payoff)
-        tmp_payoff_handle.graph = tmp_copied_graph
+        # tmp_copied_graph = copy.deepcopy(self.graph)
+        # tmp_payoff_handle = copy.deepcopy(self.payoff)
+        # tmp_payoff_handle.graph = tmp_copied_graph
         # construct a new graph with node as the initial vertex and compute loop_vals again
         # 1. remove the current init node of the graph
         # 2. add @node as the new init vertex
         # 3. compute the loop-vals for this new graph
         # tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
-        tmp_payoff_handle.remove_attribute(tmp_payoff_handle.get_init_node(), 'init')
-        tmp_payoff_handle.set_init_node(node)
-        tmp_payoff_handle.cycle_main()
+        self.payoff.remove_attribute(self.payoff.get_init_node(), 'init')
+        self.payoff.set_init_node(node)
+        self.payoff.cycle_main()
 
-        return tmp_payoff_handle.compute_cVal(node)
+        return self.payoff.compute_cVal(node)
 
     def _construct_g_b(self, g_hat: TwoPlayerGraph,
-                       b: str,
+                       b: float,
                        w_prime: Dict,
                        init_node: List[Tuple],
                        accp_node: List[Tuple]) -> None:
@@ -288,7 +278,7 @@ class RegretMinimizationStrategySynthesis:
         # a sample edge og g_hat: ((".","."),"."),((".","."),".") and
         # a sample edge of org_graph: (".", ""),(".", ".")
         for e in self.graph._graph.edges():
-            if float(w_prime[e]) <= float(b):
+            if w_prime[e] <= b:
                 g_hat.add_edge(((e[0]), b), ((e[1]), b))
 
     def _construct_g_hat_nodes(self, g_hat: ProductAutomaton) -> ProductAutomaton:
@@ -309,7 +299,7 @@ class RegretMinimizationStrategySynthesis:
         # add the edges with the weights
         g_hat.add_weighted_edges_from([('v0', 'v0', '0'),
                                        ('v0', 'v1', '0'),
-                                       ('vT', 'vT', str(-2 * abs(float(self.graph.get_max_weight())) - 1))])
+                                       ('vT', 'vT', -2 * abs(self.graph.get_max_weight()) - 1)])
         return g_hat
 
     def _construct_g_hat_nodes_finite(self, g_hat: ProductAutomaton) -> ProductAutomaton:
@@ -333,11 +323,11 @@ class RegretMinimizationStrategySynthesis:
         # add the edges with the weights
         g_hat.add_weighted_edges_from([('v0', 'v0', '0'),
                                        ('v0', 'v1', '0'),
-                                       ('vT', 'vT', str(-1*math.inf))])
+                                       ('vT', 'vT', -1*math.inf)])
         return g_hat
 
     def construct_g_hat(self,
-                        w_prime: Dict[Tuple, str],
+                        w_prime: Dict[Tuple, float],
                         acc_min_edge_weight: bool = False,
                         acc_max_edge_weight: bool = False,
                         finite: bool = False) -> TwoPlayerGraph:
@@ -388,7 +378,7 @@ class RegretMinimizationStrategySynthesis:
                     "Make sure that there only exist edge between nodes that belong to the same g_b"
 
                 if acc_min_edge_weight and G_hat._graph.nodes[e[0]].get('accepting') is not None:
-                    G_hat._graph[e[0]][e[1]][0]['weight'] = '0'
+                    G_hat._graph[e[0]][e[1]][0]['weight'] = 0
 
                 else:
                     G_hat._graph[e[0]][e[1]][0]['weight'] = self._w_hat_b(org_edge=(e[0][0], e[1][0]),
@@ -412,7 +402,7 @@ class RegretMinimizationStrategySynthesis:
 
     def _w_hat_b(self,
                  org_edge: Tuple[Tuple[str, str], Tuple[str, str]],
-                 b_value: str) -> str:
+                 b_value: float) -> float:
         """
         an helper function that returns the w_hat value for a g_b graph : w_hat(e) = w(e) - b
         :param org_edge: edges of the format ("v1", "v2") or Tuple of tuples
@@ -420,9 +410,8 @@ class RegretMinimizationStrategySynthesis:
         :return:
         """
         try:
-            return str(float(self.graph._graph[org_edge[0]][org_edge[1]][0].get('weight')) - float(b_value))
+            return self.graph._graph[org_edge[0]][org_edge[1]][0].get('weight') - b_value
         except KeyError:
-            print(KeyError)
             print("The code should have never thrown this error. The error strongly indicates that the edges of the"
                   "original graph has been modified and the edge {} does not exist".format(org_edge))
 

@@ -39,6 +39,6 @@ if __name__ == "__main__":
     limsup = payoff_factory.get("mean",
                                 graph=prod)
 
-    loop_vals = limsup.cycle_main()
-    for k, v in loop_vals.items():
+    limsup.cycle_main()
+    for k, v in limsup.loop_vals.items():
         print(f"Play: {k} : val: {v} ")

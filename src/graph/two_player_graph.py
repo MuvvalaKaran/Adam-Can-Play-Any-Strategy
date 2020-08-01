@@ -73,14 +73,14 @@ class TwoPlayerGraph(Graph):
         super().print_nodes()
         print("=====================================")
 
-    def get_max_weight(self) -> str:
+    def get_max_weight(self) -> float:
         max_weight: int = 0
         # loop through all the edges and return the max weight
         for _e in self._graph.edges.data("weight"):
-            if abs(float(_e[2])) != math.inf and abs(float(_e[2])) > abs(max_weight):
-                max_weight = float(_e[2])
+            if abs(_e[2]) != math.inf and abs(_e[2]) > abs(max_weight):
+                max_weight = _e[2]
 
-        return str(max_weight)
+        return max_weight
 
     def _get_set_ap(self) -> set:
         """
@@ -98,8 +98,7 @@ class TwoPlayerGraph(Graph):
     def build_running_ex(cls: 'TwoPlayerGraph',
                          graph_name: str,
                          config_yaml: str,
-                         save_flag: bool = False) \
-            -> 'TwoPlayerGraph()':
+                         save_flag: bool = False) -> 'TwoPlayerGraph()':
         """
         A class method that constructs the sample three state graph for you
         :param graph_name:
@@ -111,14 +110,14 @@ class TwoPlayerGraph(Graph):
         nstate_graph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
         nstate_graph.construct_graph()
 
-        nstate_graph.add_weighted_edges_from([('v1', 'v2', '1'),
-                                                  ('v2', 'v1', '-1'),
-                                                  ('v1', 'v3', '1'),
-                                                  ('v3', 'v3', '0.5'),
-                                                  ('v3', 'v5', '1'),
-                                                  ('v2', 'v4', '2'),
-                                                  ('v4', 'v4', '2'),
-                                                  ('v5', 'v5', '1')])
+        nstate_graph.add_weighted_edges_from([('v1', 'v2', 1),
+                                              ('v2', 'v1', -1),
+                                              ('v1', 'v3', 1),
+                                              ('v3', 'v3', 0.5),
+                                              ('v3', 'v5', 1),
+                                              ('v2', 'v4', 2),
+                                              ('v4', 'v4', 2),
+                                              ('v5', 'v5', 1)])
 
         nstate_graph.add_state_attribute('v1', 'player', 'eve')
         nstate_graph.add_state_attribute('v2', 'player', 'adam')
@@ -173,8 +172,6 @@ class TwoPlayerGraphBuilder(Builder):
         return self._instance
 
     def _from_yaml(self, config_file_name: str) -> dict:
-
-        # config_file_name = config_file_name + ".yaml"
         config_data = self.load_YAML_config_data(config_file_name)
 
         return config_data

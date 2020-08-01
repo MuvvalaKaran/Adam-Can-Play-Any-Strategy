@@ -3,10 +3,12 @@ import warnings
 import sys
 import statistics
 import abc
+# import hash
 
+from bidict import bidict
 from abc import abstractmethod
 from collections import defaultdict
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Optional
 
 # import local packages
 from src.factory.builder import Builder
@@ -25,9 +27,10 @@ class Payoff(abc.ABC):
 
     def __init__(self, graph: Graph, payoff: callable) -> 'Payoff()':
         self.graph = graph
+        self.map_tuple_idx = bidict({})
         self.__V = self.graph._graph.nodes
         self.payoff_func: callable = payoff
-        self._loop_vals = None
+        self._loop_vals: Optional[Dict[tuple, float]] = None
         self.init_node = None
         self.initialize_init_node()
 
@@ -59,6 +62,10 @@ class Payoff(abc.ABC):
 
         return self.payoff_func
 
+    @property
+    def loop_vals(self):
+        return self._loop_vals
+
     # @init_node.setter
     def set_init_node(self, node):
         """
@@ -71,6 +78,16 @@ class Payoff(abc.ABC):
             raise KeyError(f"Please ensure that {node} is a valid node of Graph {self.graph._graph_name}")
 
         self.init_node = node
+
+    def create_tuple_mapping(self, play: tuple):
+        """
+        A bidirectional dictionary hashes a tuple and stores its hash value as the value
+        :return:
+        """
+        self.map_tuple_idx.update({play: hash(play)})
+
+    def get_map_tuple_idx(self) -> bidict:
+        return self.map_tuple_idx
 
     def remove_attribute(self, tnode: Tuple, attr: str) -> None:
         """
@@ -105,11 +122,11 @@ class Payoff(abc.ABC):
         :param play: a sequence of nodes on the given graph
         :return: True if the vertex exist in the @play else False
         """
-        if v in play:
+        if v in self.map_tuple_idx.inverse[play]:
             return True
         return False
 
-    def compute_cVal(self, vertex: Tuple, debug: bool = False) -> str:
+    def compute_cVal(self, vertex: Tuple, debug: bool = False) -> float:
         """
         A Method to compute the cVal using  @vertex as the starting node
         :param vertex: a valid node of the graph

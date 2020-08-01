@@ -14,9 +14,6 @@ class FiniteTransSys(TwoPlayerGraph):
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
         TwoPlayerGraph.__init__(self, graph_name, config_yaml, save_flag)
 
-    def construct_graph(self):
-        super().construct_graph()
-
     def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
         """
         Method to create a illustration of the graph
@@ -62,8 +59,8 @@ class FiniteTransSys(TwoPlayerGraph):
             graph_name = str(self._graph.__getattribute__('name'))
             self.save_dot_graph(dot, graph_name, True)
 
+    # a function to construct the two game automatically in code. K = # of times the human can intervene
     def automate_construction(self, k: int):
-        # a function to construct the two game automatically in code. K = # of times the human can intervene
         if not isinstance(k, int):
             warnings.warn("Please Make sure the Quantity K which represents the number of times the human can "
                           "intervene is an integer")
@@ -72,7 +69,7 @@ class FiniteTransSys(TwoPlayerGraph):
         two_player_graph_ts = FiniteTransSys(self._graph_name, self._config_yaml, self._save_flag)
         two_player_graph_ts.construct_graph()
 
-        # lets create k copies of the stats
+        # lets create k copies of the states
         for _n in self._graph.nodes():
             for i in range(k+1):
                 _sys_node = (_n, i)
@@ -93,18 +90,18 @@ class FiniteTransSys(TwoPlayerGraph):
         init_node = self.get_initial_states()
         two_player_graph_ts.add_state_attribute((init_node[0][0], 0), "init", True)
 
-        # now we add edges
         for e in self._graph.edges.data():
-            # add edge between e[0] and the human node h{e[0][1:]}{e[0][1:]}, k
+            # add edge between e[0] and the human node h{e[0][1:]}{e[1][1:]}, k
             for ik in range(k):
                 two_player_graph_ts.add_edge((e[0], ik), ((f"h{e[0][1:]}{e[1][1:]}"), f"{ik}"),
                                              actions=e[2].get("actions"), weight=e[2].get("weight"))
                 two_player_graph_ts.add_edge(((f"h{e[0][1:]}{e[1][1:]}"), f"{ik}"), (e[1], ik),
                                              actions=e[2].get("actions"), weight=e[2].get("weight"))
+
                 _alt_nodes_set = set(self._graph.nodes()) - {e[1]}
                 for _alt_nodes in _alt_nodes_set:
                     two_player_graph_ts.add_edge(((f"h{e[0][1:]}{e[1][1:]}"), f"{ik}"), (_alt_nodes, ik+1),
-                                                 actions="m", weight="0")
+                                                 actions="m", weight=0)
 
         # manually add edges to states that belong to k index
         for e in self._graph.edges.data():
@@ -146,7 +143,7 @@ class FiniteTransSys(TwoPlayerGraph):
         If not then we add action "self" with weight {}.
         :return:
         """
-        max_weight = repr(-1 * math.inf)
+        max_weight = -1 * math.inf
         accn_states = self.get_accepting_states()
         for _n in self._graph.nodes():
             if len(list(self._graph.successors(_n))) == 0:
@@ -160,15 +157,6 @@ class FiniteTransSys(TwoPlayerGraph):
                 # if its a trap state
                 else:
                     self._graph.add_edge(_n, _n, weight=max_weight, actions="self")
-
-    def get_max_weight(self) -> str:
-        max_weight: int = 0
-        # loop through all the edges and return the max weight
-        for _e in self._graph.edges.data("weight"):
-            if abs(float(_e[2])) != math.inf and abs(float(_e[2])) > abs(max_weight):
-                max_weight = float(_e[2])
-
-        return str(max_weight)
 
     @classmethod
     def from_raw_ts(cls, raw_ts: TwoPlayerGraph,
@@ -245,16 +233,16 @@ class FiniteTransSys(TwoPlayerGraph):
         trans_sys.add_state_attribute('s1', 'ap', 'b')
         trans_sys.add_state_attribute('s2', 'ap', 'a')
         trans_sys.add_state_attribute('s3', 'ap', 'c')
-        # trans_sys.add_edge('s1', 's2', actions='s12', weight='-0')
-        # trans_sys.add_edge('s2', 's1', actions='s21', weight='-2')
-        # trans_sys.add_edge('s2', 's3', actions='s23', weight='-3')
-        # trans_sys.add_edge('s3', 's1', actions='s31', weight='-5')
-        # trans_sys.add_edge('s1', 's3', actions='s13', weight='-3')
-        trans_sys.add_edge('s1', 's2', actions='s12', weight='-1')
-        trans_sys.add_edge('s2', 's1', actions='s21', weight='-1')
-        trans_sys.add_edge('s2', 's3', actions='s23', weight='-1')
-        trans_sys.add_edge('s3', 's1', actions='s31', weight='-1')
-        trans_sys.add_edge('s1', 's3', actions='s13', weight='-1')
+        trans_sys.add_edge('s1', 's2', actions='s12', weight=-0)
+        trans_sys.add_edge('s2', 's1', actions='s21', weight=-2)
+        trans_sys.add_edge('s2', 's3', actions='s23', weight=-3)
+        trans_sys.add_edge('s3', 's1', actions='s31', weight=-5)
+        trans_sys.add_edge('s1', 's3', actions='s13', weight=-3)
+        # trans_sys.add_edge('s1', 's2', actions='s12', weight=-1)
+        # trans_sys.add_edge('s2', 's1', actions='s21', weight=-1)
+        # trans_sys.add_edge('s2', 's3', actions='s23', weight=-1)
+        # trans_sys.add_edge('s3', 's1', actions='s31', weight=-1)
+        # trans_sys.add_edge('s1', 's3', actions='s13', weight=-1)
 
         trans_sys.add_initial_state('s2')
 
@@ -305,18 +293,18 @@ class FiniteTransSys(TwoPlayerGraph):
         trans_sys.add_state_attribute('s4', 'ap', 'g')
         trans_sys.add_state_attribute('s5', 'ap', 'd')
         # E = 4 ; W = 2; S = 3 ; N = 9
-        trans_sys.add_edge('s1', 's2', actions='E', weight='-4')
-        trans_sys.add_edge('s2', 's1', actions='W', weight='-2')
-        trans_sys.add_edge('s3', 's2', actions='N', weight='-9')
-        trans_sys.add_edge('s2', 's3', actions='S', weight='-3')
-        trans_sys.add_edge('s3', 's4', actions='S', weight='-3')
-        trans_sys.add_edge('s4', 's3', actions='N', weight='-9')
-        trans_sys.add_edge('s1', 's4', actions='W', weight='-2')
-        trans_sys.add_edge('s4', 's1', actions='W', weight='-2')
-        trans_sys.add_edge('s4', 's5', actions='E', weight='-4')
-        trans_sys.add_edge('s5', 's4', actions='S', weight='-3')
-        trans_sys.add_edge('s2', 's5', actions='E', weight='-4')
-        trans_sys.add_edge('s5', 's2', actions='N', weight='-9')
+        trans_sys.add_edge('s1', 's2', actions='E', weight=-4)
+        trans_sys.add_edge('s2', 's1', actions='W', weight=-2)
+        trans_sys.add_edge('s3', 's2', actions='N', weight=-9)
+        trans_sys.add_edge('s2', 's3', actions='S', weight=-3)
+        trans_sys.add_edge('s3', 's4', actions='S', weight=-3)
+        trans_sys.add_edge('s4', 's3', actions='N', weight=-9)
+        trans_sys.add_edge('s1', 's4', actions='W', weight=-2)
+        trans_sys.add_edge('s4', 's1', actions='W', weight=-2)
+        trans_sys.add_edge('s4', 's5', actions='E', weight=-4)
+        trans_sys.add_edge('s5', 's4', actions='S', weight=-3)
+        trans_sys.add_edge('s2', 's5', actions='E', weight=-4)
+        trans_sys.add_edge('s5', 's2', actions='N', weight=-9)
 
         trans_sys.add_initial_state('s1')
 

@@ -4,7 +4,7 @@ import yaml
 import warnings
 
 from graphviz import Digraph
-from typing import List, Tuple
+from typing import List, Tuple, Iterable
 from helper_methods import deprecated
 
 
@@ -177,7 +177,7 @@ class Graph(abc.ABC):
         """
         self._graph.add_node(state_name, **kwargs)
 
-    def add_states_from(self, states: List, **kwargs) -> None:
+    def add_states_from(self, states: Iterable, **kwargs) -> None:
         """
         A function to add state from a list to a given graph
         :param states: A container of nodes(list, dict, set etc.) OR a container of (node, attribute dict) tuples.
@@ -211,7 +211,7 @@ class Graph(abc.ABC):
 
         self._graph.nodes[state][attribute_key] = attribute_value
 
-    def add_state_attributes_from(self, states: List, attribute_key: str, attribute_value) -> None:
+    def add_state_attributes_from(self, states: Iterable, attribute_key: str, attribute_value) -> None:
         """
         A helper function to add all the states with the same attribute_key and value pair
         :param states: A container of valid states of the graph @self._graph

@@ -2,7 +2,7 @@ import warnings
 import math
 
 from graphviz import Digraph
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 
 # local packages
 from .two_player_graph import TwoPlayerGraph
@@ -99,8 +99,8 @@ class FiniteTransSys(TwoPlayerGraph):
                                              actions=e[2].get("actions"), weight=e[2].get("weight"))
 
                 _alt_nodes_set = set(self._graph.nodes()) - {e[1]}
-                for _alt_nodes in _alt_nodes_set:
-                    two_player_graph_ts.add_edge(((f"h{e[0][1:]}{e[1][1:]}"), f"{ik}"), (_alt_nodes, ik+1),
+                for _alt_node in _alt_nodes_set:
+                    two_player_graph_ts.add_edge(((f"h{e[0][1:]}{e[1][1:]}"), f"{ik}"), (_alt_node, ik+1),
                                                  actions="m", weight=0)
 
         # manually add edges to states that belong to k index

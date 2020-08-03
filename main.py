@@ -53,6 +53,7 @@ class MiniGridLavaEnv(enum.Enum):
     env_4 = 'MiniGrid-LavaGapS6-v0'
     env_5 = 'MiniGrid-LavaGapS7-v0'
     env_6 = 'MiniGrid-Lava_NoEntry-v0'
+    env_7 = 'MiniGrid-Lava_SmallEntry-v0'
 
 
 class GraphInstanceContructionBase(abc.ABC):
@@ -130,7 +131,7 @@ class MinigridGraph(GraphInstanceContructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_5.value
-        ENV_ID = MiniGridLavaEnv.env_5.value
+        ENV_ID = MiniGridLavaEnv.env_7.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -148,9 +149,7 @@ class MinigridGraph(GraphInstanceContructionBase):
                                                graph_name="minigrid_TS",
                                                config_yaml=f"config/{file_name}",
                                                save_flag=True,
-                                               plot=self._plot_minigrid)
-
-        regret_minigrid_TS.build_graph_from_file()
+                                               plot=False)
 
         return regret_minigrid_TS, wombats_minigrid_TS
 
@@ -160,18 +159,14 @@ class MinigridGraph(GraphInstanceContructionBase):
     def _build_ts(self):
         raw_trans_sys, self._wombats_minigrid_TS = self.__get_TS_from_wombats()
 
-        self._trans_sys = graph_factory.get('TS',
-                                            raw_trans_sys=raw_trans_sys,
-                                            graph_name="trans_sys",
-                                            config_yaml="config/trans_sys",
-                                            pre_built=False,
-                                            built_in_ts_name="",
-                                            save_flag=True,
-                                            debug=False,
-                                            plot=self.plot_ts,
+        self._trans_sys = graph_factory.get('MiniGrid',
+                                            raw_minigrid_ts=raw_trans_sys,
+                                            graph_name=raw_trans_sys._graph_name,
+                                            config_yaml=raw_trans_sys._config_yaml,
                                             human_intervention=1,
-                                            finite=self.finite,
-                                            plot_raw_ts=False)
+                                            save_flag=True,
+                                            plot_raw_minigrid=self._plot_minigrid,
+                                            plot=self.plot_ts)
 
     def _build_dfa(self):
         self._dfa = graph_factory.get('DFA',
@@ -380,7 +375,7 @@ if __name__ == "__main__":
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
-        miniGrid_instance = MinigridGraph(_finite=finite, _plot_minigrid=False)
+        miniGrid_instance = MinigridGraph(_finite=finite, _plot_minigrid=False, _plot_ts=False)
         trans_sys = miniGrid_instance.product_automaton
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
@@ -393,7 +388,7 @@ if __name__ == "__main__":
         trans_sys = five_state_ts.product_automaton
 
     elif variant_1_paper:
-        variant_1_instance = VariantOneGraph(_finite=finite, _plot_prod=True)
+        variant_1_instance = VariantOneGraph(_finite=finite)
         trans_sys = variant_1_instance.product_automaton
 
     elif franka_abs:
@@ -419,7 +414,7 @@ if __name__ == "__main__":
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
     reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True, debug=False)
     # g_hat.plot_graph()
-    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=True)
+    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
 
     if gym_minigrid:
         # map back str to minigrid env

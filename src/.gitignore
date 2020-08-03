@@ -1,3 +1,0 @@
-# ignore all the spurious pdf files that pop because the graphviz render() method parameter cleanup= True is not functional
-*.gv.pdf
-# *.pdf

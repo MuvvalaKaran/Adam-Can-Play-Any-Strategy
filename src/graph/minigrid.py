@@ -1,8 +1,10 @@
 import warnings
+import sys
 
 from typing import Tuple, Optional, Iterable
 from graphviz import Digraph
 
+# import local packages
 from src.graph import FiniteTransSys
 from src.factory.builder import Builder
 
@@ -66,13 +68,15 @@ class MiniGrid(FiniteTransSys):
                          human_interventions: int = 1,
                          plot_raw_ts: bool = False,
                          debug: bool = False) -> 'MiniGrid()':
-        self._sanity_check(debug=debug)
+        # self._sanity_check(debug=debug)
         minigrid_game_ts = self.automate_construction(human_interventions, plot_raw_ts, debug=debug)
         self._graph = minigrid_game_ts._graph
 
+        return minigrid_game_ts
+
     # a method that builds a deterministic TS with human nodes from a raw abstraction from gym-minigrid env
     # with sys nodes only
-    def automate_construction(self, k: int, plot_raw_ts: bool = False, debug: bool = False):
+    def automate_construction(self, k: int, plot_raw_ts: bool = False, debug: bool = False) -> FiniteTransSys:
         """
         Given a TS with only the system node, we add human nodes after every transition that the system can take.
         The human can pick the robot in a 2d grid world and place it in any of its neighbouring cells. He/she can
@@ -104,12 +108,11 @@ class MiniGrid(FiniteTransSys):
                 else:
                     eve_node_lst.append(_sys_node)
 
-        # two_player_graph_ts.add_states_from(eve_node_lst, player='eve')
         self._add_game_states_from(two_player_graph_ts, eve_node_lst, player="eve")
 
         # for each edge create a human node and then alter the original edge to go through the human node
         for _e in self._graph.edges():
-            for i in range(k):
+            for i in range(k + 1):
                 _u = _e[0]
                 _v = _e[1]
 
@@ -120,65 +123,14 @@ class MiniGrid(FiniteTransSys):
                 _env_node = ((f"h{(_ux, _uy)}{(_vx, _vy)}"), i)
                 adam_node_lst.append(_env_node)
 
-        # two_player_graph_ts.add_states_from(adam_node_lst, player='adam')
         self._add_game_states_from(two_player_graph_ts, adam_node_lst, player="adam")
 
         # add init node
         _init_node = self.get_initial_states()
         _ix, _iy = self.__get_pos_from_minigrid_state(_init_node[0][0])
-        two_player_graph_ts.add_initial_state(((_ix, _iy), 0))
+        two_player_graph_ts.add_initial_state(((_ix, _iy), k))
 
-        # # the human node can transit to the neighbouring cells for a cell that the system robot is in
-        for _e in self._graph.edges.data():
-            _u = _e[0]
-            _v = _e[1]
-            _attr = _e[2]
-
-            _ux, _uy = self.__get_pos_from_minigrid_state(_u)
-            _vx, _vy = self.__get_pos_from_minigrid_state(_v)
-
-            for ik in range(k):
-                # add edge from sys node to human node
-                self._add_game_transition(two_player_graph_ts,
-                                          _u_game_state=((_ux, _uy), ik),
-                                          _v_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), ik),
-                                          actions=_attr.get("actions"),
-                                          weight=_attr.get("weight"))
-
-                # if the human decides not to take any action then we proceed as per the original transition
-                self._add_game_transition(two_player_graph_ts,
-                                          _u_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), ik),
-                                          _v_game_state=((_vx, _vy), ik),
-                                          actions=_attr.get("actions"),
-                                          weight=0)
-
-                # add transition from a human node to the neighbouring nodes
-                # check if _ux + 1 and _ux - 1 exists. Similarly, check if _uy + 1 and _uy - 1 exists
-                cells = self.__get_neighbouring_cells(_ux, _uy)
-
-                for cell in cells:
-                    # if cell != (_vx, _vy):
-                    if two_player_graph_ts._graph.has_node((cell, ik + 1)):
-                        self._add_game_transition(two_player_graph_ts,
-                                                  _u_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), ik),
-                                                  _v_game_state=(cell, ik + 1),
-                                                  actions="m",
-                                                  weight=0)
-
-        # manually add edges to states that belong to k index
-        for _e in self._graph.edges.data():
-            _u = _e[0]
-            _v = _e[1]
-            _attr = _e[2]
-
-            _ux, _uy = self.__get_pos_from_minigrid_state(_u)
-            _vx, _vy = self.__get_pos_from_minigrid_state(_v)
-
-            self._add_game_transition(two_player_graph_ts,
-                                      _u_game_state=((_ux, _uy), k),
-                                      _v_game_state=((_vx, _vy), k),
-                                      actions=_attr.get('actions'),
-                                      weight=_attr.get("weight"))
+        self._build_game_edges(human_interventions=k, two_player_game=two_player_graph_ts)
 
         # add the original atomic proposition to the new states
         for _n in self._graph.nodes.data():
@@ -190,8 +142,80 @@ class MiniGrid(FiniteTransSys):
 
         return two_player_graph_ts
 
+    def _build_game_edges(self, human_interventions: int, two_player_game: FiniteTransSys):
+        for _e in self._graph.edges.data():
+            _u = _e[0]
+            _v = _e[1]
+            _attr = _e[2]
+
+            _ux, _uy = self.__get_pos_from_minigrid_state(_u)
+            _vx, _vy = self.__get_pos_from_minigrid_state(_v)
+
+            for ik in reversed(range(human_interventions + 1)):
+                if ik != 0:
+                    self._build_game_transitions_ik(two_player_game, _ux, _uy, _vx, _vy, _attr, ik)
+                else:
+                    self._build_game_transition(two_player_game, _ux, _uy, _vx, _vy, _attr)
+
+    def _build_game_transition(self,
+                               _game: FiniteTransSys,
+                               _ux: int,
+                               _uy: int,
+                               _vx: int,
+                               _vy: int,
+                               _attr: dict,):
+        # add edge from sys node to human node
+        self._add_game_transition(_game,
+                                  _u_game_state=((_ux, _uy), 0),
+                                  _v_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), 0),
+                                  actions=_attr.get("actions"),
+                                  weight=_attr.get("weight"))
+
+        # if the human decides not to take any action then we proceed as per the original transition
+        self._add_game_transition(_game,
+                                  _u_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), 0),
+                                  _v_game_state=((_vx, _vy), 0),
+                                  actions=_attr.get("actions"),
+                                  weight=0)
+
+
+    def _build_game_transitions_ik(self,
+                                _game: FiniteTransSys,
+                                _ux: int,
+                                _uy: int,
+                                _vx: int,
+                                _vy: int,
+                                _attr: dict,
+                                ik: int):
+        # add edge from sys node to human node
+        self._add_game_transition(_game,
+                                  _u_game_state=((_ux, _uy), ik),
+                                  _v_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), ik),
+                                  actions=_attr.get("actions"),
+                                  weight=_attr.get("weight"))
+
+        # if the human decides not to take any action then we proceed as per the original transition
+        self._add_game_transition(_game,
+                                  _u_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), ik),
+                                  _v_game_state=((_vx, _vy), ik),
+                                  actions=_attr.get("actions"),
+                                  weight=0)
+
+        # add transition from a human node to the neighbouring nodes
+        # check if _ux + 1 and _ux - 1 exists. Similarly, check if _uy + 1 and _uy - 1 exists
+        cells = self.__get_neighbouring_cells(_ux, _uy, get_current_cell=True)
+
+        for cell in cells:
+            # if cell != (_vx, _vy):
+            if _game._graph.has_node((cell, ik - 1)):
+                self._add_game_transition(_game,
+                                          _u_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), ik),
+                                          _v_game_state=(cell, ik - 1),
+                                          actions="m",
+                                          weight=0)
+
     def _add_game_transition(self,
-                             _game: 'MiniGrid()',
+                             _game: FiniteTransSys,
                              _u_game_state: tuple,
                              _v_game_state: tuple,
                              **game_edge_attr) -> None:
@@ -206,7 +230,7 @@ class MiniGrid(FiniteTransSys):
             _game.add_edge(_u_game_state, _v_game_state, **game_edge_attr)
 
     def _add_game_state(self,
-                        _game: 'MiniGrid()',
+                        _game: FiniteTransSys,
                         _game_state: tuple,
                         **game_node_attr) -> None:
         """
@@ -219,7 +243,7 @@ class MiniGrid(FiniteTransSys):
             _game.add_state(_game_state, **game_node_attr)
 
     def _add_game_states_from(self,
-                              _game: 'MiniGrid()',
+                              _game: FiniteTransSys,
                               _game_states: Iterable,
                               **game_node_attr) -> None:
         """
@@ -249,6 +273,8 @@ class MiniGrid(FiniteTransSys):
             else:
                 _node_name = n[0]
             dot.node(_node_name, _attributes={"style": "filled", "fillcolor": color, "xlabel": ap, "shape": "rectangle"})
+            # if n[1].get("player") == "adam":
+            #     dot.node(_node_name, _attributes={"shape": "circle"})
 
         # add all the edges
         edges = self._graph_yaml["edges"]
@@ -270,12 +296,13 @@ class MiniGrid(FiniteTransSys):
             graph_name = str(self._graph.__getattribute__('name'))
             self.save_dot_graph(dot, graph_name, True)
 
-    def __get_neighbouring_cells(self, _ux, _uy) -> Tuple:
+    def __get_neighbouring_cells(self, _ux, _uy, get_current_cell: bool = False) -> Tuple:
         """
         A helper method that returns set of neighbouring cells given x, y position of a cell.
 
         :param _ux:
         :param _uy:
+        :param _get_current_cell: if true, then return the current position (x, y) else dont
         :return:
         """
 
@@ -288,7 +315,10 @@ class MiniGrid(FiniteTransSys):
         _north_cell = (_ux + 1, _uy)
         _south_cell = (_ux - 1, _uy)
 
-        return _east_cell, _west_cell, _north_cell, _south_cell
+        if get_current_cell:
+            return _east_cell, _west_cell, _north_cell, _south_cell, (_ux, _uy)
+        else:
+            return _east_cell, _west_cell, _north_cell, _south_cell
 
     def __get_pos_from_minigrid_state(self, _state: str) -> Tuple[int, int ]:
         """
@@ -334,8 +364,15 @@ class MiniGridBuilder(Builder):
         :param plot:
         :return:
         """
+        if not isinstance(human_intervention, int):
+            try:
+                human_intervention = int(human_intervention)
+            except ValueError:
+                warnings.warn("Please make sure the number of times the human can intervene is integer. e.f 1, 1.0.")
+                sys.exit(-1)
+
         if raw_minigrid_ts:
-            raw_minigrid_ts.from_raw_minigrid_TS(human_interventions=human_intervention,
+            self._instance = raw_minigrid_ts.from_raw_minigrid_TS(human_interventions=human_intervention,
                                                  plot_raw_ts=plot_raw_minigrid,
                                                  debug=debug)
         else:

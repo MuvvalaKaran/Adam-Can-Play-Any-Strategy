@@ -6,7 +6,6 @@ import random
 import sys
 
 import numpy as np
-from tqdm import tqdm
 from joblib import Parallel, delayed
 from _collections import defaultdict
 from typing import Dict, List, Tuple, Union, Optional
@@ -16,7 +15,7 @@ from src.graph import Graph, graph_factory
 from src.graph import TwoPlayerGraph
 from src.graph import ProductAutomaton
 from src.payoff import Payoff
-from helper_methods import deprecated
+from src.mpg_tool import MpgToolBox
 
 # needed for multi-threading w' computation
 NUM_CORES = multiprocessing.cpu_count()
@@ -149,7 +148,11 @@ class RegretMinimizationStrategySynthesis:
 
         return tmp_payoff_handle.compute_cVal(node)
 
-    def compute_W_prime(self, multi_thread: bool = False):
+    def _compute_cval_from_mpg(self, go_fast: bool, debug: bool):
+        mpg_cval_handle = MpgToolBox(self.graph, "org_graph")
+        return mpg_cval_handle.compute_cval(go_fast=go_fast, debug=debug)
+
+    def compute_W_prime(self, go_fast: bool = False, debug: bool = False):
         """
         A method to compute w_prime function based on Algo 2. pseudocode.
         This function is a mapping from each edge to a real valued number - b
@@ -159,7 +162,7 @@ class RegretMinimizationStrategySynthesis:
         """
 
         print("*****************Constructing W_prime*****************")
-        coop_dict = self._compute_cval(multi_thread=multi_thread)
+        coop_dict = self._compute_cval_from_mpg(go_fast=go_fast, debug=debug)
 
         w_prime: Dict[Tuple: float] = {}
 

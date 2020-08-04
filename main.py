@@ -20,9 +20,8 @@ from src.graph import FiniteTransSys
 from src.graph import DFAGraph
 from src.graph import ProductAutomaton
 from src.strategy_synthesis import RegMinStrSyn
-from helper_methods import run_save_output_mpg
+from src.mpg_tool import MpgToolBox
 
-# asserts that this code is tested in linux
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
 # directory where we will be storing all the configuration files related to graphs
@@ -163,7 +162,7 @@ class MinigridGraph(GraphInstanceContructionBase):
                                             raw_minigrid_ts=raw_trans_sys,
                                             graph_name=raw_trans_sys._graph_name,
                                             config_yaml=raw_trans_sys._config_yaml,
-                                            human_intervention=1,
+                                            human_intervention=2,
                                             save_flag=True,
                                             plot_raw_minigrid=self._plot_minigrid,
                                             plot=self.plot_ts)
@@ -409,10 +408,13 @@ if __name__ == "__main__":
     if finite:
         w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=go_fast)
     else:
-        w_prime = reg_syn_handle.compute_W_prime(multi_thread=go_fast)
+        w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
+        # new_w_prime = reg_syn_handle.new_compute_w_prime()
 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
-    reg_dict = run_save_output_mpg(g_hat, "g_hat", go_fast=True, debug=False)
+    mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
+
+    reg_dict = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
     # g_hat.plot_graph()
     org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
 

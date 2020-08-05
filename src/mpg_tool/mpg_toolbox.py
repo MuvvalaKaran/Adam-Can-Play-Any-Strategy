@@ -58,7 +58,7 @@ class MpgToolBox:
         <NODE> <MIN/MAX> <ADJ_NODE>:<EDGE_WEIGHT>...; # for all the nodes in @graph
 
         The nodes over here are internally mapped to a unique number and then dumped to the file.
-        :param graph: The graph to be dumped in the respective format
+        :param graph: The graph to be dumped in the respective format - should be total
         :param name: The name of the file
         :return:
         """

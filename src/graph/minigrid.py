@@ -51,7 +51,11 @@ class MiniGrid(FiniteTransSys):
             'north': -1,
             'south': -1,
             'east': -1,
-            'west': -1
+            'west': -1,
+            'northeast': -1,
+            'northwest': -1,
+            'southeast': -1,
+            'southwest': -1
         }
 
         # NOTE : ALL actions have the same cost of 1 unless specified in the yaml specifically
@@ -68,7 +72,7 @@ class MiniGrid(FiniteTransSys):
                          human_interventions: int = 1,
                          plot_raw_ts: bool = False,
                          debug: bool = False) -> 'MiniGrid()':
-        # self._sanity_check(debug=debug)
+        self._sanity_check(debug=debug)
         minigrid_game_ts = self.automate_construction(human_interventions, plot_raw_ts, debug=debug)
         self._graph = minigrid_game_ts._graph
 

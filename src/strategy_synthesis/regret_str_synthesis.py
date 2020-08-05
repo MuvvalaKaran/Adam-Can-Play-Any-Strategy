@@ -6,6 +6,7 @@ import random
 import sys
 
 import numpy as np
+from numpy import ndarray
 from joblib import Parallel, delayed
 from _collections import defaultdict
 from typing import Dict, List, Tuple, Union, Optional
@@ -514,42 +515,87 @@ class RegretMinimizationStrategySynthesis:
 
         return control_sequence
 
-    def get_controls_from_str_minigrid(self, str_dict: Dict) -> List[str]:
+    def get_controls_from_str_minigrid(self, str_dict: Dict,  debug: bool = False) -> List[Tuple[str, ndarray]]:
         """
         A helper method to return a list of actions (edge labels) associated with the strategy found
+
+        NOTE: after system node you need to have a human node.
         :param str_dict: The regret minimizing strategy
         :return: A sequence of labels that to be executed by the robot
         """
 
         start_state = self.graph.get_initial_states()[0][0]
-        accepting_state = self.graph.get_accepting_states()[0]
-        trap_state = self.graph.get_trap_states()[0]
-        control_sequence = []
+        accepting_states = self.graph.get_accepting_states()
+        trap_states = self.graph.get_trap_states()
+        _visited_states = []
+        _position_sequence = []
 
-        curr_state = start_state
-        next_state = str_dict[curr_state]
-        if self.graph._graph.nodes[next_state].get("player") == "adam":
-            curr_state = str_dict[next_state]
-            next_state = str_dict[curr_state]
-            x, y = curr_state[0][0]
-            control_sequence.append(("rand", np.array([int(x), int(y)])))
-        else:
-            control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
-        while curr_state != next_state:
-            if next_state == accepting_state or next_state == trap_state:
+        curr_sys_node = start_state
+        next_env_node = str_dict[curr_sys_node]
+        next_sys_node = str_dict[next_env_node]
+
+        x, y = next_sys_node[0][0]
+        next_pos = ("rand", np.array([int(x), int(y)]))
+
+        _visited_states.append(curr_sys_node)
+        _visited_states.append(next_sys_node)
+
+        _entered_absorbing_state = False
+
+        # while not _position_sequence.count(next_pos) >= 2:
+        while 1:
+            _position_sequence.append(next_pos)
+
+            curr_sys_node = next_sys_node
+            next_env_node = str_dict[curr_sys_node]
+            next_sys_node = str_dict[next_env_node]
+
+            if (next_sys_node in _visited_states) or (next_sys_node in accepting_states):
                 break
 
-            if self.graph._graph.nodes[next_state].get("player") == "adam":
-                curr_state = str_dict[next_state]
-                next_state = str_dict[curr_state]
-                x, y = curr_state[0][0]
-                control_sequence.append(("rand", np.array([int(x), int(y)])))
+            # if you enter a trap/ accepting state then do not add that transition in _pos_sequence
+            elif (next_sys_node in trap_states):
+                _entered_absorbing_state = True
+                break
             else:
-                control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
-                curr_state = next_state
-                next_state = str_dict[curr_state]
+                x, y = next_sys_node[0][0]
+                next_pos = ("rand", np.array([int(x), int(y)]))
+                _visited_states.append(next_sys_node)
 
-        return control_sequence
+        if not _entered_absorbing_state:
+            _position_sequence.append(next_pos)
+
+        if debug:
+            print([_n for _n in _position_sequence])
+
+        return _position_sequence
+
+
+
+        # curr_state = start_state
+        # next_state = str_dict[curr_state]
+        # if self.graph._graph.nodes[next_state].get("player") == "adam":
+        #     curr_state = str_dict[next_state]
+        #     next_state = str_dict[curr_state]
+        #     x, y = curr_state[0][0]
+        #     control_sequence.append(("rand", np.array([int(x), int(y)])))
+        # else:
+        #     control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
+        # while curr_state != next_state:
+        #     if next_state == accepting_state or next_state == trap_state:
+        #         break
+        #
+        #     if self.graph._graph.nodes[next_state].get("player") == "adam":
+        #         curr_state = str_dict[next_state]
+        #         next_state = str_dict[curr_state]
+        #         x, y = curr_state[0][0]
+        #         control_sequence.append(("rand", np.array([int(x), int(y)])))
+        #     else:
+        #         control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
+        #         curr_state = next_state
+        #         next_state = str_dict[curr_state]
+        #
+        # return control_sequence
 
     def plot_str_from_mgp(self,
                           g_hat: TwoPlayerGraph,

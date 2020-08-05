@@ -5,7 +5,7 @@ import warnings
 import sys
 
 import numpy as np
-from typing import Tuple, Optional, Dict
+from typing import Tuple, Optional, Dict, Union
 
 # import wombats packages
 from wombats.systems import StaticMinigridTSWrapper
@@ -19,7 +19,9 @@ from src.graph import MiniGrid
 from src.graph import FiniteTransSys
 from src.graph import DFAGraph
 from src.graph import ProductAutomaton
+from src.graph import TwoPlayerGraph
 from src.strategy_synthesis import RegMinStrSyn
+from src.strategy_synthesis import ReachabilitySolver
 from src.mpg_tool import MpgToolBox
 
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
@@ -129,8 +131,8 @@ class MinigridGraph(GraphInstanceContructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        ENV_ID = MiniGridEmptyEnv.env_4.value
-        # ENV_ID = MiniGridLavaEnv.env_7.value
+        # ENV_ID = MiniGridEmptyEnv.env_4.value
+        ENV_ID = MiniGridLavaEnv.env_7.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -162,7 +164,7 @@ class MinigridGraph(GraphInstanceContructionBase):
                                             raw_minigrid_ts=raw_trans_sys,
                                             graph_name=raw_trans_sys._graph_name,
                                             config_yaml=raw_trans_sys._config_yaml,
-                                            human_intervention=2,
+                                            human_intervention=1,
                                             save_flag=True,
                                             plot_raw_minigrid=self._plot_minigrid,
                                             plot=self.plot_ts)
@@ -362,6 +364,61 @@ class FrankaAbstractionGraph(GraphInstanceContructionBase):
                                       plot=self.plot_dfa)
 
 
+def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                               mini_grid_instance: Optional[MinigridGraph] = None,
+                               go_fast: bool = True,
+                               finite: bool = False):
+    payoff = payoff_factory.get("mean", graph=trans_sys)
+
+    # build an instance of strategy minimization class
+    reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
+
+    if finite:
+        w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=go_fast)
+    else:
+        w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
+
+    g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
+    mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
+
+    reg_dict = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
+    # g_hat.plot_graph()
+    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
+
+    if gym_minigrid:
+        # map back str to minigrid env
+        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str)
+        mini_grid_instance.execute_str(_controls=controls)
+    # else:
+    # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
+
+
+def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                        mini_grid_instance: Optional[MinigridGraph] = None,
+                        debug: bool = False,
+                        print_winning_regions: bool = False,
+                        print_str: bool = False):
+
+    reachability_game_handle: ReachabilitySolver = ReachabilitySolver(game=trans_sys, debug=debug)
+    reachability_game_handle.reachability_solver()
+    _sys_str_dict = reachability_game_handle.sys_str
+    _env_str_dict = reachability_game_handle.env_str
+
+    if print_winning_regions:
+        reachability_game_handle.print_winning_region()
+
+    if print_str:
+        reachability_game_handle.print_winning_strategies()
+
+    if reachability_game_handle.is_winning():
+        print("Assuming Env to be adversarial, sys CAN force a visit to the accepting states")
+        # reg_syn_handle.get_controls_from_str_minigrid({**_sys_str_dict, **_env_str_dict}, debug=True)
+        control = reachability_game_handle.get_pos_sequences(debug=False)
+        mini_grid_instance.execute_str(_controls=control)
+    else:
+        print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
+
+
 if __name__ == "__main__":
 
     finite = False
@@ -372,9 +429,14 @@ if __name__ == "__main__":
     variant_1_paper = False
     franka_abs = False
 
+    miniGrid_instance = None
+
+    reg_synthesis = False
+    adversarial_game = True
+
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
-        miniGrid_instance = MinigridGraph(_finite=finite, _plot_minigrid=True, _plot_ts=True)
+        miniGrid_instance = MinigridGraph(_finite=finite, _plot_minigrid=False, _plot_ts=False)
         trans_sys = miniGrid_instance.product_automaton
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
@@ -399,28 +461,8 @@ if __name__ == "__main__":
 
     print(f"No. of nodes in the product graph is :{len(trans_sys._graph.nodes())}")
     print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
-    # build the payoff function
-    payoff = payoff_factory.get("mean", graph=trans_sys)
 
-    # build an instance of strategy minimization class
-    reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
-
-    if finite:
-        w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=go_fast)
-    else:
-        w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
-        # new_w_prime = reg_syn_handle.new_compute_w_prime()
-
-    g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
-    mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
-
-    reg_dict = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
-    # g_hat.plot_graph()
-    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
-
-    if gym_minigrid:
-        # map back str to minigrid env
-        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str)
-        miniGrid_instance.execute_str(_controls=controls)
-    # else:
-        # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
+    if reg_synthesis:
+        compute_reg_minimizing_str(trans_sys, miniGrid_instance,  go_fast=go_fast, finite=finite)
+    elif adversarial_game:
+        compute_winning_str(trans_sys, miniGrid_instance, debug=True, print_winning_regions=False, print_str=False)

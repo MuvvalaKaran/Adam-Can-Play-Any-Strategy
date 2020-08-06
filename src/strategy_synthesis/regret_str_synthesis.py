@@ -570,33 +570,6 @@ class RegretMinimizationStrategySynthesis:
 
         return _position_sequence
 
-
-
-        # curr_state = start_state
-        # next_state = str_dict[curr_state]
-        # if self.graph._graph.nodes[next_state].get("player") == "adam":
-        #     curr_state = str_dict[next_state]
-        #     next_state = str_dict[curr_state]
-        #     x, y = curr_state[0][0]
-        #     control_sequence.append(("rand", np.array([int(x), int(y)])))
-        # else:
-        #     control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
-        # while curr_state != next_state:
-        #     if next_state == accepting_state or next_state == trap_state:
-        #         break
-        #
-        #     if self.graph._graph.nodes[next_state].get("player") == "adam":
-        #         curr_state = str_dict[next_state]
-        #         next_state = str_dict[curr_state]
-        #         x, y = curr_state[0][0]
-        #         control_sequence.append(("rand", np.array([int(x), int(y)])))
-        #     else:
-        #         control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
-        #         curr_state = next_state
-        #         next_state = str_dict[curr_state]
-        #
-        # return control_sequence
-
     def plot_str_from_mgp(self,
                           g_hat: TwoPlayerGraph,
                           str_dict: Dict,

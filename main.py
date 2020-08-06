@@ -20,8 +20,12 @@ from src.graph import FiniteTransSys
 from src.graph import DFAGraph
 from src.graph import ProductAutomaton
 from src.graph import TwoPlayerGraph
+
+# import available str synthesis methods
 from src.strategy_synthesis import RegMinStrSyn
 from src.strategy_synthesis import ReachabilitySolver
+from src.strategy_synthesis import IrosStrSolver
+
 from src.mpg_tool import MpgToolBox
 
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
@@ -117,12 +121,14 @@ class MinigridGraph(GraphInstanceContructionBase):
 
     def __init__(self,
                  _finite: bool = False,
+                 _iros_ts: bool = False,
                  _plot_ts: bool = False,
                  _plot_dfa: bool = False,
                  _plot_prod: bool = False,
                  _plot_minigrid: bool = False):
         self._wombats_minigrid_TS: Optional[MinigridTransitionSystem] = None
         self._plot_minigrid = _plot_minigrid
+        self.get_iros_ts = _iros_ts
         super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
 
     def __get_TS_from_wombats(self) -> Tuple[MiniGrid, MinigridTransitionSystem]:
@@ -131,8 +137,8 @@ class MinigridGraph(GraphInstanceContructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_4.value
-        ENV_ID = MiniGridLavaEnv.env_7.value
+        ENV_ID = MiniGridEmptyEnv.env_4.value
+        # ENV_ID = MiniGridLavaEnv.env_7.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -162,6 +168,7 @@ class MinigridGraph(GraphInstanceContructionBase):
 
         self._trans_sys = graph_factory.get('MiniGrid',
                                             raw_minigrid_ts=raw_trans_sys,
+                                            get_iros_ts= self.get_iros_ts,
                                             graph_name=raw_trans_sys._graph_name,
                                             config_yaml=raw_trans_sys._config_yaml,
                                             human_intervention=1,
@@ -177,6 +184,21 @@ class MinigridGraph(GraphInstanceContructionBase):
                                       sc_ltl="!(lava_red_open) U (goal_green_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
+
+    # over ride method to add the attribute self.get_iros_ts
+    def _build_product(self):
+        self._product_automaton = graph_factory.get('ProductGraph',
+                                                    graph_name='product_automaton',
+                                                    config_yaml='config/product_automaton',
+                                                    trans_sys=self._trans_sys,
+                                                    dfa=self._dfa,
+                                                    save_flag=True,
+                                                    prune=False,
+                                                    debug=False,
+                                                    iros_ts=self.get_iros_ts,
+                                                    absorbing=True,
+                                                    finite=self.finite,
+                                                    plot=self.plot_product)
 
     @property
     def wombats_minigrid_TS(self):
@@ -393,13 +415,19 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
 
 
+def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid]):
+
+    iros_solver = IrosStrSolver(game=trans_sys, energy_bound=10, debug=False)
+    iros_solver.synthesize_str()
+
+
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                         mini_grid_instance: Optional[MinigridGraph] = None,
                         debug: bool = False,
                         print_winning_regions: bool = False,
                         print_str: bool = False):
 
-    reachability_game_handle: ReachabilitySolver = ReachabilitySolver(game=trans_sys, debug=debug)
+    reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
     reachability_game_handle.reachability_solver()
     _sys_str_dict = reachability_game_handle.sys_str
     _env_str_dict = reachability_game_handle.env_str
@@ -432,11 +460,17 @@ if __name__ == "__main__":
     miniGrid_instance = None
 
     reg_synthesis = False
-    adversarial_game = True
+    adversarial_game = False
+    iros_str_synthesis = True
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
-        miniGrid_instance = MinigridGraph(_finite=finite, _plot_minigrid=False, _plot_ts=False)
+        miniGrid_instance = MinigridGraph(_finite=finite,
+                                          _iros_ts=True,
+                                          _plot_minigrid=False,
+                                          _plot_ts=False,
+                                          _plot_dfa=False,
+                                          _plot_prod=True)
         trans_sys = miniGrid_instance.product_automaton
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
@@ -466,3 +500,5 @@ if __name__ == "__main__":
         compute_reg_minimizing_str(trans_sys, miniGrid_instance,  go_fast=go_fast, finite=finite)
     elif adversarial_game:
         compute_winning_str(trans_sys, miniGrid_instance, debug=True, print_winning_regions=False, print_str=False)
+    elif iros_str_synthesis:
+        compute_bounded_winning_str(trans_sys)

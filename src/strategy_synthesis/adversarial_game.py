@@ -179,7 +179,6 @@ class ReachabilityGame:
 
         _entered_absorbing_state = False
 
-        # while not _position_sequence.count(next_pos) >= 2:
         while 1:
             _position_sequence.append(next_pos)
 

@@ -69,11 +69,15 @@ class MiniGrid(FiniteTransSys):
                 self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
 
     def from_raw_minigrid_TS(self,
-                         human_interventions: int = 1,
-                         plot_raw_ts: bool = False,
-                         debug: bool = False) -> 'MiniGrid()':
+                             human_interventions: int = 1,
+                             plot_raw_ts: bool = False,
+                             get_iros_ts: bool = False,
+                             debug: bool = False) -> 'MiniGrid()':
         self._sanity_check(debug=debug)
-        minigrid_game_ts = self.automate_construction(human_interventions, plot_raw_ts, debug=debug)
+        if not get_iros_ts:
+            minigrid_game_ts = self.automate_construction(human_interventions, plot_raw_ts, debug=debug)
+        else:
+            minigrid_game_ts = self.get_iros_17_ts(human_interventions, plot_raw_ts, debug=debug)
         self._graph = minigrid_game_ts._graph
 
         return minigrid_game_ts
@@ -182,7 +186,6 @@ class MiniGrid(FiniteTransSys):
                                   actions=_attr.get("actions"),
                                   weight=0)
 
-
     def _build_game_transitions_ik(self,
                                 _game: FiniteTransSys,
                                 _ux: int,
@@ -222,6 +225,7 @@ class MiniGrid(FiniteTransSys):
                              _game: FiniteTransSys,
                              _u_game_state: tuple,
                              _v_game_state: tuple,
+                             _from_ts: bool = False,
                              **game_edge_attr) -> None:
         """
         A helper method to add an edge to the augmented game if it already does not exists given the current game state
@@ -230,8 +234,15 @@ class MiniGrid(FiniteTransSys):
         :return:
         """
 
-        if not _game._graph.has_edge(_u_game_state, _v_game_state):
-            _game.add_edge(_u_game_state, _v_game_state, **game_edge_attr)
+        if not _from_ts:
+            if not _game._graph.has_edge(_u_game_state, _v_game_state):
+                _game.add_edge(_u_game_state, _v_game_state, **game_edge_attr)
+        else:
+            if not _game._graph.has_edge(_u_game_state, _v_game_state):
+                _game.add_edge(_u_game_state, _v_game_state, **game_edge_attr)
+
+            elif _game._graph.edges[_u_game_state, _v_game_state, 0].get("actions") != "m":
+                _game.add_edge(_u_game_state, _v_game_state, **game_edge_attr)
 
     def _add_game_state(self,
                         _game: FiniteTransSys,
@@ -258,6 +269,100 @@ class MiniGrid(FiniteTransSys):
 
         for _game_state in _game_states:
             self._add_game_state(_game, _game_state, **game_node_attr)
+
+    def get_iros_17_ts(self,
+                       human_interventions: int = 1,
+                       plot_raw_ts: bool = False,
+                       debug: bool = False) -> FiniteTransSys:
+        return self._build_iros_ts(human_interventions, plot_raw_ts, debug)
+
+    def _build_iros_ts(self, k: int, plot_raw_ts: bool = False, debug: bool = False):
+        """
+        Build an abstarction which is in ap per the IROS 17 paper. In this game we do not explicit states for the
+        human and the system. Rather we have a set of action that belong to human and to the env. Thus node do not have
+        the player attribute.
+
+        This abstraction is used to computing the winning strategy with quantitaive bounds as per Algo. 1 in the paper.
+        :param k:
+        :param plot_raw_ts:
+        :param debug:
+        :return:
+        """
+        if plot_raw_ts:
+            self.fancy_graph()
+
+        eve_node_lst = []
+
+        two_player_graph_ts = FiniteTransSys(f"game_{self._graph_name}", f"config/minigrid_game_TS", self._save_flag)
+        two_player_graph_ts.construct_graph()
+
+        # lets create k copies of the system states
+        for _n in self._graph.nodes():
+            for i in range(k + 1):
+
+                _x, _y = self.__get_pos_from_minigrid_state(_n)
+
+                _sys_node = ((_x, _y), i)
+
+                if _sys_node in eve_node_lst:
+                    warnings.warn(f"The graph contains multiple states with the same position."
+                                  f"Please make sure your abstraction is based on a directionless agent form wombats."
+                                  f"The state that was repeated more than once is {_sys_node}")
+                else:
+                    eve_node_lst.append(_sys_node)
+
+        self._add_game_states_from(two_player_graph_ts, eve_node_lst, player="eve")
+
+        # add init node
+        _init_node = self.get_initial_states()
+        _ix, _iy = self.__get_pos_from_minigrid_state(_init_node[0][0])
+        two_player_graph_ts.add_initial_state(((_ix, _iy), k))
+
+        # in this construction we have human edges coming out from the same state
+        # Lets add each edge an attribute "player". The org transition has player = "eve"
+        # while the human to transit to any valid neighbouring cell with k-1
+
+        for _e in self._graph.edges.data():
+            _u = _e[0]
+            _v = _e[1]
+            _attr = _e[2]
+
+            _ux, _uy = self.__get_pos_from_minigrid_state(_u)
+            _vx, _vy = self.__get_pos_from_minigrid_state(_v)
+
+            for ik in reversed(range(k + 1)):
+                # add the org system transition
+                self._add_game_transition(two_player_graph_ts,
+                                          _u_game_state=((_ux, _uy), ik),
+                                          _v_game_state=((_vx, _vy), ik),
+                                          actions=_attr.get("actions"),
+                                          weight=_attr.get("weight"),
+                                          player="eve")
+
+                if ik != 0:
+                    # add the human transitions - he can pick a robot and
+                    cells = self.__get_neighbouring_cells(_ux, _uy, get_current_cell=True)
+
+                    for cell in cells:
+                        # if cell != (_vx, _vy):
+                        if two_player_graph_ts._graph.has_node((cell, ik - 1)):
+                            self._add_game_transition(two_player_graph_ts,
+                                                      _u_game_state=((_ux, _uy), ik),
+                                                      _v_game_state=(cell, ik - 1),
+                                                      _from_ts=True,
+                                                      actions="m",
+                                                      weight=0,
+                                                      player="adam")
+
+        # add the original atomic proposition to the new states
+        for _n in self._graph.nodes.data():
+            if _n[1].get('ap'):
+                _x, _y = self.__get_pos_from_minigrid_state(_n[0])
+
+                for ik in range(k + 1):
+                    two_player_graph_ts.add_state_attribute(((_x, _y), ik), 'ap', _n[1].get('ap'))
+
+        return two_player_graph_ts
 
     def fancy_graph(self, color=()) -> None:
         """
@@ -353,6 +458,7 @@ class MiniGridBuilder(Builder):
                  config_yaml: str,
                  human_intervention: int = 1,
                  raw_minigrid_ts: Optional[MiniGrid] = None,
+                 get_iros_ts : bool = False,
                  save_flag: bool = False,
                  plot: bool = False,
                  plot_raw_minigrid: bool = False,
@@ -377,8 +483,9 @@ class MiniGridBuilder(Builder):
 
         if raw_minigrid_ts:
             self._instance = raw_minigrid_ts.from_raw_minigrid_TS(human_interventions=human_intervention,
-                                                 plot_raw_ts=plot_raw_minigrid,
-                                                 debug=debug)
+                                                                  plot_raw_ts=plot_raw_minigrid,
+                                                                  get_iros_ts=get_iros_ts,
+                                                                  debug=debug)
         else:
             self._instance = MiniGrid(graph_name, config_yaml, save_flag=save_flag)
             self._instance.construct_graph()

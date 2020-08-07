@@ -137,7 +137,7 @@ class MinigridGraph(GraphInstanceContructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        ENV_ID = MiniGridEmptyEnv.env_4.value
+        ENV_ID = MiniGridEmptyEnv.env_6.value
         # ENV_ID = MiniGridLavaEnv.env_7.value
 
         env = gym.make(ENV_ID)
@@ -415,10 +415,19 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
 
 
-def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid]):
+def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid], debug: bool = False):
 
-    iros_solver = IrosStrSolver(game=trans_sys, energy_bound=10, debug=False)
-    iros_solver.solve()
+    iros_solver = IrosStrSolver(game=trans_sys, energy_bound=10, debug=False, plot_modified_game=False)
+    _start_state = trans_sys.get_initial_states()[0][0]
+    if iros_solver.solve():
+        print(f"There EXISTS a winning strategy from the  initial game state {_start_state} "
+              f"with max cost of {iros_solver.str_map[_start_state]['cost']}")
+    else:
+        print(f"There DOES NOT exists a winning strategy from the  initial game state {_start_state} "
+              f"with max cost of {iros_solver.str_map[_start_state]['action']}")
+
+    if debug:
+        iros_solver.print_map_dict()
 
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
@@ -470,7 +479,7 @@ if __name__ == "__main__":
                                           _plot_minigrid=False,
                                           _plot_ts=False,
                                           _plot_dfa=False,
-                                          _plot_prod=True)
+                                          _plot_prod=False)
         trans_sys = miniGrid_instance.product_automaton
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
@@ -501,4 +510,4 @@ if __name__ == "__main__":
     elif adversarial_game:
         compute_winning_str(trans_sys, miniGrid_instance, debug=True, print_winning_regions=False, print_str=False)
     elif iros_str_synthesis:
-        compute_bounded_winning_str(trans_sys)
+        compute_bounded_winning_str(trans_sys, debug=False)

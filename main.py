@@ -418,7 +418,7 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
 def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid]):
 
     iros_solver = IrosStrSolver(game=trans_sys, energy_bound=10, debug=False)
-    iros_solver.synthesize_str()
+    iros_solver.solve()
 
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],

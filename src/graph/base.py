@@ -468,10 +468,11 @@ class Graph(abc.ABC):
         """
         _trap_state = []
 
-        for n in self._graph.nodes():
-            if len(list(self._graph.successors(n))) == 1:
-                if not self._graph.nodes[n].get("accepting"):
-                    _trap_state.append(n)
+        for _n in self._graph.nodes():
+            if len(list(self._graph.successors(_n))) <= 1:
+                for _next_n in self._graph.successors(_n):
+                    if _next_n == _n and (not self._graph.nodes[_n].get("accepting")):
+                        _trap_state.append(_n)
 
         if len(_trap_state) == 0:
             warnings.warn("WARNING: The set of trap states is empty. Returning an empty list.")

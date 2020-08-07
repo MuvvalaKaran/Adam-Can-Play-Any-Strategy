@@ -268,7 +268,7 @@ class ProductAutomaton(TwoPlayerGraph):
         _valid_player_list = ["eve", "adam"]
 
         if edge_player not in _valid_player_list:
-            warnings.warn(f"Opps looks like the edge {_u_prod_node} ----> {_v_prod_node} has player {edge_player}"
+            warnings.warn(f"Opps looks like the edge {_u_prod_node} ----> {_v_prod_node} has player {edge_player} in TS"
                           f" which is not a valid type. ")
 
         if not self._graph.has_edge(_u_prod_node, _v_prod_node):
@@ -278,18 +278,18 @@ class ProductAutomaton(TwoPlayerGraph):
                     self.add_edge(_u_prod_node, _v_prod_node,
                                   weight=0,
                                   actions=action,
-                                  edge_player=accepting_edge_player)
+                                  player=accepting_edge_player)
                 # trap state
                 else:
                     self.add_edge(_u_prod_node, _v_prod_node,
                                   weight=(-1 * math.inf),
                                   actions=action,
-                                  edge_player=trap_edge_player)
+                                  player=trap_edge_player)
             else:
                 self.add_edge(_u_prod_node, _v_prod_node,
                               weight=weight,
                               actions=action,
-                              edge_player=edge_player)
+                              player=edge_player)
     
     def _add_transition_absorbing_finite(self,
                                          _u_prod_node,
@@ -350,7 +350,7 @@ class ProductAutomaton(TwoPlayerGraph):
         _valid_player_list = ["eve", "adam"]
         
         if edge_player not in _valid_player_list:
-            warnings.warn(f"Opps looks like the edge {_u_prod_node} ----> {_v_prod_node} has player {edge_player}"
+            warnings.warn(f"Ops looks like the edge {_u_prod_node} ----> {_v_prod_node} has player {edge_player} in TS"
                           f" which is not a valid type.")
 
         if not self._graph.has_edge(_u_prod_node, _v_prod_node):
@@ -360,18 +360,18 @@ class ProductAutomaton(TwoPlayerGraph):
                     self.add_edge(_u_prod_node, _v_prod_node,
                                   weight=0,
                                   actions=action,
-                                  edge_player=accepting_edge_player)
+                                  player=accepting_edge_player)
                 # trap state
                 else:
                     self.add_edge(_u_prod_node, _v_prod_node,
                                   weight=max_weight,
                                   actions=action,
-                                  edge_player=trap_edge_player)
+                                  player=trap_edge_player)
             else:
                 self.add_edge(_u_prod_node, _v_prod_node,
                               weight=weight,
                               actions=action,
-                              edge_player=edge_player)
+                              player=edge_player)
 
 
     def _add_transition_absorbing(self,

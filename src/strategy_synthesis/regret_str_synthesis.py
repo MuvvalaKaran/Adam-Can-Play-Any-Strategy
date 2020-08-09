@@ -33,7 +33,7 @@ class RegretMinimizationStrategySynthesis:
                                 inf, sup, liminf, limsup, mean and Cumulative payoff implementation.
     """
     def __init__(self,
-                 graph: Graph,
+                 graph: TwoPlayerGraph,
                  payoff: Payoff) -> 'RegretMinimizationStrategySynthesis()':
         self.graph = graph
         self.payoff = payoff

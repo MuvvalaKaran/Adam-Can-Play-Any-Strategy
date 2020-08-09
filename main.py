@@ -39,7 +39,6 @@ So a 4x4 world will be a 2x2 env and 5x5 will be a 3x3 env respectively.
 """
 
 class MiniGridEmptyEnv(enum.Enum):
-    env_3 = 'MiniGrid-Empty-3x3-v0'
     env_4 = 'MiniGrid-Empty-4x4-v0'
     env_5 = 'MiniGrid-Empty-5x5-v0'
     env_6 = 'MiniGrid-Empty-6x6-v0'
@@ -61,7 +60,7 @@ class MiniGridLavaEnv(enum.Enum):
     env_7 = 'MiniGrid-Lava_SmallEntry-v0'
 
 
-class GraphInstanceContructionBase(abc.ABC):
+class GraphInstanceConstructionBase(abc.ABC):
     """
     An abstract class acting as interface to build a graph which is the input the regret minimizing strategy class.
 
@@ -69,7 +68,7 @@ class GraphInstanceContructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 1
+    human_intervention: int = 2
 
     def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
         self.finite = _finite
@@ -109,7 +108,7 @@ class GraphInstanceContructionBase(abc.ABC):
         return self._product_automaton
 
 
-class MinigridGraph(GraphInstanceContructionBase):
+class MinigridGraph(GraphInstanceConstructionBase):
     """
     A concrete implementation of an instance of FiniteTransitionSystem from an env in gym-minigrid. Given an Env we
     build a "raw transition system" that only includes system nodes. We then add human/env nodes by using an instance of
@@ -138,7 +137,7 @@ class MinigridGraph(GraphInstanceContructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_6.value
+        # ENV_ID = MiniGridEmptyEnv.env_16.value
         ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
@@ -206,7 +205,7 @@ class MinigridGraph(GraphInstanceContructionBase):
         return self._wombats_minigrid_TS
 
 
-class VariantOneGraph(GraphInstanceContructionBase):
+class VariantOneGraph(GraphInstanceConstructionBase):
     """
     A class that constructs a concrete instance of the TwoPlayerGraph(G) based on the example on Pg 2. of the paper.
 
@@ -235,7 +234,7 @@ class VariantOneGraph(GraphInstanceContructionBase):
                                                     plot=self.plot_product)
 
 
-class ThreeStateExample(GraphInstanceContructionBase):
+class ThreeStateExample(GraphInstanceConstructionBase):
     """
     A class that implements the built-in three state raw transition system in the FiniteTransitionSystem class. We then
     build a concrete instance of a transition system by augmenting the graph with human/env nodes. Given a fixed
@@ -273,7 +272,7 @@ class ThreeStateExample(GraphInstanceContructionBase):
                                       plot=self.plot_dfa)
 
 
-class FiveStateExample(GraphInstanceContructionBase):
+class FiveStateExample(GraphInstanceConstructionBase):
     """
     A class that implements the built-in five state raw transition system in the FiniteTransitionSystem class. We then
     build a concrete instance of a transition system by augmenting the graph with human/env nodes. Given a fixed
@@ -311,7 +310,7 @@ class FiveStateExample(GraphInstanceContructionBase):
                                       plot=self.plot_dfa)
 
 
-class FrankaAbstractionGraph(GraphInstanceContructionBase):
+class FrankaAbstractionGraph(GraphInstanceConstructionBase):
 
     def __init__(self,
                  _finite: bool = False,
@@ -419,18 +418,25 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
 
 
-def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid], debug: bool = False):
+def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                                epsilon: float = 0,
+                                mini_grid_instance: Optional[MinigridGraph] = None,
+                                debug: bool = False,
+                                print_str: bool = False):
 
-    iros_solver = IrosStrSolver(game=trans_sys, energy_bound=10, debug=False, plot_modified_game=False)
+    iros_solver = IrosStrSolver(game=trans_sys, energy_bound=30, plot_modified_game=False)
     _start_state = trans_sys.get_initial_states()[0][0]
-    if iros_solver.solve():
+    if iros_solver.solve(debug=debug):
         print(f"There EXISTS a winning strategy from the  initial game state {_start_state} "
               f"with max cost of {iros_solver.str_map[_start_state]['cost']}")
+        controls = iros_solver.get_controls_from_str_minigrid(epsilon=epsilon, debug=debug)
+        mini_grid_instance.execute_str(controls)
+
     else:
         print(f"There DOES NOT exists a winning strategy from the  initial game state {_start_state} "
-              f"with max cost of {iros_solver.str_map[_start_state]['action']}")
+              f"with max cost of {iros_solver.str_map[_start_state]['cost']}")
 
-    if debug:
+    if print_str:
         iros_solver.print_map_dict()
 
 
@@ -462,7 +468,7 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 if __name__ == "__main__":
 
     # define some constants
-    EPSILON = 0
+    EPSILON = 0.5
 
     finite = False
     go_fast = True
@@ -472,16 +478,15 @@ if __name__ == "__main__":
     variant_1_paper = False
     franka_abs = False
 
-    miniGrid_instance = None
 
     reg_synthesis = False
-    adversarial_game = True
-    iros_str_synthesis = False
+    adversarial_game = False
+    iros_str_synthesis = True
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
         miniGrid_instance = MinigridGraph(_finite=finite,
-                                          _iros_ts=False,
+                                          _iros_ts=True,
                                           _plot_minigrid=False,
                                           _plot_ts=False,
                                           _plot_dfa=False,
@@ -527,4 +532,8 @@ if __name__ == "__main__":
                             print_winning_regions=False,
                             print_str=False)
     elif iros_str_synthesis:
-        compute_bounded_winning_str(trans_sys, debug=False)
+        compute_bounded_winning_str(trans_sys,
+                                    mini_grid_instance=miniGrid_instance,
+                                    debug=False,
+                                    print_str=False,
+                                    epsilon=EPSILON)

@@ -1,304 +1,1104 @@
-alphabet_size: 32
+alphabet_size: 92
 edges:
 - !!python/tuple
   - &id001 !!python/tuple
-    - &id010 !!python/tuple
-      - (1, 1), right
+    - &id019 !!python/tuple
+      - !!python/tuple
+        - 1
+        - 1
       - 0
     - T0_init
   - !!python/tuple
     - !!python/tuple
-      - (1, 1), right
+      - !!python/tuple
+        - 1
+        - 1
       - 0
     - T0_init
   - actions: north
+    player: eve
     weight: -1
 - !!python/tuple
   - *id001
   - &id002 !!python/tuple
-    - &id011 !!python/tuple
-      - (1, 2), right
+    - &id020 !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
       - 0
     - T0_init
   - actions: south
-    strategy: true
-    weight: -2
+    player: eve
+    weight: -1
 - !!python/tuple
   - *id001
   - &id003 !!python/tuple
-    - &id012 !!python/tuple
-      - (2, 1), right
+    - &id021 !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
       - 0
     - T0_init
   - actions: east
-    weight: -3
+    player: eve
+    weight: -1
 - !!python/tuple
   - accept_all
   - accept_all
   - actions: north
-    strategy: true
-    weight: '0'
+    player: eve
+    weight: 0
 - !!python/tuple
   - T0_S2
   - T0_S2
   - actions: north
-    strategy: true
-    weight: '-4.0'
-- !!python/tuple
-  - *id002
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), right
-      - 0
-    - T0_init
-  - actions: north
+    player: eve
     weight: -1
 - !!python/tuple
   - *id002
-  - &id004 !!python/tuple
-    - &id013 !!python/tuple
-      - (1, 3), right
-      - 0
-    - T0_init
-  - actions: south
-    strategy: true
-    weight: -2
-- !!python/tuple
-  - *id002
-  - &id005 !!python/tuple
-    - &id014 !!python/tuple
-      - (2, 2), right
-      - 0
-    - T0_init
-  - actions: east
-    weight: -3
-- !!python/tuple
-  - *id002
   - !!python/tuple
     - !!python/tuple
-      - (1, 2), right
-      - 0
-    - T0_init
-  - actions: west
-    weight: -4
-- !!python/tuple
-  - *id003
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), right
+      - !!python/tuple
+        - 1
+        - 1
       - 0
     - T0_init
   - actions: north
+    player: eve
     weight: -1
 - !!python/tuple
-  - *id003
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 2), right
-      - 0
-    - T0_init
-  - actions: south
-    strategy: true
-    weight: -2
-- !!python/tuple
-  - *id003
-  - &id006 !!python/tuple
-    - &id015 !!python/tuple
-      - (3, 1), right
-      - 0
-    - T0_init
-  - actions: east
-    weight: -3
-- !!python/tuple
-  - *id003
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 1), right
-      - 0
-    - T0_init
-  - actions: west
-    weight: -4
-- !!python/tuple
-  - *id004
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 2), right
-      - 0
-    - T0_init
-  - actions: north
-    weight: -1
-- !!python/tuple
-  - *id004
-  - !!python/tuple
-    - !!python/tuple
-      - (1, 3), right
-      - 0
-    - T0_init
-  - actions: south
-    weight: -2
-- !!python/tuple
-  - *id004
+  - *id002
   - &id007 !!python/tuple
-    - &id016 !!python/tuple
-      - (2, 3), right
-      - 0
-    - T0_init
-  - actions: east
-    strategy: true
-    weight: -3
-- !!python/tuple
-  - *id005
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 1), right
-      - 0
-    - T0_init
-  - actions: north
-    weight: -1
-- !!python/tuple
-  - *id005
-  - !!python/tuple
-    - !!python/tuple
-      - (2, 3), right
+    - &id025 !!python/tuple
+      - !!python/tuple
+        - 1
+        - 3
       - 0
     - T0_init
   - actions: south
-    weight: -2
+    player: eve
+    weight: -1
 - !!python/tuple
-  - *id005
+  - *id002
   - &id008 !!python/tuple
-    - &id017 !!python/tuple
-      - (3, 2), right
+    - &id026 !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
       - 0
     - T0_init
   - actions: east
-    strategy: true
-    weight: -3
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
+      - 0
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 0
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 0
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id003
+  - &id011 !!python/tuple
+    - &id029 !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 0
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 1
+      - 0
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - &id004 !!python/tuple
+    - &id022 !!python/tuple
+      - !!python/tuple
+        - 1
+        - 1
+      - 1
+    - T0_init
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 1
+      - 1
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id004
+  - &id005 !!python/tuple
+    - &id023 !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
+      - 1
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id004
+  - &id006 !!python/tuple
+    - &id024 !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 1
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
 - !!python/tuple
   - *id005
   - !!python/tuple
     - !!python/tuple
-      - (1, 2), right
-      - 0
-    - T0_init
-  - actions: west
-    weight: -4
-- !!python/tuple
-  - *id006
-  - !!python/tuple
-    - !!python/tuple
-      - (3, 1), right
-      - 0
+      - !!python/tuple
+        - 1
+        - 1
+      - 1
     - T0_init
   - actions: north
+    player: eve
     weight: -1
 - !!python/tuple
-  - *id006
+  - *id005
   - !!python/tuple
     - !!python/tuple
-      - (3, 2), right
+      - !!python/tuple
+        - 1
+        - 3
       - 0
     - T0_init
-  - actions: south
-    strategy: true
-    weight: -2
+  - actions: m
+    player: adam
+    weight: 0
 - !!python/tuple
-  - *id006
+  - *id005
   - !!python/tuple
     - !!python/tuple
-      - (2, 1), right
+      - !!python/tuple
+        - 1
+        - 1
       - 0
     - T0_init
-  - actions: west
-    weight: -4
+  - actions: m
+    player: adam
+    weight: 0
 - !!python/tuple
-  - *id007
+  - *id005
   - !!python/tuple
     - !!python/tuple
-      - (2, 2), right
+      - !!python/tuple
+        - 2
+        - 2
       - 0
     - T0_init
-  - actions: north
-    weight: -1
+  - actions: m
+    player: adam
+    weight: 0
 - !!python/tuple
-  - *id007
+  - *id005
   - !!python/tuple
     - !!python/tuple
-      - (2, 3), right
+      - !!python/tuple
+        - 1
+        - 2
       - 0
     - T0_init
-  - actions: south
-    weight: -2
+  - actions: m
+    player: adam
+    weight: 0
 - !!python/tuple
-  - *id007
+  - *id005
   - &id009 !!python/tuple
-    - &id018 !!python/tuple
-      - (3, 3), right
-      - 0
+    - &id027 !!python/tuple
+      - !!python/tuple
+        - 1
+        - 3
+      - 1
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id005
+  - &id010 !!python/tuple
+    - &id028 !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 1
     - T0_init
   - actions: east
-    strategy: true
-    weight: -3
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
+      - 1
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 1
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 1
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id006
+  - &id012 !!python/tuple
+    - &id030 !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 1
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 1
+      - 1
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
 - !!python/tuple
   - *id007
   - !!python/tuple
     - !!python/tuple
-      - (1, 3), right
-      - 0
-    - T0_init
-  - actions: west
-    weight: -4
-- !!python/tuple
-  - *id008
-  - !!python/tuple
-    - !!python/tuple
-      - (3, 1), right
+      - !!python/tuple
+        - 1
+        - 2
       - 0
     - T0_init
   - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 3
+      - 0
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id007
+  - &id013 !!python/tuple
+    - &id031 !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
+      - 0
+    - T0_init
+  - actions: east
+    player: eve
     weight: -1
 - !!python/tuple
   - *id008
   - !!python/tuple
     - !!python/tuple
-      - (3, 3), right
+      - !!python/tuple
+        - 2
+        - 1
+      - 0
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
       - 0
     - T0_init
   - actions: south
-    strategy: true
-    weight: -2
+    player: eve
+    weight: -1
 - !!python/tuple
   - *id008
-  - !!python/tuple
-    - !!python/tuple
-      - (3, 2), right
+  - &id015 !!python/tuple
+    - &id033 !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
       - 0
     - T0_init
   - actions: east
-    weight: -3
+    player: eve
+    weight: -1
 - !!python/tuple
   - *id008
   - !!python/tuple
     - !!python/tuple
-      - (2, 2), right
+      - !!python/tuple
+        - 1
+        - 2
       - 0
     - T0_init
   - actions: west
-    weight: -4
+    player: eve
+    weight: -1
 - !!python/tuple
   - *id009
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
+      - 1
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 3
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 3
+      - 1
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id009
+  - &id014 !!python/tuple
+    - &id032 !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
+      - 1
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 1
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
+      - 1
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id010
+  - &id016 !!python/tuple
+    - &id034 !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
+      - 1
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id010
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 2
+      - 1
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id011
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 0
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id011
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
+      - 0
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id011
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 0
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 1
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
+      - 1
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id012
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 1
+      - 1
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id013
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 0
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id013
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
+      - 0
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id013
+  - &id017 !!python/tuple
+    - &id035 !!python/tuple
+      - !!python/tuple
+        - 3
+        - 3
+      - 0
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id013
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 3
+      - 0
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 1
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 3
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 3
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 3
+      - 1
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id014
+  - &id018 !!python/tuple
+    - &id036 !!python/tuple
+      - !!python/tuple
+        - 3
+        - 3
+      - 1
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id014
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 1
+        - 3
+      - 1
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 0
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 3
+      - 0
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
+      - 0
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id015
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 0
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 1
+    - T0_init
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 3
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 1
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
+      - 0
+    - T0_init
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 3
+      - 1
+    - T0_init
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 3
+        - 2
+      - 1
+    - T0_init
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id016
+  - !!python/tuple
+    - !!python/tuple
+      - !!python/tuple
+        - 2
+        - 2
+      - 1
+    - T0_init
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id017
   - accept_all
   - actions: self
-    strategy: true
+    player: eve
+    weight: 0
+- !!python/tuple
+  - *id018
+  - accept_all
+  - actions: self
+    player: eve
     weight: 0
 nodes:
 - !!python/tuple
   - *id001
   - ap: empty_red_open
     dfa: T0_init
-    init: true
     player: eve
-    ts: *id010
+    ts: *id019
 - !!python/tuple
   - accept_all
   - accepting: true
@@ -310,49 +1110,104 @@ nodes:
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id011
+    ts: *id020
 - !!python/tuple
   - *id003
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id012
+    ts: *id021
 - !!python/tuple
   - *id004
   - ap: empty_red_open
     dfa: T0_init
+    init: true
     player: eve
-    ts: *id013
+    ts: *id022
 - !!python/tuple
   - *id005
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id014
+    ts: *id023
 - !!python/tuple
   - *id006
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id015
+    ts: *id024
 - !!python/tuple
   - *id007
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id016
+    ts: *id025
 - !!python/tuple
   - *id008
   - ap: empty_red_open
     dfa: T0_init
     player: eve
-    ts: *id017
+    ts: *id026
 - !!python/tuple
   - *id009
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id027
+- !!python/tuple
+  - *id010
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id028
+- !!python/tuple
+  - *id011
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id029
+- !!python/tuple
+  - *id012
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id030
+- !!python/tuple
+  - *id013
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id031
+- !!python/tuple
+  - *id014
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id032
+- !!python/tuple
+  - *id015
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id033
+- !!python/tuple
+  - *id016
+  - ap: empty_red_open
+    dfa: T0_init
+    player: eve
+    ts: *id034
+- !!python/tuple
+  - *id017
   - ap: goal_green_open
     dfa: T0_init
     player: eve
-    ts: *id018
+    ts: *id035
+- !!python/tuple
+  - *id018
+  - ap: goal_green_open
+    dfa: T0_init
+    player: eve
+    ts: *id036
 num_obs: 3
-num_states: 11
-start_state: *id001
+num_states: 20
+start_state: *id004

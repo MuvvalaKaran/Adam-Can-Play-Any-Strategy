@@ -8,7 +8,7 @@ import sys
 
 from typing import Dict, Tuple, Optional
 from bidict import bidict
-from src.graph import Graph
+from src.graph import TwoPlayerGraph
 
 # value to replcae with if you have inf/-inf as edge weight in g_hat : can happen for cumulative payoff
 MAX_CONST = -1000000
@@ -21,7 +21,7 @@ MPG_OP_ABS_DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-S
 
 class MpgToolBox:
 
-    def __init__(self, graph: Graph, file_name: str = None):
+    def __init__(self, graph: TwoPlayerGraph, file_name: str = None):
         self._mpg_graph = graph
         self._file_name: Optional[str] = file_name
         self._node_index_map: Optional[bidict] = None
@@ -40,10 +40,22 @@ class MpgToolBox:
 
     @mpg_graph.setter
     def mpg_graph(self, mpg_graph):
+        if mpg_graph is None:
+            warnings.warn("Please make sure that the graph is not Empty")
+
+        if not isinstance(mpg_graph, TwoPlayerGraph):
+            warnings.warn(f"Please ensure that the graph is of type of TwoPlayerGraph."
+                          f"Currently it is of type {type(mpg_graph)}")
+
         self._mpg_graph = mpg_graph
 
     @file_name.setter
-    def file_name(self, file_name):
+    def file_name(self, file_name: str):
+
+        if not isinstance(file_name, str):
+            warnings.warn(f"Please ensure that the name of the file to be dumped is a str."
+                          f"Currently it is of type {type(file_name)}")
+
         self._file_name = file_name
 
     def create_mpg_file(self, reg: bool = False, cval: bool  = False) -> Tuple[bidict, list]:

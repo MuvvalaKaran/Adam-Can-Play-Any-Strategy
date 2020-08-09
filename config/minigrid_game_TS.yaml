@@ -1,0 +1,391 @@
+alphabet_size: 32
+edges:
+- !!python/tuple
+  - &id001 !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 0
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 0
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id001
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 0
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id001
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 0
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - &id002 !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 1
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 1
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 1
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 1
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - &id003 !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 0
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 0
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 0
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 0
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - &id004 !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 1
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 1
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 1
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 1
+  - actions: east
+    player: eve
+    weight: -1
+- !!python/tuple
+  - &id005 !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 0
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 0
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 0
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 0
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - &id006 !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 1
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 1
+  - actions: north
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 1
+  - actions: south
+    player: eve
+    weight: -1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 1
+    - 1
+  - actions: west
+    player: eve
+    weight: -1
+- !!python/tuple
+  - &id008 !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 0
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 0
+  - actions: self
+    player: eve
+    weight: 0
+- !!python/tuple
+  - &id007 !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 1
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 1
+  - actions: self
+    player: eve
+    weight: 0
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 1
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - !!python/tuple
+      - 1
+      - 2
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - !!python/tuple
+      - 2
+      - 2
+    - 0
+  - actions: m
+    player: adam
+    weight: 0
+nodes:
+- !!python/tuple
+  - *id001
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - *id002
+  - ap: empty_red_open
+    init: true
+    player: eve
+- !!python/tuple
+  - *id003
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - *id004
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - *id005
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - *id006
+  - ap: empty_red_open
+    player: eve
+- !!python/tuple
+  - *id008
+  - ap: goal_green_open
+    player: eve
+- !!python/tuple
+  - *id007
+  - ap: goal_green_open
+    player: eve
+num_obs: 3
+num_states: 8
+start_state: *id002

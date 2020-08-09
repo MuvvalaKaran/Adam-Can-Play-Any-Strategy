@@ -2,7 +2,8 @@ import warnings
 import numpy as np
 import random
 
-from typing import Optional, Iterable, Dict
+from numpy import ndarray
+from typing import Optional, Iterable, Dict, List, Tuple
 from collections import defaultdict
 from collections import deque
 
@@ -85,6 +86,9 @@ class ReachabilityGame:
     def reachability_solver(self):
         """
         Implements the reachability solver by creating sub games
+
+        If a env node i.e a node that has player == "adam" attribute and if that node belong's to the system's winning
+        region, we do not add a strategy to it.
         :return:
         """
 
@@ -149,56 +153,107 @@ class ReachabilityGame:
         self._sys_winning_region = sys_winning_region
         self._env_winning_region = env_winning_region
 
-    def get_pos_sequences(self,  debug: bool = False):
+    def _epsilon_greedy_choose_action(self,
+                                      _human_state: tuple,
+                                      epsilon: float, _absoring_states: List[tuple]) -> Tuple[tuple, bool]:
         """
-               A helper method to return a list of actions (edge labels) associated with the strategy found
+        Choose an action according to epsilon greedy algorithm
 
-               NOTE: after system node you need to have a human node.
-               :param str_dict: The regret minimizing strategy
-               :return: A sequence of labels that to be executed by the robot
-               """
+        Using this policy we either select a random human action with epsilon probability and the human can select the
+        optimal action (as given in the str dict if any) with 1-epsilon probability.
 
-        start_state = self.game.get_initial_states()[0][0]
-        accepting_states = self.game.get_accepting_states()
-        trap_states = self.game.get_trap_states()
+        This method returns a human action based on the above algorithm.
+        :param _human_state: The current state in the game from which we need to pick an action
+        :return: Tuple(next_state, flag) . flag = True if human decides to take an action.
+        """
 
+        # combine the system and the env str dict
+        str_dict = {**self.sys_str, **self.env_str}
+
+        if self.game.get_state_w_attribute(_human_state, "player") != "adam":
+            warnings.warn("WARNING: Randomly choosing action for a non human state!")
+
+        _next_states = [_next_n for _next_n in self.game._graph.successors(_human_state)]
+        _did_human_move = False
+
+        # rand() return a floating point number between [0, 1)
+        if np.random.rand() < epsilon:
+            _next_state: tuple = random.choice(_next_states)
+        else:
+            # if a node belongs to sys's winning region, it does have a strategy associated with it. For those nodes,
+            # randomly, pick one
+            try:
+                _next_state: tuple = str_dict[_human_state]
+            except:
+                _next_state: tuple = random.choice(_next_states)
+
+        if _next_state[0][1] != _human_state[0][1]:
+            _did_human_move = True
+
+        return _next_state, _did_human_move
+
+    def get_pos_sequences(self, epsilon: float, debug: bool = False) -> List[Tuple[str, ndarray, int]]:
+        """
+        A helper method to return a list of actions (edge labels) associated with the strategy found
+        :return: A sequence of position of the robot
+        """
+
+        _start_state = self.game.get_initial_states()[0][0]
+        _total_human_intervention = _start_state[0][1]
+        _accepting_states = self.game.get_accepting_states()
+        _trap_states = self.game.get_trap_states()
+
+        _absorbing_states = _accepting_states + _trap_states
         _visited_states = []
         _position_sequence = []
 
-        curr_sys_node = start_state
-        next_env_node = self.sys_str[curr_sys_node]
+        _curr_sys_node = _start_state
+        _next_env_node = self.sys_str[_curr_sys_node]
 
         # randomly choose an env edge from new_env_node
-        next_sys_node = random.choice([_n for _n in self.game._graph.successors(next_env_node)])
+        # next_sys_node = random.choice([_n for _n in self.game._graph.successors(_next_env_node)])
+        _next_sys_node = self._epsilon_greedy_choose_action(_next_env_node,
+                                                           epsilon=epsilon,
+                                                           _absoring_states=_absorbing_states)[0]
 
-        x, y = next_sys_node[0][0]
-        next_pos = ("rand", np.array([int(x), int(y)]))
 
-        _visited_states.append(curr_sys_node)
-        _visited_states.append(next_sys_node)
+        x, y = _next_sys_node[0][0]
+        _human_interventions: int = _total_human_intervention - _next_sys_node[0][1]
+
+        next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
+
+        _visited_states.append(_curr_sys_node)
+        _visited_states.append(_next_sys_node)
 
         _entered_absorbing_state = False
 
         while 1:
             _position_sequence.append(next_pos)
 
-            curr_sys_node = next_sys_node
-            next_env_node = self.sys_str[curr_sys_node]
+            _curr_sys_node = _next_sys_node
+            _next_env_node = self.sys_str[_curr_sys_node]
 
             # randomly choose an env edge from new_env_node
-            next_sys_node = random.choice([_n for _n in self.game._graph.successors(next_env_node)])
+            # next_sys_node = random.choice([_n for _n in self.game._graph.successors(next_env_node)])
+            if _next_env_node not in _absorbing_states:
+                _next_sys_node = self._epsilon_greedy_choose_action(_next_env_node,
+                                                                    epsilon=epsilon,
+                                                                    _absoring_states=_absorbing_states)[0]
+            else:
+                _next_sys_node = _next_env_node
 
-            if (next_sys_node in _visited_states) or (next_sys_node in accepting_states):
+            if _next_sys_node in _visited_states:
                 break
 
             # if you enter a trap/ accepting state then do not add that transition in _pos_sequence
-            elif (next_sys_node in trap_states):
+            elif _next_sys_node in _absorbing_states:
                 _entered_absorbing_state = True
                 break
             else:
-                x, y = next_sys_node[0][0]
-                next_pos = ("rand", np.array([int(x), int(y)]))
-                _visited_states.append(next_sys_node)
+                x, y = _next_sys_node[0][0]
+                _human_interventions: int = _total_human_intervention - _next_sys_node[0][1]
+                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
+                _visited_states.append(_next_sys_node)
 
         if not _entered_absorbing_state:
             _position_sequence.append(next_pos)

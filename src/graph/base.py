@@ -256,7 +256,7 @@ class Graph(abc.ABC):
 
     def get_state_w_attribute(self, state, attribute: str):
         """
-        A function to get an attribute associates with a state
+        A function to get an attribute associated with a state
         TODO: Verify this
         :param state: A valid node of the graph. If the node does not exist then the graph throws an error I guess
         :param attribute: A valid attribute associated with a node of the graph @self._graph. If no such attribute
@@ -277,7 +277,7 @@ class Graph(abc.ABC):
         try:
             r_val = self._graph.nodes[state].get(attribute)
             if r_val is None:
-                warnings.warn(f"WARNING: The state {state} does not have any attribute {attribute}")
+                warnings.warn(f"WARNING: The state: {state} does not have any attribute: {attribute}")
 
             return r_val
 

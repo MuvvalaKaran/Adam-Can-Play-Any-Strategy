@@ -515,7 +515,42 @@ class RegretMinimizationStrategySynthesis:
 
         return control_sequence
 
-    def get_controls_from_str_minigrid(self, str_dict: Dict,  debug: bool = False) -> List[Tuple[str, ndarray]]:
+    def _epsilon_greedy_choose_action(self,
+                                      _human_state: tuple,
+                                      str_dict: Dict[tuple, tuple],
+                                      epsilon: float, _absoring_states: List[tuple]) -> Tuple[tuple, bool]:
+        """
+        Choose an action according to epsilon greedy algorithm
+
+        Using this policy we either select a random human action with epsilon probability and the human can select the
+        optimal action (as given in the str dict if any) with 1-epsilon probability.
+
+        This method returns a human action based on the above algorithm.
+        :param _human_state: The current state in the game from which we need to pick an action
+        :return: Tuple(next_state, flag) . flag = True if human decides to take an action.
+        """
+
+        if self.graph.get_state_w_attribute(_human_state, "player") != "adam":
+            warnings.warn("WARNING: Randomly choosing action for a non human state!")
+
+        _next_states = [_next_n for _next_n in self.graph._graph.successors(_human_state)]
+        _did_human_move = False
+
+        # rand() return a floating point number between [0, 1)
+        if np.random.rand() < epsilon:
+            _next_state: tuple = random.choice(_next_states)
+        else:
+            _next_state: tuple = str_dict[_human_state]
+
+        if _next_state[0][1] != _human_state[0][1]:
+            _did_human_move = True
+
+        return _next_state, _did_human_move
+
+    def get_controls_from_str_minigrid(self,
+                                       str_dict: Dict[tuple, tuple],
+                                       epsilon: float,
+                                       debug: bool = False) -> List[Tuple[str, ndarray, int]]:
         """
         A helper method to return a list of actions (edge labels) associated with the strategy found
 
@@ -523,43 +558,71 @@ class RegretMinimizationStrategySynthesis:
         :param str_dict: The regret minimizing strategy
         :return: A sequence of labels that to be executed by the robot
         """
+        if not isinstance(epsilon, float):
+            try:
+                epsilon = float(epsilon)
+                if epsilon > 1:
+                    warnings.warn("Please make sure that the value of epsilon is <=1")
+            except ValueError:
+                print(ValueError)
 
-        start_state = self.graph.get_initial_states()[0][0]
-        accepting_states = self.graph.get_accepting_states()
-        trap_states = self.graph.get_trap_states()
+        _start_state = self.graph.get_initial_states()[0][0]
+        _total_human_intervention = _start_state[0][1]
+        _accepting_states = self.graph.get_accepting_states()
+        _trap_states = self.graph.get_trap_states()
+
+        _absorbing_states = _accepting_states + _trap_states
         _visited_states = []
         _position_sequence = []
 
-        curr_sys_node = start_state
+        curr_sys_node = _start_state
         next_env_node = str_dict[curr_sys_node]
-        next_sys_node = str_dict[next_env_node]
 
-        x, y = next_sys_node[0][0]
-        next_pos = ("rand", np.array([int(x), int(y)]))
+        next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
+                                                           str_dict,
+                                                           epsilon=epsilon,
+                                                           _absoring_states=_absorbing_states)[0]
+
+        (x, y) = next_sys_node[0][0]
+        _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
+
+        next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
 
         _visited_states.append(curr_sys_node)
         _visited_states.append(next_sys_node)
 
         _entered_absorbing_state = False
 
-        # while not _position_sequence.count(next_pos) >= 2:
         while 1:
             _position_sequence.append(next_pos)
 
             curr_sys_node = next_sys_node
             next_env_node = str_dict[curr_sys_node]
-            next_sys_node = str_dict[next_env_node]
 
-            if (next_sys_node in _visited_states) or (next_sys_node in accepting_states):
+            # update the next sys node only if you not transiting to an absorbing state
+            if next_env_node not in _absorbing_states:
+                next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
+                                                                   str_dict,
+                                                                   epsilon=epsilon,
+                                                                   _absoring_states=_absorbing_states)[0]
+
+            # if transiting to an absorbing state then due to the self transition the next sys node will be the same as
+            # the current env node which is an absorbing itself. Technically an absorbing state IS NOT assigned any
+            # player.
+            else:
+                next_sys_node = next_env_node
+
+            if next_sys_node in _visited_states:
                 break
 
             # if you enter a trap/ accepting state then do not add that transition in _pos_sequence
-            elif (next_sys_node in trap_states):
+            elif next_sys_node in _absorbing_states:
                 _entered_absorbing_state = True
                 break
             else:
                 x, y = next_sys_node[0][0]
-                next_pos = ("rand", np.array([int(x), int(y)]))
+                _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
+                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
                 _visited_states.append(next_sys_node)
 
         if not _entered_absorbing_state:

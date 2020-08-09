@@ -69,6 +69,7 @@ class GraphInstanceContructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
+    human_intervention: int = 1
 
     def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
         self.finite = _finite
@@ -137,8 +138,8 @@ class MinigridGraph(GraphInstanceContructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        ENV_ID = MiniGridEmptyEnv.env_6.value
-        # ENV_ID = MiniGridLavaEnv.env_7.value
+        # ENV_ID = MiniGridEmptyEnv.env_6.value
+        ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -161,7 +162,7 @@ class MinigridGraph(GraphInstanceContructionBase):
         return regret_minigrid_TS, wombats_minigrid_TS
 
     def execute_str(self, _controls):
-        self._wombats_minigrid_TS.run(_controls, record_video=True)
+        self._wombats_minigrid_TS.run(_controls, record_video=False, show_steps=True)
 
     def _build_ts(self):
         raw_trans_sys, self._wombats_minigrid_TS = self.__get_TS_from_wombats()
@@ -171,7 +172,7 @@ class MinigridGraph(GraphInstanceContructionBase):
                                             get_iros_ts= self.get_iros_ts,
                                             graph_name=raw_trans_sys._graph_name,
                                             config_yaml=raw_trans_sys._config_yaml,
-                                            human_intervention=1,
+                                            human_intervention=self.human_intervention,
                                             save_flag=True,
                                             plot_raw_minigrid=self._plot_minigrid,
                                             plot=self.plot_ts)
@@ -388,8 +389,11 @@ class FrankaAbstractionGraph(GraphInstanceContructionBase):
 
 def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                mini_grid_instance: Optional[MinigridGraph] = None,
+                               epsilon: float = 0,
                                go_fast: bool = True,
-                               finite: bool = False):
+                               finite: bool = False,
+                               plot_result: bool = False,
+                               plot_result_only_eve: bool = False):
     payoff = payoff_factory.get("mean", graph=trans_sys)
 
     # build an instance of strategy minimization class
@@ -405,11 +409,11 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
 
     reg_dict = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
     # g_hat.plot_graph()
-    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=False, plot=False)
+    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
 
     if gym_minigrid:
         # map back str to minigrid env
-        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str)
+        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str, epsilon=epsilon)
         mini_grid_instance.execute_str(_controls=controls)
     # else:
     # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
@@ -432,6 +436,7 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                         mini_grid_instance: Optional[MinigridGraph] = None,
+                        epsilon: float = 0,
                         debug: bool = False,
                         print_winning_regions: bool = False,
                         print_str: bool = False):
@@ -449,14 +454,15 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 
     if reachability_game_handle.is_winning():
         print("Assuming Env to be adversarial, sys CAN force a visit to the accepting states")
-        # reg_syn_handle.get_controls_from_str_minigrid({**_sys_str_dict, **_env_str_dict}, debug=True)
-        control = reachability_game_handle.get_pos_sequences(debug=False)
+        control = reachability_game_handle.get_pos_sequences(debug=False, epsilon=epsilon)
         mini_grid_instance.execute_str(_controls=control)
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
-
 if __name__ == "__main__":
+
+    # define some constants
+    EPSILON = 0
 
     finite = False
     go_fast = True
@@ -469,13 +475,13 @@ if __name__ == "__main__":
     miniGrid_instance = None
 
     reg_synthesis = False
-    adversarial_game = False
-    iros_str_synthesis = True
+    adversarial_game = True
+    iros_str_synthesis = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
         miniGrid_instance = MinigridGraph(_finite=finite,
-                                          _iros_ts=True,
+                                          _iros_ts=False,
                                           _plot_minigrid=False,
                                           _plot_ts=False,
                                           _plot_dfa=False,
@@ -506,8 +512,19 @@ if __name__ == "__main__":
     print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
 
     if reg_synthesis:
-        compute_reg_minimizing_str(trans_sys, miniGrid_instance,  go_fast=go_fast, finite=finite)
+        compute_reg_minimizing_str(trans_sys,
+                                   miniGrid_instance,
+                                   go_fast=go_fast,
+                                   epsilon=EPSILON,
+                                   finite=finite,
+                                   plot_result=False,
+                                   plot_result_only_eve=False)
     elif adversarial_game:
-        compute_winning_str(trans_sys, miniGrid_instance, debug=True, print_winning_regions=False, print_str=False)
+        compute_winning_str(trans_sys,
+                            miniGrid_instance,
+                            debug=True,
+                            epsilon=EPSILON,
+                            print_winning_regions=False,
+                            print_str=False)
     elif iros_str_synthesis:
         compute_bounded_winning_str(trans_sys, debug=False)

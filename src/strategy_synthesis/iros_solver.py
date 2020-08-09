@@ -10,6 +10,7 @@ from collections import defaultdict
 from src.graph import TwoPlayerGraph
 from helper_methods import deprecated
 
+
 class IrosStrategySynthesis:
 
     def __init__(self,
@@ -89,8 +90,6 @@ class IrosStrategySynthesis:
                         _trap_state: List):
         _node_visited = copy.copy(_node_visited)
 
-        # _accepting_states = self.game.get_accepting_states()
-        # _trap_state = self.game.get_trap_states()
         while (_state not in _accepting_states) and (_state not in _trap_state):
             if not _node_visited[_state]:
                 _node_visited[_state] = True

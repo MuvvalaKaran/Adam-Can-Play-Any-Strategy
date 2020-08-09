@@ -474,6 +474,8 @@ class MiniGridBuilder(Builder):
         :param plot:
         :return:
         """
+        print(f"No. of times the human can intervene is : {human_intervention}")
+
         if not isinstance(human_intervention, int):
             try:
                 human_intervention = int(human_intervention)

@@ -468,7 +468,7 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 if __name__ == "__main__":
 
     # define some constants
-    EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
+    EPSILON = 0.95  # 0 - the best strategy (for human too) and 1 - Completely random
     IROS_FLAG = False
 
     # some constants related to computation

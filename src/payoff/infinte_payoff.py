@@ -4,7 +4,7 @@ import sys
 import statistics
 
 from collections import defaultdict
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Optional
 
 # import local packages
 from .base import Payoff
@@ -53,7 +53,7 @@ class InfinitePayoff(Payoff):
         #  (NOT A DICT) of the form (node_name, {key: value})
 
         # create a dict to hold values of the loops as str for a corresponding play which is a str too
-        loop_dict: Dict[Tuple, str] = {}
+        loop_dict: Dict[Tuple, float] = {}
 
         # visit each neighbour of the init node
         for node in self.graph._graph.neighbors(self.init_node):
@@ -75,7 +75,7 @@ class InfinitePayoff(Payoff):
 
         self._loop_vals = loop_dict
 
-    def _cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, str],
+    def _cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, float],
                     nodeStack: List[Tuple]) -> None:
         """
         A method to help with detecting loop and updating the loop dict accordingly.
@@ -100,7 +100,7 @@ class InfinitePayoff(Payoff):
                 if nodeStack.count(neighbour) != 2:
                     nodeStack.append(neighbour)
 
-                loop_value: str = self._compute_loop_value(nodeStack)
+                loop_value: float = self._compute_loop_value(nodeStack)
                 self.create_tuple_mapping(tuple(nodeStack))
                 loop_dict.update({self.map_tuple_idx[tuple(nodeStack)]: loop_value})
                 nodeStack.pop()

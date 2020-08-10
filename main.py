@@ -138,7 +138,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_16.value
-        ENV_ID = MiniGridLavaEnv.env_6.value
+        ENV_ID = MiniGridLavaEnv.env_7.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -181,7 +181,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="config/automaton",
                                       save_flag=True,
-                                      sc_ltl="!(lava_red_open) U (goal_green_open)",
+                                      sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -393,13 +393,13 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
                                finite: bool = False,
                                plot_result: bool = False,
                                plot_result_only_eve: bool = False):
-    payoff = payoff_factory.get("mean", graph=trans_sys)
+    payoff = payoff_factory.get("cumulative", graph=trans_sys)
 
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
     if finite:
-        w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=go_fast)
+        w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=False)
     else:
         w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
 
@@ -410,8 +410,8 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     # g_hat.plot_graph()
     org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
 
-    if gym_minigrid:
-        # map back str to minigrid env
+    # map back str to minigrid env
+    if mini_grid_instance is not None:
         controls = reg_syn_handle.get_controls_from_str_minigrid(org_str, epsilon=epsilon)
         mini_grid_instance.execute_str(_controls=controls)
     # else:
@@ -468,25 +468,30 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 if __name__ == "__main__":
 
     # define some constants
-    EPSILON = 0.5
+    EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
+    IROS_FLAG = False
 
+    # some constants related to computation
     finite = False
     go_fast = True
+
+    # some constants that allow for appr _instance creations
     gym_minigrid = True
     three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
     franka_abs = False
 
-
-    reg_synthesis = False
+    # solver to call
+    reg_synthesis = True
     adversarial_game = False
-    iros_str_synthesis = True
+    iros_str_synthesis = False
+    miniGrid_instance = None
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
         miniGrid_instance = MinigridGraph(_finite=finite,
-                                          _iros_ts=True,
+                                          _iros_ts=IROS_FLAG,
                                           _plot_minigrid=False,
                                           _plot_ts=False,
                                           _plot_dfa=False,
@@ -495,7 +500,10 @@ if __name__ == "__main__":
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
     elif three_state_ts:
-        three_state_ts_instance = ThreeStateExample(_finite=finite)
+        three_state_ts_instance = ThreeStateExample(_finite=finite,
+                                                    _plot_ts=False,
+                                                    _plot_dfa=False,
+                                                    _plot_prod=True)
         trans_sys = three_state_ts_instance.product_automaton
 
     elif five_state_ts:
@@ -537,3 +545,7 @@ if __name__ == "__main__":
                                     debug=False,
                                     print_str=False,
                                     epsilon=EPSILON)
+
+    else:
+        warnings.warn("Please make sure that you select at-least one solver.")
+        sys.exit(-1)

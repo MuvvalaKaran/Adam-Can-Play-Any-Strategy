@@ -35,7 +35,7 @@ class FinitePayoff(Payoff):
         #  (NOT A DICT) of the form (node_name, {key: value})
 
         # create a dict to hold values of the loops as str for a corresponding play which is a str too
-        loop_dict: Dict[Tuple, str] = {}
+        loop_dict: Dict[Tuple, float] = {}
 
         # visit each neighbour of the init node
         for node in self.graph._graph.neighbors(self.init_node):
@@ -48,27 +48,28 @@ class FinitePayoff(Payoff):
             # store the self play in the loop dict
             if node == self.init_node:
                 nodeStack.append(node)
-                loop_value: str = self._compute_loop_value(nodeStack)
-                loop_dict.update({tuple(nodeStack): loop_value})
+                loop_value: float = self._compute_loop_value(nodeStack)
+                self.create_tuple_mapping(tuple(nodeStack))
+                loop_dict.update({self.map_tuple_idx[tuple(nodeStack)]: loop_value})
                 continue
 
             self._cycle_util(node, visitStack, loop_dict, nodeStack)
 
         self._loop_vals = loop_dict
 
-    def _cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, str],
+    def _cycle_util(self, node, visitStack: Dict[Tuple, bool], loop_dict: Dict[Tuple, float],
                     nodeStack: List[Tuple]) -> None:
         """
-               A method to help with detecting loop and updating the loop dict accordingly.
-               :param node: Tuple which is a node that belong to the self.graph
-               :param visitStack: A dict that keeps track of all the nodes visited and updates the flag to True if so
-               :param loop_dict: A dict that holds values to all possible loops that can be computed for a given graph and for
-               a given payoff function
-               :param nodeStack: A list that holds all the nodes we visit along a play (nodes can and do repeat in this
-               "stack")
-               :return: A dict @loop_dict that holds the values of all the possible loops that can be computed for a given
-               payoff function @ self.__payoff_func.
-               """
+       A method to help with detecting loop and updating the loop dict accordingly.
+       :param node: Tuple which is a node that belong to the self.graph
+       :param visitStack: A dict that keeps track of all the nodes visited and updates the flag to True if so
+       :param loop_dict: A dict that holds values to all possible loops that can be computed for a given graph and for
+       a given payoff function
+       :param nodeStack: A list that holds all the nodes we visit along a play (nodes can and do repeat in this
+       "stack")
+       :return: A dict @loop_dict that holds the values of all the possible loops that can be computed for a given
+       payoff function @ self.__payoff_func.
+       """
         visitStack = copy.copy(visitStack)
         visitStack[node] = True
         nodeStack = copy.copy((nodeStack))
@@ -83,7 +84,8 @@ class FinitePayoff(Payoff):
                 # a different logic to cumulative payoff as it is defined for finite traces unlike other payoffs
                 # that are defined over infinite traces
                 loop_value: float = self._compute_loop_value(nodeStack)
-                loop_dict.update({tuple(nodeStack): loop_value})
+                self.create_tuple_mapping(tuple(nodeStack))
+                loop_dict.update({self.map_tuple_idx[tuple(nodeStack)]: loop_value})
                 nodeStack.pop()
                 continue
             else:
@@ -148,7 +150,7 @@ class FinitePayoff(Payoff):
                           f"If this is true and you still see this error then who knows what's wrong! \n")
             sys.exit(-1)
 
-        return play_dict[max_play], max_play
+        return play_dict[max_play], self.map_tuple_idx.inverse[max_play]
 
 
 class FinitePayoffBuilder(Builder):

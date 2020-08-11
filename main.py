@@ -4,8 +4,7 @@ import abc
 import warnings
 import sys
 
-import numpy as np
-from typing import Tuple, Optional, Dict, Union
+from typing import Tuple, Optional, Union
 
 # import wombats packages
 from wombats.systems import StaticMinigridTSWrapper
@@ -379,7 +378,6 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
                                             human_intervention=0,
                                             finite=self.finite,
                                             plot_raw_ts=False)
-        # self._trans_sys.fancy_graph()
 
     def _build_dfa(self):
         self._dfa = graph_factory.get('DFA',
@@ -403,9 +401,6 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    # if finite:
-    #     w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=False)
-    # else:
     w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
@@ -419,8 +414,6 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     if mini_grid_instance is not None:
         controls = reg_syn_handle.get_controls_from_str_minigrid(org_str, epsilon=epsilon)
         mini_grid_instance.execute_str(_controls=controls)
-    # else:
-    # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
 
 
 def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
@@ -473,7 +466,7 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 if __name__ == "__main__":
 
     # define some constants
-    EPSILON = 0.95  # 0 - the best strategy (for human too) and 1 - Completely random
+    EPSILON = 0.5  # 0 - the best strategy (for human too) and 1 - Completely random
     IROS_FLAG = False
 
     # some constants related to computation
@@ -488,8 +481,8 @@ if __name__ == "__main__":
     franka_abs = False
 
     # solver to call
-    reg_synthesis = False
-    adversarial_game = True
+    reg_synthesis = True
+    adversarial_game = False
     iros_str_synthesis = False
     miniGrid_instance = None
 

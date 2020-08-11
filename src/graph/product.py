@@ -317,9 +317,10 @@ class ProductAutomaton(TwoPlayerGraph):
         if not self._graph.has_edge(_u_prod_node, _v_prod_node):
             if _u_prod_node in self._auto_graph.get_absorbing_states():
                 # accepting state
+                _accp_dfa_cost: float = self._auto_graph.get_state_w_attribute("accept_all", "dfa_cost")
                 if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
                     self.add_edge(_u_prod_node, _v_prod_node,
-                                  weight=2,
+                                  weight=_accp_dfa_cost,
                                   actions=action)
                 # trap state
                 else:
@@ -444,16 +445,17 @@ class ProductAutomaton(TwoPlayerGraph):
 
                         if _dfa_node is None:
                             warnings.warn(f"Trying to access a node in the product graph that does"
-                                          f" have a dfa state associated with it. This state is P {_n}")
+                                          f" have a dfa state associated with it. This state is {_n}")
 
-                        _dfa_cost = self._auto_graph.get_state_w_attribute(_dfa_node, "dfa_cost")
+                        if _curr_dfa != _dfa_node:
+                            _dfa_cost = self._auto_graph.get_state_w_attribute(_dfa_node, "dfa_cost")
 
-                        # add a self loop to the current state with the above cost as -1 * edge weight.
-                        self._add_transition_absorbing_finite(_u_prod_node=_node,
-                                                              _v_prod_node=_node,
-                                                              weight=_dfa_cost,
-                                                              max_weight=math.inf,
-                                                              action="self")
+                            # add a self loop to the current state with the above cost as -1 * edge weight.
+                            self._add_transition_absorbing_finite(_u_prod_node=_node,
+                                                                  _v_prod_node=_node,
+                                                                  weight=_dfa_cost,
+                                                                  max_weight=math.inf,
+                                                                  action="self")
 
     def _get_optimistic_dfa_node(self, _u_dfa_node: str, _u_prod_node: tuple) -> Optional[str]:
         """

@@ -63,10 +63,12 @@ class MiniGrid(FiniteTransSys):
             _weight = _e[2].get('weight')
             _action = _e[2].get('label')
 
-            if _weight is None:
-                self.add_edge(_e[0], _e[1], weight=ACTION_STR_TO_WT[_action], actions=_action)
-            else:
-                self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
+            # restrict self loops
+            if _e[0] != _e[1]:
+                if _weight is None:
+                    self.add_edge(_e[0], _e[1], weight=ACTION_STR_TO_WT[_action], actions=_action)
+                else:
+                    self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
 
     def from_raw_minigrid_TS(self,
                              human_interventions: int = 1,

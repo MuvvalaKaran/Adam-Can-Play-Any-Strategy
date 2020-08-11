@@ -593,8 +593,16 @@ class RegretMinimizationStrategySynthesis:
             curr_sys_node = next_sys_node
             next_env_node = str_dict[curr_sys_node]
 
+            if curr_sys_node == next_env_node:
+                x, y = next_sys_node[0][0]
+                _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
+                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
+                _visited_states.append(next_sys_node)
+                break
+
             # update the next sys node only if you not transiting to an absorbing state
-            if next_env_node not in _absorbing_states:
+            if next_env_node not in _absorbing_states\
+                    and self.graph.get_state_w_attribute(next_env_node, "player") == "adam":
                 next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
                                                                    str_dict,
                                                                    epsilon=epsilon,
@@ -655,7 +663,7 @@ class RegretMinimizationStrategySynthesis:
             self._add_strategy_flag(self.graph, org_str)
 
         if plot:
-            g_hat.plot_graph()
+            # g_hat.plot_graph()
             self.graph.plot_graph()
 
         return org_str

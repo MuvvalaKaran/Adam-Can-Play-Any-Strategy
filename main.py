@@ -58,6 +58,7 @@ class MiniGridLavaEnv(enum.Enum):
     env_5 = 'MiniGrid-LavaGapS7-v0'
     env_6 = 'MiniGrid-Lava_NoEntry-v0'
     env_7 = 'MiniGrid-Lava_SmallEntry-v0'
+    env_8 = 'MiniGrid-Lava_Multiple_Goals_SmallEntry-v0'
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -122,11 +123,13 @@ class MinigridGraph(GraphInstanceConstructionBase):
     def __init__(self,
                  _finite: bool = False,
                  _iros_ts: bool = False,
+                 _state_cost: bool = False,
                  _plot_ts: bool = False,
                  _plot_dfa: bool = False,
                  _plot_prod: bool = False,
                  _plot_minigrid: bool = False):
         self._wombats_minigrid_TS: Optional[MinigridTransitionSystem] = None
+        self._state_cost = _state_cost
         self._plot_minigrid = _plot_minigrid
         self.get_iros_ts = _iros_ts
         super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
@@ -138,7 +141,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_16.value
-        ENV_ID = MiniGridLavaEnv.env_7.value
+        ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -181,8 +184,10 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="config/automaton",
                                       save_flag=True,
-                                      sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
+                                      # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
+                                      sc_ltl="!(lava_red_open) U(water_blue_open)",
                                       use_alias=False,
+                                      state_cost=self._state_cost,
                                       plot=self.plot_dfa)
 
     # over ride method to add the attribute self.get_iros_ts
@@ -398,10 +403,10 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    if finite:
-        w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=False)
-    else:
-        w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
+    # if finite:
+    #     w_prime = reg_syn_handle.compute_W_prime_finite(multi_thread=False)
+    # else:
+    w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
     mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
@@ -483,8 +488,8 @@ if __name__ == "__main__":
     franka_abs = False
 
     # solver to call
-    reg_synthesis = True
-    adversarial_game = False
+    reg_synthesis = False
+    adversarial_game = True
     iros_str_synthesis = False
     miniGrid_instance = None
 
@@ -492,6 +497,7 @@ if __name__ == "__main__":
     if gym_minigrid:
         miniGrid_instance = MinigridGraph(_finite=finite,
                                           _iros_ts=IROS_FLAG,
+                                          _state_cost=True,
                                           _plot_minigrid=False,
                                           _plot_ts=False,
                                           _plot_dfa=False,

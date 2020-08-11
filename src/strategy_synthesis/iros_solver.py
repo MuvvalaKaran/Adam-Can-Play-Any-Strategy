@@ -153,7 +153,7 @@ class IrosStrategySynthesis:
         _succ_s_costs: List[Tuple[tuple, int]] = []
 
         for _succ_s in self.game._graph.successors(state):
-            if self.game._graph.edges[state, _succ_s, 0].get("player") == "eve" and (not state == _succ_s) :
+            if self.game._graph.edges[state, _succ_s, 0].get("player") == "eve" and (not state == _succ_s):
                 val = self.game.get_edge_weight(state, _succ_s) + self.str_map[_succ_s]["cost"]
                 _succ_s_costs.append(((state, _succ_s), val))
 
@@ -181,13 +181,20 @@ class IrosStrategySynthesis:
             self.game.plot_graph()
 
     def _initialize_str(self):
-
+        """
+        A method to initialize the startegy mapping with cost as infinity. Nodes that are never visited (trap states)
+        will always have infinity as cost while nodes that belong to the accepting states are initially assigned zero
+        at the start of the computation.
+        :return:
+        """
         # map is a dictionary that maps each state to a action and cost value
         for _s in self.game._graph.nodes():
             self.str_map.update({_s: {"action": None, "cost": math.inf}})
 
     def print_map_dict(self):
-
+        """
+        Method to print the computed strategy
+        """
         for _s, _v in self.str_map.items():
             print(f"From state {_s} the strategy is to take action {_v['action']} with"
                   f" cost {_v['cost']}")

@@ -45,6 +45,10 @@ class ProductAutomaton(TwoPlayerGraph):
         else:
             self.construct_product()
 
+        if finite:
+            # every node in the product automation has a self -loop
+            self._add_self_to_every_node()
+
     def _check_ts_ltl_compatability(self) -> bool:
         """
         Return true if the DFA contains atleast one symbols that is part of the set of observations is TS else False
@@ -103,7 +107,7 @@ class ProductAutomaton(TwoPlayerGraph):
 
     def construct_product_absorbing(self, finite: bool):
         """
-        A function that helps build the composition of TS and DFA where we compress the all
+        A function that helps build the composition of TS and DFA where we compress all the
         absorbing nodes (A node that only has a transition to itself) in product automation
 
         There are always two of these - one accepting state and the other one is the "trap" state
@@ -133,9 +137,9 @@ class ProductAutomaton(TwoPlayerGraph):
 
                         # get relevant details that need to be added to the composed node and edge
                         ap, weight, auto_action = self._get_edge_and_node_data(_u_ts_node,
-                                                                          _v_ts_node,
-                                                                          _u_a_node,
-                                                                          _v_a_node)
+                                                                               _v_ts_node,
+                                                                               _u_a_node,
+                                                                               _v_a_node)
                         
                         ts_action = self._trans_sys.get_edge_attributes(_u_ts_node, _v_ts_node, 'actions')
 
@@ -315,7 +319,7 @@ class ProductAutomaton(TwoPlayerGraph):
                 # accepting state
                 if self._auto_graph._graph.nodes[_u_prod_node].get('accepting'):
                     self.add_edge(_u_prod_node, _v_prod_node,
-                                  weight=0,
+                                  weight=2,
                                   actions=action)
                 # trap state
                 else:
@@ -373,7 +377,6 @@ class ProductAutomaton(TwoPlayerGraph):
                               actions=action,
                               player=edge_player)
 
-
     def _add_transition_absorbing(self,
                                   _u_prod_node, 
                                   _v_prod_node,
@@ -408,6 +411,106 @@ class ProductAutomaton(TwoPlayerGraph):
                 self.add_edge(_u_prod_node, _v_prod_node,
                               weight=weight,
                               actions=action)
+
+    def _add_self_to_every_node(self):
+        """
+        This method is called is invoked when the product graph has been constructed and the finite flag is true.
+
+        In this method we add a self loop to every state of the graph. The weight of this loop depends on the state
+        automaton we are in the current product node. Each state in the DFA is assigned a finite cost (except for the
+        trap state) and states that have transitions that will only end up in the trap states.
+        :return:
+        """
+        _trap_states = self.get_trap_states()
+        _accepting_states = self.get_accepting_states()
+        _start_state = self.get_initial_states()[0][0]
+
+        _absorbing_states = _trap_states + _accepting_states
+
+        for _n in self._graph.nodes.data():
+            # forcing the system at the init node to not take the self loop by not adding it in the prod graph
+            if _n[0] != _start_state:
+                # if this node only has one transition and that leads to trap state or accepting state then
+                # do not add this
+                # self loop
+                _node = _n[0]
+                _node_attr = _n[1]
+                if not self._check_successor_is_absorbing(_node, _absorbing_states):
+                    if _node not in _absorbing_states and _node_attr["player"] != "adam":
+
+                        _curr_dfa: str = _node_attr.get("dfa")
+                        _dfa_node: str = self._get_optimistic_dfa_node(_u_dfa_node=_curr_dfa,
+                                                                       _u_prod_node=_node)
+
+                        if _dfa_node is None:
+                            warnings.warn(f"Trying to access a node in the product graph that does"
+                                          f" have a dfa state associated with it. This state is P {_n}")
+
+                        _dfa_cost = self._auto_graph.get_state_w_attribute(_dfa_node, "dfa_cost")
+
+                        # add a self loop to the current state with the above cost as -1 * edge weight.
+                        self._add_transition_absorbing_finite(_u_prod_node=_node,
+                                                              _v_prod_node=_node,
+                                                              weight=_dfa_cost,
+                                                              max_weight=math.inf,
+                                                              action="self")
+
+    def _get_optimistic_dfa_node(self, _u_dfa_node: str, _u_prod_node: tuple) -> Optional[str]:
+        """
+        A method called in add_self_to_every_node() method. In this function we look ahead from the current system node
+        to see if there exists a path to the next dfa state. As we construct the product based on the current
+        observation,we get reward after we reach that state.
+
+        Technically the dfa state associated with the current prod node updates after I get to a state and take some
+        action. So, even if I reach water state. the dfa is still in T0_init. It gets updated after we traverse
+        through a human node.
+
+        FIX: Construct prod node based on the next observation rather than the current observation
+        :return:
+        """
+        _v_dfa_nodes = []
+
+        # get all the successors of the dfa node - as our dfa is complete => |successors(_u_dfa_node)| = 1
+        for _n in self._auto_graph._graph.successors(_u_dfa_node):
+            if _n != _u_dfa_node:
+                _v_dfa_nodes.append(_n)
+
+        _prod_dfa_nodes = set()
+
+        # does any of the above DFA successors exists in the successors of the product state
+        for _v_node in self._graph.successors(_u_prod_node):
+            # if v is human state then we look ahead
+            if self.get_state_w_attribute(_v_node, "player") == "adam":
+                for _v_sys_node in self._graph.successors(_v_node):
+                    _prod_dfa_nodes.add(_v_sys_node[1])
+
+        _v_dfa_exists: List[str, float] = []
+
+        for _v_dfa_node in _v_dfa_nodes:
+            if _v_dfa_node in _prod_dfa_nodes:
+                _v_dfa_exists.append((_v_dfa_node, self._auto_graph.get_state_w_attribute(_v_dfa_node, "dfa_cost")))
+
+        # return the node with the least count
+        if len(_v_dfa_exists) != 0:
+            return min(_v_dfa_exists, key=lambda n: n[1])[0]
+
+        else:
+            return _u_dfa_node
+
+    def _check_successor_is_absorbing(self, curr_state: tuple, absorbing_states: List):
+        """
+        A helper method to check if the only transition available from the current node in G leads to an absorbing
+        state or not. if yes, then return True else False
+        :param curr_state:
+        :return:
+        """
+
+        if len(list(self._graph.successors(curr_state))) == 1:
+            for _next_n in self._graph.successors(curr_state):
+                if _next_n in absorbing_states:
+                    return True
+
+        return False
 
     def _check_transition(self, _u_ts_node,
                           _v_ts_node,

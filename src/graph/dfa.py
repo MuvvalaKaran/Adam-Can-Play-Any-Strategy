@@ -1,6 +1,9 @@
 import networkx as nx
 import re
 
+from math import inf
+from collections import defaultdict
+from collections import deque
 from typing import List, Tuple, Dict
 from graphviz import Digraph
 
@@ -19,12 +22,17 @@ class DFAGraph(Graph):
                  config_yaml: str,
                  save_flag: bool = False,
                  use_alias: bool = False):
+        self._str_map: Dict[float] = defaultdict(lambda: inf)
         self._formula = formula
         self._graph_name = graph_name
         self._use_alias = use_alias
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
 
-    def construct_graph(self, plot: bool = False):
+    @property
+    def str_map(self):
+        return self._str_map
+
+    def construct_graph(self, plot: bool = False, add_state_costs: bool = False):
         buchi_automaton = nx.MultiDiGraph(name=self._graph_name)
         self._graph = buchi_automaton
 
@@ -35,6 +43,9 @@ class DFAGraph(Graph):
         else:
             self._construct_dfa(states, edges)
 
+        if add_state_costs:
+            self._add_state_costs_to_graph()
+
         if plot:
             self.plot_graph()
     
@@ -43,9 +54,7 @@ class DFAGraph(Graph):
         A method that construct a DFA keeping the original naming convention intact. 
         It does not change the name of the nodes we get originally from SPOT
         :param states: 
-        :param edges: 
-        # :param initial_states: 
-        # :param accepting_states: 
+        :param edges:
         :return: An instance of DFAGraph with nodes, edges, and transition labels that enable those transitions
         """
         # add nodes
@@ -139,7 +148,7 @@ class DFAGraph(Graph):
         _new_state_lst = {}
         for _s in states:
             if _s == "T0_init":
-                _new_state_lst.update({_s: f"q1"})
+                _new_state_lst.update({_s: "q1"})
             elif _s == "accept_all":
                 _new_state_lst.update({_s: "q0"})
             else:
@@ -189,6 +198,98 @@ class DFAGraph(Graph):
 
         return abs_states
 
+    def compute_node_costs(self):
+        _solved = False
+
+        while self._iterate():
+            _solved = True
+
+        # convert all the negative weights to positive
+        for _node, _node_cost in self.str_map.items():
+            if _node_cost < 0:
+                self.str_map[_node] = abs(_node_cost)
+
+        return _solved
+
+    def _iterate(self):
+        # create the initial cost dict with weights inf
+        _accepting_states = self.get_accepting_states()
+        _trap_states = self.get_trap_states()
+        _absorbing_states = self.get_absorbing_states()
+
+        _state = self.get_initial_states()[0][0]
+
+        for _acc_s in _accepting_states:
+            self.str_map[_acc_s] = 0
+
+        # queues to keep track of nodes visited
+        _node_visited = deque()
+        _node_queue = deque()
+
+        # a flag to terminate when all the states in G have converged to their respective costs
+        _progress = False
+
+        _node_queue.append(_state)
+
+        while _node_queue:
+            _state = _node_queue.popleft()
+
+            if _state not in _node_visited and _state not in _absorbing_states:
+                _node_visited.append(_state)
+
+                _curr_cost = self.str_map[_state]
+
+                _best_cost = self._get_min_sys_cost_from_state(_state, _trap_states)
+
+                if _best_cost <= _curr_cost:
+                    self.str_map[_state] = _best_cost
+
+                if _best_cost < _curr_cost:
+                    _progress = True
+
+                for _next_n in self._graph.successors(_state):
+                    _node_queue.append(_next_n)
+
+        return _progress
+
+    def _get_min_sys_cost_from_state(self, state, trap_states: List) -> float:
+        """
+        A helper method used bu compute_state_cost() to find the transition to the next state with the least cost
+        :param state: The current node you are at in the graph
+        :return: The cost associated with the best action on DFA from the current state
+        """
+        _succ_s_costs: List[float] = []
+
+        for _succ_s in self._graph.successors(state):
+            # look at all the successors except for the trap state itself as max will always be looking at inf then
+            if _succ_s not in trap_states and (not state == _succ_s):
+                val = -1 + self.str_map[_succ_s]
+                _succ_s_costs.append(val)
+
+        # testing if removing inf values helps or not
+        _succ_s_costs: set = set(_succ_s_costs) - {inf}
+        # if there is only one transition from state to trap state(s) then len(_succ_s_costs) = 0
+        # propagate inf back to the current state: @state
+        if len(_succ_s_costs) == 0:
+            return inf
+
+        return min(_succ_s_costs)
+
+    def _add_state_costs_to_graph(self):
+        """
+        A helper method that computes the costs associated with each state to reach the accepting state and add it to
+        the nodes.
+        :return:
+        """
+        # compute the str_map dictionary
+        self.compute_node_costs()
+
+        # get the highest cost
+        max_w = max(list(self.str_map.values()))
+
+        for _n in self._graph.nodes():
+            self.add_state_attribute(_n, "dfa_cost", max_w - self.str_map[_n])
+
 
 class DFABuilder(Builder):
     """
@@ -205,6 +306,7 @@ class DFABuilder(Builder):
                  save_flag: bool = False,
                  sc_ltl: str = "",
                  use_alias: bool = False,
+                 state_cost: bool = False,
                  plot: bool = False) -> 'DFAGraph':
 
         if not (isinstance(sc_ltl, str) or sc_ltl == ""):
@@ -219,6 +321,6 @@ class DFABuilder(Builder):
                                   save_flag=save_flag,
                                   use_alias=use_alias)
 
-        self._instance.construct_graph(plot=plot)
+        self._instance.construct_graph(plot=plot, add_state_costs=state_cost)
 
         return self._instance

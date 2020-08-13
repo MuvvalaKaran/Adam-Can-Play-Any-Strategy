@@ -2,6 +2,7 @@ from .factory import PayoffCollection
 from .base import Payoff
 from .infinte_payoff import InfinitePayoff, InfinitePayoffBuilder
 from .finite_payoff import FinitePayoff, FinitePayoffBuilder
+from .cumulative_payoff import CumulativePayoff
 
 payoff_factory = PayoffCollection()
 payoff_factory.register_builder("sup", InfinitePayoffBuilder())

@@ -24,6 +24,7 @@ from src.graph import TwoPlayerGraph
 from src.strategy_synthesis import RegMinStrSyn
 from src.strategy_synthesis import ReachabilitySolver
 from src.strategy_synthesis import IrosStrSolver
+from src.payoff import CumulativePayoff
 
 from src.mpg_tool import MpgToolBox
 
@@ -69,7 +70,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 2
+    human_intervention: int = 1
 
     def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
         self.finite = _finite
@@ -138,8 +139,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_16.value
-        ENV_ID = MiniGridLavaEnv.env_7.value
+        ENV_ID = MiniGridEmptyEnv.env_4.value
+        # ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -182,9 +183,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="config/automaton",
                                       save_flag=True,
-                                      sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
+                                      sc_ltl="!(lava_red_open) U (goal_green_open)",
                                       use_alias=False,
-                                      state_cost=self._state_cost,
                                       plot=self.plot_dfa)
 
     # over ride method to add the attribute self.get_iros_ts
@@ -474,6 +474,14 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
+
+def test_cumulative_payoff(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                           debug: bool = False,
+                           plot_costs: bool = False):
+
+    cumulative_payoff_handle = CumulativePayoff(trans_sys)
+    cumulative_payoff_handle.solve(debug=debug, plot=plot_costs)
+
 if __name__ == "__main__":
 
     # define some constants
@@ -486,7 +494,7 @@ if __name__ == "__main__":
     finite = False
     go_fast = True
 
-    # some constants that allow for appr _instance creations
+    # some constants that allow for appropriate instance creations
     gym_minigrid = True
     three_state_ts = False
     five_state_ts = False
@@ -494,7 +502,8 @@ if __name__ == "__main__":
     franka_abs = False
 
     # solver to call
-    reg_synthesis = True
+    test_cumulative = True
+    reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
     miniGrid_instance = None
@@ -503,11 +512,10 @@ if __name__ == "__main__":
     if gym_minigrid:
         miniGrid_instance = MinigridGraph(_finite=finite,
                                           _iros_ts=IROS_FLAG,
-                                          _state_cost=True,
                                           _plot_minigrid=False,
                                           _plot_ts=False,
                                           _plot_dfa=False,
-                                          _plot_prod=False)
+                                          _plot_prod=True)
         trans_sys = miniGrid_instance.product_automaton
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
@@ -562,7 +570,8 @@ if __name__ == "__main__":
                                     debug=False,
                                     print_str=False,
                                     epsilon=EPSILON)
-
+    elif test_cumulative:
+        test_cumulative_payoff(trans_sys, debug=False, plot_costs=True)
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

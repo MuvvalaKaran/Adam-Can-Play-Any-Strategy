@@ -195,7 +195,7 @@ class IrosStrategySynthesis:
     def get_str_dict(self) -> Dict[tuple, str]:
         """
         As str_map is a dictionary that also has the cost associated with it, we make use of this method to return a
-        strategy dictionary which is mapping of the best SYSTEM ACTION from each state in the game.
+        strategy dictionary which is a mapping of the best SYSTEM ACTION from each state in the game.
         :return:
         """
         if len(self.str_map.keys()) == 0:

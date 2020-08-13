@@ -512,7 +512,8 @@ class RegretMinimizationStrategySynthesis:
     def _epsilon_greedy_choose_action(self,
                                       _human_state: tuple,
                                       str_dict: Dict[tuple, tuple],
-                                      epsilon: float, _absoring_states: List[tuple]) -> Tuple[tuple, bool]:
+                                      epsilon: float, _absoring_states: List[tuple],
+                                      human_can_intervene: bool = False) -> Tuple[tuple, bool]:
         """
         Choose an action according to epsilon greedy algorithm
 
@@ -530,20 +531,28 @@ class RegretMinimizationStrategySynthesis:
         _next_states = [_next_n for _next_n in self.graph._graph.successors(_human_state)]
         _did_human_move = False
 
-        # rand() return a floating point number between [0, 1)
-        if np.random.rand() < epsilon:
-            _next_state: tuple = random.choice(_next_states)
+        # if the human still has moves remaining then he follows the eps strategy else he does not move at all
+        if human_can_intervene:
+            # rand() return a floating point number between [0, 1)
+            if np.random.rand() < epsilon:
+                _next_state: tuple = random.choice(_next_states)
+            else:
+                _next_state: tuple = str_dict[_human_state]
+            if _next_state[0][1] != _human_state[0][1]:
+                _did_human_move = True
         else:
-            _next_state: tuple = str_dict[_human_state]
-
-        if _next_state[0][1] != _human_state[0][1]:
-            _did_human_move = True
+            # human follows the strategy dictated by the system
+            for _n in _next_states:
+                if _n[0][1] == _human_state[0][1]:
+                    _next_state = _n
+                    break
 
         return _next_state, _did_human_move
 
     def get_controls_from_str_minigrid(self,
                                        str_dict: Dict[tuple, tuple],
                                        epsilon: float,
+                                       max_human_interventions: int = 1,
                                        debug: bool = False) -> List[Tuple[str, ndarray, int]]:
         """
         A helper method to return a list of actions (edge labels) associated with the strategy found
@@ -560,25 +569,31 @@ class RegretMinimizationStrategySynthesis:
             except ValueError:
                 print(ValueError)
 
+        if not isinstance(max_human_interventions, int) or max_human_interventions < 0:
+            warnings.warn("Please make sure that the max human intervention bound should >= 0")
+
         _start_state = self.graph.get_initial_states()[0][0]
         _total_human_intervention = _start_state[0][1]
         _accepting_states = self.graph.get_accepting_states()
         _trap_states = self.graph.get_trap_states()
 
         _absorbing_states = _accepting_states + _trap_states
+        _human_interventions: int = 0
         _visited_states = []
         _position_sequence = []
 
         curr_sys_node = _start_state
         next_env_node = str_dict[curr_sys_node]
 
+        _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
         next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
                                                            str_dict,
                                                            epsilon=epsilon,
-                                                           _absoring_states=_absorbing_states)[0]
+                                                           _absoring_states=_absorbing_states,
+                                                           human_can_intervene=_can_human_intervene)[0]
 
         (x, y) = next_sys_node[0][0]
-        _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
+        _human_interventions = _total_human_intervention - next_sys_node[0][1]
 
         next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
 
@@ -593,12 +608,22 @@ class RegretMinimizationStrategySynthesis:
             curr_sys_node = next_sys_node
             next_env_node = str_dict[curr_sys_node]
 
+            if curr_sys_node == next_env_node:
+                x, y = next_sys_node[0][0]
+                _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
+                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
+                _visited_states.append(next_sys_node)
+                break
+
             # update the next sys node only if you not transiting to an absorbing state
-            if next_env_node not in _absorbing_states:
+            if next_env_node not in _absorbing_states\
+                    and self.graph.get_state_w_attribute(next_env_node, "player") == "adam":
+                _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
                 next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
                                                                    str_dict,
                                                                    epsilon=epsilon,
-                                                                   _absoring_states=_absorbing_states)[0]
+                                                                   _absoring_states=_absorbing_states,
+                                                                   human_can_intervene=_can_human_intervene)[0]
 
             # if transiting to an absorbing state then due to the self transition the next sys node will be the same as
             # the current env node which is an absorbing itself. Technically an absorbing state IS NOT assigned any

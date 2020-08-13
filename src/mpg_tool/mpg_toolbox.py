@@ -164,7 +164,7 @@ class MpgToolBox:
 
         return coop_dict
 
-    def compute_reg_val(self, go_fast: bool = True, debug: bool = False) -> Dict:
+    def compute_reg_val(self, go_fast: bool = True, debug: bool = False) -> Tuple[Dict, float]:
         """
         A helper method to run the mpg solver through terminal given a graph.
 
@@ -199,9 +199,9 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        str_dict = self.read_reg_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
+        str_dict, final_reg_val = self.read_reg_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
 
-        return str_dict
+        return str_dict, final_reg_val
 
     def _read_mpg_file(self, file_name: str):
         """
@@ -269,7 +269,11 @@ class MpgToolBox:
 
         return coop_dict
 
-    def read_reg_mpg_op(self, _node_index_map: bidict, file_name: str, _g_b_init_nodes: list, debug: bool = False):
+    def read_reg_mpg_op(self,
+                        _node_index_map: bidict,
+                        file_name: str,
+                        _g_b_init_nodes: list,
+                        debug: bool = False) -> Tuple[Dict, float]:
         """
         A method that reads the output of the mean payoff game tool and returns a dictionary
 
@@ -306,8 +310,13 @@ class MpgToolBox:
         for _n in _g_b_init_nodes:
             print(f"Reg value from node {_n} is: {-1 * reg_dict[str(_node_index_map[_n])]}")
 
+        # get the next node according to regret minimizing strategy from v1 in g_hat and look up its hash value
+        _next_node_from_v1: tuple = str_dict["v1"]
+        _next_node_hash_value: str = str(_node_index_map[_next_node_from_v1])
+        fina_reg_val: float =  reg_dict[_next_node_hash_value]
+
         if debug:
             for curr_n, next_n in str_dict.items():
                 print(f"The current node is {curr_n} and the strategy is {next_n}")
 
-        return str_dict
+        return str_dict, fina_reg_val

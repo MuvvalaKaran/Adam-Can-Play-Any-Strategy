@@ -37,6 +37,7 @@ Note: When you create a NxN world, two units of width and height are consumed fo
 So a 4x4 world will be a 2x2 env and 5x5 will be a 3x3 env respectively.  
 """
 
+
 class MiniGridEmptyEnv(enum.Enum):
     env_4 = 'MiniGrid-Empty-4x4-v0'
     env_5 = 'MiniGrid-Empty-5x5-v0'
@@ -392,6 +393,7 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
 def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                mini_grid_instance: Optional[MinigridGraph] = None,
                                epsilon: float = 0,
+                               max_human_interventions: int = 5,
                                go_fast: bool = True,
                                finite: bool = False,
                                plot_result: bool = False,
@@ -404,25 +406,33 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
+    print("======================================================================")
+    print(f"No. of nodes in G_hat is :{len(g_hat._graph.nodes())}")
+    print(f"No. of edges in G_hat is :{len(g_hat._graph.edges())}")
+    print("======================================================================")
     mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
 
-    reg_dict = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
+    reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
     # g_hat.plot_graph()
     org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
 
     # map back str to minigrid env
     if mini_grid_instance is not None:
-        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str, epsilon=epsilon)
-        mini_grid_instance.execute_str(_controls=controls)
+        controls = reg_syn_handle.get_controls_from_str_minigrid(str_dict=org_str,
+                                                                 epsilon=epsilon,
+                                                                 max_human_interventions=max_human_interventions)
+        mini_grid_instance.execute_str(_controls=(reg_val, controls))
 
 
 def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                 epsilon: float = 0,
+                                energy_bound: int = 0,
+                                max_human_interventions: int = 5,
                                 mini_grid_instance: Optional[MinigridGraph] = None,
                                 debug: bool = False,
                                 print_str: bool = False):
 
-    iros_solver = IrosStrSolver(game=trans_sys, energy_bound=30, plot_modified_game=False)
+    iros_solver = IrosStrSolver(game=trans_sys, energy_bound=energy_bound, plot_modified_game=False)
     _start_state = trans_sys.get_initial_states()[0][0]
     if iros_solver.solve(debug=debug):
         print(f"There EXISTS a winning strategy from the  initial game state {_start_state} "
@@ -441,6 +451,7 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                         mini_grid_instance: Optional[MinigridGraph] = None,
                         epsilon: float = 0,
+                        max_human_interventions: int = 5,
                         debug: bool = False,
                         print_winning_regions: bool = False,
                         print_str: bool = False):
@@ -458,7 +469,9 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 
     if reachability_game_handle.is_winning():
         print("Assuming Env to be adversarial, sys CAN force a visit to the accepting states")
-        control = reachability_game_handle.get_pos_sequences(debug=False, epsilon=epsilon)
+        control = reachability_game_handle.get_pos_sequences(debug=False,
+                                                             epsilon=epsilon,
+                                                             max_human_interventions=max_human_interventions)
         mini_grid_instance.execute_str(_controls=control)
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
@@ -466,8 +479,10 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 if __name__ == "__main__":
 
     # define some constants
-    EPSILON = 0.5  # 0 - the best strategy (for human too) and 1 - Completely random
+    EPSILON = 0.95  # the best strategy (for human too) and 1 - Completely random
     IROS_FLAG = False
+    ENERGY_BOUND = 30
+    ALLOWED_HUMAN_INTERVENTIONS = 0
 
     # some constants related to computation
     finite = False
@@ -520,12 +535,15 @@ if __name__ == "__main__":
         warnings.warn("Please ensure at-least one of the flags is True")
         sys.exit(-1)
 
-    print(f"No. of nodes in the product graph is :{len(trans_sys._graph.nodes())}")
-    print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
+    print("======================================================================")
+    print(f"No. of nodes in G is :{len(trans_sys._graph.nodes())}")
+    print(f"No. of edges in G is :{len(trans_sys._graph.edges())}")
+    print("======================================================================")
 
     if reg_synthesis:
         compute_reg_minimizing_str(trans_sys,
                                    miniGrid_instance,
+                                   max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
                                    go_fast=go_fast,
                                    epsilon=EPSILON,
                                    finite=finite,
@@ -534,6 +552,7 @@ if __name__ == "__main__":
     elif adversarial_game:
         compute_winning_str(trans_sys,
                             miniGrid_instance,
+                            max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
                             debug=True,
                             epsilon=EPSILON,
                             print_winning_regions=False,
@@ -541,6 +560,7 @@ if __name__ == "__main__":
     elif iros_str_synthesis:
         compute_bounded_winning_str(trans_sys,
                                     mini_grid_instance=miniGrid_instance,
+                                    energy_bound=ENERGY_BOUND,
                                     debug=False,
                                     print_str=False,
                                     epsilon=EPSILON)

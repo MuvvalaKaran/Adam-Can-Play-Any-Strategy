@@ -47,8 +47,8 @@ class IrosStrategySynthesis:
 
     @energy_bound.setter
     def energy_bound(self, bound_value: int):
-        if not isinstance(bound_value, int):
-            warnings.warn("Please ensure that the bound on the energy is an integer")
+        if not isinstance(bound_value, int) or bound_value < 0:
+            warnings.warn("Please ensure that the bound on the energy is an integer and is positive definite(>=0)")
 
         self.__energy_bound = bound_value
 
@@ -243,7 +243,7 @@ class IrosStrategySynthesis:
         _adams_choices = []
 
         for _next_n in self.game._graph.successors(_curr_state):
-            if self.game.get_edge_attributes(_curr_state, _next_n, "player") == "adam":
+            if self.game.get_edge_attributes(_curr_state, _next_n, "player") == "adam" and _next_n[0]:
                 _adams_choices.append(_next_n)
 
         return random.choice(_adams_choices)
@@ -252,7 +252,8 @@ class IrosStrategySynthesis:
                                       _state: tuple,
                                       str_dict: Dict[tuple, str],
                                       epsilon: float,
-                                      _absoring_states: List[tuple]) -> Tuple[tuple, bool]:
+                                      _absoring_states: List[tuple],
+                                      human_can_intervene: bool = False) -> Tuple[tuple, bool]:
         """
         Choose an action according to epsilon greedy algorithm
 
@@ -266,29 +267,34 @@ class IrosStrategySynthesis:
         _did_human_move = False
         _human_moves_remaining = _state[0][1]
 
-        # rand() return a floating point number between [0, 1)
-        if np.random.rand() < epsilon or _human_moves_remaining == 0:
-            # pick the best state that the system wants to transit to
+        if human_can_intervene:
+            # rand() return a floating point number between [0, 1)
+            if np.random.rand() < epsilon or _human_moves_remaining == 0:
+                # pick the best state that the system wants to transit to
+                best_sys_action = str_dict[_state]
+                _next_state: tuple = self._get_next_state_w_edge_label(_state, best_sys_action)
+
+            else:
+                # pick a random human action
+                _next_state: tuple = self._get_rand_state_human_action(_state)
+
+            if _next_state is None:
+                warnings.warn(f"Could not find a state to transit to from {_state}")
+                sys.exit(-1)
+
+            if _next_state not in _absoring_states:
+                if _next_state[0][1] != _state[0][1]:
+                    _did_human_move = True
+        else:
             best_sys_action = str_dict[_state]
             _next_state: tuple = self._get_next_state_w_edge_label(_state, best_sys_action)
-
-        else:
-            # pick a random human action
-            _next_state: tuple = self._get_rand_state_human_action(_state)
-
-        if _next_state is None:
-            warnings.warn(f"Could not find a state to transit to from {_state}")
-            sys.exit(-1)
-
-        if _next_state not in _absoring_states:
-            if _next_state[0][1] != _state[0][1]:
-                _did_human_move = True
 
         return _next_state, _did_human_move
 
     def get_controls_from_str_minigrid(self,
                                        epsilon: float,
-                                       debug: bool = False) -> List[Tuple[str, ndarray, int]]:
+                                       debug: bool = False,
+                                       max_human_interventions: int = 1,) -> List[Tuple[str, ndarray, int]]:
         """
         As this game DOES NOT have explicit human and env nodes, we have distinct human and system action from each
         state
@@ -304,6 +310,9 @@ class IrosStrategySynthesis:
             except ValueError:
                 print(ValueError)
 
+        if not isinstance(max_human_interventions, int) or max_human_interventions < 0:
+            warnings.warn("Please make sure that the max human intervention bound should >= 0")
+
         # compute the str_dict and str_map also cost associated with it
         str_dict = self.get_str_dict()
 
@@ -313,15 +322,18 @@ class IrosStrategySynthesis:
         _trap_states = self.game.get_trap_states()
 
         _absorbing_states = _accepting_states + _trap_states
+        _human_interventions: int = 0
         _visited_states = []
         _position_sequence = []
 
         curr_sys_node = _start_state
 
+        _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
         next_sys_node = self._epsilon_greedy_choose_action(curr_sys_node,
                                                            str_dict,
                                                            epsilon=epsilon,
-                                                           _absoring_states=_absorbing_states)[0]
+                                                           _absoring_states=_absorbing_states,
+                                                           human_can_intervene=_can_human_intervene)[0]
 
         (x, y) = next_sys_node[0][0]
         _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
@@ -340,10 +352,12 @@ class IrosStrategySynthesis:
 
             # update the next sys node only if you not transiting to an absorbing state
             if curr_sys_node not in _absorbing_states:
+                _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
                 next_sys_node = self._epsilon_greedy_choose_action(curr_sys_node,
                                                                    str_dict,
                                                                    epsilon=epsilon,
-                                                                   _absoring_states=_absorbing_states)[0]
+                                                                   _absoring_states=_absorbing_states,
+                                                                   human_can_intervene=_can_human_intervene)[0]
 
             # if transiting to an absorbing state then due to the self transition the next sys node will be the same as
             # the current env node which is an absorbing itself. Technically an absorbing state IS NOT assigned any

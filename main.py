@@ -140,7 +140,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         ENV_ID = MiniGridEmptyEnv.env_4.value
-        # ENV_ID = MiniGridLavaEnv.env_6.value
+        # ENV_ID = MiniGridLavaEnv.env_7.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -396,23 +396,38 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
                                finite: bool = False,
                                plot_result: bool = False,
                                plot_result_only_eve: bool = False):
-    payoff = payoff_factory.get("cumulative", graph=trans_sys)
+    payoff = payoff_factory.get("cumulative",
+                                graph=trans_sys,
+                                game_type="cooperative")
 
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
+    if finite:
+        w_prime = reg_syn_handle.compute_W_prime_finite(debug=False, plot=True)
+    else:
+        w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False, finite=finite)
 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
     print("======================================================================")
     print(f"No. of nodes in G_hat is :{len(g_hat._graph.nodes())}")
     print(f"No. of edges in G_hat is :{len(g_hat._graph.edges())}")
     print("======================================================================")
-    mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
 
-    reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
-    # g_hat.plot_graph()
-    org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
+    if finite:
+        cumul_payoff_handle = payoff_factory.get("cumulative",
+                                                 graph=g_hat,
+                                                 game_type="competitive")
+        reg_val = ""
+        cumul_payoff_handle.solve(plot=True)
+        reg_dict = cumul_payoff_handle.get_str_dict()
+        org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
+
+    else:
+        mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
+        reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
+        # g_hat.plot_graph()
+        org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
 
     # map back str to minigrid env
     if mini_grid_instance is not None:
@@ -479,7 +494,17 @@ def test_cumulative_payoff(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, Mini
                            debug: bool = False,
                            plot_costs: bool = False):
 
-    cumulative_payoff_handle = CumulativePayoff(trans_sys)
+    # cumulative_payoff_handle = CumulativePayoff(trans_sys)
+    cumulative_payoff_handle = payoff_factory.get("cumulative",
+                                                  graph=trans_sys,
+                                                  game_type="competitive")
+
+    # reg_syn_handle = RegMinStrSyn(trans_sys, cumulative_payoff_handle)
+    #
+    # w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
+    #
+    # g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=False)
+    # cumulative_payoff_handle.game = g_hat
     cumulative_payoff_handle.solve(debug=debug, plot=plot_costs)
 
 if __name__ == "__main__":
@@ -491,12 +516,12 @@ if __name__ == "__main__":
     ALLOWED_HUMAN_INTERVENTIONS = 0
 
     # some constants related to computation
-    finite = False
+    finite = True
     go_fast = True
 
     # some constants that allow for appropriate instance creations
-    gym_minigrid = True
-    three_state_ts = False
+    gym_minigrid = False
+    three_state_ts = True
     five_state_ts = False
     variant_1_paper = False
     franka_abs = False
@@ -515,7 +540,7 @@ if __name__ == "__main__":
                                           _plot_minigrid=False,
                                           _plot_ts=False,
                                           _plot_dfa=False,
-                                          _plot_prod=True)
+                                          _plot_prod=False)
         trans_sys = miniGrid_instance.product_automaton
         wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
 
@@ -527,15 +552,24 @@ if __name__ == "__main__":
         trans_sys = three_state_ts_instance.product_automaton
 
     elif five_state_ts:
-        five_state_ts = FiveStateExample(_finite=finite)
+        five_state_ts = FiveStateExample(_finite=finite,
+                                         _plot_ts=False,
+                                         _plot_dfa=False,
+                                         _plot_prod=False)
         trans_sys = five_state_ts.product_automaton
 
     elif variant_1_paper:
-        variant_1_instance = VariantOneGraph(_finite=finite)
+        variant_1_instance = VariantOneGraph(_finite=finite,
+                                             _plot_ts=False,
+                                             _plot_dfa=False,
+                                             _plot_prod=False)
         trans_sys = variant_1_instance.product_automaton
 
     elif franka_abs:
-        franka_instance = FrankaAbstractionGraph(_finite=finite)
+        franka_instance = FrankaAbstractionGraph(_finite=finite,
+                                                 _plot_ts=False,
+                                                 _plot_dfa=False,
+                                                 _plot_prod=False)
         trans_sys = franka_instance.product_automaton
     else:
         warnings.warn("Please ensure at-least one of the flags is True")

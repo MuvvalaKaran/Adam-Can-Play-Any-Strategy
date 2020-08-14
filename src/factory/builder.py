@@ -2,6 +2,7 @@ import yaml
 
 from abc import ABC, abstractmethod
 
+
 class Builder(ABC):
     """
     Implements an abstract generic builder class to use with ObjectFactory

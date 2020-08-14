@@ -38,7 +38,7 @@ class RegretMinimizationStrategySynthesis:
         self.graph = graph
         self.payoff = payoff
 
-    def compute_W_prime_finite(self,  multi_thread: bool = False):
+    def compute_W_prime_finite(self,  debug: bool = False, plot: bool = False):
         """
         A method to compute w_prime function based on Algo 2. pseudocode.
         This function is a mapping from each edge to a real valued number - b
@@ -52,8 +52,9 @@ class RegretMinimizationStrategySynthesis:
         """
 
         print("*****************Constructing W_prime finite*****************")
-        coop_dict = self._compute_cval_finite(multi_thread=multi_thread)
-
+        self.payoff.solve(debug=debug, plot=plot)
+        coop_dict = self.payoff.get_cooperative_val_dict()
+        # coop_dict = self._compute_cval_finite(multi_thread=multi_thread)
         w_prime: Dict[Tuple: float] = {}
 
         for edge in self.graph._graph.edges():
@@ -72,14 +73,14 @@ class RegretMinimizationStrategySynthesis:
                     curr_w = self.graph.get_edge_weight(alt_e[0], alt_e[1])
 
                     # if the coop_dict == inf or -inf then we don't care
-                    if (coop_dict[alt_e[1]][0] == -1*math.inf) or (coop_dict[alt_e[1]][0] == math.inf):
-                        tmp_cvals.append(coop_dict[alt_e[1]][0])
+                    if (coop_dict[alt_e[1]] == -1*math.inf) or (coop_dict[alt_e[1]] == math.inf):
+                        tmp_cvals.append(coop_dict[alt_e[1]])
                     # if coop_dict is a finite value, then check if the current edge was already encountered or not
                     else:
-                        if self.__check_edge_in_cval_play(alt_e, coop_dict[edge[1]][1]):
-                            tmp_cvals.append(coop_dict[alt_e[1]][0])
-                        else:
-                            tmp_cvals.append(coop_dict[alt_e[1]][0] + curr_w)
+                        # if self.__check_edge_in_cval_play(alt_e, coop_dict[edge[1]][1]):
+                        #     tmp_cvals.append(coop_dict[alt_e[1]][0])
+                        # else:
+                        tmp_cvals.append(coop_dict[alt_e[1]] + curr_w)
 
                 if len(tmp_cvals) != 0:
                     w_prime.update({edge: max(tmp_cvals)})
@@ -150,7 +151,7 @@ class RegretMinimizationStrategySynthesis:
         mpg_cval_handle = MpgToolBox(self.graph, "org_graph")
         return mpg_cval_handle.compute_cval(go_fast=go_fast, debug=debug)
 
-    def compute_W_prime(self, go_fast: bool = False, debug: bool = False):
+    def compute_W_prime(self, go_fast: bool = False, debug: bool = False, finite: bool = False):
         """
         A method to compute w_prime function based on Algo 2. pseudocode.
         This function is a mapping from each edge to a real valued number - b
@@ -295,8 +296,8 @@ class RegretMinimizationStrategySynthesis:
         g_hat.add_initial_state('v0')
 
         # add the edges with the weights
-        g_hat.add_weighted_edges_from([('v0', 'v0', '0'),
-                                       ('v0', 'v1', '0'),
+        g_hat.add_weighted_edges_from([('v0', 'v0', 0),
+                                       ('v0', 'v1', 0),
                                        ('vT', 'vT', -2 * abs(self.graph.get_max_weight()) - 1)])
         return g_hat
 
@@ -319,8 +320,8 @@ class RegretMinimizationStrategySynthesis:
         g_hat.add_initial_state('v0')
 
         # add the edges with the weights
-        g_hat.add_weighted_edges_from([('v0', 'v0', '0'),
-                                       ('v0', 'v1', '0'),
+        g_hat.add_weighted_edges_from([('v0', 'v0', 0),
+                                       ('v0', 'v1', 0),
                                        ('vT', 'vT', -1 * math.inf)])
         return g_hat
 

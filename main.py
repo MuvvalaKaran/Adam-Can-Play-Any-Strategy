@@ -520,8 +520,8 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appropriate instance creations
-    gym_minigrid = False
-    three_state_ts = True
+    gym_minigrid = True
+    three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
     franka_abs = False
@@ -555,7 +555,7 @@ if __name__ == "__main__":
         five_state_ts = FiveStateExample(_finite=finite,
                                          _plot_ts=False,
                                          _plot_dfa=False,
-                                         _plot_prod=False)
+                                         _plot_prod=True)
         trans_sys = five_state_ts.product_automaton
 
     elif variant_1_paper:

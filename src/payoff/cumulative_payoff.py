@@ -94,7 +94,7 @@ class CumulativePayoff:
         _trap_state = self.game.get_trap_states()
         _absorbing_states = _accepting_states + _trap_state
 
-        _state = self.game.get_initial_states()[0][0]
+        # _state = self.game.get_initial_states()[0][0]
 
         for _acc_s in _accepting_states:
             self.str_map[_acc_s]["cost"] = 0
@@ -106,7 +106,9 @@ class CumulativePayoff:
         # a flag to terminate when all the states in G have converged to their respective costs.
         _progress = False
 
-        _node_queue.append(_state)
+        for _s in _absorbing_states:
+            for _pre_n in self.game._graph.predecessors(_s):
+                _node_queue.append(_pre_n)
 
         # this is a competitive game
         while _node_queue:
@@ -119,7 +121,7 @@ class CumulativePayoff:
 
                 # compute the best strategy for sys node
                 if self.game.get_state_w_attribute(_state, "player") == "eve":
-                    _best_edge, _best_cost = self._get_min_sys_cost_from_s(_state)
+                    _best_edge, _best_cost = self._get_min_sys_cost_from_s(_state, _node_visited)
 
                     if _best_cost <= _curr_cost:
                         self.str_map[_state]["cost"] = _best_cost
@@ -132,20 +134,20 @@ class CumulativePayoff:
                 elif self.game.get_state_w_attribute(_state, "player") == "adam":
                     _best_edge, _best_cost = self._get_env_cost_from_s(_state, _node_visited)
 
-                    if _best_cost <= _curr_cost:
+                    if _best_cost >= _curr_cost:
                         self.str_map[_state]["cost"] = _best_cost
                         self.str_map[_state]["action"] = _best_edge[1]
 
-                    if _best_cost <_curr_cost:
+                    if _best_cost > _curr_cost:
                         _progress = True
 
                 else:
-                    warnings.warn(f"Please make sure that ever state in graph {self.game._graph_name}. "
+                    warnings.warn(f"Please make sure that every state in graph {self.game._graph_name}. "
                                   f"Currently the state {_state} does not have a valid player!")
                     sys.exit(-1)
 
-                for _next_n in self.game._graph.successors(_state):
-                    _node_queue.append(_next_n)
+                for _pre_n in self.game._graph.predecessors(_state):
+                    _node_queue.append(_pre_n)
 
         return _progress
 
@@ -181,9 +183,9 @@ class CumulativePayoff:
                 if self.game.get_state_w_attribute(_state, "player") == "eve":
                     _best_edge, _best_cost = self._get_min_sys_cost_from_s(_state)
                 elif self.game.get_state_w_attribute(_state, "player") == "adam":
-                    _best_edge, _best_cost = self._get_env_cost_from_s(_state, _node_visited)
+                    _best_edge, _best_cost = self._get_env_cost_from_s(_state)
                 else:
-                    warnings.warn(f"Please make sure that ever state in graph {self.game._graph_name}. "
+                    warnings.warn(f"Please make sure that every state in graph {self.game._graph_name}. "
                                   f"Currently the state {_state} does not have a valid player!")
                     sys.exit(-1)
 
@@ -198,7 +200,7 @@ class CumulativePayoff:
 
         return _progress
 
-    def _get_min_sys_cost_from_s(self, state: tuple) -> Tuple[tuple, int]:
+    def _get_min_sys_cost_from_s(self, state: tuple, _node_visited: List) -> Tuple[tuple, int]:
         """
         Find the sys transition to the next human state with the least cost associated with that state
         :param state:
@@ -210,11 +212,13 @@ class CumulativePayoff:
         for _succ_s in self.game._graph.successors(state):
             if state != _succ_s:
                 val = self.game.get_edge_weight(state, _succ_s) + self.str_map[_succ_s]["cost"]
+                if _succ_s not in _node_visited and val == 0:
+                    continue
                 _succ_s_costs.append(((state, _succ_s), val))
 
         return min(_succ_s_costs, key=operator.itemgetter(1))
 
-    def _get_env_cost_from_s(self, state: tuple, node_visited: List) -> Tuple[tuple, int]:
+    def _get_env_cost_from_s(self, state: tuple, _node_visited: List) -> Tuple[tuple, int]:
         """
         Find the env transition to the next sys state with the least cost associated with that state
         :param state:
@@ -226,8 +230,10 @@ class CumulativePayoff:
         # originate from human states
 
         for _succ_s in self.game._graph.successors(state):
-            if state != _succ_s and state in node_visited:
+            if state != _succ_s:
                 val = self.str_map[_succ_s]["cost"]
+                if _succ_s not in _node_visited and val == math.inf:
+                    continue
                 _succ_s_costs.append(((state, _succ_s), val))
 
         return self.__env_behavior(_succ_s_costs, key=operator.itemgetter(1))

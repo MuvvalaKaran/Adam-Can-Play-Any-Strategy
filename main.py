@@ -465,6 +465,11 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
+def test_cumulative_payoff(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                           debug: bool = False):
+    cumu_payoff_handle = payoff_factory.get("cumulative", graph=trans_sys)
+    cumu_payoff_handle.curate_graph()
+
 if __name__ == "__main__":
 
     # define some constants
@@ -483,7 +488,8 @@ if __name__ == "__main__":
     franka_abs = False
 
     # solver to call
-    reg_synthesis = True
+    test_cumulative = True
+    reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
     miniGrid_instance = None
@@ -503,7 +509,7 @@ if __name__ == "__main__":
         three_state_ts_instance = ThreeStateExample(_finite=finite,
                                                     _plot_ts=False,
                                                     _plot_dfa=False,
-                                                    _plot_prod=True)
+                                                    _plot_prod=False)
         trans_sys = three_state_ts_instance.product_automaton
 
     elif five_state_ts:
@@ -546,6 +552,8 @@ if __name__ == "__main__":
                                     print_str=False,
                                     epsilon=EPSILON)
 
+    elif test_cumulative:
+        test_cumulative_payoff(trans_sys, debug=False)
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

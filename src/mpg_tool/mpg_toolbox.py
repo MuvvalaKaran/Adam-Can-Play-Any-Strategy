@@ -20,6 +20,48 @@ MPG_OP_ABS_DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-S
 
 
 class MpgToolBox:
+    """
+    A class with relevant method call to the mpg toolbox
+
+    graph : The input graph to the mpg toolbox
+    file_name : The name of the input file (without any extension) for the graph to be dumped in
+    node_index_map : An internal bi-directional mapping that maps an arbitrary node as tuple to an int representation.
+
+    Methods:
+        1. create_mpg_file : A method to dump a given graph into an appropriate format that the mpg toolbox recognizes
+        2. compute_cVal : A method to compute the strategy for a cooperative game
+        3. compute_reg_val : A method to compute the strategy for a competitive game
+
+    Usage of toolbox:
+
+    Usage: ./mpgsolver [OPTIONS] FILES
+    Solve the mean-payoff game in FILES on the GPU.
+
+    Options:
+      -h [ --help ]                  display this help text and exit
+      -i [ --input-file-format ] arg input file format: mpg, pg, hoa or bin
+      -o [ --output-file ] arg       output file
+      -c [ --cycle-check ]           explicitly check for non-positive cycles in
+                                     the game graph
+      --scc-partition                compute the scc partition of the game arena
+      --no-compact-colors            do not compact the colors by removing unused
+                                     colors
+      --no-auxilliary-nodes          do not add auxilliary nodes to the arena (may
+                                     lead to wrong results)
+      --sort-by-owner                sort nodes by owner (within scc with scc
+                                     partitions)
+      -d [ --device ] arg            select the device (by index or name)
+      -w [ --work-group-size ] arg   set the work group size (0=auto)
+      -p [ --print-arena ]           print the arena
+      --print-arena-info             print basic arena information
+      --device-info                  print device information
+      --profiling                    measure and print kernel profiling information
+      -t [ --timing ]                measure and print timing information
+      --no-solving                   do not solve the game
+      --zero-mean-partition          only solve the zero mean partition problem
+      --check-realizability          check realizability
+
+    """
 
     def __init__(self, graph: TwoPlayerGraph, file_name: str = None):
         self._mpg_graph = graph
@@ -122,6 +164,34 @@ class MpgToolBox:
 
         return _node_index_map, g_b_init_nodes
 
+    def compute_SCC(self, go_fast: bool = True):
+        print("**************************Computing SCCs*************************")
+        # dump the graph
+        _node_index_map, _ = self.create_mpg_file(cval=True)
+
+        ip_file_name = CONFIG_DIR + self.file_name + ".mpg"
+        op_file_name = MPG_OP_ABS_DIR + f"{self.file_name}_scc.txt"
+        mpg_dir_call = MPG_ABS_DIR + "mpgsolver"
+
+        additional_args = ["--scc-partition", "--no-solving", "--print-arena"]
+        mpgsolver_call = [mpg_dir_call, "-d 2"] + additional_args + [ip_file_name, " > ", op_file_name]
+
+        if go_fast:
+            with open(op_file_name, 'w') as fh:
+                completed_process = sp.run(mpgsolver_call,
+                                           stdout=fh, stderr=sp.PIPE)
+                self._curate_op_data_scc(op_file_name)
+        else:
+            completed_process = sp.run(mpgsolver_call,
+                                       stdout=sp.PIPE, stderr=sp.PIPE)
+
+        if not go_fast:
+            call_string = completed_process.stdout.decode()
+            print('%s' % call_string)
+
+        scc_info = self._read_scc_op(op_file_name, debug=True)
+
+
     def _get_reg_players(self, node):
         """
         A helper method that return if its a MIN or a MAX based on the player attribute associated with the node
@@ -160,7 +230,7 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        coop_dict = self.read_cval_mpg_op(_node_index_map, op_file_name, debug)
+        coop_dict = self._read_cval_mpg_op(_node_index_map, op_file_name, debug)
 
         return coop_dict
 
@@ -199,7 +269,7 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        str_dict = self.read_reg_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
+        str_dict = self._read_reg_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
 
         return str_dict
 
@@ -236,7 +306,50 @@ class MpgToolBox:
         with open(file_name, "w") as fh:
             fh.write("".join(lines[start_index + 1: stop_index]))
 
-    def read_cval_mpg_op(self, _node_index_map: bidict, file_name: str, debug: bool = False):
+    def _read_scc_op(self, file_name: str, debug: bool = False):
+
+        # create the scc dict
+        scc_dct: Dict[list] = {}
+
+        # open the curated file and interpret data
+        f = open(file_name, "r")
+
+        # regex to identify if the line starts with a node or not
+        # _get_scc_idx = re.compile("\(([^)]+)")
+
+        for line in f.readlines():
+            _starts_with = line.split()[0]
+            if line.split()[0].isdigit():
+                _scc_num: int = int(re.search('\(([^)]+)', line).group(1))
+                if scc_dct.get(_scc_num) is None:
+                    scc_dct.update({_scc_num: [_starts_with]})
+                else:
+                    scc_dct[_scc_num].append(_starts_with)
+
+        if debug:
+            for k, v in scc_dct.items():
+                print(f"Scc-{k} : {[_n for _n in v]}")
+
+    def _curate_op_data_scc(self, file_name):
+        """
+        A helper method to trim away all the unnecessary data for read_mpg_op to
+         read the final strategy and and map it back to the graph (in our case g_hat)
+        :param data:
+        :return:
+        """
+
+        start_re_flag = 'Starting writing arena'
+        stop_re_flag = 'Finished writing arena'
+
+        lines = self._read_mpg_file(file_name)
+
+        start_index = [index for index, line in enumerate(lines) if re.search(start_re_flag, line)][0]
+        stop_index = [index for index, line in enumerate(lines) if re.search(stop_re_flag, line)][0]
+
+        with open(file_name, "w") as fh:
+            fh.write("".join(lines[start_index + 1: stop_index]))
+
+    def _read_cval_mpg_op(self, _node_index_map: bidict, file_name: str, debug: bool = False):
         """
         A method that reads the output of the mean payoff game tool and returns a dictionary
 
@@ -269,7 +382,7 @@ class MpgToolBox:
 
         return coop_dict
 
-    def read_reg_mpg_op(self, _node_index_map: bidict, file_name: str, _g_b_init_nodes: list, debug: bool = False):
+    def _read_reg_mpg_op(self, _node_index_map: bidict, file_name: str, _g_b_init_nodes: list, debug: bool = False):
         """
         A method that reads the output of the mean payoff game tool and returns a dictionary
 

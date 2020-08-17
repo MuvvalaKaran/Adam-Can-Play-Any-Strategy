@@ -6,7 +6,7 @@ import math
 import warnings
 import sys
 
-from typing import Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional
 from bidict import bidict
 from src.graph import TwoPlayerGraph
 
@@ -100,7 +100,12 @@ class MpgToolBox:
 
         self._file_name = file_name
 
-    def create_mpg_file(self, reg: bool = False, cval: bool  = False) -> Tuple[bidict, list]:
+    @node_index_map.setter
+    def node_index_map(self, mapping: Dict):
+
+        self._node_index_map = mapping
+
+    def create_mpg_file(self, reg: bool = False, cval: bool  = False):
         """
         A method to create a file which adheres to the input file
         format used by the mean payoff games toolbox.
@@ -121,17 +126,11 @@ class MpgToolBox:
 
         directory_add: str = CONFIG_DIR + self.file_name + ".mpg"
         # map is of the format : {state_name: str : hashed_int_val : int}
-        _node_index_map = bidict({state: index
+        self.node_index_map = bidict({state: index
                                   for index, state
                                   in enumerate(self.mpg_graph._graph.nodes)})
 
         f = open(directory_add, "w")
-
-        # get all the initial nodes of g_b(s)
-        if reg:
-            g_b_init_nodes = [_s for _s in self.mpg_graph._graph.successors("v1")]
-        else:
-            g_b_init_nodes = None
 
         # start dumping
         for node in self.mpg_graph._graph.nodes():
@@ -144,11 +143,11 @@ class MpgToolBox:
                 sys.exit(-1)
 
             # create the line
-            f.write(f"{_node_index_map[node]} {player} ")
+            f.write(f"{self.node_index_map[node]} {player} ")
 
             # get outgoing edges of a graph
             for ie, e in enumerate(self.mpg_graph._graph.edges(node)):
-                mapped_next_node = _node_index_map[e[1]]
+                mapped_next_node = self._node_index_map[e[1]]
                 edge_weight = self.mpg_graph._graph[e[0]][e[1]][0]['weight']
 
                 if edge_weight == math.inf or edge_weight == -1 * math.inf:
@@ -162,12 +161,9 @@ class MpgToolBox:
 
         f.close()
 
-        return _node_index_map, g_b_init_nodes
-
-    def compute_SCC(self, go_fast: bool = True):
-        print("**************************Computing SCCs*************************")
+    def compute_SCC(self, go_fast: bool = True, debug: bool = False) -> Dict:
         # dump the graph
-        _node_index_map, _ = self.create_mpg_file(cval=True)
+        self.create_mpg_file(cval=True)
 
         ip_file_name = CONFIG_DIR + self.file_name + ".mpg"
         op_file_name = MPG_OP_ABS_DIR + f"{self.file_name}_scc.txt"
@@ -189,8 +185,9 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        scc_info = self._read_scc_op(op_file_name, debug=True)
+        scc_dict = self._read_scc_op(op_file_name, debug=debug)
 
+        return scc_dict, self.node_index_map
 
     def _get_reg_players(self, node):
         """
@@ -209,7 +206,7 @@ class MpgToolBox:
     def compute_cval(self,  go_fast: bool = True, debug: bool = False):
         print("**************************Computing cVal of all nodes in G*************************")
         # dump the graph
-        _node_index_map, _ = self.create_mpg_file(cval=True)
+        self.create_mpg_file(cval=True)
 
         ip_file_name = CONFIG_DIR + self.file_name + ".mpg"
         op_file_name = MPG_OP_ABS_DIR + f"{self.file_name}_dict.txt"
@@ -230,11 +227,11 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        coop_dict = self._read_cval_mpg_op(_node_index_map, op_file_name, debug)
+        coop_dict = self._read_cval_mpg_op(op_file_name, debug)
 
         return coop_dict
 
-    def compute_reg_val(self, go_fast: bool = True, debug: bool = False) -> Dict:
+    def compute_reg_val(self, go_fast: bool = True, debug: bool = False) -> Tuple[Dict, float]:
         """
         A helper method to run the mpg solver through terminal given a graph.
 
@@ -248,7 +245,7 @@ class MpgToolBox:
         """
         print("**************************Computing Reg Minimizing Strategy on G_hat*************************")
         # dump the graph
-        _node_index_map, _g_b_init_nodes = self.create_mpg_file(reg=True)
+        self.create_mpg_file(reg=True)
 
         ip_file_name = CONFIG_DIR + self.file_name + ".mpg"
         op_file_name = MPG_OP_ABS_DIR + f"{self.file_name}_str.txt"
@@ -269,9 +266,9 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        str_dict = self._read_reg_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
+        str_dict, final_reg_value = self._read_reg_mpg_op(op_file_name, debug=debug)
 
-        return str_dict
+        return str_dict, final_reg_value
 
     def _read_mpg_file(self, file_name: str):
         """
@@ -307,9 +304,16 @@ class MpgToolBox:
             fh.write("".join(lines[start_index + 1: stop_index]))
 
     def _read_scc_op(self, file_name: str, debug: bool = False):
+        """
+        Given an output dump, store the information into meaninful format as follows:
 
+        Dict = {scc_number : {nodes: []; ngbhs : [ngh: edge_weight]}}
+        :param file_name:
+        :param debug:
+        :return:
+        """
         # create the scc dict
-        scc_dct: Dict[list] = {}
+        _scc_dct: Dict[int, Dict[str, List[str]]] = {}
 
         # open the curated file and interpret data
         f = open(file_name, "r")
@@ -321,14 +325,43 @@ class MpgToolBox:
             _starts_with = line.split()[0]
             if line.split()[0].isdigit():
                 _scc_num: int = int(re.search('\(([^)]+)', line).group(1))
-                if scc_dct.get(_scc_num) is None:
-                    scc_dct.update({_scc_num: [_starts_with]})
+                _neighbour_list: str = re.search('\[([^]]+)', line).group(1)
+
+                _curated_ngh_lst: list = self.__curate_ngh_list(_neighbour_list)
+                if _scc_dct.get(_scc_num) is None:
+                    _scc_dct.update({_scc_num: {int(_starts_with): []}})
                 else:
-                    scc_dct[_scc_num].append(_starts_with)
+                    _scc_dct[_scc_num].update({int( _starts_with): []})
+
+                _scc_dct[_scc_num][int(_starts_with)] = _curated_ngh_lst
 
         if debug:
-            for k, v in scc_dct.items():
+            for k, v in _scc_dct.items():
                 print(f"Scc-{k} : {[_n for _n in v]}")
+
+        return _scc_dct
+
+    def __curate_ngh_list(self, ngh_str_to_lst) -> list:
+        """
+        A helper method exclusively called by _read_scc_op() method. In this method conver a supposed list in str to
+        its original format
+        input line : 876 ( 355) 0 [ 928: 0, 913: 0, 958: 0, 823: 0, 868: 0]
+        the parse input form the regex is "928: 0, 913: 0, 958: 0, 823: 0, 868: 0"
+        :param ngh_str_to_lst:
+        :return:
+        """
+
+        _ngh_lst = []
+        # every even split is a node and odd split is the edge weight. Just to make sure we check if the graph indeed
+        # has that node in it
+        for _ele in ngh_str_to_lst.split(","):
+            for _iidx, _eele in enumerate(_ele.split(":")):
+                if _iidx % 2 == 0:
+                    _node_tuple = self.node_index_map.inverse[int(_eele)]
+                    if self.mpg_graph._graph.has_node(_node_tuple):
+                        _ngh_lst.append(int(_eele))
+
+        return _ngh_lst
 
     def _curate_op_data_scc(self, file_name):
         """
@@ -349,7 +382,7 @@ class MpgToolBox:
         with open(file_name, "w") as fh:
             fh.write("".join(lines[start_index + 1: stop_index]))
 
-    def _read_cval_mpg_op(self, _node_index_map: bidict, file_name: str, debug: bool = False):
+    def _read_cval_mpg_op(self, file_name: str, debug: bool = False):
         """
         A method that reads the output of the mean payoff game tool and returns a dictionary
 
@@ -374,7 +407,7 @@ class MpgToolBox:
                               f" Cannot divide by zero. Please check the output")
                 sys.exit(-1)
 
-            coop_dict.update({_node_index_map.inverse[int(curr_node)]: c_val})
+            coop_dict.update({self.node_index_map.inverse[int(curr_node)]: c_val})
 
         if debug:
             for _n, _v in coop_dict.items():
@@ -382,7 +415,7 @@ class MpgToolBox:
 
         return coop_dict
 
-    def _read_reg_mpg_op(self, _node_index_map: bidict, file_name: str, _g_b_init_nodes: list, debug: bool = False):
+    def _read_reg_mpg_op(self, file_name: str, debug: bool = False):
         """
         A method that reads the output of the mean payoff game tool and returns a dictionary
 
@@ -391,6 +424,8 @@ class MpgToolBox:
         :param file_name: The name of the file to read
         :return:
         """
+
+        _g_b_init_nodes = [_s for _s in self.mpg_graph._graph.successors("v1")]
 
         # dictionary to hold reg values
         reg_dict: Dict[int, float] = {}
@@ -401,8 +436,8 @@ class MpgToolBox:
         for line in f.readlines():
             curr_node, _, next_node, mean_val = line.split()
 
-            str_dict.update({_node_index_map.inverse[int(curr_node)]:
-                                 _node_index_map.inverse[int(next_node)]})
+            str_dict.update({self.node_index_map.inverse[int(curr_node)]:
+                                 self.node_index_map.inverse[int(next_node)]})
 
             try:
                 mean_val = eval(mean_val)
@@ -417,10 +452,16 @@ class MpgToolBox:
         print("******************printing Reg value********************")
         print(f"Playing in graph g_b = {b_val}")
         for _n in _g_b_init_nodes:
-            print(f"Reg value from node {_n} is: {-1 * reg_dict[str(_node_index_map[_n])]}")
+            print(f"Reg value from node {_n} is: {-1 * reg_dict[str(self.node_index_map[_n])]}")
+
+        # get the next node according to regret minimizing strategy from v1 in g_hat and look up its hash value and
+        # return the corresponding mean val associated with that node
+        _next_node_from_v1: tuple = str_dict["v1"]
+        _next_node_hash_value: str = str(self.node_index_map[_next_node_from_v1])
+        final_reg_val: float = reg_dict[_next_node_hash_value]
 
         if debug:
             for curr_n, next_n in str_dict.items():
                 print(f"The current node is {curr_n} and the strategy is {next_n}")
 
-        return str_dict
+        return str_dict, final_reg_val

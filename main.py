@@ -68,7 +68,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 2
+    human_intervention: int = 0
 
     def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
         self.finite = _finite
@@ -137,8 +137,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_16.value
-        ENV_ID = MiniGridLavaEnv.env_7.value
+        # ENV_ID = MiniGridEmptyEnv.env_5.value
+        ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -181,7 +181,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="config/automaton",
                                       save_flag=True,
-                                      sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
+                                      sc_ltl="!(lava_red_open) U(water_blue_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -406,14 +406,14 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
     mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
 
-    reg_dict = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
+    reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
     # g_hat.plot_graph()
     org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
 
     # map back str to minigrid env
     if mini_grid_instance is not None:
         controls = reg_syn_handle.get_controls_from_str_minigrid(org_str, epsilon=epsilon)
-        mini_grid_instance.execute_str(_controls=controls)
+        mini_grid_instance.execute_str(_controls=(reg_val, controls))
     # else:
     # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
 
@@ -465,10 +465,13 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
+
 def test_cumulative_payoff(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                            debug: bool = False):
     cumu_payoff_handle = payoff_factory.get("cumulative", graph=trans_sys)
-    cumu_payoff_handle.curate_graph()
+    cumu_payoff_handle.curate_graph(debug=debug)
+    cumu_payoff_handle.compute_cVal()
+
 
 if __name__ == "__main__":
 

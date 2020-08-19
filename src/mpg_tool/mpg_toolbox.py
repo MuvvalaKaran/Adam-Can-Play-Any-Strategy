@@ -89,6 +89,9 @@ class MpgToolBox:
             warnings.warn(f"Please ensure that the graph is of type of TwoPlayerGraph."
                           f"Currently it is of type {type(mpg_graph)}")
 
+        if len(mpg_graph._graph.nodes()) == 0:
+            warnings.warn(f"Looks like the graph has no nodes at all!")
+
         self._mpg_graph = mpg_graph
 
     @file_name.setter
@@ -146,7 +149,9 @@ class MpgToolBox:
             f.write(f"{self.node_index_map[node]} {player} ")
 
             # get outgoing edges of a graph
+            _has_edge = False
             for ie, e in enumerate(self.mpg_graph._graph.edges(node)):
+                _has_edge = True
                 mapped_next_node = self._node_index_map[e[1]]
                 edge_weight = self.mpg_graph._graph[e[0]][e[1]][0]['weight']
 
@@ -158,6 +163,11 @@ class MpgToolBox:
 
                 else:
                     f.write(f"{mapped_next_node}:{int(edge_weight)}, ")
+
+            if not _has_edge:
+                warnings.warn(f"Looks like node {node} does not have any outgoing edges!"
+                              f" Please check the graph {self.mpg_graph._graph_name}")
+                sys.exit(-1)
 
         f.close()
 
@@ -187,7 +197,7 @@ class MpgToolBox:
 
         scc_dict = self._read_scc_op(op_file_name, debug=debug)
 
-        return scc_dict, self.node_index_map
+        return scc_dict
 
     def _get_reg_players(self, node):
         """
@@ -303,7 +313,7 @@ class MpgToolBox:
         with open(file_name, "w") as fh:
             fh.write("".join(lines[start_index + 1: stop_index]))
 
-    def _read_scc_op(self, file_name: str, debug: bool = False):
+    def _read_scc_op(self, file_name: str, debug: bool = False, get_org_nodes: bool = True):
         """
         Given an output dump, store the information into meaninful format as follows:
 
@@ -334,6 +344,15 @@ class MpgToolBox:
                     _scc_dct[_scc_num].update({int( _starts_with): []})
 
                 _scc_dct[_scc_num][int(_starts_with)] = _curated_ngh_lst
+
+        _new_scc_dct = {}
+        if get_org_nodes:
+            for _scc_id, _scc_nodes in _scc_dct.items():
+                _new_scc_dct.update({_scc_id: []})
+                for _node, _ in _scc_nodes.items():
+                    _new_scc_dct[_scc_id].append(self.node_index_map.inverse[_node])
+
+            return _new_scc_dct
 
         if debug:
             for k, v in _scc_dct.items():

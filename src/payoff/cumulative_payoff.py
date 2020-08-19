@@ -3,10 +3,11 @@ import sys
 import copy
 import random
 
-from typing import Optional, Union, Dict, Tuple, List
+from typing import Optional, Union, Dict, Tuple, List, Set
 from bidict import bidict
 
 # import local packages
+from src.graph import graph_factory
 from src.graph import TwoPlayerGraph
 from src.factory.builder import Builder
 from src.mpg_tool import MpgToolBox
@@ -96,18 +97,17 @@ class CumulativePayoff:
             sys.exit(-1)
 
         # make a call to the mpg class to dump the graph data into the
-        mpg_tool_handle = MpgToolBox(self.game, "org_graph")
-        # _scc_dict, node_idx_map = mpg_tool_handle.compute_SCC(go_fast=True, debug=True)
+        # mpg_tool_handle = MpgToolBox(self.game, "org_graph")
 
         """
         If a SCC consists of more then one edge, we create a list of nodes that belong to it and then select the very
         first node. We then look at its neighbours and choose the neighbouring node that also belongs to the same
         scc(there should be atleast one such ngh node) and remove that edge.
         """
-        self._check_scc_condition(mpg_tool_handle, iter_var=0, nodes_pruned=[], debug=True)
+        self._check_scc_condition(self.game, iter_var=0, nodes_pruned=[], debug=True)
 
         if debug:
-            mpg_tool_handle.compute_SCC(go_fast=True, debug=True)
+            # mpg_tool_handle.compute_SCC(go_fast=True, debug=True)
             print("Yay!")
 
     def compute_cVal(self):
@@ -117,7 +117,7 @@ class CumulativePayoff:
         self.game.plot_graph()
 
     def _check_scc_condition(self,
-                             mpg_instance: MpgToolBox,
+                             local_scc_graph: TwoPlayerGraph,
                              iter_var: int,
                              nodes_pruned: list,
                              debug: bool = False):
@@ -125,31 +125,148 @@ class CumulativePayoff:
         A method that checks if all the internal loops have been broken.
 
         Technically this means that all the SCC will have only one element in them
+
+        TODO: 1. An SCC will never grow after (won't include other nodes from outside the original set of nodes that
+         belong to that SCC) you have removed an edge. Thus, an SCC could break into smaller SCCs with a subset of
+         original nodes. So, do not re compute SCCs after removing an edge from each SCC.
+         Solution: Stay in that SCC till it gets totally disbanded or breaks into SCCs that only has edges with
+         zero weight
+            2. Instead of going for that particular node, lets go for random edges. This would ensure that you do not
+         completely remove a crucial link(block) to the goal state.
+
         :return:
         """
         print(f"SCC iteration : {iter_var}")
         iter_var += 1
-        _scc_dict, node_idx_map = mpg_instance.compute_SCC(go_fast=True, debug=False)
-        _converged = True
+        mpg_instance = MpgToolBox(local_scc_graph, "scc_graph")
+        _scc_dict = mpg_instance.compute_SCC(go_fast=True, debug=False)
+
+        # _converged = True
         for scc_id, nodes in _scc_dict.items():
             # lets randomly delete an edge
-            if len(_scc_dict[scc_id].keys()) > 1:
-                _converged = False
-                self._remove_an_edge_in_scc(_scc_dict, node_idx_map, scc_id)
+            if len(_scc_dict[scc_id]) > 1:
+                _scc_nodes: set = set([_n for _n in _scc_dict[scc_id]])
+                # _converged = False
+                _local_scc_graph = self._const_scc_graph(_scc_nodes, self.game)
+                # we keep on disbanding the scc until its cardinality is 1 or all its edges have 0 edge weight
+                while not self._scc_converged(_scc_nodes):
 
-                _to_prune_nodes: List[tuple] = self._check_graph_is_total()
-                nodes_pruned += _to_prune_nodes
-                while len(_to_prune_nodes) != 0:
-                    self._remove_nodes_from(_to_prune_nodes)
-                    _to_prune_nodes = self._check_graph_is_total()
+                    self._remove_an_edge_in_scc(_scc_nodes, _local_scc_graph)
+                    _to_prune_nodes: Set[tuple] = self._check_scc_is_total(_scc_nodes, _local_scc_graph)
+                    nodes_pruned += _to_prune_nodes
 
-        if not _converged:
-            self._check_scc_condition(mpg_instance, iter_var, nodes_pruned)
+                    while len(_to_prune_nodes) != 0:
+                        self._remove_nodes_from(_to_prune_nodes, _local_scc_graph)
+                        _scc_nodes = _scc_nodes - _to_prune_nodes
+                        _to_prune_nodes = self._check_scc_is_total(_scc_nodes, _local_scc_graph)
+
+                    # recompute the scc
+                    if not self._scc_converged(_scc_nodes):
+                        self._check_scc_condition(_local_scc_graph, iter_var, nodes_pruned, debug)
+                    # _local_scc_graph = self._const_scc_graph(_scc_nodes, _local_scc_graph)
+
+
+        # if not _converged:
+        #     self._check_scc_condition(mpg_instance, iter_var, nodes_pruned)
 
         if debug:
             print(nodes_pruned)
 
-    def _remove_an_edge_in_scc(self, scc_dict: Dict, node_idx_map: bidict, scc_id: int):
+    def _const_scc_graph(self, scc_nodes: set, graph: TwoPlayerGraph):
+        """
+        A helper method that extract the SCC given the list of scc_nodes and the graph the composes that SCC. The
+        cardinality of the set of scc_nodes should be > 1.
+
+        Returns a new instance of this graph
+        :param nodes:
+        :return:
+        """
+
+        assert len(scc_nodes) > 1, "Warning, trying to extract a SCC that consists of only one node."
+
+        # create a new instance of graph
+        _graph = graph_factory.get("TwoPlayerGraph",
+                                   graph_name="scc_graph",
+                                   config_yaml="config/scc_graph",
+                                   save_flag=True,
+                                   pre_built=False,
+                                   from_file=False,
+                                   plot=False)
+
+        _valid_players = ["adam", "eve"]
+
+        for _idn, _n in enumerate(scc_nodes):
+            _player = self.game.get_state_w_attribute(_n, "player")
+            if _player not in _valid_players:
+                warnings.warn(f"Please make sure every node in graph {self.game._graph_name} has a valid player."
+                              f"Currently state {_n} does not have a valid player"
+                              f" associated with it.")
+                sys.exit(-1)
+
+            _graph.add_state(_n, player=_player)
+            if _idn == 0:
+                _graph.add_initial_state(_n)
+
+        for _n in scc_nodes:
+            _neighbours_lst = [_n for _n in graph._graph.successors(_n)]
+            for _next_n in _neighbours_lst:
+                if _next_n in scc_nodes:
+                    _org_w: int = self.game.get_edge_weight(_n, _next_n)
+
+                    if _graph._graph.has_edge(_n, _next_n):
+                        warnings.warn(f"Looks like there exists multiple edges between : "
+                                      f"{_n} ----> {_next_n}."
+                                      f"Please check the original game graph G and the abstraction.")
+                        sys.exit(-1)
+
+                    _graph.add_edge(_n, _next_n, weight=_org_w)
+        # _graph.plot_graph()
+        return _graph
+
+    def _scc_converged(self, scc_nodes: set) -> bool:
+        """
+        A helper method to check if we further need to divide up the SCC or not. This is done based on two reasons:
+
+        1. If mean val of that SCC is 0 i.e it has finite cumulative value.  This happens only when all
+         the edges in the SCC have edge weight 0
+
+        2. If the SCC cannot be further decomposed. i.e it only consists of one node
+        :return:
+        """
+        if len(scc_nodes) <= 1:
+            return True
+
+        # get the edges that belong to this scc
+        _edges = self._get_edges_of_an_scc(scc_nodes)
+
+        _converged = True
+        for edge in _edges:
+            if self.game.get_edge_attributes(*edge, "weight") != 0:
+                _converged = False
+                break
+
+        return _converged
+
+    def _get_edges_of_an_scc(self, scc_nodes: set) -> List[Tuple[tuple, tuple]]:
+        """
+        A method that returns a list of edges that belong to an SCC given the nodes of that SCC.
+
+        We look at the neighbours of a node that belongs to an SCC. IF that neighbour also belongs to the same SCC then
+        we add that edge to a list and return it.
+        :param scc_nodes:
+        :return:
+        """
+        _scc_edge_lst = []
+
+        for _n in scc_nodes:
+            _nghs_lst = [i for i in self.game._graph.successors(_n)]
+            for _ngh_scc in scc_nodes:
+                if _ngh_scc in _nghs_lst:
+                    _scc_edge_lst.append((_n, _ngh_scc))
+
+        return _scc_edge_lst
+
+    def _remove_an_edge_in_scc(self, scc_nodes: set, scc_graph: TwoPlayerGraph):
         """
         TODO: hypothetically there could be situations where a SCC has more than one node in it but all the edges
          between those nodes could have an edge weight of 0. We need to resolve this issue.
@@ -160,17 +277,17 @@ class CumulativePayoff:
         :param scc_id:
         :return:
         """
-        _accp_state = self.game.get_initial_states()[0][0]
+        _accp_state = self.game.get_accepting_states()[0]
 
         # get all the nodes that belong to this scc
-        _scc_nodes = [_n for _n in scc_dict[scc_id].keys()]
-        _u, _init_node = self.__choose_rand_node(node_idx_map=node_idx_map, nodes=_scc_nodes)
+        # _scc_nodes = [_n for _n in scc_dict[scc_id].keys()]
+        _u = self.__choose_rand_node(nodes=scc_nodes)
 
-        _node_ngh_lst = scc_dict[scc_id][_init_node]
+        _node_ngh_lst = [i for i in scc_graph._graph.successors(_u)]
         for _ngh in _node_ngh_lst:
-            if _ngh in _scc_nodes:
+            if _ngh in scc_nodes:
                 # we can only remove an edge that belongs to the system and has non-zero edge weight
-                _v: Optional[tuple, str] = node_idx_map.inverse[_ngh]
+                _v: Optional[tuple, str] = _ngh
 
                 if self.game.get_edge_attributes(_u, _v, "weight") == 0:
                     continue
@@ -178,10 +295,11 @@ class CumulativePayoff:
                 if _v == _accp_state:
                     warnings.warn("Removing an edge to the accepting state")
 
+                scc_graph._graph.remove_edge(_u, _v)
                 self.game._graph.remove_edge(_u, _v)
                 break
 
-    def __choose_rand_node(self, node_idx_map: bidict, nodes: list) -> Tuple[tuple, int]:
+    def __choose_rand_node(self, nodes: set) -> Union[tuple, str]:
         """
         A helper method to choose a "random" node in a given scc. This node is the initial node of an edge.
         Thus we cannot return a human node. Also, we avoid returning the initial node as this might remove the start
@@ -192,11 +310,19 @@ class CumulativePayoff:
 
         # get the initial state
         _start_state = self.game.get_initial_states()[0][0]
+        # conversion to list to support choice() operation
+        nodes = list(nodes)
+        _n = random.choice(nodes)
 
-        for _n in nodes:
-            if node_idx_map.inverse[_n] != _start_state and\
-                    self.game.get_state_w_attribute(node_idx_map.inverse[_n], "player") != "adam":
-                return node_idx_map.inverse[_n], _n
+        # if the list contains only two nodes, a starting node and a human node then this while loop will cause an
+        # infinite loop
+        if not(len(nodes) == 2 and _start_state in nodes):
+            while _n == _start_state or\
+                    self.game.get_state_w_attribute(_n, "player") == "adam":
+                _n = random.choice(nodes)
+
+            return _n
+
         """
         if you have iterated through all nodes and haven't returned anything, means all the nodes in the scc belong to
         scc, which is not a valid thing to happen. Throw an error in this case. Else if we enter the edge case of the
@@ -207,7 +333,7 @@ class CumulativePayoff:
         # sanity check for all nodes != adam states
         _all_adam_nodes = True
         for _n in nodes:
-            if self.game.get_state_w_attribute(node_idx_map.inverse[_n], "player") != "adam":
+            if self.game.get_state_w_attribute(_n, "player") != "adam":
                 _all_adam_nodes = False
 
         if _all_adam_nodes:
@@ -217,14 +343,14 @@ class CumulativePayoff:
 
         # return the initial node after sanity checking
         for _n in nodes:
-            if self.game.get_state_w_attribute(node_idx_map.inverse[_n], "player") != "adam":
-                assert node_idx_map.inverse[_n] == _start_state, \
-                    f"Entered the edge case without the start state. The current node is {node_idx_map}"
+            if self.game.get_state_w_attribute(_n, "player") != "adam":
+                assert _n == _start_state, \
+                    f"Entered the edge case without the start state. The current node is {_n}"
 
-                if len(list(self.game._graph.successors(node_idx_map.inverse[_n]))) > 1:
-                    return node_idx_map.inverse[_n], _n
+                if len(list(self.game._graph.successors(_n))) > 1:
+                    return _n
 
-    def _remove_nodes_from(self, nodes: list):
+    def _remove_nodes_from(self, nodes: set, scc_graph: TwoPlayerGraph):
         """
         A helper method to remove the nodes from a given list and also remove the edges that transition to these nodes
         :param nodes:
@@ -234,24 +360,26 @@ class CumulativePayoff:
         _edges_to_prune = []
         # for each node get the predecessor and remove that particular edge
         for _n in nodes:
-            for _pre_n in self.game._graph.predecessors(_n):
+            for _pre_n in scc_graph._graph.predecessors(_n):
                 _edges_to_prune.append((_pre_n, _n))
 
-        self.game._graph.remove_edges_from(_edges_to_prune)
+        scc_graph._graph.remove_edges_from(_edges_to_prune)
+        self._game._graph.remove_edges_from(_edges_to_prune)
 
-        self.game._graph.remove_nodes_from(nodes)
+        scc_graph._graph.remove_nodes_from(nodes)
+        # self.game._graph.remove_nodes_from(nodes)
 
-    def _check_graph_is_total(self) -> list:
+    def _check_scc_is_total(self, nodes: set, scc_graph: TwoPlayerGraph) -> Set[tuple]:
         """
-        A method that returns an empty list if the graph is total i.e every node in the graph has an outgoing edge else
-        a list of nodes that do not have any outgoing edges
+        A method that returns an empty list if all the nodes of a SCC are total i.e every node in the SCC has an
+        outgoing edge else a list of nodes that do not have any outgoing edges is returned
         :return:
         """
-        _nodes_to_be_pruned = []
+        _nodes_to_be_pruned = set()
 
-        for _n in self.game._graph.nodes():
-            if len(list(self.game._graph.successors(_n))) == 0:
-                _nodes_to_be_pruned.append(_n)
+        for _n in nodes:
+            if len(list(scc_graph._graph.successors(_n))) == 0:
+                _nodes_to_be_pruned.add(_n)
 
         return _nodes_to_be_pruned
 

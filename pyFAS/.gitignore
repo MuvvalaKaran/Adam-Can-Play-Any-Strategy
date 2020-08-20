@@ -1,0 +1,5 @@
+# ignore pycharm ide files
+.idea/
+
+# ignore cache files
+__pycache__/

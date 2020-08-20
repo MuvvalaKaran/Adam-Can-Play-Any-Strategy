@@ -1,0 +1,3 @@
+[submodule "pyFAS"]
+	path = pyFAS
+	url = git@github.com:MuvvalaKaran/pyFAS.git

@@ -1,13 +1,13 @@
-from .base import Graph
-from .dfa import DFAGraph, DFABuilder
-from .two_player_graph import TwoPlayerGraph, TwoPlayerGraphBuilder
-from .gmin import GMinGraph, GMinBuilder
-from .gmax import GMaxGraph, GMaxBuilder
-from .trans_sys import FiniteTransSys, TransitionSystemBuilder
-from .product import ProductAutomaton, ProductBuilder
-from .minigrid import MiniGrid, MiniGridBuilder
+from src.graph.base import Graph
+from src.graph.dfa import DFAGraph, DFABuilder
+from src.graph.two_player_graph import TwoPlayerGraph, TwoPlayerGraphBuilder
+from src.graph.gmin import GMinGraph, GMinBuilder
+from src.graph.gmax import GMaxGraph, GMaxBuilder
+from src.graph.trans_sys import FiniteTransSys, TransitionSystemBuilder
+from src.graph.product import ProductAutomaton, ProductBuilder
+from src.graph.minigrid import MiniGrid, MiniGridBuilder
 
-from .factory import GraphCollection
+from src.graph.factory import GraphCollection
 
 graph_factory = GraphCollection()
 graph_factory.register_builder('TS', TransitionSystemBuilder())

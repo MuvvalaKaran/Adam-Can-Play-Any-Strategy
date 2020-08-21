@@ -1,1 +1,1 @@
-from .mpg_toolbox import MpgToolBox
+from src.mpg_tool.mpg_toolbox import MpgToolBox

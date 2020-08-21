@@ -1,6 +1,6 @@
 # import local packages
 from src.factory.builder import Builder
-from .base import Payoff
+from src.payoff.base import Payoff
 from src.factory.object_factory import ObjectFactory
 
 

@@ -1,8 +1,8 @@
-from .factory import PayoffCollection
-from .base import Payoff
-from .infinte_payoff import InfinitePayoff, InfinitePayoffBuilder
-from .finite_payoff import FinitePayoff, FinitePayoffBuilder
-from .cumulative_payoff import CumulativePayoff, CumulativePayoffBuilder
+from src.payoff.factory import PayoffCollection
+from src.payoff.base import Payoff
+from src.payoff.infinte_payoff import InfinitePayoff, InfinitePayoffBuilder
+from src.payoff.finite_payoff import FinitePayoff, FinitePayoffBuilder
+from src.payoff.cumulative_payoff import CumulativePayoff, CumulativePayoffBuilder
 
 payoff_factory = PayoffCollection()
 payoff_factory.register_builder("sup", InfinitePayoffBuilder())

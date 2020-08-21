@@ -2,6 +2,7 @@ import warnings
 import sys
 import copy
 import random
+import networkx as nx
 
 from typing import Optional, Union, Dict, Tuple, List, Set
 from bidict import bidict
@@ -11,6 +12,11 @@ from src.graph import graph_factory
 from src.graph import TwoPlayerGraph
 from src.factory.builder import Builder
 from src.mpg_tool import MpgToolBox
+
+# import pyFAS solvers
+from pyFAS.solvers import solver_factory
+
+from helper_methods import deprecated
 
 
 class CumulativePayoff:
@@ -104,11 +110,161 @@ class CumulativePayoff:
         first node. We then look at its neighbours and choose the neighbouring node that also belongs to the same
         scc(there should be atleast one such ngh node) and remove that edge.
         """
-        self._check_scc_condition(self.game, iter_var=0, nodes_pruned=[], debug=True)
+        # self._check_scc_condition(self.game, iter_var=0, nodes_pruned=[], debug=True)
+
+        """
+        A better approach : Compute SCC of the whole game ONCE - get all the SCCs with cardinality > 1. For each of
+        these SCC compute the FAS and remove those edges to make acyclic while making sure that those nodes remain
+        intact.
+        
+        """
+        _local_graphs = self._get_scc()
+
+        for _graph in _local_graphs:
+            # curate each one of them until no cycle remains
+            self._compute_fas(_graph)
 
         if debug:
             # mpg_tool_handle.compute_SCC(go_fast=True, debug=True)
             print("Yay!")
+
+    def _get_scc(self) -> List:
+        # compute the scc and return the scc graph itself
+        mpg_instance = MpgToolBox(self.game, "scc_graph")
+        _scc_dict = mpg_instance.compute_SCC(go_fast=True, debug=False)
+
+        _sub_scc_graphs = []
+
+        for scc_id, scc_nodes in _scc_dict.items():
+            if len(_scc_dict[scc_id]) > 1:
+                _sub_scc_graph = self._const_scc_graph(scc_nodes, self.game)
+                _sub_scc_graphs.append(_sub_scc_graph)
+
+        return _sub_scc_graphs
+
+    @deprecated
+    def _convert_weights_to_positive_costs(self, plot: bool = False):
+        """
+        A helper method that converts the -ve weight that represent cost to positive edge weights for a given game.
+        :return:
+        """
+
+        for _e in self.game._graph.edges.data("weight"):
+            _u = _e[0]
+            _v = _e[1]
+
+            _curr_weight = _e[2]
+            if _curr_weight < 0:
+                _new_weight: Union[int, float] = -1 * _curr_weight
+            else:
+                _new_weight: Union[int, float] = _curr_weight
+
+            self.game._graph[_u][_v][0]["weight"] = _new_weight + 1
+
+        if plot:
+            self.game.plot_graph()
+
+    @deprecated
+    def _compute_edmond_algo(self):
+        #convert all edges weight to postive in the game
+        self._convert_weights_to_positive_costs()
+
+        # remove the self loops at the absorbing states and add the transition to its predecessor.
+        _trap_states = self.game.get_trap_states()
+        _accpeting_states = self.game.get_accepting_states()
+
+        _abs_states = _accpeting_states + _trap_states
+
+        _exp_rm = []
+        _exp_add = []
+        for _s in _abs_states:
+            # remove the self loop
+            _exp_rm.append((_s, _s))
+
+            for _pre_n in self.game._graph.predecessors(_s):
+                if _pre_n != _s:
+                    _exp_add.append((_s, _pre_n))
+
+        self.game._graph.remove_edges_from(_exp_rm)
+
+        for _e in _exp_add:
+            self.game.add_edge(_e[0], _e[1], weight=1)
+
+
+        new_graph = nx.algorithms.tree.minimum_spanning_tree(self.game._graph)
+        print("Hmm")
+
+    def _compute_fas(self, graph: TwoPlayerGraph):
+
+        _converged = False
+
+        # remove the self transition of absorbing states
+        _trap_states = self.game.get_trap_states()
+        _accpeting_states = self.game.get_accepting_states()
+
+        _abs_states = _accpeting_states + _trap_states
+
+        _exp_rm = []
+        for _s in _abs_states:
+            # remove the self loop
+            _exp_rm.append((_s, _s))
+
+        self.game._graph.remove_edges_from(_exp_rm)
+
+        while not _converged:
+            # get the solver
+            self.game.plot_graph()
+            _fas_solver = solver_factory.get("array_fas", graph=self.game._graph, curate_graph=True)
+            _fas_solver.solve(debug=True)
+            _fvs_set = _fas_solver.get_fvs_set()
+            _fas_set = _fas_solver.get_fas_set()
+
+            # now let remove en edge from each vertex in the local graph and check if the scc is acylic
+            if self._remove_scc_edges(_fas_set, graph):
+                _converged = True
+                self.game.plot_graph()
+
+
+    def _remove_scc_edges(self, fas_set, graph: TwoPlayerGraph):
+        # if fas originate from human node then we remove the corresponding sys to human edge else we remove the edge
+
+        _edges_to_be_pruned = []
+
+        for _e in fas_set:
+            _u = _e[0]
+            _v = _e[1]
+
+            if self.game.get_state_w_attribute(_u, "player") == "adam":
+                _sys_node = [_pre_u for _pre_u in self.game._graph.predecessors(_u)]
+                assert len(_sys_node) == 1, "Looks like there are multiple sys nodes transiting to a human node!"
+                _sys_node = _sys_node[0]
+                _edges_to_be_pruned.append((_sys_node, _u))
+
+            elif self.game.get_state_w_attribute(_u, "player") == "eve":
+                _edges_to_be_pruned.append((_u, _v))
+
+            else:
+                warnings.warn(f"State {_u} does not have any player associated with it.")
+                sys.exit(-1)
+
+        for edge in _edges_to_be_pruned:
+            _u = edge[0]
+            _v = edge[1]
+
+            if len(list(self.game._graph.successors(_u))) == 1:
+                continue
+            elif len(list(self.game._graph.successors(_u))) == 0:
+                raise Exception(f"Looks like we trimmed out node {_u}. The org graph should be intact")
+            else:
+                self.game._graph.remove_edge(_u, _v)
+
+            # graph._graph.remove_edges_from(_edges_to_be_pruned)
+            if nx.is_directed_acyclic_graph(self.game._graph):
+                print("GOT A DAG, FUCK YEAH!")
+                return True
+
+        return False
+
 
     def compute_cVal(self):
         # once we are done with curating the graph, we run the cVal computation

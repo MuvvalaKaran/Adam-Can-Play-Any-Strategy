@@ -199,7 +199,7 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        str_dict = self.read_reg_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
+        str_dict, final_reg_value = self.read_reg_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
 
         return str_dict
 
@@ -306,8 +306,12 @@ class MpgToolBox:
         for _n in _g_b_init_nodes:
             print(f"Reg value from node {_n} is: {-1 * reg_dict[str(_node_index_map[_n])]}")
 
+        _next_node_from_v1: tuple = str_dict["v1"]
+        _next_node_hash_value: str = str(self.node_index_map[_next_node_from_v1])
+        final_reg_val: float = reg_dict[_next_node_hash_value]
+
         if debug:
             for curr_n, next_n in str_dict.items():
                 print(f"The current node is {curr_n} and the strategy is {next_n}")
 
-        return str_dict
+        return str_dict, final_reg_val

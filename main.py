@@ -25,6 +25,7 @@ from src.graph import TwoPlayerGraph
 from src.strategy_synthesis import RegMinStrSyn
 from src.strategy_synthesis import ReachabilitySolver
 from src.strategy_synthesis import IrosStrSolver
+from src.strategy_synthesis import ValueIteration
 
 from src.mpg_tool import MpgToolBox
 
@@ -138,7 +139,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_16.value
-        ENV_ID = MiniGridLavaEnv.env_7.value
+        ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -181,7 +182,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="config/automaton",
                                       save_flag=True,
-                                      sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
+                                      sc_ltl="!(lava_red_open) U (water_blue_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -406,14 +407,14 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
     mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
 
-    reg_dict = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
+    reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
     # g_hat.plot_graph()
     org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
 
     # map back str to minigrid env
     if mini_grid_instance is not None:
         controls = reg_syn_handle.get_controls_from_str_minigrid(org_str, epsilon=epsilon)
-        mini_grid_instance.execute_str(_controls=controls)
+        mini_grid_instance.execute_str(_controls=(reg_val, controls))
     # else:
     # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
 
@@ -439,6 +440,12 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
     if print_str:
         iros_solver.print_map_dict()
 
+
+def test_cmr_game(trans_sys: TwoPlayerGraph):
+    mcr_solver = ValueIteration(trans_sys)
+    mcr_solver.solve(debug=False, plot=True)
+    val_dict = mcr_solver.state_value_dict
+    print("Debugging")
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                         mini_grid_instance: Optional[MinigridGraph] = None,
@@ -483,7 +490,8 @@ if __name__ == "__main__":
     franka_abs = False
 
     # solver to call
-    reg_synthesis = True
+    mcr_game = True
+    reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
     miniGrid_instance = None
@@ -546,6 +554,8 @@ if __name__ == "__main__":
                                     print_str=False,
                                     epsilon=EPSILON)
 
+    elif mcr_game:
+        test_cmr_game(trans_sys)
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

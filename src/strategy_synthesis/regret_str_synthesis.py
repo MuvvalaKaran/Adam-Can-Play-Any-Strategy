@@ -18,6 +18,10 @@ from src.graph import ProductAutomaton
 from src.payoff import Payoff
 from src.mpg_tool import MpgToolBox
 
+
+# import local value iteration solver
+from .value_iteration import ValueIteration
+
 # needed for multi-threading w' computation
 NUM_CORES = multiprocessing.cpu_count()
 
@@ -52,37 +56,46 @@ class RegretMinimizationStrategySynthesis:
         """
 
         print("*****************Constructing W_prime finite*****************")
-        coop_dict = self._compute_cval_finite(multi_thread=multi_thread)
+
+        mcr_solver = ValueIteration(self.graph, competitve=False)
+        mcr_solver.solve(debug=False, plot=False)
+        INT_MAX_VAL = 2147483647
+        # as the edge weight in the value iteration are all positive, we need to manually add negative weigh to them
+        val_dict = mcr_solver.state_value_dict
+
+        # also the MAX value used in the ValueIteration algorithm is a finite value. So we will replace them with -inf
+        for _s, _s_val in val_dict.items():
+            _new_cost = _s_val
+            if _s_val > 0:
+                _new_cost = -1 * _s_val
+
+                if _new_cost == -1 * INT_MAX_VAL:
+                    _new_cost = -1 * math.inf
+
+            val_dict[_s] = _new_cost
 
         w_prime: Dict[Tuple: float] = {}
 
         for edge in self.graph._graph.edges():
-
+            _u = edge[0]
+            # _v = edge[1]
             # if the node belongs to adam, then the corresponding edge is assigned -inf
-            if self.graph._graph.nodes(data='player')[edge[0]] == 'adam':
+            if self.graph._graph.nodes(data='player')[_u] == 'adam':
                 w_prime.update({edge: -1 * math.inf})
 
             else:
-                # a list to save all the alternate strategy cVals from a node and then selecting
-                # the max of it
-                tmp_cvals = []
-                out_going_edge = set(self.graph._graph.out_edges(edge[0])) - set([edge])
-                for alt_e in out_going_edge:
-                    # get the edge weight associated with this edge
-                    curr_w = self.graph.get_edge_weight(alt_e[0], alt_e[1])
+                _state_cvals = []
+                out_going_edges = set(self.graph._graph.out_edges(_u)) - {edge}
 
-                    # if the coop_dict == inf or -inf then we don't care
-                    if (coop_dict[alt_e[1]][0] == -1*math.inf) or (coop_dict[alt_e[1]][0] == math.inf):
-                        tmp_cvals.append(coop_dict[alt_e[1]][0])
-                    # if coop_dict is a finite value, then check if the current edge was already encountered or not
-                    else:
-                        if self.__check_edge_in_cval_play(alt_e, coop_dict[edge[1]][1]):
-                            tmp_cvals.append(coop_dict[alt_e[1]][0])
-                        else:
-                            tmp_cvals.append(coop_dict[alt_e[1]][0] + curr_w)
+                for _alt_e in out_going_edges:
+                    _v_prime = _alt_e[1]
+                    _curr_w = self.graph.get_edge_weight(_u, _v_prime)
+                    _state_cost = val_dict[_v_prime]
+                    _total_weight = _curr_w + _state_cost
+                    _state_cvals.append(_total_weight)
 
-                if len(tmp_cvals) != 0:
-                    w_prime.update({edge: max(tmp_cvals)})
+                if len(_state_cvals) != 0:
+                    w_prime.update({edge: max(_state_cvals)})
                 else:
                     w_prime.update({edge: -1 * math.inf})
 
@@ -295,8 +308,8 @@ class RegretMinimizationStrategySynthesis:
         g_hat.add_initial_state('v0')
 
         # add the edges with the weights
-        g_hat.add_weighted_edges_from([('v0', 'v0', '0'),
-                                       ('v0', 'v1', '0'),
+        g_hat.add_weighted_edges_from([('v0', 'v0', 0),
+                                       ('v0', 'v1', 0),
                                        ('vT', 'vT', -2 * abs(self.graph.get_max_weight()) - 1)])
         return g_hat
 
@@ -319,8 +332,8 @@ class RegretMinimizationStrategySynthesis:
         g_hat.add_initial_state('v0')
 
         # add the edges with the weights
-        g_hat.add_weighted_edges_from([('v0', 'v0', '0'),
-                                       ('v0', 'v1', '0'),
+        g_hat.add_weighted_edges_from([('v0', 'v0', 0),
+                                       ('v0', 'v1', 0),
                                        ('vT', 'vT', -1 * math.inf)])
         return g_hat
 
@@ -328,7 +341,7 @@ class RegretMinimizationStrategySynthesis:
                         w_prime: Dict[Tuple, float],
                         acc_min_edge_weight: bool = False,
                         acc_max_edge_weight: bool = False,
-                        finite: bool = False) -> TwoPlayerGraph:
+                        finite: bool = False, debug: bool = False, plot: bool = False) -> TwoPlayerGraph:
         print("*****************Constructing G_hat*****************")
         # construct new graph according to the pseudocode 3
 
@@ -396,7 +409,39 @@ class RegretMinimizationStrategySynthesis:
                 # add transition to the terminal node
                 G_hat.add_weighted_edges_from([(node, 'vT', 0)])
 
+        if debug:
+            print(f"# of G_hat nodes: {len(list(G_hat._graph.nodes()))}")
+            print(f"# of G_hat edges: {len(list(G_hat._graph.edges()))}")
+
+        if plot:
+            G_hat.plot_graph()
+
         return G_hat
+
+    def compute_cumulative_reg(self, g_hat: TwoPlayerGraph):
+        mcr_solver = ValueIteration(g_hat, competitve=True)
+        mcr_solver.solve(debug=True, plot=False)
+
+        value_dict = mcr_solver.state_value_dict
+        INT_MAX_VAL = 2147483647
+
+        # if v1 has a value other than INT_MAX_VAL then we have a winning strategy that guarantees task completion
+        # and the value will be the state cost associated with v1 or the next init state (the edge between v1 and g_b_init_node is 0).
+        # if v1 is = MAX_INT_VAL then it means that we cannot guarantee winning. In this case, lets enter the g_b_max
+        # game venue and compute a str according to the Min cost reachability theory
+
+        # reg in this case can be defined as 0 if v1 is finite (i.e have a winning strategy) else, we roll out the game
+        # in g_b_max and see where eventually end up. The val of that state will be our regret.
+        if value_dict["v1"] != INT_MAX_VAL:
+            print("There exists a winning strategy. The Reg is 0")
+        else:
+            print("There does not exists a winning startegy. There exists a finite Reg value")
+
+        g_b_init_nodes = [i for i in g_hat._graph.successors('v1')]
+        for _n in g_b_init_nodes:
+            pass
+
+        print("Debugging")
 
     def _w_hat_b(self,
                  org_edge: Tuple[Tuple[str, str], Tuple[str, str]],
@@ -408,7 +453,7 @@ class RegretMinimizationStrategySynthesis:
         :return:
         """
         try:
-            return self.graph._graph[org_edge[0]][org_edge[1]][0].get('weight') - b_value
+            return self.graph._graph[org_edge[0]][org_edge[1]][0].get('weight') + b_value
         except KeyError:
             print("The code should have never thrown this error. The error strongly indicates that the edges of the"
                   "original graph has been modified and the edge {} does not exist".format(org_edge))

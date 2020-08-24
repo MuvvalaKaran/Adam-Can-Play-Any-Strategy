@@ -138,7 +138,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_16.value
+        # ENV_ID = MiniGridEmptyEnv.env_5.value
         ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
@@ -169,7 +169,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
 
         self._trans_sys = graph_factory.get('MiniGrid',
                                             raw_minigrid_ts=raw_trans_sys,
-                                            get_iros_ts= self.get_iros_ts,
+                                            get_iros_ts=self.get_iros_ts,
                                             graph_name=raw_trans_sys._graph_name,
                                             config_yaml=raw_trans_sys._config_yaml,
                                             human_intervention=self.human_intervention,
@@ -404,7 +404,11 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     else:
         w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
 
-    g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite)
+    g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite, debug=True, plot=False)
+
+    if finite:
+        reg_syn_handle.compute_cumulative_reg(g_hat)
+        sys.exit(-1)
     mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
 
     reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
@@ -442,9 +446,11 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
 
 
 def test_cmr_game(trans_sys: TwoPlayerGraph):
-    mcr_solver = ValueIteration(trans_sys)
-    mcr_solver.solve(debug=False, plot=True)
-    val_dict = mcr_solver.state_value_dict
+    mcr_solver = ValueIteration(trans_sys, competitve=True)
+    mcr_solver.solve(debug=True, plot=False)
+    # val_dict = mcr_solver.state_value_dict
+    #
+    str_dict = mcr_solver.compute_strategies()
     print("Debugging")
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
@@ -479,7 +485,7 @@ if __name__ == "__main__":
     IROS_FLAG = False
 
     # some constants related to computation
-    finite = False
+    finite = True
     go_fast = True
 
     # some constants that allow for appr _instance creations

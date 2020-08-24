@@ -15,12 +15,12 @@ from src.graph import TwoPlayerGraph
 class ReachabilityGame:
     """
     A class that implements a Reachability algorithm to compute a set of winning region and the
-    corresponding winning strategy for both the players in a Game G = (S, E). A winning strategy induces a play for the system player that
-    satisfies the winning condition i.e or reach the accepting states on a given game.
+    corresponding winning strategy for both the players in a Game G = (S, E). A winning strategy induces a play for the
+    system player that satisfies the winning condition i.e to reach the accepting states on a given game.
 
     S : Set of all states in a given Game S = (S1 U S2) and (S1 ∩ S2 = nullset)
     W1 : Is the winning region for the system player from which it can force a visit to the accepting states
-    W2 : Set compliment of W1 (S\W1) is the winning region for the evn player
+    W2 : Set compliment of W1 (S\W1) is the winning region for the env player
 
     For a Reachability game the goal in terms of LTL could be written as : F(Accn States) i.e Eventually
     reach the accepting region. A strategy for the sys ensures that it can force a visit to the accn states from W1
@@ -28,6 +28,10 @@ class ReachabilityGame:
 
     Graph : The graph G is a two player game played between the system and the env player assuming env to be fully
     adversarial. G should be total and every node in G should be assigned a player
+
+    The code does a sanity check to ensure that every state has an outgoing edge and has a player assigned to it. A
+    state that does not have an edge is added a self-loop with weight 0 and a state that does not have a player
+    assigned is assigned as sys's (eve) state.
     """
     def __init__(self, game: TwoPlayerGraph, debug: bool = False):
         self._game = game

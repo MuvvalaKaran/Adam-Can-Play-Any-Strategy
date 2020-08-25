@@ -14,6 +14,7 @@ from bidict import bidict
 from typing import Optional, Union, Dict, List
 
 # import local packages
+from src.graph import graph_factory
 from src.graph import TwoPlayerGraph
 # from src.strategy_synthesis import ReachabilitySolver
 from .adversarial_game import ReachabilityGame as ReachabilitySolver
@@ -145,7 +146,7 @@ class ValueIteration:
         self._num_of_nodes = len(list(self.org_graph._graph.nodes))
         self._W = abs(self.org_graph.get_max_weight())
         self._node_int_map = bidict({state: index for index, state in enumerate(self.org_graph._graph.nodes)})
-        self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=140, dtype=np.int32)
+        self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
 
         # if self.org_graph._graph_name != 'G_hat':
         self._convert_weights_to_positive_costs(plot=False, debug=False)
@@ -201,6 +202,17 @@ class ValueIteration:
                 if _pre_s != _s:
                     self.org_graph._graph[_pre_s][_s][0]['weight'] = 0
 
+    def _add_trap_state_player(self):
+        """
+        A metho to add a player to the trap state, if any
+        :return:
+        """
+
+        _trap_states = self.org_graph.get_trap_states()
+
+        for _n in _trap_states:
+            self.org_graph.add_state_attribute(_n, "player", "eve")
+
     def solve(self, debug: bool = False, plot: bool = False):
         """
         A method tHat implements Algorithm 1 from the paper. The operation performed at each step can be represented by
@@ -221,10 +233,11 @@ class ValueIteration:
         _accp_state = self.org_graph.get_accepting_states()[0]
         _init_node = self.org_graph.get_initial_states()[0][0]
         _init_int_node = self.node_int_map[_init_node]
-        _trap_state = self.org_graph.get_trap_states()[0]
+        # _trap_state = self.org_graph.get_trap_states()[0]
         # _trap_int_node = self.node_int_map[_trap_state]
 
-        self.org_graph.add_state_attribute(_trap_state, "player", "eve")
+        # self.org_graph.add_state_attribute(_trap_state, "player", "eve")
+        self._add_trap_state_player()
         self._add_edges_to_abs_states_as_zero()
         # assign edges that transit to the absorbing states to be zero.
         # _edges = []
@@ -234,7 +247,7 @@ class ValueIteration:
         #             self.org_graph._graph[_pre_n][_n][0]['weight'] = 0
 
         _val_vector = self.val_vector
-        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=140, dtype=np.int32)
+        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
 
         iter_var = 0
 
@@ -281,12 +294,39 @@ class ValueIteration:
         if debug:
             print(f"Number of iteration to converge: {iter_var}")
             print(f"Init state value: {self.val_vector[_init_int_node][iter_var]}")
+            self._sanity_check()
             # self.print_state_values()
+
+    def _sanity_check(self):
+        """
+        A nice charateristic of the algorithm is that the vertices from which you cannot reach the target set (assuming
+        human to be purely adversarial) is exactly the region W2(the trap region) from the adversarial game solver. So
+        this method checks if this property holds after the state values have computed
+        :return:
+        """
+        adv_solver = ReachabilitySolver(self.org_graph)
+        adv_solver.reachability_solver()
+        _trap_region = set(adv_solver.env_winning_region)
+
+        _num_of_states, _ = self.val_vector.shape
+
+        _cumu_trap_region = set()
+        for _i in range(_num_of_states):
+            _node = self.node_int_map.inverse[_i]
+            # if this state has INT_MAX_VAL as it final value then check it belong to the trap region
+            if self.val_vector[_i][-1] == INT_MAX_VAL:
+                _cumu_trap_region.add(_node)
+
+        if _cumu_trap_region == _trap_region:
+            print("The two sets are equal")
+
+        # we know that trap region is correct so
+        _missing_nodes = _trap_region.difference(_cumu_trap_region)
 
     def _compute_convergence_idx(self) -> Dict[int, int]:
         """
-        This method is used to determin when each state in the graph converged to their values. A state value is
-        converged if x_{k+1} = x_k where k is the kth ieration and x is a state in the graph
+        This method is used to determine when each state in the graph converged to their values. A state value is
+        converged if x_{k} != x_{k-1} where k is the kth iteration and x is a state in the graph
         :return:
         """
         _convergence_dict: dict = {}
@@ -296,19 +336,29 @@ class ValueIteration:
 
         _num_of_states, _num_of_iter = self.val_vector.shape
 
-        for _state in range(_num_of_states):
-            # fails safe mechanism for states that retain their initial value of max positive integer. This means that
-            # from this state you are bound to end up in the trap state. For such states, we add convergence value to be
-            # the max value of iteration - kinda like saying never converged
-            if self.val_vector[_state][0] == self.val_vector[_state][-1]:
-                _convergence_dict.update({_state: _num_of_iter})
-                continue
+        # for _state in range(_num_of_states):
+        #     # fails safe mechanism for states that retain their initial value of max positive integer. This means that
+        #     # from this state you are bound to end up in the trap state. For such states, we add convergence value to be
+        #     # the max value of iteration - kinda like saying never converged
+        #     if self.val_vector[_state][0] == self.val_vector[_state][-1]:
+        #         _convergence_dict.update({_state: _num_of_iter})
+        #         continue
+        #
+        #     for _itr in range(_num_of_iter - 1):
+        #         if self.val_vector[_state][_itr] != _init_val:
+        #             if self.val_vector[_state][_itr + 1] == self.val_vector[_state][_itr]:
+        #                 _convergence_dict.update({_state: _itr})
+        #                 break
 
-            for _itr in range(_num_of_iter - 1):
-                if self.val_vector[_state][_itr] != _init_val:
-                    if self.val_vector[_state][_itr + 1] == self.val_vector[_state][_itr]:
-                        _convergence_dict.update({_state: _itr})
-                        break
+        for _state in range(_num_of_states):
+            _converge_at_first_iter = True
+            for _itr in range(_num_of_iter - 1, 0, -1):
+                if self.val_vector[_state][_itr] != self.val_vector[_state][_itr - 1]:
+                    _converge_at_first_iter = False
+                    _convergence_dict.update({_state: _itr})
+                    break
+            if _converge_at_first_iter:
+                _convergence_dict.update({_state: 0})
 
         return _convergence_dict
 
@@ -327,17 +377,222 @@ class ValueIteration:
         """
 
         # compute the list of states have transition to the trap state
-        _trap_state = self.org_graph.get_trap_states()[0]
+        _trap_state = self.org_graph.get_trap_states()
         # _pre_trap_states = []
         _pre_sys_trap_states = set()
-        for _pre_n in self.org_graph._graph.predecessors(_trap_state):
-            # _pre_trap_states.append(_pre_n)
-            # compute human states that have transition to this pre
-            if _pre_n != _trap_state:
-                for _pre_sys in self.org_graph._graph.predecessors(_pre_n):
-                    _pre_sys_trap_states.add(_pre_sys)
+        for _s in _trap_state:
+            for _pre_n in self.org_graph._graph.predecessors(_s):
+                # _pre_trap_states.append(_pre_n)
+                # compute human states that have transition to this pre
+                if _pre_n != _s:
+                    for _pre_sys in self.org_graph._graph.predecessors(_pre_n):
+                        _pre_sys_trap_states.add(_pre_sys)
 
         return _pre_sys_trap_states
+
+    def _build_trap_region_graph(self, trap_region: set, winning_region: set):
+        """
+        A method that build the trap region withtout the trap state and the sys state that leads to the trap state.
+
+        Also we add a sink/target state for every edge that leads to the winning region with a self loop zero.
+
+        Then we call the solve method to compute the values and compute the str on this graph. Note: all the nodes will
+        have finite value and thus a strategy associated with it.
+        :return:
+        """
+        _init_state = self.org_graph.get_initial_states()[0][0]
+        two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                             graph_name="two_player_graph",
+                                             config_yaml="config/two_player_graph",
+                                             save_flag=True,
+                                             pre_built=False,
+                                             from_file=False,
+                                             plot=False)
+
+        def _check_if_human_state_is_equ_to_sys_state(human_state: tuple, env_state: tuple):
+            """
+            A inline metho that true if h(2,1)(3,1) and env_state is (3,1),".. " else False.
+            This is used is trimming node in the trap region
+            :param human_state:
+            :param env_state:
+            :return:
+            """
+
+            if isinstance(human_state, str) or self.org_graph.get_state_w_attribute(human_state, "player") != "adam":
+                return False
+
+            if isinstance(human_state, tuple):
+                if f"({_pre_env[0][0].split('(')[2].split(')')[0]})" == str(env_state[0][0]):
+                    return True
+
+            return False
+
+
+        # exclude the trap state the pre sys states that lead to the trap state
+        # compute the list of states have transition to the trap state
+        _states_to_be_pruned = set()
+        _states_to_be_altered = set()
+
+        # compute the list of states have transition to the trap state
+        _trap_state = self.org_graph.get_trap_states()
+        # _pre_sys_trap_states = set()
+        for _s in _trap_state:
+            for _pre_n in self.org_graph._graph.predecessors(_s):
+                # compute human states that have transition to this pre
+                _states_to_be_pruned.add(_pre_n)
+                for _pre_env in self.org_graph._graph.predecessors(_pre_n):
+                    if _pre_env in trap_region:
+                        # also prune human node that org transit to the states in the prune list
+                        # e,g h(3,2)(3,1) where 3,1 is trap state
+                        if _check_if_human_state_is_equ_to_sys_state(_pre_env, _pre_n):
+                            _states_to_be_pruned.add(_pre_env)
+
+                        _states_to_be_altered.add(_pre_env)
+
+        # add a high weight from the sys nodes to the human nodes in_states_to_be_altered
+        # as these states go very close to the trap state
+        _states_to_be_altered = _states_to_be_altered - _states_to_be_pruned
+        _sys_node_edges_to_be_altered = set()
+        for _n in _states_to_be_altered:
+            for _pre_sys in self.org_graph._graph.predecessors(_n):
+                _sys_node_edges_to_be_altered.add((_pre_sys, _n))
+
+        trap_region = trap_region - _states_to_be_pruned
+
+        for _n in trap_region:
+            _player = self.org_graph.get_state_w_attribute(_n, "player")
+            two_player_graph.add_state(_n, player=_player)
+
+        two_player_graph.add_state("accept_all", player="eve")
+
+        for _n in two_player_graph._graph.nodes():
+            for _next_n in self.org_graph._graph.successors(_n):
+                if _next_n in trap_region:
+                    if (_n, _next_n) in _sys_node_edges_to_be_altered:
+                        _weight = 100
+                    else:
+                        _weight = self.org_graph.get_edge_weight(_n, _next_n)
+                    two_player_graph.add_edge(_n, _next_n, weight=_weight)
+
+        # for all the edges that transit to winning region add a sink/target state with a self-loop of zero there
+        trans_edges = self.__get_edges_from_trap_to_winning_region(trap_region, winning_region)
+
+        for _e in trans_edges:
+            _u = _e[0]
+            two_player_graph.add_edge(_u, "accept_all", weight=0)
+
+        two_player_graph._graph.add_edge("accept_all", "accept_all", weight=0)
+        two_player_graph.add_accepting_state("accept_all")
+        two_player_graph.add_initial_state(_init_state)
+
+        return two_player_graph
+
+    def _check_graph_is_total(self, graph: TwoPlayerGraph):
+        """
+        A method to check if the graph is total or not. If not then remove the node that don't have any out going edges.
+        We again look at the grap and check for total-ness. We repeat the process until we reach a fix point
+        :param graph:
+        :return:
+        """
+
+        _converged = True
+        _nodes_to_be_pruned = set()
+        for _n in graph._graph.nodes():
+            if len(list(graph._graph.successors(_n))) == 0:
+                _converged = False
+                _nodes_to_be_pruned.add(_n)
+
+        graph._graph.remove_nodes_from(_nodes_to_be_pruned)
+
+        if not _converged:
+            self._check_graph_is_total(graph)
+
+    def _get_trap_sys_nodes_str(self, trap_region: set, winning_region: set):
+        """
+        Given the trap region, compute the value of the game, and according compute the strategies
+        :return:
+        """
+
+        _trap_graph = self._build_trap_region_graph(trap_region, winning_region)
+        self._check_graph_is_total(_trap_graph)
+        solver = ValueIteration(_trap_graph, competitve=True)
+        solver.solve()
+        str_dict = solver.state_value_dict
+        solver.compute_strategies()
+
+    def __get_edges_from_trap_to_winning_region(self, trap_region: set, winning_region: set) -> set:
+        """
+        A method that returns the set of edges that transit from trap to winning region in a given game
+        :param trap_region:
+        :param winning_region:
+        :return:
+        """
+
+        # loop over every node in the trap region and check if any one of its edges transit to the winning region
+        _trans_edges = set()
+
+        for _n in trap_region:
+            for _edge in self.org_graph._graph.out_edges(_n):
+                _v = _edge[1]
+                if _v in winning_region:
+                    _trans_edges.add(_edge)
+                    # if self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                    #     _trap_str_dict.update({_n: _v})
+        return _trans_edges
+
+    # def _compute_strategy_for_sys_in_trap_region(self, trap_region: set, winning_region: set):
+    #     """
+    #     A method that compute the strategy for system nodes in the trap region.
+    #
+    #     1. Identify edges that transit from trap region to winning region. Back propagate these up until you reach the
+    #     start/initial state.
+    #
+    #     :param trap_region:
+    #     :param winning_region:
+    #     :return:
+    #     """
+    #     _init_state = self.org_graph.get_initial_states()[0][0]
+    #     _trap_str_dict = {}
+    #
+    #     # loop over every node in the trap region and check if any one of its edges transit to the winning region
+    #     _trans_edges = set()
+    #
+    #     for _n in trap_region:
+    #         for _edge in self.org_graph._graph.out_edges(_n):
+    #             _v = _edge[1]
+    #             if _v in winning_region:
+    #                 _trans_edges.add(_edge)
+    #                 if self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+    #                     _trap_str_dict.update({_n: _v})
+    #
+    #     for _e in _trans_edges:
+    #         _u = _e[0]
+    #
+    #         for _pre_u in self.org_graph._graph.predecessors(_u):
+    #             # if this is a human state then look at its pre sys nodes
+    #             # if this is a sys state then add this edge to the str dict
+    #             if self.org_graph.get_state_w_attribute(_pre_u, "player") == "eve":
+    #                 if _pre_u not in list(_trap_str_dict.keys()):
+    #                     _trap_str_dict.update({_pre_u: _u})
+    #                     break
+    #
+    #             elif self.org_graph.get_state_w_attribute(_pre_u, "player") == "adam":
+    #                 for _pre_sys_u in self.org_graph._graph.successors(_pre_u):
+    #                     if _pre_sys_u not in list(_trap_str_dict.keys()):
+    #                         _trap_str_dict.update({_pre_sys_u: _pre_u})
+    #                         break
+    #                 break
+    #
+    #             else:
+    #                 warnings.warn(f"State {_pre_u} does not have a valid player associated with it")
+    #                 sys.exit(-1)
+    #
+    #     # make sure every sys node in the trap region has a str
+    #     for _n in trap_region:
+    #         if self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+    #             # check if a str from this node has been computed or not.
+    #             if _n not in list(_trap_str_dict.keys()):
+    #                 print(f"{_n} does have a str yet")
 
     def compute_strategies(self, max_prefix_len: int = 3):
 
@@ -349,12 +604,17 @@ class ValueIteration:
         print("Computing Strategies for Eve and Adam")
         conv_dict: Dict[int, int] = self._compute_convergence_idx()
         _states_to_avoid = self.__compute_states_to_avoid()
+        # _states_to_avoid = set()
 
         # compute the set of states that belong to the attractor region
         adv_solver = ReachabilitySolver(self.org_graph)
         adv_solver.reachability_solver()
         attr_region = adv_solver.sys_winning_region
-        sys_str = adv_solver.sys_str
+        trap_region = set(adv_solver.env_winning_region)
+        # sys_str = adv_solver.sys_str
+
+        if len(trap_region) != 0:
+            self._get_trap_sys_nodes_str(trap_region, attr_region)
 
         for _n in self.org_graph._graph.nodes():
             _int_node = self.node_int_map[_n]
@@ -449,7 +709,7 @@ class ValueIteration:
             _node_int = self.node_int_map[_next_n]
             val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int]
 
-            if pre_vec[_node_int] != INT_MAX_VAL:
+            if pre_vec[_node_int] < 140:
                 _all_max_vals = False
 
             if _next_n not in states_to_avoid:
@@ -460,10 +720,11 @@ class ValueIteration:
         # if all the values in the list are MAX_INT_VAL then pick an edge randomly. Also make sure that edge does not
         # lead to a state that only has an edge to the trap state
         if _all_max_vals and not _all_states_lead_to_trap:
-            _node = random.choice(_succ_vals)[0]
-            while _node in states_to_avoid:
-                _node = random.choice(_succ_vals)[0]
-            return _node
+            # _node = random.choice(_succ_vals)[0]
+            # while _node in states_to_avoid:
+            #     _node = random.choice(_succ_vals)[0]
+            return max(_succ_vals, key=operator.itemgetter(1))[0]
+            # return _node
 
         return min(_succ_vals, key=operator.itemgetter(1))[0]
 

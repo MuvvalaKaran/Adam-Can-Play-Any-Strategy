@@ -450,7 +450,7 @@ def test_cmr_game(trans_sys: TwoPlayerGraph):
     mcr_solver.solve(debug=True, plot=False)
     # val_dict = mcr_solver.state_value_dict
     #
-    str_dict = mcr_solver.compute_strategies()
+    str_dict = mcr_solver.compute_strategies(max_prefix_len=0)
     print("Debugging")
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
@@ -496,8 +496,8 @@ if __name__ == "__main__":
     franka_abs = False
 
     # solver to call
-    mcr_game = True
-    reg_synthesis = False
+    mcr_game = False
+    reg_synthesis = True
     adversarial_game = False
     iros_str_synthesis = False
     miniGrid_instance = None

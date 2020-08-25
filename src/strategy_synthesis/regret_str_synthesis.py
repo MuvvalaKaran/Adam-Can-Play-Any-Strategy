@@ -41,6 +41,15 @@ class RegretMinimizationStrategySynthesis:
                  payoff: Payoff) -> 'RegretMinimizationStrategySynthesis()':
         self.graph = graph
         self.payoff = payoff
+        self.b_val: Optional[set] = None
+
+    @property
+    def b_val(self):
+        return self._b_val
+
+    @b_val.setter
+    def b_val(self, value: set):
+        self._b_val = value
 
     def compute_W_prime_finite(self,  multi_thread: bool = False):
         """
@@ -99,6 +108,7 @@ class RegretMinimizationStrategySynthesis:
                 else:
                     w_prime.update({edge: -1 * math.inf})
 
+        self.b_val = set(w_prime.values())
         print(f"the value of b are {set(w_prime.values())}")
 
         return w_prime
@@ -196,6 +206,7 @@ class RegretMinimizationStrategySynthesis:
                 else:
                     w_prime.update({edge: -1 * math.inf})
 
+        self.b_val = set(w_prime.values())
         print(f"the values of b are {set(w_prime.values())}")
 
         return w_prime
@@ -418,10 +429,60 @@ class RegretMinimizationStrategySynthesis:
 
         return G_hat
 
+    def _extract_g_b_graph(self, b_val: int, g_hat: TwoPlayerGraph) -> 'TwoPlayerGraph()':
+        """
+        A method that extracts the g_b graph from g_hat graph given the b_val
+        :param b_val:
+        :return:
+        """
+
+        if not (isinstance(b_val, int) or isinstance(b_val, float)):
+            warnings.warn("Please make sure b_val is an int or float value")
+
+        if b_val not in self.b_val:
+            warnings.warn(f"Make sure you enter a valid b value."
+                          f"The set of valid b value is {[_b for _b in self.b_val]}")
+            sys.exit(-1)
+
+        # we use this special loop as the the g_b init node is removed as the init node during g_hat construction
+        for _n in g_hat._graph.successors("v1"):
+            if _n[1] == b_val:
+                _g_b_init_node = _n
+
+        _g_b_nodes = set()
+        for _n in g_hat._graph.nodes():
+            if isinstance(_n, tuple) and _n[1] == b_val:
+                if g_hat.get_state_w_attribute(_n, "accepting"):
+                    _g_b_accp_node = _n
+                _g_b_nodes.add(_n)
+
+        _g_b_graph = graph_factory.get("TwoPlayerGraph",
+                                       graph_name="g_b_graph",
+                                       config_yaml="config/g_b_graph",
+                                       save_flag=True,
+                                       pre_built=False,
+                                       from_file=False,
+                                       plot=False)
+
+        for _n in _g_b_nodes:
+            _player = g_hat.get_state_w_attribute(_n, "player")
+            _g_b_graph.add_state(_n, player=_player)
+
+        for _n in _g_b_graph._graph.nodes():
+            for _next_n in g_hat._graph.successors(_n):
+                if _next_n in _g_b_nodes:
+                    _weight = g_hat.get_edge_weight(_n, _next_n)
+                    _g_b_graph.add_edge(_n, _next_n, weight=_weight)
+
+        # add initial state and accepting state attribute
+        _g_b_graph.add_accepting_state(_g_b_accp_node)
+        _g_b_graph.add_initial_state(_g_b_init_node)
+
+        return _g_b_graph
+
     def compute_cumulative_reg(self, g_hat: TwoPlayerGraph):
         mcr_solver = ValueIteration(g_hat, competitve=True)
         mcr_solver.solve(debug=True, plot=False)
-
         value_dict = mcr_solver.state_value_dict
         INT_MAX_VAL = 2147483647
 
@@ -435,11 +496,14 @@ class RegretMinimizationStrategySynthesis:
         if value_dict["v1"] != INT_MAX_VAL:
             print("There exists a winning strategy. The Reg is 0")
         else:
-            print("There does not exists a winning startegy. There exists a finite Reg value")
+            print("There does not exists a winning strategy")
 
-        g_b_init_nodes = [i for i in g_hat._graph.successors('v1')]
-        for _n in g_b_init_nodes:
-            pass
+        b_max = max(self.b_val)
+        _g_b_graph = self._extract_g_b_graph(b_max, g_hat)
+
+        _solver = ValueIteration(_g_b_graph, competitve=True)
+        _solver.solve()
+        str_dict = _solver.compute_strategies(max_prefix_len=0)
 
         print("Debugging")
 

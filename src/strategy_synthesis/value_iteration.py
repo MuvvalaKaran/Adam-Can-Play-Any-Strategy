@@ -211,7 +211,7 @@ class ValueIteration:
         _trap_states = self.org_graph.get_trap_states()
 
         for _n in _trap_states:
-            self.org_graph.add_state_attribute(_n, "player", "eve")
+            self.org_graph.add_state_attribute(_n, "player", "adam")
 
     def solve(self, debug: bool = False, plot: bool = False):
         """
@@ -402,8 +402,8 @@ class ValueIteration:
         """
         _init_state = self.org_graph.get_initial_states()[0][0]
         two_player_graph = graph_factory.get("TwoPlayerGraph",
-                                             graph_name="two_player_graph",
-                                             config_yaml="config/two_player_graph",
+                                             graph_name="trap_region_graph",
+                                             config_yaml="config/trap_region_graph",
                                              save_flag=True,
                                              pre_built=False,
                                              from_file=False,
@@ -422,8 +422,15 @@ class ValueIteration:
                 return False
 
             if isinstance(human_state, tuple):
-                if f"({_pre_env[0][0].split('(')[2].split(')')[0]})" == str(env_state[0][0]):
-                    return True
+                _human_str = human_state[0]
+                if not isinstance(_human_str, str):
+                    _human_str = _human_str[0]
+                    if not isinstance(_human_str, str):
+                        _human_str = _human_str[0]
+
+                if _human_str[0] == 'h':
+                    if f"({_human_str.split('(')[2].split(')')[0]})" == str(env_state[0][0]):
+                        return True
 
             return False
 
@@ -463,7 +470,9 @@ class ValueIteration:
             _player = self.org_graph.get_state_w_attribute(_n, "player")
             two_player_graph.add_state(_n, player=_player)
 
-        two_player_graph.add_state("accept_all", player="eve")
+        _accp_states = self.org_graph.get_accepting_states()
+        for _accp_n in _accp_states:
+            two_player_graph.add_state(_accp_n, player="eve")
 
         for _n in two_player_graph._graph.nodes():
             for _next_n in self.org_graph._graph.successors(_n):
@@ -485,7 +494,7 @@ class ValueIteration:
         two_player_graph.add_accepting_state("accept_all")
         two_player_graph.add_initial_state(_init_state)
 
-        return two_player_graph
+        return two_player_graph, trap_region
 
     def _check_graph_is_total(self, graph: TwoPlayerGraph):
         """
@@ -513,12 +522,19 @@ class ValueIteration:
         :return:
         """
 
-        _trap_graph = self._build_trap_region_graph(trap_region, winning_region)
+        _trap_graph, trap_region = self._build_trap_region_graph(trap_region, winning_region)
         self._check_graph_is_total(_trap_graph)
         solver = ValueIteration(_trap_graph, competitve=True)
         solver.solve()
-        str_dict = solver.state_value_dict
-        solver.compute_strategies()
+        # str_dict = solver.state_value_dict
+        str_dict = solver.compute_strategies()
+
+        # we trim out all the str that have k >= 1 as we only want memoryless strategy
+        for _s, val in str_dict.items():
+            if isinstance(val, dict):
+                str_dict[_s] = val[0]
+
+        return str_dict, trap_region
 
     def __get_edges_from_trap_to_winning_region(self, trap_region: set, winning_region: set) -> set:
         """
@@ -536,63 +552,8 @@ class ValueIteration:
                 _v = _edge[1]
                 if _v in winning_region:
                     _trans_edges.add(_edge)
-                    # if self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-                    #     _trap_str_dict.update({_n: _v})
-        return _trans_edges
 
-    # def _compute_strategy_for_sys_in_trap_region(self, trap_region: set, winning_region: set):
-    #     """
-    #     A method that compute the strategy for system nodes in the trap region.
-    #
-    #     1. Identify edges that transit from trap region to winning region. Back propagate these up until you reach the
-    #     start/initial state.
-    #
-    #     :param trap_region:
-    #     :param winning_region:
-    #     :return:
-    #     """
-    #     _init_state = self.org_graph.get_initial_states()[0][0]
-    #     _trap_str_dict = {}
-    #
-    #     # loop over every node in the trap region and check if any one of its edges transit to the winning region
-    #     _trans_edges = set()
-    #
-    #     for _n in trap_region:
-    #         for _edge in self.org_graph._graph.out_edges(_n):
-    #             _v = _edge[1]
-    #             if _v in winning_region:
-    #                 _trans_edges.add(_edge)
-    #                 if self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-    #                     _trap_str_dict.update({_n: _v})
-    #
-    #     for _e in _trans_edges:
-    #         _u = _e[0]
-    #
-    #         for _pre_u in self.org_graph._graph.predecessors(_u):
-    #             # if this is a human state then look at its pre sys nodes
-    #             # if this is a sys state then add this edge to the str dict
-    #             if self.org_graph.get_state_w_attribute(_pre_u, "player") == "eve":
-    #                 if _pre_u not in list(_trap_str_dict.keys()):
-    #                     _trap_str_dict.update({_pre_u: _u})
-    #                     break
-    #
-    #             elif self.org_graph.get_state_w_attribute(_pre_u, "player") == "adam":
-    #                 for _pre_sys_u in self.org_graph._graph.successors(_pre_u):
-    #                     if _pre_sys_u not in list(_trap_str_dict.keys()):
-    #                         _trap_str_dict.update({_pre_sys_u: _pre_u})
-    #                         break
-    #                 break
-    #
-    #             else:
-    #                 warnings.warn(f"State {_pre_u} does not have a valid player associated with it")
-    #                 sys.exit(-1)
-    #
-    #     # make sure every sys node in the trap region has a str
-    #     for _n in trap_region:
-    #         if self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-    #             # check if a str from this node has been computed or not.
-    #             if _n not in list(_trap_str_dict.keys()):
-    #                 print(f"{_n} does have a str yet")
+        return _trans_edges
 
     def compute_strategies(self, max_prefix_len: int = 3):
 
@@ -611,22 +572,29 @@ class ValueIteration:
         adv_solver.reachability_solver()
         attr_region = adv_solver.sys_winning_region
         trap_region = set(adv_solver.env_winning_region)
-        # sys_str = adv_solver.sys_str
+        sys_str = adv_solver.sys_str
 
         if len(trap_region) != 0:
-            self._get_trap_sys_nodes_str(trap_region, attr_region)
+            trap_str, trap_region = self._get_trap_sys_nodes_str(trap_region, attr_region)
 
         for _n in self.org_graph._graph.nodes():
             _int_node = self.node_int_map[_n]
 
+            # if an node has only one edge then add that edge to the str
+            _succ_n = [i for i in self.org_graph._graph.successors(_n)]
+            if len(_succ_n) == 1:
+                strategy = _succ_n[0]
+                _str_dict.update({_n: strategy})
+                continue
+
             if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
                 strategy = self.get_str_for_env(_n)
             elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-                # if _n in attr_region:
-                #     strategy = sys_str[_n]
-                # else:
-                _conv_at = conv_dict.get(_int_node)
-                strategy = self.get_str_for_sys(_n, max_prefix_len, _conv_at, _states_to_avoid)
+                if _n in trap_region:
+                    strategy = trap_str[_n]
+                else:
+                    _conv_at = conv_dict.get(_int_node)
+                    strategy = self.get_str_for_sys(_n, max_prefix_len, _conv_at, sys_str)
             else:
                 warnings.warn(f"State {_n} does not have a valid player associated wiht it.")
                 continue
@@ -651,7 +619,7 @@ class ValueIteration:
 
         return max(_succ_vals, key=operator.itemgetter(1))[0]
 
-    def get_str_for_sys(self, node: Union[str, tuple], max_prefix_len: int, convg_at: int, states_to_avoid: set):
+    def get_str_for_sys(self, node: Union[str, tuple], max_prefix_len: int, convg_at: int, sys_str: dict):
         """
         A method that compute a finite memory strategy for the sys player. The strategy only depends on the length of
         the prefix and not the states we visited before. As such this method return a dict for each state as follows:
@@ -680,17 +648,18 @@ class ValueIteration:
         _state_dict: dict = {}
         for prefix_len in range(max_prefix_len):
             _val_vector = self.val_vector[:, convg_at - prefix_len - 1]
-            _next_node = self._get_min_sys_node(node, _val_vector, states_to_avoid)
+            _next_node = self._get_min_sys_node(node, _val_vector)
             _state_dict.update({prefix_len: _next_node})
 
         # for prefixes whose len > max_prefix_len we use the second cond
-        _val_vector = self.val_vector[:, 0]
-        _next_node = self._get_min_sys_node(node, _val_vector, states_to_avoid)
-        _state_dict.update({max_prefix_len + 1: _next_node})
+        # _val_vector = self.val_vector[:, 0]
+        # _next_node = self._get_min_sys_node(node, _val_vector, set())
+        _next_node = sys_str[node]
+        _state_dict.update({max_prefix_len: _next_node})
 
         return _state_dict
 
-    def _get_min_sys_node(self,  node: Union[str, tuple], pre_vec: ndarray, states_to_avoid: set):
+    def _get_min_sys_node(self,  node: Union[str, tuple], pre_vec: ndarray):
         """
         A method that compute the next vertex which minimizes the formula w(v, v') + val_vect(v').
 
@@ -703,28 +672,10 @@ class ValueIteration:
         :return:
         """
         _succ_vals: List = []
-        _all_max_vals = True
-        _all_states_lead_to_trap = True
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
             val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int]
-
-            if pre_vec[_node_int] < 140:
-                _all_max_vals = False
-
-            if _next_n not in states_to_avoid:
-                _all_states_lead_to_trap = False
-
             _succ_vals.append((_next_n, val))
-
-        # if all the values in the list are MAX_INT_VAL then pick an edge randomly. Also make sure that edge does not
-        # lead to a state that only has an edge to the trap state
-        if _all_max_vals and not _all_states_lead_to_trap:
-            # _node = random.choice(_succ_vals)[0]
-            # while _node in states_to_avoid:
-            #     _node = random.choice(_succ_vals)[0]
-            return max(_succ_vals, key=operator.itemgetter(1))[0]
-            # return _node
 
         return min(_succ_vals, key=operator.itemgetter(1))[0]
 

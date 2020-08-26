@@ -182,6 +182,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="config/automaton",
                                       save_flag=True,
+                                      # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
                                       sc_ltl="!(lava_red_open) U (water_blue_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
@@ -390,6 +391,7 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
 def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                mini_grid_instance: Optional[MinigridGraph] = None,
                                epsilon: float = 0,
+                               max_human_interventions: int = 5,
                                go_fast: bool = True,
                                finite: bool = False,
                                plot_result: bool = False,
@@ -407,8 +409,14 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     g_hat = reg_syn_handle.construct_g_hat(w_prime, finite=finite, debug=True, plot=False)
 
     if finite:
-        reg_syn_handle.compute_cumulative_reg(g_hat)
+        reg_dict = reg_syn_handle.compute_cumulative_reg(g_hat)
+        org_str = reg_syn_handle.plot_str_from_mcr(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
+        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str,
+                                                                 epsilon=epsilon,
+                                                                 max_human_interventions=max_human_interventions)
+        mini_grid_instance.execute_str(_controls=(0, controls))
         sys.exit(-1)
+
     mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
 
     reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
@@ -449,7 +457,7 @@ def test_cmr_game(trans_sys: TwoPlayerGraph):
     mcr_solver = ValueIteration(trans_sys, competitve=True)
     mcr_solver.solve(debug=True, plot=False)
     # val_dict = mcr_solver.state_value_dict
-    #
+
     str_dict = mcr_solver.compute_strategies(max_prefix_len=0)
     print("Debugging")
 
@@ -481,8 +489,10 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 if __name__ == "__main__":
 
     # define some constants
-    EPSILON = 0.95  # 0 - the best strategy (for human too) and 1 - Completely random
+    EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
     IROS_FLAG = False
+    ENERGY_BOUND = 30
+    ALLOWED_HUMAN_INTERVENTIONS = 2
 
     # some constants related to computation
     finite = True
@@ -541,6 +551,7 @@ if __name__ == "__main__":
     if reg_synthesis:
         compute_reg_minimizing_str(trans_sys,
                                    miniGrid_instance,
+                                   max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
                                    go_fast=go_fast,
                                    epsilon=EPSILON,
                                    finite=finite,

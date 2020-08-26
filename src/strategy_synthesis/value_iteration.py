@@ -423,13 +423,16 @@ class ValueIteration:
 
             if isinstance(human_state, tuple):
                 _human_str = human_state[0]
+                _env_str = str(env_state[0])
                 if not isinstance(_human_str, str):
                     _human_str = _human_str[0]
+                    _env_str = str(env_state[0][0])
                     if not isinstance(_human_str, str):
                         _human_str = _human_str[0]
+                        _env_str = str(env_state[0][0][0])
 
                 if _human_str[0] == 'h':
-                    if f"({_human_str.split('(')[2].split(')')[0]})" == str(env_state[0][0]):
+                    if f"({_human_str.split('(')[2].split(')')[0]})" == _env_str:
                         return True
 
             return False
@@ -439,6 +442,7 @@ class ValueIteration:
         # compute the list of states have transition to the trap state
         _states_to_be_pruned = set()
         _states_to_be_altered = set()
+        _states_to_be_weighed_more = set()
 
         # compute the list of states have transition to the trap state
         _trap_state = self.org_graph.get_trap_states()
@@ -452,6 +456,7 @@ class ValueIteration:
                         # also prune human node that org transit to the states in the prune list
                         # e,g h(3,2)(3,1) where 3,1 is trap state
                         if _check_if_human_state_is_equ_to_sys_state(_pre_env, _pre_n):
+                            _states_to_be_weighed_more.add(_pre_env)
                             _states_to_be_pruned.add(_pre_env)
 
                         _states_to_be_altered.add(_pre_env)
@@ -479,6 +484,10 @@ class ValueIteration:
                 if _next_n in trap_region:
                     if (_n, _next_n) in _sys_node_edges_to_be_altered:
                         _weight = 100
+
+                    # if(_n, _next_n) in _states_to_be_weighed_more:
+                    #     _weight = 200
+
                     else:
                         _weight = self.org_graph.get_edge_weight(_n, _next_n)
                     two_player_graph.add_edge(_n, _next_n, weight=_weight)
@@ -488,10 +497,13 @@ class ValueIteration:
 
         for _e in trans_edges:
             _u = _e[0]
-            two_player_graph.add_edge(_u, "accept_all", weight=0)
+            for _accp_n in _accp_states:
+                two_player_graph.add_edge(_u, _accp_n, weight=0)
+                two_player_graph._graph.add_edge(_accp_n, _accp_n, weight=0)
 
-        two_player_graph._graph.add_edge("accept_all", "accept_all", weight=0)
-        two_player_graph.add_accepting_state("accept_all")
+        for _accp_n in _accp_states:
+            two_player_graph.add_accepting_state(_accp_n)
+
         two_player_graph.add_initial_state(_init_state)
 
         return two_player_graph, trap_region
@@ -557,6 +569,9 @@ class ValueIteration:
 
     def compute_strategies(self, max_prefix_len: int = 3):
 
+        _init_node = self.org_graph.get_initial_states()[0][0]
+        _init_int_node = self.node_int_map[_init_node]
+
         _str_dict = {}
         if not isinstance(max_prefix_len, int) or max_prefix_len < 0:
             warnings.warn("The memory for sys player should be a semi-positive integer(>= 0)")
@@ -565,16 +580,22 @@ class ValueIteration:
         print("Computing Strategies for Eve and Adam")
         conv_dict: Dict[int, int] = self._compute_convergence_idx()
         _states_to_avoid = self.__compute_states_to_avoid()
-        # _states_to_avoid = set()
+
+        # compute the sys nodes that lead to trap state for the env player. Refer the note in the method
+        _trap_states = [i for i in self.org_graph.get_trap_states()]
+        _sys_trap_states = set()
+        for _t in _trap_states:
+            for _pre_sys in self.org_graph._graph.predecessors(_t):
+                _sys_trap_states.add(_pre_sys)
 
         # compute the set of states that belong to the attractor region
         adv_solver = ReachabilitySolver(self.org_graph)
         adv_solver.reachability_solver()
-        attr_region = adv_solver.sys_winning_region
-        trap_region = set(adv_solver.env_winning_region)
-        sys_str = adv_solver.sys_str
+        trap_region = ()
 
-        if len(trap_region) != 0:
+        if self.org_graph._graph_name != "trap_region_graph" and self.val_vector[_init_int_node, -1] == INT_MAX_VAL:
+            attr_region = adv_solver.sys_winning_region
+            trap_region = set(adv_solver.env_winning_region)
             trap_str, trap_region = self._get_trap_sys_nodes_str(trap_region, attr_region)
 
         for _n in self.org_graph._graph.nodes():
@@ -588,13 +609,14 @@ class ValueIteration:
                 continue
 
             if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
-                strategy = self.get_str_for_env(_n)
+                strategy = self.get_str_for_env(_n, _sys_trap_states)
             elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
                 if _n in trap_region:
                     strategy = trap_str[_n]
                 else:
                     _conv_at = conv_dict.get(_int_node)
-                    strategy = self.get_str_for_sys(_n, max_prefix_len, _conv_at, sys_str)
+                    strategy = self.alt_str_for_sys(_n)
+                    # strategy = self.get_str_for_sys(_n, max_prefix_len, _conv_at, sys_str)
             else:
                 warnings.warn(f"State {_n} does not have a valid player associated wiht it.")
                 continue
@@ -606,18 +628,38 @@ class ValueIteration:
 
         return _str_dict
 
-    def get_str_for_env(self, node: Union[str, tuple]) -> Union[str, tuple]:
+    def get_str_for_env(self, node: Union[str, tuple], sys_trap_states: set) -> Union[str, tuple]:
         """
         As MAX player or env player in our case has a memoryless strategy we return the next node
         :param node:
         :return:
         """
+        # note while env player is naturally attracted to a state that leads to trap state, due to finiteness of the
+        #  payoff, a adjacent cell from where the system cannot escape seems indifferent to the player - since they both
+        #  have the max value INT_MAX_VAL. So I manuallay add a flag to check for sys state ------> trap state and choose
+        #  them over any other state whenever possible
         _succ_vals = []
         for _next_n in self.org_graph._graph.successors(node):
-            val = self.org_graph.get_edge_weight(node, _next_n) + self.state_value_dict[_next_n]
+            # val = self.org_graph.get_edge_weight(node, _next_n) + self.state_value_dict[_next_n]
+            val = self.state_value_dict[_next_n]
             _succ_vals.append((_next_n, val))
 
+        for _n, _ in _succ_vals:
+            if _n in sys_trap_states:
+                return _n
+
         return max(_succ_vals, key=operator.itemgetter(1))[0]
+
+    def alt_str_for_sys(self, node: Union[str, tuple]):
+        """
+        A memoryless strategy that only looks at the state values after they have converged
+        :param node:
+        :return:
+        """
+        _val_vector = self.val_vector[:, -1]
+        _next_node = self._get_min_sys_node(node, _val_vector)
+
+        return _next_node
 
     def get_str_for_sys(self, node: Union[str, tuple], max_prefix_len: int, convg_at: int, sys_str: dict):
         """
@@ -701,7 +743,8 @@ class ValueIteration:
         _succ_vals: List = []
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
-            val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
+            # val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
+            val = pre_vec[_node_int][0]
             _succ_vals.append(val)
 
         # get org node int value

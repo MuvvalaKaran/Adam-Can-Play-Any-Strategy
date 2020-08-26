@@ -4,6 +4,7 @@ import multiprocessing
 import warnings
 import random
 import sys
+import operator
 
 import numpy as np
 from numpy import ndarray
@@ -436,7 +437,7 @@ class RegretMinimizationStrategySynthesis:
         :return:
         """
 
-        if not (isinstance(b_val, int) or isinstance(b_val, float)):
+        if not (isinstance(b_val, int) and isinstance(b_val, float)):
             warnings.warn("Please make sure b_val is an int or float value")
 
         if b_val not in self.b_val:
@@ -444,16 +445,22 @@ class RegretMinimizationStrategySynthesis:
                           f"The set of valid b value is {[_b for _b in self.b_val]}")
             sys.exit(-1)
 
+        _g_b_init_node = None
+        _g_b_accp_node = None
         # we use this special loop as the the g_b init node is removed as the init node during g_hat construction
         for _n in g_hat._graph.successors("v1"):
             if _n[1] == b_val:
                 _g_b_init_node = _n
+                break
+
+        for _n in g_hat.get_accepting_states():
+            if _n[1] == b_val:
+                _g_b_accp_node = _n
+                break
 
         _g_b_nodes = set()
         for _n in g_hat._graph.nodes():
             if isinstance(_n, tuple) and _n[1] == b_val:
-                if g_hat.get_state_w_attribute(_n, "accepting"):
-                    _g_b_accp_node = _n
                 _g_b_nodes.add(_n)
 
         _g_b_graph = graph_factory.get("TwoPlayerGraph",
@@ -475,6 +482,9 @@ class RegretMinimizationStrategySynthesis:
                     _g_b_graph.add_edge(_n, _next_n, weight=_weight)
 
         # add initial state and accepting state attribute
+        if _g_b_init_node is None or _g_b_accp_node is None:
+            warnings.warn(f"Could not find the initial state or the accepting state of graph g_{b_val}")
+
         _g_b_graph.add_accepting_state(_g_b_accp_node)
         _g_b_graph.add_initial_state(_g_b_init_node)
 
@@ -486,6 +496,14 @@ class RegretMinimizationStrategySynthesis:
         value_dict = mcr_solver.state_value_dict
         INT_MAX_VAL = 2147483647
 
+        _g_b_init_nodes = [i for i in g_hat._graph.successors("v1")]
+        # find out which _g_b_init_nodes have finite value and the pick the least one of them as the b_val
+
+        _g_b_init_state_values = []
+        for _n in _g_b_init_nodes:
+            if value_dict[_n] != INT_MAX_VAL:
+                _g_b_init_state_values.append((_n[1], value_dict[_n]))
+
         # if v1 has a value other than INT_MAX_VAL then we have a winning strategy that guarantees task completion
         # and the value will be the state cost associated with v1 or the next init state (the edge between v1 and g_b_init_node is 0).
         # if v1 is = MAX_INT_VAL then it means that we cannot guarantee winning. In this case, lets enter the g_b_max
@@ -495,17 +513,26 @@ class RegretMinimizationStrategySynthesis:
         # in g_b_max and see where eventually end up. The val of that state will be our regret.
         if value_dict["v1"] != INT_MAX_VAL:
             print("There exists a winning strategy. The Reg is 0")
+            # pick the g_b graph the str transits to - this may or may not be g_b_max
+            if len(_g_b_init_state_values) != 0:
+                _b_val = min(_g_b_init_state_values, key=operator.itemgetter(1))[0]
+            else:
+                warnings.warn("A winning strategy exists but none of the initial states in g_b(s) have finite value."
+                              "This is a huge problem!")
+                sys.exit(-1)
+
         else:
             print("There does not exists a winning strategy")
-
-        b_max = max(self.b_val)
-        _g_b_graph = self._extract_g_b_graph(b_max, g_hat)
+            _b_val = max(self.b_val)
+        _g_b_graph = self._extract_g_b_graph(_b_val, g_hat)
 
         _solver = ValueIteration(_g_b_graph, competitve=True)
         _solver.solve()
         str_dict = _solver.compute_strategies(max_prefix_len=0)
 
         print("Debugging")
+
+        return str_dict
 
     def _w_hat_b(self,
                  org_edge: Tuple[Tuple[str, str], Tuple[str, str]],
@@ -621,7 +648,8 @@ class RegretMinimizationStrategySynthesis:
     def _epsilon_greedy_choose_action(self,
                                       _human_state: tuple,
                                       str_dict: Dict[tuple, tuple],
-                                      epsilon: float, _absoring_states: List[tuple]) -> Tuple[tuple, bool]:
+                                      epsilon: float, _absoring_states: List[tuple],
+                                      human_can_intervene: bool = False) -> Tuple[tuple, bool]:
         """
         Choose an action according to epsilon greedy algorithm
 
@@ -639,20 +667,29 @@ class RegretMinimizationStrategySynthesis:
         _next_states = [_next_n for _next_n in self.graph._graph.successors(_human_state)]
         _did_human_move = False
 
-        # rand() return a floating point number between [0, 1)
-        if np.random.rand() < epsilon:
-            _next_state: tuple = random.choice(_next_states)
-        else:
-            _next_state: tuple = str_dict[_human_state]
+        # if the human still has moves remaining then he follows the eps strategy else he does not move at all
+        if human_can_intervene:
+            # rand() return a floating point number between [0, 1)
+            if np.random.rand() < epsilon:
+                _next_state: tuple = random.choice(_next_states)
+            else:
+                _next_state: tuple = str_dict[_human_state]
 
-        if _next_state[0][1] != _human_state[0][1]:
-            _did_human_move = True
+            if _next_state[0][1] != _human_state[0][1]:
+                _did_human_move = True
+        else:
+            # human follows the strategy dictated by the system
+            for _n in _next_states:
+                if _n[0][1] == _human_state[0][1]:
+                    _next_state = _n
+                    break
 
         return _next_state, _did_human_move
 
     def get_controls_from_str_minigrid(self,
                                        str_dict: Dict[tuple, tuple],
                                        epsilon: float,
+                                       max_human_interventions: int = 1,
                                        debug: bool = False) -> List[Tuple[str, ndarray, int]]:
         """
         A helper method to return a list of actions (edge labels) associated with the strategy found
@@ -669,22 +706,28 @@ class RegretMinimizationStrategySynthesis:
             except ValueError:
                 print(ValueError)
 
+        if not isinstance(max_human_interventions, int) or max_human_interventions < 0:
+            warnings.warn("Please make sure that the max human intervention bound should >= 0")
+
         _start_state = self.graph.get_initial_states()[0][0]
         _total_human_intervention = _start_state[0][1]
         _accepting_states = self.graph.get_accepting_states()
         _trap_states = self.graph.get_trap_states()
 
         _absorbing_states = _accepting_states + _trap_states
+        _human_interventions: int = 0
         _visited_states = []
         _position_sequence = []
 
         curr_sys_node = _start_state
         next_env_node = str_dict[curr_sys_node]
 
+        _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
         next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
                                                            str_dict,
                                                            epsilon=epsilon,
-                                                           _absoring_states=_absorbing_states)[0]
+                                                           _absoring_states=_absorbing_states,
+                                                           human_can_intervene=_can_human_intervene)[0]
 
         (x, y) = next_sys_node[0][0]
         _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
@@ -702,12 +745,22 @@ class RegretMinimizationStrategySynthesis:
             curr_sys_node = next_sys_node
             next_env_node = str_dict[curr_sys_node]
 
+            if curr_sys_node == next_env_node:
+                x, y = next_sys_node[0][0]
+                _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
+                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
+                _visited_states.append(next_sys_node)
+                break
+
             # update the next sys node only if you not transiting to an absorbing state
-            if next_env_node not in _absorbing_states:
+            if next_env_node not in _absorbing_states and\
+                    self.graph.get_state_w_attribute(next_env_node, "player") == "adam":
+                _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
                 next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
                                                                    str_dict,
                                                                    epsilon=epsilon,
-                                                                   _absoring_states=_absorbing_states)[0]
+                                                                   _absoring_states=_absorbing_states,
+                                                                   human_can_intervene=_can_human_intervene)[0]
 
             # if transiting to an absorbing state then due to the self transition the next sys node will be the same as
             # the current env node which is an absorbing itself. Technically an absorbing state IS NOT assigned any
@@ -735,6 +788,39 @@ class RegretMinimizationStrategySynthesis:
             print([_n for _n in _position_sequence])
 
         return _position_sequence
+
+    def plot_str_from_mcr(self, g_hat: TwoPlayerGraph,
+                          str_dict: Dict,
+                          only_eve: bool = False,
+                          plot: bool = False) -> Dict:
+        g_hat.set_edge_attribute('strategy', False)
+
+        if only_eve:
+            self._add_strategy_flag_only_eve(g_hat, str_dict)
+
+        else:
+            self._add_strategy_flag(g_hat, str_dict)
+
+        _org_str = {}
+        # get the org_str
+        for _n, _next_n in str_dict.items():
+            if isinstance(_n, tuple):
+                _n = _n[0]
+            if isinstance(_next_n, tuple):
+                _next_n = _next_n[0]
+            _org_str.update({_n: _next_n})
+
+        if only_eve:
+            self._add_strategy_flag_only_eve(self.graph, _org_str)
+
+        else:
+            self._add_strategy_flag(self.graph, _org_str)
+
+        if plot:
+            g_hat.plot_graph()
+            self.graph.plot_graph()
+
+        return _org_str
 
     def plot_str_from_mgp(self,
                           g_hat: TwoPlayerGraph,

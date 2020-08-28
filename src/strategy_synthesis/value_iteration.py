@@ -33,7 +33,8 @@ class ValueIteration:
         self._val_vector: Optional[ndarray] = None
         self._node_int_map: Optional[bidict] = None
         self._num_of_nodes: int = 0
-        self._W: int = 0
+        self._MAX_POSSIBLE_W: int = 0
+        self.W: int = 0
         self._state_value_dict: Optional[dict] = defaultdict(lambda: -1)
         self._initialize_val_vector()
 
@@ -85,6 +86,10 @@ class ValueIteration:
     def competitive(self, value: bool):
         self._competitive = value
 
+    @W.setter
+    def W(self, value: int):
+        self._W = value
+
     def _convert_weights_to_positive_costs(self, plot: bool = False, debug: bool = False):
         """
         A helper method that converts the -ve weight that represent cost to positive edge weights for a given game.
@@ -111,13 +116,29 @@ class ValueIteration:
 
     def _initialize_target_state_costs(self):
         """
-        A method that computes the set of target states, and assing the respective nodes a zero value in the the value
+        A method that computes the set of target states, and assigns the respective nodes a zero value in the the value
         vector
         :return:
         """
         _accp_state = self.org_graph.get_accepting_states()
 
         for _s in _accp_state:
+            _node_int = self.node_int_map[_s]
+            self.val_vector[_node_int][0] = 0
+
+    def _initialize_trap_state_costs(self):
+        """
+        A method that computes the set of trap states, and assigns the respective node a zero value in the value vector.
+        The weights transiting to trap state however are given a big finite value in this case. This is done to make
+        sure the values associated with states from where you cannot reach the accepting state(s) (The trap region in an
+        adversarial game) have a finite (but big) values rather than all having the states in the trap region having inf
+        values
+        :return:
+        """
+
+        _trap_states = self.org_graph.get_trap_states()
+
+        for _s in _trap_states:
             _node_int = self.node_int_map[_s]
             self.val_vector[_node_int][0] = 0
 
@@ -152,6 +173,8 @@ class ValueIteration:
         self._convert_weights_to_positive_costs(plot=False, debug=False)
         self._add_accp_states_self_loop_zero_weight()
         self._initialize_target_state_costs()
+        if self.competitive:
+            self._initialize_trap_state_costs()
 
     def convert_graph_to_mcr_graph(self):
         """
@@ -191,9 +214,11 @@ class ValueIteration:
 
     def _add_edges_to_abs_states_as_zero(self):
         """
-        A method that manully adds an edge weight of zero to all the edges that transit to the absorbing states
+        A method that manually adds an edge weight of zero to all the edges that transit to the absorbing states from
+        the sys states.
         :return:
         """
+
         _accp_state = self.org_graph.get_accepting_states()
         _trap_state = self.org_graph.get_trap_states()
 
@@ -201,6 +226,27 @@ class ValueIteration:
             for _pre_s in self.org_graph._graph.predecessors(_s):
                 if _pre_s != _s:
                     self.org_graph._graph[_pre_s][_s][0]['weight'] = 0
+
+    def _add_edges_to_trap_states_as_max(self):
+        """
+        A method that manually adds a finite edge weight  to all the edges that transit to the trap states. As per
+        the paper Section 3. There exists optimal strategies for both players whose outcome is a non-looping path.
+
+        So considering you visit each state atleast and atmost once, the max cumulative value of play could:
+
+        |V - 1| * W : "-2" because you remove the trap state and the target/accepting state itself and W is the max abs
+        value on the graph. Note we assume that all the weights in the graph are positive.
+        :return:
+        """
+        # self._MAX_POSSIBLE_W = (self.num_of_nodes - 2) * self.W
+
+        # _accp_state = self.org_graph.get_accepting_states()
+        _trap_state = self.org_graph.get_trap_states()
+
+        for _s in _trap_state:
+            for _pre_s in self.org_graph._graph.predecessors(_s):
+                if _pre_s != _s:
+                    self.org_graph._graph[_pre_s][_s][0]['weight'] = self._MAX_POSSIBLE_W
 
     def _add_trap_state_player(self):
         """
@@ -238,7 +284,10 @@ class ValueIteration:
 
         # self.org_graph.add_state_attribute(_trap_state, "player", "eve")
         self._add_trap_state_player()
-        self._add_edges_to_abs_states_as_zero()
+        # self._add_edges_to_abs_states_as_zero()
+        if self.competitive:
+            self._add_edges_to_trap_states_as_max()
+
         # assign edges that transit to the absorbing states to be zero.
         # _edges = []
         # for _n in [_trap_state] + [_accp_state]:
@@ -579,8 +628,8 @@ class ValueIteration:
 
         print("Computing Strategies for Eve and Adam")
         conv_dict: Dict[int, int] = self._compute_convergence_idx()
-        _states_to_avoid = self.__compute_states_to_avoid()
-
+        # _states_to_avoid = self.__compute_states_to_avoid()
+        #
         # compute the sys nodes that lead to trap state for the env player. Refer the note in the method
         _trap_states = [i for i in self.org_graph.get_trap_states()]
         _sys_trap_states = set()
@@ -591,12 +640,13 @@ class ValueIteration:
         # compute the set of states that belong to the attractor region
         adv_solver = ReachabilitySolver(self.org_graph)
         adv_solver.reachability_solver()
-        trap_region = ()
-
-        if self.org_graph._graph_name != "trap_region_graph" and self.val_vector[_init_int_node, -1] == INT_MAX_VAL:
-            attr_region = adv_solver.sys_winning_region
-            trap_region = set(adv_solver.env_winning_region)
-            trap_str, trap_region = self._get_trap_sys_nodes_str(trap_region, attr_region)
+        sys_str = adv_solver.sys_str
+        # trap_region = ()
+        #
+        # if self.org_graph._graph_name != "trap_region_graph" and self.val_vector[_init_int_node, -1] == INT_MAX_VAL:
+        #     attr_region = adv_solver.sys_winning_region
+        #     trap_region = set(adv_solver.env_winning_region)
+        #     trap_str, trap_region = self._get_trap_sys_nodes_str(trap_region, attr_region)
 
         for _n in self.org_graph._graph.nodes():
             _int_node = self.node_int_map[_n]
@@ -611,12 +661,12 @@ class ValueIteration:
             if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
                 strategy = self.get_str_for_env(_n, _sys_trap_states)
             elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-                if _n in trap_region:
-                    strategy = trap_str[_n]
-                else:
-                    _conv_at = conv_dict.get(_int_node)
-                    strategy = self.alt_str_for_sys(_n)
-                    # strategy = self.get_str_for_sys(_n, max_prefix_len, _conv_at, sys_str)
+                # if _n in trap_region:
+                #     strategy = trap_str[_n]
+                # else:
+                _conv_at = conv_dict.get(_int_node)
+                strategy = self.alt_str_for_sys(_n)
+                # strategy = self.get_str_for_sys(_n, max_prefix_len, _conv_at, sys_str)
             else:
                 warnings.warn(f"State {_n} does not have a valid player associated wiht it.")
                 continue

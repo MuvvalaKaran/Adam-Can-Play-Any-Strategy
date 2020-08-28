@@ -428,6 +428,17 @@ class RegretMinimizationStrategySynthesis:
         if plot:
             G_hat.plot_graph()
 
+        # after constructing g_hat, we need to ensure that all the absorbing states in g_hat have sel-loop transitions
+        # and transitions from the sys nodes with edge weight 0
+        _accp_states = G_hat.get_accepting_states()
+        _trap_states = G_hat.get_trap_states()
+
+        # the weights of vT is different for finite and infinite case
+        for _s in _accp_states + _trap_states:
+            if _s != "vT":
+                for _pre_s in G_hat._graph.predecessors(_s):
+                    G_hat._graph[_pre_s][_s][0]['weight'] = 0
+
         return G_hat
 
     def _extract_g_b_graph(self, b_val: int, g_hat: TwoPlayerGraph) -> 'TwoPlayerGraph()':
@@ -488,21 +499,59 @@ class RegretMinimizationStrategySynthesis:
         _g_b_graph.add_accepting_state(_g_b_accp_node)
         _g_b_graph.add_initial_state(_g_b_init_node)
 
+        _g_b_graph.add_state("vT", player="eve")
+
+        # for states that do not have any outgoing edges, add a transition to the terminal state with edge weight 0
+        for _n in _g_b_graph._graph.nodes():
+            if len(list(_g_b_graph._graph.successors(_n))) == 0:
+                _g_b_graph.add_edge(_n, "vT", weight=0)
+
         return _g_b_graph
 
     def compute_cumulative_reg(self, g_hat: TwoPlayerGraph):
-        mcr_solver = ValueIteration(g_hat, competitve=True)
-        mcr_solver.solve(debug=True, plot=False)
-        value_dict = mcr_solver.state_value_dict
-        INT_MAX_VAL = 2147483647
+        """
+        A method to that extracts all the g_b from g_hat, solves each g_b game separately and computes the value of the
+        init state. Chooses the game with the least init state value, compute a str in that game.
 
+        We need to make sure the value of the edge to the trap state is constant over all the g_b. This could be
+        different because # of node in each g_b and abs max weight i.e W could be different for each g_b.
+        :param g_hat:
+        :return:
+        """
+        # no of node in the org graph
+        _num_of_total_nodes_in_g = len(list(self.graph._graph.nodes()))
+
+        _max_egde_val = (_num_of_total_nodes_in_g - 2) * abs(self.graph.get_max_weight())
+        # construct g_b
+        _g_b_instances = []
+        for _b in self.b_val - {-1 * math.inf}:
+            _g_b_instances.append((_b, self._extract_g_b_graph(_b, g_hat)))
+
+        # now solve each game and store their state values
         _g_b_init_nodes = [i for i in g_hat._graph.successors("v1")]
+        _g_b_init_state_values = []
+        _g_b_state_val = []
+        _g_b_solved_instances = []
+        for _b, _game in _g_b_instances:
+            mcr_solver = ValueIteration(_game, competitve=True)
+            mcr_solver._MAX_POSSIBLE_W = _max_egde_val
+            mcr_solver.solve(debug=True, plot=False)
+            _g_b_solved_instances.append((_b, mcr_solver))
+            _g_b_state_val.append((_b, mcr_solver.state_value_dict))
+            _init_node = [_n for _n in _g_b_init_nodes if _n[1] == _b][0]
+            _g_b_init_state_values.append((_b, mcr_solver.state_value_dict[_init_node]))
+
+
+        # value_dict = mcr_solver.state_value_dict
+        # INT_MAX_VAL = 2147483647
+
+        # _g_b_init_nodes = [i for i in g_hat._graph.successors("v1")]
         # find out which _g_b_init_nodes have finite value and the pick the least one of them as the b_val
 
-        _g_b_init_state_values = []
-        for _n in _g_b_init_nodes:
-            if value_dict[_n] != INT_MAX_VAL:
-                _g_b_init_state_values.append((_n[1], value_dict[_n]))
+        # _g_b_init_state_values = []
+        # for _n in _g_b_init_nodes:
+        #     if value_dict[_n] != INT_MAX_VAL:
+        #         _g_b_init_state_values.append((_n[1], value_dict[_n]))
 
         # if v1 has a value other than INT_MAX_VAL then we have a winning strategy that guarantees task completion
         # and the value will be the state cost associated with v1 or the next init state (the edge between v1 and g_b_init_node is 0).
@@ -511,24 +560,33 @@ class RegretMinimizationStrategySynthesis:
 
         # reg in this case can be defined as 0 if v1 is finite (i.e have a winning strategy) else, we roll out the game
         # in g_b_max and see where eventually end up. The val of that state will be our regret.
-        if value_dict["v1"] != INT_MAX_VAL:
-            print("There exists a winning strategy. The Reg is 0")
-            # pick the g_b graph the str transits to - this may or may not be g_b_max
-            if len(_g_b_init_state_values) != 0:
-                _b_val = min(_g_b_init_state_values, key=operator.itemgetter(1))[0]
-            else:
-                warnings.warn("A winning strategy exists but none of the initial states in g_b(s) have finite value."
-                              "This is a huge problem!")
-                sys.exit(-1)
+        # if value_dict["v1"] != INT_MAX_VAL:
+        #     print("There exists a winning strategy. The Reg is 0")
+        #     # pick the g_b graph the str transits to - this may or may not be g_b_max
+        #     if len(_g_b_init_state_values) != 0:
+        #         _b_val = min(_g_b_init_state_values, key=operator.itemgetter(1))[0]
+        #     else:
+        #         warnings.warn("A winning strategy exists but none of the initial states in g_b(s) have finite value."
+        #                       "This is a huge problem!")
+        #         sys.exit(-1)
+        #
+        # else:
+        #     print("There does not exists a winning strategy")
+        #     _b_val = max(self.b_val)
 
-        else:
-            print("There does not exists a winning strategy")
-            _b_val = max(self.b_val)
-        _g_b_graph = self._extract_g_b_graph(_b_val, g_hat)
+        _b_val = min(_g_b_init_state_values, key=operator.itemgetter(1))[0]
+        # _g_b_graph = self._extract_g_b_graph(_b_val, g_hat)
 
-        _solver = ValueIteration(_g_b_graph, competitve=True)
-        _solver.solve()
-        str_dict = _solver.compute_strategies(max_prefix_len=0)
+        # _solver = ValueIteration(_g_b_graph, competitve=True)
+        # _solver.solve()
+        # get that particular solved instance
+        for _inst in _g_b_solved_instances:
+            if _inst[0] == _b_val:
+                _solved = _inst[1]
+                break
+
+        _g_b_state_val_dict = _solved.state_value_dict
+        str_dict = _solved.compute_strategies(max_prefix_len=5)
 
         print("Debugging")
 
@@ -808,7 +866,8 @@ class RegretMinimizationStrategySynthesis:
                 _n = _n[0]
             if isinstance(_next_n, tuple):
                 _next_n = _next_n[0]
-            _org_str.update({_n: _next_n})
+            if self.graph._graph.has_node(_n) and self.graph._graph.has_node(_next_n):
+                _org_str.update({_n: _next_n})
 
         if only_eve:
             self._add_strategy_flag_only_eve(self.graph, _org_str)

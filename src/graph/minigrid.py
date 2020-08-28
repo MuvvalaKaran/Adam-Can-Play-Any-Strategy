@@ -23,7 +23,7 @@ class MiniGrid(FiniteTransSys):
 
         if self._graph_yaml is None:
             warnings.warn("Please ensure that you have first loaded the config data. You can do this by"
-                          "setting the respective True in the builder instance.")
+                          "only passing in config_yaml file name without an raw_minigrid_ts object")
 
         _nodes = self._graph_yaml['nodes']
         _start_state = self._graph_yaml['start_state']
@@ -480,7 +480,7 @@ class MiniGridBuilder(Builder):
             try:
                 human_intervention = int(human_intervention)
             except ValueError:
-                warnings.warn("Please make sure the number of times the human can intervene is integer. e.f 1, 1.0.")
+                warnings.warn("Please make sure the number of times the human can intervene is integer. e.g 1, 1.0.")
                 sys.exit(-1)
 
         if raw_minigrid_ts:

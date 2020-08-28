@@ -39,6 +39,7 @@ Note: When you create a NxN world, two units of width and height are consumed fo
 So a 4x4 world will be a 2x2 env and 5x5 will be a 3x3 env respectively.  
 """
 
+
 class MiniGridEmptyEnv(enum.Enum):
     env_4 = 'MiniGrid-Empty-4x4-v0'
     env_5 = 'MiniGrid-Empty-5x5-v0'
@@ -69,7 +70,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 0
+    human_intervention: int = 1
 
     def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
         self.finite = _finite
@@ -138,8 +139,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_5.value
-        ENV_ID = MiniGridLavaEnv.env_7.value
+        # ENV_ID = MiniGridEmptyEnv.env_4.value
+        ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -149,7 +150,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                                   graph_data=env,
                                                   graph_data_format='minigrid')
 
-        # file t0 dump the TS corresponding to the gym env
+        # file to dump the TS corresponding to the gym env
         file_name = ENV_ID + '_TS'
         wombats_minigrid_TS.to_yaml_file(DIR + file_name + ".yaml")
 
@@ -182,8 +183,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="config/automaton",
                                       save_flag=True,
-                                      sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
-                                      # sc_ltl="!(lava_red_open) U (water_blue_open)",
+                                      # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
+                                      sc_ltl="!(lava_red_open) U (water_blue_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -269,7 +270,7 @@ class ThreeStateExample(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="config/automaton",
                                       save_flag=True,
-                                      sc_ltl="!b U c",
+                                      sc_ltl="F c",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -411,10 +412,10 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
     if finite:
         reg_dict = reg_syn_handle.compute_cumulative_reg(g_hat)
         org_str = reg_syn_handle.plot_str_from_mcr(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
-        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str,
-                                                                 epsilon=epsilon,
-                                                                 max_human_interventions=max_human_interventions)
-        mini_grid_instance.execute_str(_controls=(0, controls))
+        # controls = reg_syn_handle.get_controls_from_str_minigrid(org_str,
+        #                                                          epsilon=epsilon,
+        #                                                          max_human_interventions=max_human_interventions)
+        # mini_grid_instance.execute_str(_controls=(0, controls))
         sys.exit(-1)
 
     mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
@@ -498,26 +499,26 @@ if __name__ == "__main__":
 
     # define some constants
     EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
-    IROS_FLAG = True
+    IROS_FLAG = False
     ENERGY_BOUND = 30
     ALLOWED_HUMAN_INTERVENTIONS = 0
 
     # some constants related to computation
-    finite = False
+    finite = True
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = True
-    three_state_ts = False
+    gym_minigrid = False
+    three_state_ts = True
     five_state_ts = False
     variant_1_paper = False
     franka_abs = False
 
     # solver to call
     mcr_game = False
-    reg_synthesis = False
+    reg_synthesis = True
     adversarial_game = False
-    iros_str_synthesis = True
+    iros_str_synthesis = False
     miniGrid_instance = None
 
     # build the graph G on which we will compute the regret minimizing strategy
@@ -563,7 +564,7 @@ if __name__ == "__main__":
                                    go_fast=go_fast,
                                    epsilon=EPSILON,
                                    finite=finite,
-                                   plot_result=False,
+                                   plot_result=True,
                                    plot_result_only_eve=False)
     elif adversarial_game:
         compute_winning_str(trans_sys,

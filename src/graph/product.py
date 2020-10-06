@@ -48,6 +48,8 @@ class ProductAutomaton(TwoPlayerGraph):
         else:
             self.construct_product()
 
+        self._sanity_check(debug=False)
+
     def _check_ts_ltl_compatability(self) -> bool:
         """
         Return true if the DFA contains atleast one symbols that is part of the set of observations is TS else False
@@ -641,8 +643,8 @@ class ProductAutomaton(TwoPlayerGraph):
                     print(f"Adding self loop of weight - {max_w} to the node {_n}")
                     print("=====================================")
                 self._graph.add_weighted_edges_from([(_n,
-                                                      _n,
-                                                      math.inf)])
+                                                      _n, 0)])
+                                                      # math.inf)])
                 # -1 * max_w)])
 
     def _prune_edges(self, debug):

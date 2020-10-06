@@ -11,7 +11,7 @@ from collections import defaultdict
 from networkx import DiGraph
 from numpy import ndarray
 from bidict import bidict
-from typing import Optional, Union, Dict, List
+from typing import Optional, Union, Dict, List, Tuple
 
 # import local packages
 from src.graph import graph_factory
@@ -26,9 +26,9 @@ INT_MAX_VAL = 2147483647
 
 class ValueIteration:
 
-    def __init__(self, game: TwoPlayerGraph, competitve: bool = False):
+    def __init__(self, game: TwoPlayerGraph, competitive: bool = False):
         self.org_graph: Optional[TwoPlayerGraph] = copy.deepcopy(game)
-        self.competitive = competitve
+        self.competitive = competitive
         self._local_graph: Optional[DiGraph] = None
         self._val_vector: Optional[ndarray] = None
         self._node_int_map: Optional[bidict] = None
@@ -101,13 +101,13 @@ class ValueIteration:
             _v = _e[1]
 
             _curr_weight = _e[2]
-            if _curr_weight < 0:
-                _new_weight: Union[int, float] = -1 * _curr_weight
-            else:
-                if debug:
-                    print(f"Got a positive weight in the graph for edge {_u}------>{_v} with edge weight"
-                          f" {_curr_weight}")
-                _new_weight: Union[int, float] = _curr_weight
+            # if _curr_weight < 0:
+            _new_weight: Union[int, float] = -1 * _curr_weight
+            # else:
+            #     if debug:
+            #         print(f"Got a positive weight in the graph for edge {_u}------>{_v} with edge weight"
+            #               f" {_curr_weight}")
+            #     _new_weight: Union[int, float] = _curr_weight
 
             self.org_graph._graph[_u][_v][0]["weight"] = _new_weight
 
@@ -169,12 +169,13 @@ class ValueIteration:
         self._node_int_map = bidict({state: index for index, state in enumerate(self.org_graph._graph.nodes)})
         self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
 
-        # if self.org_graph._graph_name != 'G_hat':
+        # if self.org_graph._graph_name != 'G_hat': `
+        # if not self.competitive:
         self._convert_weights_to_positive_costs(plot=False, debug=False)
-        self._add_accp_states_self_loop_zero_weight()
+        # self._add_accp_states_self_loop_zero_weight()
         self._initialize_target_state_costs()
-        if self.competitive:
-            self._initialize_trap_state_costs()
+        # if self.competitive:
+        #     self._initialize_trap_state_costs()
 
     def convert_graph_to_mcr_graph(self):
         """
@@ -234,8 +235,10 @@ class ValueIteration:
 
         So considering you visit each state atleast and atmost once, the max cumulative value of play could:
 
-        |V - 1| * W : "-2" because you remove the trap state and the target/accepting state itself and W is the max abs
-        value on the graph. Note we assume that all the weights in the graph are positive.
+        |V - 1| * W : "-1" because you remove the trap state and the target/accepting state itself and W is the max abs
+        value on the graph.
+
+        Note we assume that all the weights in the graph are positive.
         :return:
         """
         # self._MAX_POSSIBLE_W = (self.num_of_nodes - 2) * self.W
@@ -250,7 +253,7 @@ class ValueIteration:
 
     def _add_trap_state_player(self):
         """
-        A metho to add a player to the trap state, if any
+        A method to add a player to the trap state, if any
         :return:
         """
 
@@ -279,14 +282,16 @@ class ValueIteration:
         _accp_state = self.org_graph.get_accepting_states()[0]
         _init_node = self.org_graph.get_initial_states()[0][0]
         _init_int_node = self.node_int_map[_init_node]
+        # if self.competitive:
+        #     self.val_vector[_init_int_node][0] = 0
         # _trap_state = self.org_graph.get_trap_states()[0]
         # _trap_int_node = self.node_int_map[_trap_state]
 
         # self.org_graph.add_state_attribute(_trap_state, "player", "eve")
         self._add_trap_state_player()
         # self._add_edges_to_abs_states_as_zero()
-        if self.competitive:
-            self._add_edges_to_trap_states_as_max()
+        # if self.competitive:
+        #     self._add_edges_to_trap_states_as_max()
 
         # assign edges that transit to the absorbing states to be zero.
         # _edges = []
@@ -295,10 +300,13 @@ class ValueIteration:
         #         if _pre_n != _n:
         #             self.org_graph._graph[_pre_n][_n][0]['weight'] = 0
 
-        _val_vector = self.val_vector
+        _val_vector = copy.deepcopy(self.val_vector)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
 
         iter_var = 0
+        _max_str_dict = {}
+        _min_str_dict = {}
+        _min_reach_str_dict = {}
 
         while not self._is_same(_val_pre, _val_vector):
             if debug:
@@ -315,10 +323,16 @@ class ValueIteration:
                     continue
 
                 if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
-                    _val_vector[_int_node][0] = self._get_max_env_val(_n, _val_pre)
+                    _val_vector[_int_node][0], _next_max_node = self._get_max_env_val(_n, _val_pre)
+                    _max_str_dict[_n] = self.node_int_map.inverse[_next_max_node]
 
                 elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-                    _val_vector[_int_node][0] = self._get_min_sys_val(_n, _val_pre)
+                    _val_vector[_int_node][0], _next_min_node = self._get_min_sys_val(_n, _val_pre)
+                    if _val_vector[_int_node] != _val_pre[_int_node]:
+                        _min_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+
+                        if _val_pre[_int_node] == INT_MAX_VAL:
+                            _min_reach_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
 
             for _n in self.org_graph._graph.nodes():
                 _int_node = self.node_int_map[_n]
@@ -336,15 +350,32 @@ class ValueIteration:
             _s = self.node_int_map.inverse[i]
             self.state_value_dict.update({_s: self.val_vector[i][iter_var]})
 
+        # for v0 we have to specially make an exception if v1 has value higher than 0 then go down else take self-loop
+        if self.competitive and self.org_graph._graph_name == "G_hat":
+            _v1_node_int = self.node_int_map["v1"]
+            if self.val_vector[_v1_node_int][0] >= 0:
+                _max_str_dict["v0"] = "v1"
+                self.state_value_dict["v0"] = self.state_value_dict["v1"]
+            else:
+                _max_str_dict["v0"] = "v0"
+
         if plot:
             self._add_state_costs_to_graph()
             self.org_graph.plot_graph()
 
         if debug:
             print(f"Number of iteration to converge: {iter_var}")
-            print(f"Init state value: {self.val_vector[_init_int_node][iter_var]}")
+            print(f"Init state value: {self.state_value_dict[_init_node]}")
             self._sanity_check()
             # self.print_state_values()
+
+        return {**_max_str_dict, **_min_str_dict}
+
+    def new_get_str_for_env(self):
+        """
+        A method to return the next
+        :return:
+        """
 
     def _sanity_check(self):
         """
@@ -698,7 +729,10 @@ class ValueIteration:
             if _n in sys_trap_states:
                 return _n
 
-        return max(_succ_vals, key=operator.itemgetter(1))[0]
+        if self.competitive:
+            return max(_succ_vals, key=operator.itemgetter(1))[0]
+        else:
+            return min(_succ_vals, key=operator.itemgetter(1))[0]
 
     def alt_str_for_sys(self, node: Union[str, tuple]):
         """
@@ -781,7 +815,7 @@ class ValueIteration:
             _s = self.node_int_map.inverse[i]
             print(f"State {_s} Value {self.val_vector[i]}")
 
-    def _get_max_env_val(self, node: Union[str, tuple], pre_vec: ndarray) -> Union[int, float]:
+    def _get_max_env_val(self, node: Union[str, tuple], pre_vec: ndarray) -> Tuple[Union[int, float], int]:
         """
         A method that returns the max value for the current node that belongs to the env.
         :param node: The current node in
@@ -794,20 +828,20 @@ class ValueIteration:
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
             # val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
-            val = pre_vec[_node_int][0]
-            _succ_vals.append(val)
+            _val = (_node_int, pre_vec[_node_int][0])
+            _succ_vals.append(_val)
 
         # get org node int value
         if self.competitive:
-            val = max(_succ_vals)
+            _next_node_int, _val = max(_succ_vals, key=operator.itemgetter(1))
         else:
-            val = min(_succ_vals)
+            _next_node_int, _val = min(_succ_vals, key=operator.itemgetter(1))
 
-        _node_int = self.node_int_map[node]
-        if INT_MIN_VAL <= val <= INT_MAX_VAL:
-            return val
+        _curr_node_int = self.node_int_map[node]
+        if INT_MIN_VAL <= _val <= INT_MAX_VAL:
+            return _val, _next_node_int
 
-        return pre_vec[_node_int][0]
+        return pre_vec[_curr_node_int][0], _curr_node_int
 
     def _add_state_costs_to_graph(self):
         """
@@ -819,7 +853,7 @@ class ValueIteration:
         for _n in self.org_graph._graph.nodes():
             self.org_graph.add_state_attribute(_n, "ap", self.state_value_dict[_n])
 
-    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Union[int, float]:
+    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Tuple[Union[int, float], int]:
         """
         A method that returns the min value of the current node that belongs to the sys
         :param node:
@@ -831,11 +865,13 @@ class ValueIteration:
         _succ_vals: List = []
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
-            val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
-            _succ_vals.append(val)
+            _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
+            _succ_vals.append((_node_int, _val))
 
-        _node_int = self.node_int_map[node]
-        if INT_MIN_VAL <= min(_succ_vals) <= INT_MAX_VAL:
-            return min(_succ_vals)
+        _next_node_int, _val = min(_succ_vals, key=operator.itemgetter(1))
 
-        return pre_vec[_node_int][0]
+        _curr_node_int = self.node_int_map[node]
+        if INT_MIN_VAL <= _val <= INT_MAX_VAL:
+            return _val, _next_node_int
+
+        return pre_vec[_curr_node_int][0], _curr_node_int

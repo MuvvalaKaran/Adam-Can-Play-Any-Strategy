@@ -52,7 +52,7 @@ class RegretMinimizationStrategySynthesis:
     def b_val(self, value: set):
         self._b_val = value
 
-    def compute_W_prime_finite(self,  multi_thread: bool = False):
+    def compute_W_prime_finite(self, org_graph: Optional[TwoPlayerGraph] = None):
         """
         A method to compute w_prime function based on Algo 2. pseudocode.
         This function is a mapping from each edge to a real valued number - b
@@ -67,10 +67,15 @@ class RegretMinimizationStrategySynthesis:
 
         print("*****************Constructing W_prime finite*****************")
 
-        mcr_solver = ValueIteration(self.graph, competitve=False)
+        if isinstance(org_graph, type(None)):
+            org_graph = self.graph
+        else:
+            org_graph = org_graph
+
+        mcr_solver = ValueIteration(org_graph, competitive=False)
         mcr_solver.solve(debug=False, plot=False)
         INT_MAX_VAL = 2147483647
-        # as the edge weight in the value iteration are all positive, we need to manually add negative weigh to them
+        # as the edge weight in the value iteration are all positive, we need to manually add negative weights to them
         val_dict = mcr_solver.state_value_dict
 
         # also the MAX value used in the ValueIteration algorithm is a finite value. So we will replace them with -inf
@@ -86,20 +91,20 @@ class RegretMinimizationStrategySynthesis:
 
         w_prime: Dict[Tuple: float] = {}
 
-        for edge in self.graph._graph.edges():
+        for edge in org_graph._graph.edges():
             _u = edge[0]
             # _v = edge[1]
             # if the node belongs to adam, then the corresponding edge is assigned -inf
-            if self.graph._graph.nodes(data='player')[_u] == 'adam':
+            if org_graph._graph.nodes(data='player')[_u] == 'adam':
                 w_prime.update({edge: -1 * math.inf})
 
             else:
                 _state_cvals = []
-                out_going_edges = set(self.graph._graph.out_edges(_u)) - {edge}
+                out_going_edges = set(org_graph._graph.out_edges(_u)) - {edge}
 
                 for _alt_e in out_going_edges:
                     _v_prime = _alt_e[1]
-                    _curr_w = self.graph.get_edge_weight(_u, _v_prime)
+                    _curr_w = org_graph.get_edge_weight(_u, _v_prime)
                     _state_cost = val_dict[_v_prime]
                     _total_weight = _curr_w + _state_cost
                     _state_cvals.append(_total_weight)
@@ -174,7 +179,7 @@ class RegretMinimizationStrategySynthesis:
         mpg_cval_handle = MpgToolBox(self.graph, "org_graph")
         return mpg_cval_handle.compute_cval(go_fast=go_fast, debug=debug)
 
-    def compute_W_prime(self, go_fast: bool = False, debug: bool = False):
+    def compute_W_prime(self, org_graph: Optional[TwoPlayerGraph] = None, go_fast: bool = False, debug: bool = False):
         """
         A method to compute w_prime function based on Algo 2. pseudocode.
         This function is a mapping from each edge to a real valued number - b
@@ -184,21 +189,27 @@ class RegretMinimizationStrategySynthesis:
         """
 
         print("*****************Constructing W_prime*****************")
+
+        if isinstance(org_graph, type(None)):
+            org_graph = self.graph
+        else:
+            org_graph = org_graph
+
         coop_dict = self._compute_cval_from_mpg(go_fast=go_fast, debug=debug)
 
         w_prime: Dict[Tuple: float] = {}
 
-        for edge in self.graph._graph.edges():
+        for edge in org_graph._graph.edges():
 
             # if the node belongs to adam, then the corresponding edge is assigned -inf
-            if self.graph._graph.nodes(data='player')[edge[0]] == 'adam':
+            if org_graph._graph.nodes(data='player')[edge[0]] == 'adam':
                 w_prime.update({edge: -1 * math.inf})
 
             else:
                 # a list to save all the alternate strategy cVals from a node and then selecting
                 # the max of it
                 tmp_cvals = []
-                out_going_edge = set(self.graph._graph.out_edges(edge[0])) - set([edge])
+                out_going_edge = set(org_graph._graph.out_edges(edge[0])) - set([edge])
                 for alt_e in out_going_edge:
                     tmp_cvals.append(coop_dict[alt_e[1]])
 
@@ -255,7 +266,54 @@ class RegretMinimizationStrategySynthesis:
 
         return self.payoff.compute_cVal(node)
 
-    def _construct_g_b(self, g_hat: TwoPlayerGraph,
+    def add_delta_to_org_game(self, finite: bool = False) -> TwoPlayerGraph:
+        """
+        A helper method to add a constant value delta to the org game. This ensure that when we construct g_hat all the
+        weights in each copy of G_b remains negative.
+
+        detla = bmin for infinite payoffs
+        delta = bmin/lambda for finite payoff - more on this later.
+
+        Also, as per my claim Reg(G_del) = Reg(G). A key assumption is that all the weights in G should be <=0.
+        :return:
+        """
+        G_delta: TwoPlayerGraph = copy.deepcopy(self.graph)
+
+        if finite:
+            b_min = min(self.b_val - {-1 * math.inf})
+            lambda_max: int = len(self.graph._graph.nodes()) - 1
+
+            delta: Union[int, float] = b_min/lambda_max
+
+            for _e in self.graph._graph.edges():
+                _u = _e[0]
+                _v = _e[1]
+
+                _w: int = self.graph.get_edge_weight(_u, _v)
+                # if _w < 0:
+                _new_w: Union[int, float] = _w + delta - 1
+                # else:
+                    # _new_w: Union[int, float] = _w - delta
+
+                G_delta._graph[_u][_v][0]['weight'] = _new_w
+
+        else:
+            delta: int = min(self.b_val - {-1 * math.inf})
+
+            for _e in self.graph._graph.edges():
+                _u = _e[0]
+                _v = _e[1]
+
+                _w: int = self.graph.get_edge_weight(_u, _v)
+                _new_w: int = _w + delta - 1
+
+                G_delta._graph[_u][_v][0]['weight'] = _new_w
+
+        return G_delta
+
+    def _construct_g_b(self,
+                       g_hat: TwoPlayerGraph,
+                       org_game: TwoPlayerGraph,
                        b: float,
                        w_prime: Dict,
                        init_node: List[Tuple],
@@ -279,9 +337,9 @@ class RegretMinimizationStrategySynthesis:
         # assign each node a player if it hasn't been initialized yet
         for n in g_hat._graph.nodes():
 
-            if self.graph._graph.has_node(n[0]):
+            if org_game._graph.has_node(n[0]):
                 # add aps to each node in g_hat
-                g_hat._graph.nodes[n]['ap'] = self.graph._graph.nodes[n[0]].get('ap')
+                g_hat._graph.nodes[n]['ap'] = org_game._graph.nodes[n[0]].get('ap')
 
             # assign the nodes of G_b with v1 in it at n[0] to have a 'init' attribute
             if len(n) == 2 and n[0] == init_node[0][0]:
@@ -293,14 +351,31 @@ class RegretMinimizationStrategySynthesis:
                     g_hat._graph.nodes[n]['accepting'] = True
 
             if g_hat._graph.nodes(data='player')[n] is None:
-                if self.graph._graph.nodes(data='player')[n[0]] == "adam":
+                if org_game._graph.nodes(data='player')[n[0]] == "adam":
                     g_hat._graph.nodes[n]['player'] = "adam"
                 else:
                     g_hat._graph.nodes[n]['player'] = "eve"
 
         # a sample edge og g_hat: ((".","."),"."),((".","."),".") and
         # a sample edge of org_graph: (".", ""),(".", ".")
-        for e in self.graph._graph.edges():
+        # lets add the constraint that the w should not be greater or equal to b
+
+        # b_max = max(self.b_val)
+
+        # for e in self.graph._graph.edges():
+        #     org_weight = self.graph._graph[e[0]][e[1]][0]['weight']
+        #
+        #     if e[1] == 'accept_all':
+        #         g_hat.add_edge(((e[0]), b), ((e[1]), b))
+        #         continue
+        #
+        #     if b == b_max:
+        #         if w_prime[e] <= b:
+        #             g_hat.add_edge(((e[0]), b), ((e[1]), b))
+        #     else:
+        #         if w_prime[e] <= b and org_weight < b:
+        #             g_hat.add_edge(((e[0]), b), ((e[1]), b))
+        for e in org_game._graph.edges():
             if w_prime[e] <= b:
                 g_hat.add_edge(((e[0]), b), ((e[1]), b))
 
@@ -346,13 +421,15 @@ class RegretMinimizationStrategySynthesis:
         # add the edges with the weights
         g_hat.add_weighted_edges_from([('v0', 'v0', 0),
                                        ('v0', 'v1', 0),
-                                       ('vT', 'vT', -1 * math.inf)])
+                                       ('vT', 'vT', 0)])
+                                       # ('vT', 'vT', -1 * math.inf)])
         return g_hat
 
     def construct_g_hat(self,
                         w_prime: Dict[Tuple, float],
                         acc_min_edge_weight: bool = False,
                         acc_max_edge_weight: bool = False,
+                        game: Optional[TwoPlayerGraph] = None,
                         finite: bool = False, debug: bool = False, plot: bool = False) -> TwoPlayerGraph:
         print("*****************Constructing G_hat*****************")
         # construct new graph according to the pseudocode 3
@@ -369,16 +446,22 @@ class RegretMinimizationStrategySynthesis:
         else:
             G_hat = self._construct_g_hat_nodes(G_hat)
 
+        # choose which game to construct g_hat from - the org game G to the shifted G_delta
+        if isinstance(game, type(None)):
+            org_game = self.graph
+        else:
+            org_game = game
+
         # add accepting states to g_hat
-        accp_nodes = self.graph.get_accepting_states()
+        accp_nodes = org_game.get_accepting_states()
 
         # compute the range of w_prime function
         w_set = set(w_prime.values()) - {-1 * math.inf}
-        org_init_nodes = self.graph.get_initial_states()
+        org_init_nodes = org_game.get_initial_states()
 
         # construct g_b
         for b in w_set - {math.inf}:
-            self._construct_g_b(G_hat, b, w_prime, org_init_nodes, accp_nodes)
+            self._construct_g_b(G_hat, org_game, b, w_prime, org_init_nodes, accp_nodes)
 
         # add edges between v1 of G_hat and init nodes(v1_b/ ((v1, 1), b) of graph G_b with edge weights 0
         # get init node of the org graph
@@ -387,7 +470,8 @@ class RegretMinimizationStrategySynthesis:
         # add edge with weigh 0 from v1 to (v1,b)
         for _init_n in init_node_list:
             if isinstance(_init_n[0], tuple):
-                G_hat.add_weighted_edges_from([('v1', _init_n[0], 0)])
+                _b_val: int = _init_n[0][-1]
+                G_hat.add_weighted_edges_from([('v1', _init_n[0], -1*_b_val)])
                 G_hat.remove_state_attr(_init_n[0], "init")
 
         # add edges with their respective weights; a sample edge ((".","."),"."),((".","."),".") for with gmin/gmax and
@@ -404,8 +488,10 @@ class RegretMinimizationStrategySynthesis:
                     G_hat._graph[e[0]][e[1]][0]['weight'] = 0
 
                 else:
-                    G_hat._graph[e[0]][e[1]][0]['weight'] = self._w_hat_b(org_edge=(e[0][0], e[1][0]),
-                                                                          b_value=e[0][1])
+                    G_hat._graph[e[0]][e[1]][0]['weight'] = self._w_hat_b(org_game=org_game,
+                                                                          org_edge=(e[0][0], e[1][0]),
+                                                                          b_value=e[0][1],
+                                                                          finite=False)
 
         # for nodes that don't have any outgoing edges add a transition to the terminal node i.e 'T' in our case
         for node in G_hat._graph.nodes():
@@ -434,10 +520,13 @@ class RegretMinimizationStrategySynthesis:
         _trap_states = G_hat.get_trap_states()
 
         # the weights of vT is different for finite and infinite case
-        for _s in _accp_states + _trap_states:
-            if _s != "vT":
-                for _pre_s in G_hat._graph.predecessors(_s):
-                    G_hat._graph[_pre_s][_s][0]['weight'] = 0
+        # if not finite:
+        #     for _s in _accp_states + _trap_states:
+        #         if _s != "vT":
+        #             for _pre_s in G_hat._graph.predecessors(_s):
+        #                 # avoid trap state self loops
+        #                 if _pre_s not in _trap_states:
+        #                     G_hat._graph[_pre_s][_s][0]['weight'] = 0
 
         return G_hat
 
@@ -508,7 +597,7 @@ class RegretMinimizationStrategySynthesis:
 
         return _g_b_graph
 
-    def compute_cumulative_reg(self, g_hat: TwoPlayerGraph):
+    def compute_cumulative_reg(self, g_hat: TwoPlayerGraph) -> Tuple[Dict, float]:
         """
         A method to that extracts all the g_b from g_hat, solves each g_b game separately and computes the value of the
         init state. Chooses the game with the least init state value, compute a str in that game.
@@ -533,7 +622,7 @@ class RegretMinimizationStrategySynthesis:
         _g_b_state_val = []
         _g_b_solved_instances = []
         for _b, _game in _g_b_instances:
-            mcr_solver = ValueIteration(_game, competitve=True)
+            mcr_solver = ValueIteration(_game, competitive=True)
             mcr_solver._MAX_POSSIBLE_W = _max_egde_val
             mcr_solver.solve(debug=True, plot=False)
             _g_b_solved_instances.append((_b, mcr_solver))
@@ -574,7 +663,12 @@ class RegretMinimizationStrategySynthesis:
         #     print("There does not exists a winning strategy")
         #     _b_val = max(self.b_val)
 
-        _b_val = min(_g_b_init_state_values, key=operator.itemgetter(1))[0]
+        _b_val = min(_g_b_init_state_values, key=operator.itemgetter(1))[0]\
+
+        for _b, _state_val in _g_b_init_state_values:
+            if _b == _b_val:
+                reg_val = _state_val
+
         # _g_b_graph = self._extract_g_b_graph(_b_val, g_hat)
 
         # _solver = ValueIteration(_g_b_graph, competitve=True)
@@ -590,11 +684,61 @@ class RegretMinimizationStrategySynthesis:
 
         print("Debugging")
 
-        return str_dict
+        return str_dict, reg_val
+
+    def new_compute_cumulative_reg(self, g_hat: TwoPlayerGraph, plot: bool = False) -> Tuple[Dict, float]:
+        """
+        Given the g_hat instance, call the value iteration algorithm to compute the value of the state v0
+        :param g_hat:
+        :param plot:
+        :return:
+        """
+
+        _mcr_solver = ValueIteration(g_hat, competitive=True)
+        _str_dict = _mcr_solver.solve(debug=True, plot=False)
+        _val_dict = _mcr_solver.state_value_dict
+
+        # convert all the value to negative
+        for _s, _val in _val_dict.items():
+            if _val == 2147483647:
+                _val_dict[_s] = -2147483648
+            else:
+                _val_dict[_s] = -1 * abs(_val)
+
+        # get the state value associated w v0
+        reg_val = -1 * _val_dict["v0"]
+
+        # add the state values computed
+        for _node, _node_val in _val_dict.items():
+            # if state value is == MAX_INT_VAL then print inf
+            if _node_val == -2147483648:
+                g_hat.add_state_attribute(_node, 'ap', 'inf')
+            else:
+                g_hat.add_state_attribute(_node, 'ap', _node_val)
+
+        # str_dict = _mcr_solver.compute_strategies(max_prefix_len=0)
+
+        if plot:
+            # add str attr
+            g_hat.set_edge_attribute('strategy', False)
+
+            # add edges that belong to str as True (red for visualization)
+            for curr_node, next_node in _str_dict.items():
+                if isinstance(next_node, list):
+                    for n_node in next_node:
+                        g_hat._graph.edges[curr_node, n_node, 0]['strategy'] = True
+                else:
+                    g_hat._graph.edges[curr_node, next_node, 0]['strategy'] = True
+
+            g_hat.plot_graph()
+
+        return _str_dict, reg_val
 
     def _w_hat_b(self,
+                 org_game: TwoPlayerGraph,
                  org_edge: Tuple[Tuple[str, str], Tuple[str, str]],
-                 b_value: float) -> float:
+                 b_value: float,
+                 finite: bool) -> float:
         """
         an helper function that returns the w_hat value for a g_b graph : w_hat(e) = w(e) - b
         :param org_edge: edges of the format ("v1", "v2") or Tuple of tuples
@@ -602,7 +746,15 @@ class RegretMinimizationStrategySynthesis:
         :return:
         """
         try:
-            return self.graph._graph[org_edge[0]][org_edge[1]][0].get('weight') + b_value
+            if finite:
+                _sub_val = b_value/(len(org_game._graph.nodes()) - 1)
+                return org_game._graph[org_edge[0]][org_edge[1]][0].get('weight') - _sub_val
+            else:
+                # if b_value == -3:
+                #     return org_game._graph[org_edge[0]][org_edge[1]][0].get('weight') - b_value - 4
+                # else:
+                # return org_game._graph[org_edge[0]][org_edge[1]][0].get('weight') - b_value
+                return org_game._graph[org_edge[0]][org_edge[1]][0].get('weight')
         except KeyError:
             print("The code should have never thrown this error. The error strongly indicates that the edges of the"
                   "original graph has been modified and the edge {} does not exist".format(org_edge))

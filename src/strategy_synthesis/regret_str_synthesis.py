@@ -77,17 +77,17 @@ class RegretMinimizationStrategySynthesis:
         INT_MAX_VAL = 2147483647
         # as the edge weight in the value iteration are all positive, we need to manually add negative weights to them
         val_dict = mcr_solver.state_value_dict
-
-        # also the MAX value used in the ValueIteration algorithm is a finite value. So we will replace them with -inf
-        for _s, _s_val in val_dict.items():
-            _new_cost = _s_val
-            if _s_val > 0:
-                _new_cost = -1 * _s_val
-
-                if _new_cost == -1 * INT_MAX_VAL:
-                    _new_cost = -1 * math.inf
-
-            val_dict[_s] = _new_cost
+        #
+        # # also the MAX value used in the ValueIteration algorithm is a finite value. So we will replace them with -inf
+        # for _s, _s_val in val_dict.items():
+        #     _new_cost = _s_val
+        #     # if _s_val > 0:
+        #     _new_cost = -1 * _s_val
+        #
+        #     if _new_cost == -1 * INT_MAX_VAL:
+        #         _new_cost = -1 * math.inf
+        #
+        #     val_dict[_s] = _new_cost
 
         w_prime: Dict[Tuple: float] = {}
 
@@ -110,9 +110,11 @@ class RegretMinimizationStrategySynthesis:
                     _state_cvals.append(_total_weight)
 
                 if len(_state_cvals) != 0:
-                    w_prime.update({edge: max(_state_cvals)})
+                    # w_prime.update({edge: max(_state_cvals)})
+                    w_prime.update({edge: min(_state_cvals)})
                 else:
-                    w_prime.update({edge: -1 * math.inf})
+                    # w_prime.update({edge: -1 * math.inf})
+                    w_prime.update({edge: 0})
 
         self.b_val = set(w_prime.values())
         print(f"the value of b are {set(w_prime.values())}")
@@ -686,6 +688,72 @@ class RegretMinimizationStrategySynthesis:
 
         return str_dict, reg_val
 
+    def post_processing_g_hat(self, g_hat: TwoPlayerGraph):
+        """
+        A method that identifies all the nodes that transit to the vT state. We then remove these sys nodes and their
+        corresponding env nodes. We check if the graph is total and repeat the process all over again until we reach a
+        fix point i.e we have a total graph.
+        :param g_hat:
+        :return:
+        """
+
+        # identify all the nodes that transit to vT
+        _pre_vT_states = set([_n for _n in g_hat._graph.predecessors('vT')])
+
+        # remove vT from the above list as thats the only state (apart from tmp_accp) that has a self loop
+        _pre_vT_states.remove('vT')
+
+        # also remove any initial state of any Gb graph
+        _init_states = set([_n for _n in g_hat._graph.successors('v1')])
+        for _init_s in _init_states:
+            _pre_vT_states.discard(_init_s)
+            # try:
+            #     _pre_vT_states.remove(_acc_s)
+            # except ValueError:
+            #     pass
+
+        # identify its predecessors that are essentially states that belong to the env player
+        _pre_adam_states = set()
+        for _sys_state in _pre_vT_states:
+            for _n in g_hat._graph.predecessors(_sys_state):
+                # the sys state and the adam state should be match the human intervention number
+                if _sys_state[0][0][1] == _n[0][0][1]:
+                    _pre_adam_states.add(_n)
+
+        # remove these nodes and check if the graph is total
+        g_hat._graph.remove_nodes_from(list(_pre_adam_states | _pre_vT_states))
+
+        _nodes_to_be_pruned = set()
+        for _n in g_hat._graph.nodes:
+            if len(list(g_hat._graph.successors(_n))) == 0:
+                _nodes_to_be_pruned.add(_n)
+
+        while len(_nodes_to_be_pruned) != 0:
+            # repeat the above process - get the pre adam states of the sys states i.e _nodes_to_be_pruned
+            _pre_adam_states = set()
+            for _sys_s in _nodes_to_be_pruned:
+                for _n in g_hat._graph.predecessors(_sys_s):
+                    if _sys_s[0][0][1] == _n[0][0][1]:
+                        _pre_adam_states.add(_n)
+
+            # remove these nodes and check if the graph is total
+            g_hat._graph.remove_nodes_from(list(_nodes_to_be_pruned | _pre_adam_states))
+
+            _nodes_to_be_pruned = set()
+            for _n in g_hat._graph.nodes:
+                if len(list(g_hat._graph.successors(_n))) == 0:
+                    _nodes_to_be_pruned.add(_n)
+
+        # once we are done - do one sanity check of init states of Gb. if they do not have any out going
+        # edge then lets just add a self-loop for these states
+        for _s in _init_states:
+            if len(list(g_hat._graph.successors(_s))) == 1:
+                if list(g_hat._graph.successors(_s))[0] == 'vT':
+                    g_hat._graph.remove_edge(_s, 'vT')
+                    g_hat.add_edge(_s, _s, weight=0)
+
+
+
     def new_compute_cumulative_reg(self, g_hat: TwoPlayerGraph, plot: bool = False) -> Tuple[Dict, float]:
         """
         Given the g_hat instance, call the value iteration algorithm to compute the value of the state v0
@@ -694,22 +762,39 @@ class RegretMinimizationStrategySynthesis:
         :return:
         """
 
+        # remove nodes that transit to vT and keep on doing it until you reach a fix point
+        self.post_processing_g_hat(g_hat)
+
         _mcr_solver = ValueIteration(g_hat, competitive=True)
         _str_dict = _mcr_solver.solve(debug=True, plot=False)
         _val_dict = _mcr_solver.state_value_dict
+
+        # override th str picked by v1 - act as MAX - exception case
+        # _g_b_init_nodes = [_n for _n in g_hat._graph.successors('v1')]
+        # INT_MAX_VAL = 2147483647
+        # max_val = 0
+        # for _s in _g_b_init_nodes:
+        #     if _val_dict[_s] != INT_MAX_VAL:
+        #         # negation because internally things were flipped
+        #         _edge_val = _val_dict[_s] - g_hat.get_edge_weight('v1', _s)
+        #         if _edge_val > max_val:
+        #             max_val = _edge_val
+        #             _str_dict['v1'] = _s
 
         # convert all the value to negative
         for _s, _val in _val_dict.items():
             if _val == 2147483647:
                 _val_dict[_s] = -2147483648
             else:
-                _val_dict[_s] = -1 * abs(_val)
+                _val_dict[_s] = -1 * _val
 
         # get the state value associated w v0
         reg_val = -1 * _val_dict["v0"]
 
         # add the state values computed
         for _node, _node_val in _val_dict.items():
+            if _node == "tmp_accp":
+                continue
             # if state value is == MAX_INT_VAL then print inf
             if _node_val == -2147483648:
                 g_hat.add_state_attribute(_node, 'ap', 'inf')
@@ -724,6 +809,12 @@ class RegretMinimizationStrategySynthesis:
 
             # add edges that belong to str as True (red for visualization)
             for curr_node, next_node in _str_dict.items():
+                # if next_node == ('tmp_accp', 16) and curr_node == 'vT':
+                #     next_node = curr_node
+
+                if next_node == ('tmp_accp'):
+                    next_node = curr_node
+
                 if isinstance(next_node, list):
                     for n_node in next_node:
                         g_hat._graph.edges[curr_node, n_node, 0]['strategy'] = True
@@ -1005,11 +1096,11 @@ class RegretMinimizationStrategySynthesis:
                           plot: bool = False) -> Dict:
         g_hat.set_edge_attribute('strategy', False)
 
-        if only_eve:
-            self._add_strategy_flag_only_eve(g_hat, str_dict)
-
-        else:
-            self._add_strategy_flag(g_hat, str_dict)
+        # if only_eve:
+        #     self._add_strategy_flag_only_eve(g_hat, str_dict)
+        #
+        # else:
+        #     self._add_strategy_flag(g_hat, str_dict)
 
         _org_str = {}
         # get the org_str

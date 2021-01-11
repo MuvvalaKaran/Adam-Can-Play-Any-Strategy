@@ -138,6 +138,20 @@ class ValueIteration:
 
         _trap_states = self.org_graph.get_trap_states()
 
+        # if there is no trap state or nothing transits to the trap state then initialize the accepting state as the
+        # target state
+        if len(_trap_states) == 0:
+            warnings.warn("Trap state not found: Initializing cooperative game with accepting state as the target"
+                          " vertex")
+            self._initialize_target_state_costs()
+
+        for _trap_state in _trap_states:
+            if len(list(self.org_graph._graph.predecessors(_trap_state))) == 1:
+                warnings.warn("Trap state not found: Initializing cooperative game with accepting state as the target"
+                              " vertex")
+                self._initialize_target_state_costs()
+
+
         for _s in _trap_states:
             _node_int = self.node_int_map[_s]
             self.val_vector[_node_int][0] = 0
@@ -166,16 +180,193 @@ class ValueIteration:
         """
         self._num_of_nodes = len(list(self.org_graph._graph.nodes))
         self._W = abs(self.org_graph.get_max_weight())
+        # if self.competitive:
+        #     if self.org_graph._graph_name == "G_hat":
+        #         self._modify_graph_for_finite_state_values_in_trap_region()
+        #     else:
+        #         self._new_modify_graph_for_finite_state_values_in_trap_region()
+
+        # an intermediate step to verify my claim
+        # self._add_auxiliary_nodes_between_trap_and_new_accp_state()
+
         self._node_int_map = bidict({state: index for index, state in enumerate(self.org_graph._graph.nodes)})
         self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
 
-        # if self.org_graph._graph_name != 'G_hat': `
+        # if self.org_graph._graph_name != 'G_hat':
         # if not self.competitive:
-        self._convert_weights_to_positive_costs(plot=False, debug=False)
+        # if self.competitive:
+        # self._convert_weights_to_positive_costs(plot=False, debug=False)
+
         # self._add_accp_states_self_loop_zero_weight()
+        # if not self.competitive:
+        #     self._initialize_trap_state_costs()
+        # else:
         self._initialize_target_state_costs()
+        # self._initialize_trap_state_costs()
         # if self.competitive:
         #     self._initialize_trap_state_costs()
+
+    def _add_auxiliary_nodes_between_trap_and_new_accp_state(self):
+        # count the # of nodes in the graph and add the equivalent number of eve states from
+        # trap -> eve ->...-> tmp_accp with edge weight 0.
+        # remove the org edge
+        self.org_graph._graph.remove_edge("T0_S2", "tmp_accp")
+
+        for i in range(self.num_of_nodes):
+            self.org_graph.add_state(f"eve_{i}", player="eve")
+            if i != 0:
+                self.org_graph.add_edge(f"eve_{i-1}", f"eve_{i}", weight=0)
+
+        # add edges with edge weight 0
+        self.org_graph.add_edge("T0_S2", "eve_0", weight=-67)
+        self.org_graph.add_edge(f"eve_{self.num_of_nodes - 1}", "tmp_accp", weight=0)
+
+        self._num_of_nodes = len(list(self.org_graph._graph.nodes))
+
+    def _modify_graph_for_finite_state_values_in_trap_region(self):
+        """
+        A method that adds a auxiliary accepting state from the current accepting state as well as the trap state to
+        the new accepting state. Visually
+
+        trap--W_bar --> new_accp (self-loop weight 0)
+                 /^
+                /
+               0
+              /
+             /
+            /
+        Acc
+
+        W_bar : Highest payoff any state could ever achieve when playing total-payoff game in cooperative setting,
+        assuming strategies to be non-cylic, will be equal to (|V| -1)W where W is the max absolute weight.
+
+        Now we remove Acc as the accepting state and add new_accp as the new accepting state and initialize this state
+        to 0 in the value iteration algorithm - essentially eliminating a trap region.
+
+        :return:
+        """
+        # remove the current accepting state
+        old_accp_states = self.org_graph.get_accepting_states()
+        trap_states = self.org_graph.get_trap_states()
+
+        # remove any successor of v1, if any : This is required we remove vT in g_hat
+        _g_b_init_states = [_n for _n in self.org_graph._graph.successors('v1')]
+        for _s in _g_b_init_states:
+            try:
+                trap_states.remove(_s)
+            except:
+                pass
+
+        # init_states = self.org_graph.get_initial_states()
+
+        adv_solver = ReachabilitySolver(self.org_graph)
+        adv_solver.reachability_solver()
+        self._trap_region: list = adv_solver.env_winning_region
+
+        # remove trap region for now
+        for _trap_s in trap_states:
+            self._trap_region.remove(_trap_s)
+
+        w_bar: Optional[int, float] = ((self.num_of_nodes - 1) * self.W)
+        # w_bar = 205
+        # remove self-loops of accepting states and add edge from that state to the new accepting state with edge
+        # weight 0
+        for _accp in old_accp_states:
+            self.org_graph._graph.remove_edge(_accp, _accp)
+            self.org_graph.remove_state_attr(_accp, "accepting")
+            self.org_graph.add_weighted_edges_from([(_accp, 'tmp_accp', w_bar)])
+            # self.org_graph.add_weighted_edges_from([(_accp, 'tmp_accp', w_bar)])
+
+        # remove self-loops of trap states and add edge from that state to the new accepting state with edge weight
+        # w_bar
+        # _rnd_trap_state = self.org_graph.get_accepting_states()[0]
+        for _trap in trap_states:
+            self.org_graph._graph.remove_edge(_trap, _trap)
+            # for _init_s in init_states:
+            if _trap == 'vT':
+                self.org_graph.add_weighted_edges_from([(_trap, 'tmp_accp', -w_bar)])
+            else:
+                self.org_graph.add_weighted_edges_from([(_trap, 'tmp_accp', 0)])
+                # self.org_graph.add_weighted_edges_from([(_trap, 'tmp_accp', -w_bar)])
+
+        self.org_graph.add_weighted_edges_from([('tmp_accp', 'tmp_accp', 0)])
+        self.org_graph.add_accepting_state('tmp_accp')
+
+        # as we added one extra state we need to increment our number of nodes count
+        self._num_of_nodes += 1
+
+    def _new_modify_graph_for_finite_state_values_in_trap_region(self):
+        """
+        A method that adds a auxiliary accepting state from the current accepting state as well as the trap state to
+        the new accepting state. Visually
+
+        trap--W_bar --> new_accp (self-loop weight 0)
+                 /^
+                /
+               0
+              /
+             /
+            /
+        Acc
+
+        W_bar : Highest payoff any state could ever achieve when playing total-payoff game in cooperative setting,
+        assuming strategies to be non-cylic, will be equal to (|V| -1)W where W is the max absolute weight.
+
+        Now we remove Acc as the accepting state and add new_accp as the new accepting state and initialize this state
+        to 0 in the value iteration algorithm - essentially eliminating a trap region.
+
+        :return:
+        """
+        # remove the current accepting state
+        old_accp_states = self.org_graph.get_accepting_states()
+        trap_states = self.org_graph.get_trap_states()
+
+        # # remove any successor of v1, if any : This is required we remove vT in g_hat
+        # _g_b_init_states = [_n for _n in self.org_graph._graph.successors('v1')]
+        # for _s in _g_b_init_states:
+        #     try:
+        #         trap_states.remove(_s)
+        #     except:
+        #         pass
+
+        # init_states = self.org_graph.get_initial_states()
+        _tmp_game = self._remove_edges_to_the_trap_state()
+
+        adv_solver = ReachabilitySolver(_tmp_game)
+        adv_solver.reachability_solver()
+        self._trap_region: list = adv_solver.env_winning_region
+        _sys_str = adv_solver.sys_str
+
+        # remove trap region for now
+        # for _trap_s in trap_states:
+        #     self._trap_region.remove(_trap_s)
+
+        w_bar: Optional[int, float] = ((self.num_of_nodes - 1) * self.W)
+        # remove self-loops of accepting states and add edge from that state to the new accepting state with edge
+        # weight 0
+        for _accp in old_accp_states:
+            self.org_graph._graph.remove_edge(_accp, _accp)
+            self.org_graph.remove_state_attr(_accp, "accepting")
+            self.org_graph.add_weighted_edges_from([(_accp, 'tmp_accp', w_bar)])
+            # self.org_graph.add_weighted_edges_from([(_accp, 'tmp_accp', w_bar)])
+
+        # remove self-loops of trap states and add edge from that state to the new accepting state with edge weight
+        # w_bar
+        # _rnd_trap_state = self.org_graph.get_accepting_states()[0]
+        for _trap in trap_states:
+            self.org_graph._graph.remove_edge(_trap, _trap)
+            # for _init_s in init_states:
+            if _trap == 'vT':
+                self.org_graph.add_weighted_edges_from([(_trap, 'tmp_accp', -w_bar)])
+            else:
+                self.org_graph.add_weighted_edges_from([(_trap, 'tmp_accp', 0)])
+                # self.org_graph.add_weighted_edges_from([(_trap, 'tmp_accp', -w_bar)])
+
+        self.org_graph.add_weighted_edges_from([('tmp_accp', 'tmp_accp', 0)])
+        self.org_graph.add_accepting_state('tmp_accp')
+
+        # as we added one extra state we need to increment our number of nodes count
+        self._num_of_nodes += 1
 
     def convert_graph_to_mcr_graph(self):
         """
@@ -307,6 +498,7 @@ class ValueIteration:
         _max_str_dict = {}
         _min_str_dict = {}
         _min_reach_str_dict = {}
+        _max_reach_str_dict = {}
 
         while not self._is_same(_val_pre, _val_vector):
             if debug:
@@ -320,6 +512,157 @@ class ValueIteration:
                 _int_node = self.node_int_map[_n]
 
                 if _n == _accp_state:
+                    continue
+
+                if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
+                    _val_vector[_int_node][0], _next_max_node = self._get_max_env_val(_n, _val_pre)
+                    _max_str_dict[_n] = self.node_int_map.inverse[_next_max_node]
+                    # if _val_vector[_int_node] != _val_pre[_int_node]:
+                    #     _max_str_dict[_n] = self.node_int_map.inverse[_next_max_node]
+                    #
+                    #     if _val_pre[_int_node] == INT_MAX_VAL:
+                    #         _max_reach_str_dict[_n] = self.node_int_map.inverse[_next_max_node]
+
+                elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                    _val_vector[_int_node][0], _next_min_node = self._get_min_sys_val(_n, _val_pre)
+                    # _min_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+                    if _val_vector[_int_node] != _val_pre[_int_node]:
+                        _min_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+
+                        if _val_pre[_int_node] == INT_MAX_VAL:
+                            _min_reach_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+
+            for _n in self.org_graph._graph.nodes():
+                _int_node = self.node_int_map[_n]
+
+                if _n == _accp_state:
+                    continue
+
+                if _val_vector[_int_node][0] < -1 * (self.num_of_nodes - 1) * self.W:
+                    _val_vector[_int_node][0] = INT_MIN_VAL
+
+            self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
+
+        # update the state value dict
+        for i in range(self.num_of_nodes):
+            _s = self.node_int_map.inverse[i]
+            self.state_value_dict.update({_s: self.val_vector[i][iter_var]})
+
+        # for v0 we have to specially make an exception if v1 has value higher than 0 then go down else take self-loop
+        if self.competitive and self.org_graph._graph_name == "G_hat":
+            _v1_node_int = self.node_int_map["v1"]
+            if self.val_vector[_v1_node_int][0] >= 0:
+                _max_str_dict["v0"] = "v1"
+                self.state_value_dict["v0"] = self.state_value_dict["v1"]
+            else:
+                _max_str_dict["v0"] = "v0"
+
+        if plot:
+            self._add_state_costs_to_graph()
+            self.org_graph.plot_graph()
+
+        if debug:
+            print(f"Number of iteration to converge: {iter_var}")
+            print(f"Init state value: {self.state_value_dict[_init_node]}")
+            self._sanity_check()
+            # self.print_state_values()
+
+        return {**_max_str_dict, **_min_str_dict}
+
+    def _remove_edges_to_the_trap_state(self) -> TwoPlayerGraph:
+        # create a copy of the game
+        _game = copy.deepcopy(self.org_graph)
+
+        # identify states that transit to the trap state(s).
+        _trap_states = _game.get_trap_states()
+
+        _nodes_to_be_pruned = set()
+        for _s in _trap_states:
+            _nodes_to_be_pruned |= set([_n for _n in _game._graph.predecessors(_s)])
+
+        for _s in _trap_states:
+            # remove the trap states with self-loops
+            _nodes_to_be_pruned.discard(_s)
+
+        # we also need to remove the adam nodes that transit to these states
+        _pre_adam_states = set()
+        for _sys_state in _nodes_to_be_pruned:
+            for _n in _game._graph.predecessors(_sys_state):
+                if _sys_state[0][1] == _n[0][1]:
+                    _pre_adam_states.add(_n)
+
+        # remove these nodes
+        # _game._graph.remove_edges_from(_edges)
+        _game._graph.remove_nodes_from(list(_nodes_to_be_pruned | _pre_adam_states))
+
+        _nodes_to_be_pruned = set()
+        for _n in _game._graph.nodes():
+            if len(list(_game._graph.successors(_n))) == 0:
+                _nodes_to_be_pruned.add(_n)
+
+        # check if the graph is total and repeat the process until we reach a fix point
+        while len(_nodes_to_be_pruned) != 0:
+            _pre_adam_states = set()
+            for _sys_state in _nodes_to_be_pruned:
+                for _n in _game._graph.predecessors(_sys_state):
+                    if _sys_state[0][1] == _n[0][1]:
+                        _pre_adam_states.add(_n)
+
+            _game._graph.remove_edges_from(list(_nodes_to_be_pruned | _pre_adam_states))
+
+            _nodes_to_be_pruned = set()
+            for _n in _game._graph.nodes():
+                if len(list(_game._graph.successors(_n))) == 0:
+                    _nodes_to_be_pruned.add(_n)
+
+        return _game
+
+    def new_solve(self, debug: bool = False, plot: bool = False):
+        """
+        A method tHat implements Algorithm 1 from the paper. The operation performed at each step can be represented by
+        an operator say F.  F here is the _get_max_env_val() and _get_min_sys_val() methods. F is a monotonic operator
+        and is monotonically decreasing - meaning the function should not increase (it must not increase)! and converges
+        to the greatest fixed point of F.
+
+        But as all the weight are positive in our case, the weight monotonically increase and converge to the greatest
+        fixed point.
+
+        The Val of the game is infact the Greatest Fixed Point.  The upper bound on the # of iterations to converge is
+        (2|V| -1)W|V| + |V|.
+        :param debug:
+        :param plot:
+        :return:
+        """
+
+        # initially in the org val_vector the target node(s) will value 0
+        _accp_state = self.org_graph.get_accepting_states()[0]
+        _trap_state = "T0_S2"
+        _init_node = self.org_graph.get_initial_states()[0][0]
+        _init_int_node = self.node_int_map[_init_node]
+
+        # self.org_graph.add_state_attribute(_trap_state, "player", "eve")
+        self._add_trap_state_player()
+
+        _val_vector = copy.deepcopy(self.val_vector)
+        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+
+        iter_var = 0
+        _max_str_dict = {}
+        _min_str_dict = {}
+        _min_reach_str_dict = {}
+        _max_reach_str_dict = {}
+
+        while not self._is_same(_val_pre, _val_vector):
+            if debug:
+                if iter_var % 1000 == 0:
+                    print(f"{iter_var} Iterations")
+            _val_pre = copy.copy(_val_vector)
+            iter_var += 1
+
+            for _n in self.org_graph._graph.nodes():
+                _int_node = self.node_int_map[_n]
+
+                if _n == _accp_state or _n == _trap_state:
                     continue
 
                 if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
@@ -344,6 +687,11 @@ class ValueIteration:
                     _val_vector[_int_node][0] = INT_MIN_VAL
 
             self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
+
+            # wait for all the others states to converge and then back-propagate the trap edge weight
+            if self._is_same(_val_pre, _val_vector):
+                _trap_int_node = self.node_int_map[_trap_state]
+                _val_vector[_trap_int_node][0] = self.org_graph.get_edge_weight(_trap_state, 'tmp_accp')
 
         # update the state value dict
         for i in range(self.num_of_nodes):
@@ -827,8 +1175,8 @@ class ValueIteration:
         _succ_vals: List = []
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
-            # val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
-            _val = (_node_int, pre_vec[_node_int][0])
+            _val = (_node_int, self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0])
+            # _val = (_node_int, pre_vec[_node_int][0])
             _succ_vals.append(_val)
 
         # get org node int value
@@ -841,7 +1189,7 @@ class ValueIteration:
         if INT_MIN_VAL <= _val <= INT_MAX_VAL:
             return _val, _next_node_int
 
-        return pre_vec[_curr_node_int][0], _curr_node_int
+        return pre_vec[_curr_node_int][0], _next_node_int
 
     def _add_state_costs_to_graph(self):
         """
@@ -853,7 +1201,8 @@ class ValueIteration:
         for _n in self.org_graph._graph.nodes():
             self.org_graph.add_state_attribute(_n, "ap", self.state_value_dict[_n])
 
-    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Tuple[Union[int, float], int]:
+    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray,)\
+            -> Tuple[Union[int, float], int]:
         """
         A method that returns the min value of the current node that belongs to the sys
         :param node:
@@ -862,16 +1211,43 @@ class ValueIteration:
         :return:
         """
 
+        # if node in self._trap_region:
+        #     _succ_vals: List = []
+        #     for _next_n in self.org_graph._graph.successors(node):
+        #         _node_int = self.node_int_map[_next_n]
+        #         _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
+        #         if _val < INT_MAX_VAL:
+        #             _succ_vals.append((_node_int, _val))
+        #
+        #     if len(_succ_vals) != 0:
+        #         _next_node_int, _val = max(_succ_vals, key=operator.itemgetter(1))
+        #     else:
+        #         # if there are'nt any successors that have value < inf, then just select any neighbour of the state
+        #         _next_node_int = _node_int
+        #         _val = pre_vec[_node_int][0]
+
+        # else:
         _succ_vals: List = []
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
             _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
-            _succ_vals.append((_node_int, _val))
+            if pre_vec[_node_int][0] == INT_MAX_VAL:
+                _succ_vals.append((_node_int, INT_MAX_VAL))
+            else:
+                _succ_vals.append((_node_int, _val))
 
+        # if self.competitive:
+        #     _next_node_int, _val = max(_succ_vals, key=operator.itemgetter(1))
+        # else:
         _next_node_int, _val = min(_succ_vals, key=operator.itemgetter(1))
+        # if self.competitive:
+        #     if node in self._trap_region:
+        #         _next_node_int = max(_succ_vals, key=operator.itemgetter(1))[0]
 
-        _curr_node_int = self.node_int_map[node]
         if INT_MIN_VAL <= _val <= INT_MAX_VAL:
             return _val, _next_node_int
 
-        return pre_vec[_curr_node_int][0], _curr_node_int
+        _curr_node_int = self.node_int_map[node]
+        _val = pre_vec[_curr_node_int][0]
+
+        return _val, _next_node_int

@@ -48,14 +48,14 @@ class MiniGrid(FiniteTransSys):
         # we will manually assign a weight here
 
         ACTION_STR_TO_WT = {
-            'north': -1,
-            'south': -1,
-            'east': -1,
-            'west': -1,
-            'northeast': -1,
-            'northwest': -1,
-            'southeast': -1,
-            'southwest': -1
+            'north': 1,
+            'south': 1,
+            'east': 1,
+            'west': 1,
+            'northeast': 1,
+            'northwest': 1,
+            'southeast': 1,
+            'southwest': 1
         }
 
         # NOTE : ALL actions have the same cost of 1 unless specified in the yaml specifically

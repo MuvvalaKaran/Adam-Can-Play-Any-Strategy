@@ -3,6 +3,7 @@ import enum
 import abc
 import warnings
 import sys
+import copy
 
 import numpy as np
 from typing import Tuple, Optional, Dict, Union
@@ -70,7 +71,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 1
+    human_intervention: int = 2
 
     def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
         self.finite = _finite
@@ -140,7 +141,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_16.value
-        ENV_ID = MiniGridLavaEnv.env_2.value
+        ENV_ID = MiniGridLavaEnv.env_5.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -186,7 +187,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
                                       # sc_ltl="!(lava_red_open) U (water_blue_open)",
                                       sc_ltl="!(lava_red_open) U (goal_green_open)",
-                                      # sc_ltl="F (water_blue_open)",
+                                      # sc_ltl="F (goal_green_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -391,6 +392,81 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
                                       plot=self.plot_dfa)
 
 
+def add_common_accepting_state(trans_sys: TwoPlayerGraph, plot: bool = False) -> TwoPlayerGraph:
+    """
+    A method that adds a auxiliary accepting state from the current accepting state as well as the trap state to
+    the new accepting state. Visually
+
+    trap--W_bar --> new_accp (self-loop weight 0)
+             /^
+            /
+           0
+          /
+         /
+        /
+    Acc
+
+    W_bar : Highest payoff any state could ever achieve when playing total-payoff game in cooperative setting,
+    assuming strategies to be non-cylic, will be equal to (|V| -1)W where W is the max absolute weight.
+
+    Now we remove Acc as the accepting state and add new_accp as the new accepting state and initialize this state
+    to 0 in the value iteration algorithm - essentially eliminating a trap region.
+
+    :return:
+    """
+    # remove the current accepting state
+    _trans_sys = copy.deepcopy(trans_sys)
+
+    # compute the trap region
+    # adv_solver = ReachabilitySolver(_trans_sys)
+    # adv_solver.reachability_solver()
+    # _trap_region_nodes: list = adv_solver.env_winning_region
+    # _trap_num_of_edges = len(_trap_region_nodes)
+    # _w_bar_trap_human_edges = (_trap_num_of_edges * abs(_trans_sys.get_max_weight())) + 1
+
+    old_accp_states = _trans_sys.get_accepting_states()
+    trap_states = _trans_sys.get_trap_states()
+    _num_of_nodes = len(list(_trans_sys._graph.nodes))
+    _W = abs(_trans_sys.get_max_weight())
+    w_bar = ((_num_of_nodes - 1) * _W)
+
+    # add human edges that transit to sys states that transit to the trap state
+    # _pre_sys_trap_state = set()
+    # for _trap in trap_states:
+    #     _pre_sys_trap_state |= set([_n for _n in _trans_sys._graph.predecessors(_trap) if _n != _trap])
+    #
+    # # for the edges that do not intervene and transit to these sys_state we add w_bar weight:
+    # # System suffers if it does not intervenes
+    # for _sys_state in _pre_sys_trap_state:
+    #     for _n in _trans_sys._graph.predecessors(_sys_state):
+    #         if _sys_state[0][1] == _n[0][1]:
+    #             _trans_sys._graph[_n][_sys_state][0]['weight'] = 10 * w_bar
+
+    # remove self-loops of accepting states and add edge from that state to the new accepting state with edge
+    # weight 0
+    for _accp in old_accp_states:
+        _trans_sys._graph.remove_edge(_accp, _accp)
+        _trans_sys.remove_state_attr(_accp, "accepting")
+        _trans_sys.add_state_attribute(_accp, "player", "eve")
+        _trans_sys.add_weighted_edges_from([(_accp, 'tmp_accp', 0)])
+
+    # remove self-loops of trap states and add edge from that state to the new accepting state with edge weight
+    # w_bar
+    for _trap in trap_states:
+        _trans_sys._graph.remove_edge(_trap, _trap)
+        _trans_sys.add_state_attribute(_trap, "player", "eve")
+        _trans_sys.add_weighted_edges_from([(_trap, 'tmp_accp', w_bar)])
+
+    _trans_sys.add_weighted_edges_from([('tmp_accp', 'tmp_accp', 0)])
+    _trans_sys.add_accepting_state('tmp_accp')
+    _trans_sys.add_state_attribute('tmp_accp', "player", "eve")
+
+    if plot:
+        _trans_sys.plot_graph()
+
+    return _trans_sys, w_bar
+
+
 def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                mini_grid_instance: Optional[MinigridGraph] = None,
                                epsilon: float = 0,
@@ -404,8 +480,13 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
 
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
+    #
+    # # modify graph
+    # trans_sys, w_bar = add_common_accepting_state(trans_sys, plot=True)
 
     if finite:
+        # w_prime = reg_syn_handle.compute_W_prime_finite(org_graph=trans_sys)
+        # trans_sys._graph['accept_all']['tmp_accp'][0]['weight'] = w_bar
         w_prime = reg_syn_handle.compute_W_prime_finite()
     else:
         w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
@@ -422,7 +503,10 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
 
         g_hat = reg_syn_handle.construct_g_hat(w_prime, game=g_delta, finite=finite, debug=True, plot=True)
     else:
-        g_hat = reg_syn_handle.construct_g_hat(w_prime, game=None, finite=finite, debug=True, plot=False)
+        # g_hat = reg_syn_handle.construct_g_hat(w_prime, game=trans_sys, finite=finite, debug=True,
+        #                                        plot=True)
+        g_hat = reg_syn_handle.construct_g_hat(w_prime, game=None, finite=finite, debug=True,
+                                               plot=False)
 
     if finite:
         # reg_dict, reg_val = reg_syn_handle.compute_cumulative_reg(g_hat)
@@ -475,8 +559,18 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
 
 
 def test_mcr_game(trans_sys: TwoPlayerGraph, plot: bool = False):
+    # tmp add accepting state and the trap to eve player
+    _acc_states = trans_sys.get_accepting_states()
+    _trap_states = trans_sys.get_trap_states()
+    for _acc_s in _acc_states:
+        trans_sys.add_state_attribute(_acc_s, "player", "eve")
+
+    for _trap_s in _trap_states:
+        trans_sys.add_state_attribute(_trap_s, "player", "eve")
+
     mcr_solver = ValueIteration(trans_sys, competitive=True)
-    mcr_solver._MAX_POSSIBLE_W = (mcr_solver.num_of_nodes - 2) - abs(trans_sys.get_max_weight())
+    # mcr_solver._MAX_POSSIBLE_W = (mcr_solver.num_of_nodes - 2) - abs(trans_sys.get_max_weight())
+
     str_dict = mcr_solver.solve(debug=True, plot=False)
     # compute the state values by calling the value iteration algorithm
     _val_dict = mcr_solver.state_value_dict
@@ -486,10 +580,12 @@ def test_mcr_game(trans_sys: TwoPlayerGraph, plot: bool = False):
         if _val == 2147483647:
             _val_dict[_s] = -2147483648
         else:
-            _val_dict[_s] = -1 * abs(_val)
+            _val_dict[_s] = -1 * _val
 
     # add the state values computed
     for _node, _node_val in _val_dict.items():
+        if _node == "tmp_accp":
+            continue
         # if state value is == MAX_INT_VAL then print inf
         if _node_val == -2147483648:
             trans_sys.add_state_attribute(_node, 'ap', 'inf')
@@ -505,6 +601,9 @@ def test_mcr_game(trans_sys: TwoPlayerGraph, plot: bool = False):
 
         # add edges that belong to str as True (red for visualization)
         for curr_node, next_node in str_dict.items():
+            if next_node == "tmp_accp":
+                next_node = curr_node
+
             if isinstance(next_node, list):
                 for n_node in next_node:
                     trans_sys._graph.edges[curr_node, n_node, 0]['strategy'] = True
@@ -514,6 +613,7 @@ def test_mcr_game(trans_sys: TwoPlayerGraph, plot: bool = False):
         trans_sys.plot_graph()
 
     # print("Debugging")
+    sys.exit(-1)
 
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
@@ -544,6 +644,147 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
+
+def new_compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                                   mini_grid_instance: Optional[MinigridGraph] = None,
+                                   epsilon: float = 0,
+                                   max_human_interventions: int = 5,
+                                   plot: bool = True,
+                                   reg_syn: bool = False,
+                                   alt_reg_syn: bool = False):
+    """
+    A new regret computation method. Assumption: The weights on the graph represent costs and are hence non-negative.
+    Sys player is trying to minimize its cumulative cost while the env player is trying to maximize the cumulative cost.
+
+    Steps:
+
+        1. Add an auxiliary tmp_accp state from the accepting state and the trap state. The edge weight is 0 and W_bar
+           respectively. W_bar is equak to : (|V| - 1) x W where W is the max absolute weight
+        2. Compute the best competitive value and best alternate value for each strategy i.e edge for sys node.
+        3. Reg = competitive - cooperative(w')
+        4. On this reg graph we then play competitive game i.e Sys: Min player and Env: Max player
+        5. Map back these strategies to the original game.
+
+    :param trans_sys:
+    :param mini_grid_instance:
+    :param epsilon:
+    :param max_human_interventions:
+    :param plot:
+    :return:
+    """
+
+    # Add auxiliary accepting state
+    _game, _ = add_common_accepting_state(trans_sys, plot=False)
+
+    # play reg minimizing game
+    if reg_syn:
+
+        # compute best alternate value for each strategy
+        payoff = payoff_factory.get("cumulative", graph=_game)
+        reg_syn_handle = RegMinStrSyn(_game, payoff)
+
+        # alt_coop_vals = reg_syn_handle.compute_W_prime_finite()
+        # let try computing coop strs instead of alternate ones
+        coop_mcr_solver = ValueIteration(_game, competitive=False)
+        coop_mcr_solver.solve(debug=True, plot=False)
+        coop_val_dict = coop_mcr_solver.state_value_dict
+
+        # compute competitive values from each state
+        mcr_solver = ValueIteration(_game, competitive=True)
+        mcr_solver.solve(debug=True, plot=False)
+        _comp_val_dict = mcr_solver.state_value_dict
+
+        comp_vals: Dict[Tuple: float] = {}
+
+        for edge in _game._graph.edges():
+            _u = edge[0]
+            _v = edge[1]
+
+            # if the node belongs to adam, then the corresponding edge is assigned -inf
+            if _game._graph.nodes(data='player')[_u] == 'adam':
+                comp_vals.update({edge: 0})
+
+            else:
+                _state_cost = _comp_val_dict[_v]
+                _curr_w = _game.get_edge_weight(_u, _v)
+                _total_weight = _curr_w + _state_cost
+
+                comp_vals.update({edge: _total_weight})
+
+        # now that we comp and coop value for each edge(str), we construct a new graph with the edge weight given by
+        # comp(sigma, tau) - coop(sigma', tau)
+
+        _adv_reg_game: TwoPlayerGraph = copy.deepcopy(_game)
+
+        for _e in _game._graph.edges():
+            _u = _e[0]
+            _v = _e[1]
+
+            if _game._graph.nodes(data='player')[_u] == 'adam':
+                _new_weight = 0
+                _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+                continue
+
+            # if the out-degree of a sys state is exactly one then _new_weight is 0
+            if _game._graph.out_degree(_u) == 1:
+                _new_weight = 0
+            else:
+                # _new_weight = comp_vals[_e] - alt_coop_vals[_e]
+                _new_weight = comp_vals[_e] - coop_val_dict[_u]
+
+            # if _u == "trap":
+            #     _new_weight = 19
+
+            _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+
+        # now lets play a adversarial game on this new graph and compute reg minimizing strs
+        adv_mcr_solver = ValueIteration(_adv_reg_game, competitive=True)
+        str_dict = adv_mcr_solver.solve(debug=True, plot=False)
+        trans_sys = _adv_reg_game
+        # remove edges to the tmp_accp state for ease of plotting
+        trans_sys._graph.remove_edge('trap', 'tmp_accp')
+        trans_sys._graph.remove_edge('accept_all', 'tmp_accp')
+        trans_sys.add_weighted_edges_from([('accept_all', 'accept_all', 0), ('trap', 'trap', 0)])
+
+    elif alt_reg_syn:
+        # compute the competitive strategy for the human player
+        pass
+
+    # play a pure adversarial game
+    else:
+        mcr_solver = ValueIteration(_game, competitive=True)
+        str_dict = mcr_solver.solve(debug=True, plot=False)
+
+    if plot:
+        # add str attr
+        trans_sys.set_edge_attribute('strategy', False)
+
+        # add edges that belong to str as True (red for visualization)
+        for curr_node, next_node in str_dict.items():
+            if next_node == "tmp_accp":
+                next_node = curr_node
+
+            if isinstance(next_node, list):
+                for n_node in next_node:
+                    trans_sys._graph.edges[curr_node, n_node, 0]['strategy'] = True
+            else:
+                trans_sys._graph.edges[curr_node, next_node, 0]['strategy'] = True
+
+        trans_sys.plot_graph()
+
+    if mini_grid_instance:
+        str_dict["accept_all"] = "accept_all"
+        str_dict["T0_S2"] = "T0_S2"
+        payoff = payoff_factory.get("cumulative", graph=trans_sys)
+        reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
+
+        controls = reg_syn_handle.get_controls_from_str_minigrid(str_dict,
+                                                                 epsilon=epsilon,
+                                                                 max_human_interventions=max_human_interventions)
+        mini_grid_instance.execute_str(_controls=(0, controls))
+    sys.exit(-1)
+
+
 if __name__ == "__main__":
 
     # define some constants
@@ -557,10 +798,10 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = True
+    gym_minigrid = False
     three_state_ts = False
     five_state_ts = False
-    variant_1_paper = False
+    variant_1_paper = True
     franka_abs = False
 
     # solver to call
@@ -585,7 +826,7 @@ if __name__ == "__main__":
         three_state_ts_instance = ThreeStateExample(_finite=finite,
                                                     _plot_ts=False,
                                                     _plot_dfa=False,
-                                                    _plot_prod=True)
+                                                    _plot_prod=False)
         trans_sys = three_state_ts_instance.product_automaton
 
     elif five_state_ts:
@@ -594,7 +835,7 @@ if __name__ == "__main__":
 
     elif variant_1_paper:
         variant_1_instance = VariantOneGraph(_finite=finite,
-                                             _plot_prod=True)
+                                             _plot_prod=False)
         trans_sys = variant_1_instance.product_automaton
 
     elif franka_abs:
@@ -608,15 +849,22 @@ if __name__ == "__main__":
     print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
 
     if reg_synthesis:
-        compute_reg_minimizing_str(trans_sys,
-                                   miniGrid_instance,
-                                   max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                   shift_operation=False,
-                                   go_fast=go_fast,
-                                   epsilon=EPSILON,
-                                   finite=finite,
-                                   plot_result=False,
-                                   plot_result_only_eve=False)
+        # compute_reg_minimizing_str(trans_sys,
+        #                            miniGrid_instance,
+        #                            max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
+        #                            shift_operation=False,
+        #                            go_fast=go_fast,
+        #                            epsilon=EPSILON,
+        #                            finite=finite,
+        #                            plot_result=False,
+        #                            plot_result_only_eve=False)
+        new_compute_reg_minimizing_str(trans_sys,
+                                       miniGrid_instance,
+                                       epsilon=EPSILON,
+                                       max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
+                                       plot=True,
+                                       reg_syn=True,
+                                       alt_reg_syn=False)
     elif adversarial_game:
         compute_winning_str(trans_sys,
                             miniGrid_instance,
@@ -635,7 +883,7 @@ if __name__ == "__main__":
                                     epsilon=EPSILON)
 
     elif mcr_game:
-        test_mcr_game(trans_sys, plot=True)
+        test_mcr_game(trans_sys, plot=False)
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

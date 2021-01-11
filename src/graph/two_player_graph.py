@@ -107,7 +107,7 @@ class TwoPlayerGraph(Graph):
         :return: An concrete instance of the built three state grpah as described in the configuration above
         """
 
-        # lambda_const = +0
+        lambda_const = +0
         #
         nstate_graph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
         nstate_graph.construct_graph()
@@ -116,16 +116,16 @@ class TwoPlayerGraph(Graph):
         #                                       ('(v2, 1)', '(v4, 1)', 0),
         #                                       ('(v1, 1)', '(v3, 1)', -1),
         #                                       ('(v3, 1)', '(v5, 1)', 0),
-        #                                       ('(v5, 1)', '(v3, 1)', -1),
-        #                                       # ('(v5, 1)', 'trap', 0),
-        #                                       ('(v5, 1)', '(v2, 1)', -2),
+        #                                       # ('(v5, 1)', '(v3, 1)', -1),
+        #                                       ('(v5, 1)', 'trap', 0),
+        #                                       # ('(v5, 1)', '(v2, 1)', -2),
         #                                       ('(v1, 0)', '(v2, 0)', -2),
         #                                       ('(v1, 0)', '(v3, 0)', -1),
         #                                       ('(v2, 0)', '(v4, 0)', 0),
         #                                       ('(v3, 0)', '(v5, 0)', 0),
-        #                                       ('(v5, 0)', '(v2, 0)', -2),
-        #                                       ('(v5, 0)', '(v3, 0)', -1)])#,
-        #                                       # ('(v5, 0)', 'trap', 0)])
+        #                                       # ('(v5, 0)', '(v2, 0)', -2),
+        #                                       # ('(v5, 0)', '(v3, 0)', -1)]),
+        #                                       ('(v5, 0)', 'trap', 0)])
         #
         # # add human interventions
         # nstate_graph.add_weighted_edges_from([('(v2, 1)', '(v1, 0)', 0),
@@ -134,23 +134,64 @@ class TwoPlayerGraph(Graph):
         #                                       ('(v3, 1)', '(v1, 0)', 0),
         #                                       ('(v3, 1)', '(v4, 0)', 0),
         #                                       ('(v3, 1)', '(v5, 0)', 0)])
-        #
-        # # lets add a transition to accepting state form v4 and a transition to trap state from v5
-        # nstate_graph.add_edge('(v4, 0)', 'accept_all', weight=0)
-        # nstate_graph.add_edge('(v4, 1)', 'accept_all', weight=0)
-        # nstate_graph.add_edge('accept_all', 'accept_all', weight=0)
-        # nstate_graph.add_state_attribute('accept_all', 'player', 'eve')
-        # nstate_graph.add_accepting_state('accept_all')
-        #
-        # # adding trap state
-        # # nstate_graph.add_edge('trap', 'trap', weight=-1*math.inf)
-        # # nstate_graph.add_edge('trap', 'trap', weight=-3)
-        # # nstate_graph.add_state_attribute('trap', 'player', 'adam')
-        #
-        # # nstate_graph.add_edge('v5', 'vT', weight=0)
-        # # nstate_graph.add_edge('vT', 'vT', weight=0)
-        # # nstate_graph.add_state_attribute('vT', 'player', 'eve')
-        #
+
+        nstate_graph.add_weighted_edges_from([('(v1, 1)', '(v2, 1)', 1),
+                                              ('(v2, 1)', '(v9, 1)', lambda_const),
+                                              ('(v1, 1)', '(v3, 1)', 1),
+                                              ('(v3, 1)', '(v6, 1)', lambda_const),
+                                              ('(v6, 1)', '(v5, 1)', 1),
+                                              ('(v6, 1)', '(v7, 1)', 1),
+                                              ('(v7, 1)', '(v8, 1)', lambda_const),
+                                              ('(v5, 1)', '(v4, 1)', lambda_const),
+                                              ('(v4, 1)', '(v2, 1)', 1),  # adding auxiliary human intervention edges
+                                              ('(v2, 1)', '(v1, 0)', 0),
+                                              ('(v2, 1)', '(v9, 0)', 0),
+                                              ('(v2, 1)', '(v4, 0)', 0),
+                                              ('(v2, 1)', '(v6, 0)', 0),
+                                              ('(v2, 1)', '(v8, 0)', 0),
+                                              ('(v3, 1)', '(v1, 0)', 0),
+                                              ('(v3, 1)', '(v9, 0)', 0),
+                                              ('(v3, 1)', '(v4, 0)', 0),
+                                              ('(v3, 1)', '(v6, 0)', 0),
+                                              ('(v3, 1)', '(v8, 0)', 0),
+                                              ('(v7, 1)', '(v1, 0)', 0),
+                                              ('(v7, 1)', '(v9, 0)', 0),
+                                              ('(v7, 1)', '(v4, 0)', 0),
+                                              ('(v7, 1)', '(v6, 0)', 0),
+                                              ('(v7, 1)', '(v8, 0)', 0),
+                                              ('(v5, 1)', '(v1, 0)', 0),
+                                              ('(v5, 1)', '(v9, 0)', 0),
+                                              ('(v5, 1)', '(v4, 0)', 0),
+                                              ('(v5, 1)', '(v6, 0)', 0),
+                                              ('(v5, 1)', '(v8, 0)', 0),  # add edges after human has intervened once
+                                              ('(v1, 0)', '(v2, 0)', 1),
+                                              ('(v2, 0)', '(v9, 0)', 0),
+                                              ('(v1, 0)', '(v3, 0)', 1),
+                                              ('(v3, 0)', '(v6, 0)', 0),
+                                              ('(v6, 0)', '(v5, 0)', 1),
+                                              ('(v6, 0)', '(v7, 0)', 1),
+                                              ('(v7, 0)', '(v8, 0)', 0),
+                                              ('(v5, 0)', '(v4, 0)', 0),
+                                              ('(v4, 0)', '(v2, 0)', 1)])
+
+        # lets add a transition to accepting state form v4 and a transition to trap state from v5
+        nstate_graph.add_edge('(v9, 0)', 'accept_all', weight=0)
+        nstate_graph.add_edge('(v9, 1)', 'accept_all', weight=0)
+        nstate_graph.add_edge('accept_all', 'accept_all', weight=0)
+        nstate_graph.add_state_attribute('accept_all', 'player', 'eve')
+        nstate_graph.add_accepting_state('accept_all')
+
+        # adding trap state
+        # nstate_graph.add_edge('trap', 'trap', weight=-1*math.inf)
+        # nstate_graph.add_edge('trap', 'trap', weight=-3)
+        # nstate_graph.add_state_attribute('trap', 'player', 'adam')
+
+        # nstate_graph.add_edge('v5', 'trap', weight=0)
+        nstate_graph.add_edge('(v8, 1)', 'trap', weight=0)
+        nstate_graph.add_edge('(v8, 0)', 'trap', weight=0)
+        nstate_graph.add_edge('trap', 'trap', weight=0)
+        nstate_graph.add_state_attribute('trap', 'player', 'eve')
+
         # nstate_graph.add_state_attribute('(v1, 1)', 'player', 'eve')
         # nstate_graph.add_state_attribute('(v2, 1)', 'player', 'adam')
         # nstate_graph.add_state_attribute('(v3, 1)', 'player', 'adam')
@@ -161,8 +202,27 @@ class TwoPlayerGraph(Graph):
         # nstate_graph.add_state_attribute('(v3, 0)', 'player', 'adam')
         # nstate_graph.add_state_attribute('(v4, 0)', 'player', 'eve')
         # nstate_graph.add_state_attribute('(v5, 0)', 'player', 'eve')
-        #
-        # nstate_graph.add_initial_state('(v1, 1)')
+
+        nstate_graph.add_state_attribute('(v1, 1)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v2, 1)', 'player', 'adam')
+        nstate_graph.add_state_attribute('(v3, 1)', 'player', 'adam')
+        nstate_graph.add_state_attribute('(v4, 1)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v5, 1)', 'player', 'adam')
+        nstate_graph.add_state_attribute('(v6, 1)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v7, 1)', 'player', 'adam')
+        nstate_graph.add_state_attribute('(v8, 1)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v9, 1)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v1, 0)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v2, 0)', 'player', 'adam')
+        nstate_graph.add_state_attribute('(v3, 0)', 'player', 'adam')
+        nstate_graph.add_state_attribute('(v4, 0)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v5, 0)', 'player', 'adam')
+        nstate_graph.add_state_attribute('(v6, 0)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v7, 0)', 'player', 'adam')
+        nstate_graph.add_state_attribute('(v8, 0)', 'player', 'eve')
+        nstate_graph.add_state_attribute('(v9, 0)', 'player', 'eve')
+
+        nstate_graph.add_initial_state('(v1, 1)')
         #
         # # for add the constant to each edge
         # for _e in nstate_graph._graph.edges():
@@ -174,32 +234,32 @@ class TwoPlayerGraph(Graph):
         #
         #     nstate_graph._graph[_u][_v][0]['weight'] = _new_w
 
-        nstate_graph.add_weighted_edges_from([('v1', 'v2', -2),
-                                              ('v2', 'v1', 0),
-                                              ('v2', 'v4', 0),
-                                              ('v4', 'v2', -2),
-                                              ('v1', 'v3', -1),
-                                              ('v3', 'v5', 0),
-                                              ('v5', 'v3', -1)])
-
-        nstate_graph.add_state_attribute('v1', 'player', 'eve')
-        nstate_graph.add_state_attribute('v2', 'player', 'adam')
-        nstate_graph.add_state_attribute('v3', 'player', 'adam')
-        nstate_graph.add_state_attribute('v4', 'player', 'eve')
-        nstate_graph.add_state_attribute('v5', 'player', 'eve')
-
-        # adding edges to the accepting state
-        nstate_graph.add_edge('v4', 'accept_all', weight=0)
-        nstate_graph.add_edge('accept_all', 'accept_all', weight=0)
-        nstate_graph.add_state_attribute('accept_all', 'player', 'eve')
+        # nstate_graph.add_weighted_edges_from([('v1', 'v2', -2),
+        #                                       ('v2', 'v1', 0),
+        #                                       ('v2', 'v4', 0),
+        #                                       ('v4', 'v2', -2),
+        #                                       ('v1', 'v3', -1),
+        #                                       ('v3', 'v5', 0),
+        #                                       ('v5', 'v3', -1)])
+        #
+        # nstate_graph.add_state_attribute('v1', 'player', 'eve')
+        # nstate_graph.add_state_attribute('v2', 'player', 'adam')
+        # nstate_graph.add_state_attribute('v3', 'player', 'adam')
+        # nstate_graph.add_state_attribute('v4', 'player', 'eve')
+        # nstate_graph.add_state_attribute('v5', 'player', 'eve')
+        #
+        # # adding edges to the accepting state
+        # nstate_graph.add_edge('v4', 'accept_all', weight=0)
+        # nstate_graph.add_edge('accept_all', 'accept_all', weight=0)
+        # nstate_graph.add_state_attribute('accept_all', 'player', 'eve')
 
         # add the trap state
         # nstate_graph.add_edge('v5', 'trap', weight=0)
         # nstate_graph.add_edge('trap', 'trap', weight=-math.inf)
         # nstate_graph.add_state_attribute('trap', 'player', 'adam')
-
-        nstate_graph.add_initial_state('v1')
-        nstate_graph.add_accepting_state('accept_all')
+        #
+        # nstate_graph.add_initial_state('v1')
+        # nstate_graph.add_accepting_state('accept_all')
 
         return nstate_graph
 

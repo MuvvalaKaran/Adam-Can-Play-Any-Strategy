@@ -3,9 +3,10 @@ import networkx as nx
 import yaml
 import warnings
 
+from ...src.config import ROOT_PATH
 from graphviz import Digraph
 from typing import List, Tuple, Iterable
-from helper_methods import deprecated
+from ...helper_methods import deprecated
 
 
 class Graph(abc.ABC):
@@ -25,7 +26,7 @@ class Graph(abc.ABC):
     """
     def __init__(self, config_yaml, graph=None, save_flag: bool = False):
         self._graph_yaml = None
-        self._config_yaml: str = config_yaml
+        self._config_yaml: str = "/" + config_yaml
         self._save_flag: bool = save_flag
         self._graph: nx.MultiDiGraph = graph
 
@@ -38,13 +39,13 @@ class Graph(abc.ABC):
         pass
 
     @staticmethod
-    def _get_current_working_directory() -> str:
+    def _get_project_root_directory() -> str:
         """
         A method to return the path of the current script
         :return: A path to the script we are running
         """
-        # return os.path.dirname(os.path.realpath(__file__))
-        return "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/"
+
+        return ROOT_PATH
 
     def read_yaml_file(self) -> None:
         """
@@ -54,7 +55,7 @@ class Graph(abc.ABC):
         """
         if self._config_yaml is not None:
             file_name: str = self._config_yaml + ".yaml"
-            file_add = Graph._get_current_working_directory() + file_name
+            file_add = Graph._get_project_root_directory() + file_name
             try:
                 with open(file_add, 'r') as stream:
                     graph_data = yaml.load(stream, Loader=yaml.Loader)
@@ -75,7 +76,7 @@ class Graph(abc.ABC):
         if view:
             dot_object.view(cleanup=True)
 
-        dot_object.render(Graph._get_current_working_directory() + f'plots/{graph_name}', view=view,
+        dot_object.render(Graph._get_project_root_directory() + f'plots/{graph_name}', view=view,
                           cleanup=True)
 
     def build_graph_from_file(self):
@@ -131,7 +132,7 @@ class Graph(abc.ABC):
         >>>        parent_node, child_node, edge_weight
         """
         config_file_name: str = str(self._config_yaml + '.yaml')
-        config_file_add = Graph._get_current_working_directory() + config_file_name
+        config_file_add = Graph._get_project_root_directory() + config_file_name
 
         data_dict = dict(
                 alphabet_size=len(self._graph.edges()),

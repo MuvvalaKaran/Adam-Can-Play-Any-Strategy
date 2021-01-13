@@ -1,6 +1,6 @@
 # local packages
-from src.factory.object_factory import ObjectFactory
-from src.factory.builder import Builder
+from ...src.factory.object_factory import ObjectFactory
+from ...src.factory.builder import Builder
 from .base import Graph
 
 

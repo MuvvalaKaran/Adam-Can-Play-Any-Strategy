@@ -5,7 +5,7 @@ from .base import Graph
 from .product import ProductAutomaton, ProductBuilder
 from .trans_sys import FiniteTransSys, TransitionSystemBuilder
 from .dfa import DFAGraph, DFABuilder
-from src.factory.builder import Builder
+from ...src.factory.builder import Builder
 
 
 class GMinGraph(TwoPlayerGraph):

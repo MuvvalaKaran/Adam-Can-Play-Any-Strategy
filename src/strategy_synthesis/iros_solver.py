@@ -11,7 +11,7 @@ from typing import Optional, Dict, List, Tuple, Union
 from collections import deque
 
 # import local packages
-from src.graph import TwoPlayerGraph
+from ...src.graph import TwoPlayerGraph
 
 
 class IrosStrategySynthesis:

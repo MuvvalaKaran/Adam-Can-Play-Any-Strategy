@@ -6,17 +6,16 @@ import math
 import warnings
 import sys
 
+from ...src.config import MPG_ABS_DIR, MPG_OP_ABS_DIR
 from typing import Dict, Tuple, Optional
 from bidict import bidict
-from src.graph import TwoPlayerGraph
+from ...src.graph import TwoPlayerGraph
 
 # value to replcae with if you have inf/-inf as edge weight in g_hat : can happen for cumulative payoff
 MAX_CONST = -1000000
 
 # absolute addresses of mpg solver toolbox and where to read the g_hat.mpg file and dump the strategy in
 CONFIG_DIR = "mpg/"
-MPG_ABS_DIR = "/home/karan-m/Documents/mean_payoff_games/gpumpg/bin/"
-MPG_OP_ABS_DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/mpg/"
 
 
 class MpgToolBox:

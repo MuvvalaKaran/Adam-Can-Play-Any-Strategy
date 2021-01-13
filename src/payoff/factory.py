@@ -1,7 +1,7 @@
 # import local packages
-from src.factory.builder import Builder
+from ...src.factory.builder import Builder
 from .base import Payoff
-from src.factory.object_factory import ObjectFactory
+from ...src.factory.object_factory import ObjectFactory
 
 
 class PayoffCollection(ObjectFactory):

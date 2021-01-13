@@ -8,8 +8,8 @@ from typing import Tuple, List, Dict, Optional
 
 # import local packages
 from .base import Payoff
-from src.factory.builder import Builder
-from src.graph.base import Graph
+from ...src.factory.builder import Builder
+from ...src.graph.base import Graph
 
 
 class InfinitePayoff(Payoff):

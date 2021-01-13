@@ -5,8 +5,8 @@ from typing import Tuple, Optional, Iterable
 from graphviz import Digraph
 
 # import local packages
-from src.graph import FiniteTransSys
-from src.factory.builder import Builder
+from ...src.graph import FiniteTransSys
+from ...src.factory.builder import Builder
 
 
 class MiniGrid(FiniteTransSys):

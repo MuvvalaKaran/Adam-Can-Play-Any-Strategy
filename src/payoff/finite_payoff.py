@@ -8,9 +8,9 @@ from collections import defaultdict
 from typing import Dict, Tuple, List
 
 # import local packages
-from src.factory.builder import Builder
+from ...src.factory.builder import Builder
 from .base import Payoff
-from src.graph import Graph
+from ...src.graph import Graph
 
 
 class FinitePayoff(Payoff):

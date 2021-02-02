@@ -1,7 +1,7 @@
 # a file to construct the manipulation domain
 from typing import List, Tuple
 
-from ...src.graph import FiniteTransSys
+from ..graph import FiniteTransSys
 
 
 class Node:

@@ -5,7 +5,7 @@ from .base import Graph
 from .trans_sys import FiniteTransSys
 from .product import ProductAutomaton
 from .two_player_graph import TwoPlayerGraph
-from ...src.factory.builder import Builder
+from ..factory.builder import Builder
 
 
 class GMaxGraph(TwoPlayerGraph):

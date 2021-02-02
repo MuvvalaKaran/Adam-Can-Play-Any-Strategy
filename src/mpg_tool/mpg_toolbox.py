@@ -6,10 +6,10 @@ import math
 import warnings
 import sys
 
-from ...src.config import MPG_ABS_DIR, MPG_OP_ABS_DIR
+from ..config import MPG_ABS_DIR, MPG_OP_ABS_DIR
 from typing import Dict, Tuple, Optional
 from bidict import bidict
-from ...src.graph import TwoPlayerGraph
+from ..graph import TwoPlayerGraph
 
 # value to replcae with if you have inf/-inf as edge weight in g_hat : can happen for cumulative payoff
 MAX_CONST = -1000000

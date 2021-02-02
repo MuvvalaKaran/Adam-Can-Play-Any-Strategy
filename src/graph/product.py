@@ -10,7 +10,7 @@ from .base import Graph
 from .two_player_graph import TwoPlayerGraph
 from .trans_sys import FiniteTransSys
 from .dfa import DFAGraph
-from ...src.factory.builder import Builder
+from ..factory.builder import Builder
 
 
 class ProductAutomaton(TwoPlayerGraph):

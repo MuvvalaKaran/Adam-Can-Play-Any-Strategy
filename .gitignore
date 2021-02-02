@@ -9,7 +9,6 @@
 code_profiles/
 
 # ignore wombats,pyFAS and all log files created by Wombats
-wombats/
 minigrid_env_logs/
 automaton_data/
 pyFAS/

@@ -1,0 +1,3 @@
+[submodule "wombats"]
+	path = wombats
+	url = git@github.com:MuvvalaKaran/wombats.git

@@ -8,8 +8,8 @@ from collections import defaultdict
 from collections import deque
 
 # import local packages
-from ...src.graph import graph_factory
-from ...src.graph import TwoPlayerGraph
+from ..graph import graph_factory
+from ..graph import TwoPlayerGraph
 
 
 class ReachabilityGame:
@@ -341,7 +341,7 @@ if __name__ == "__main__":
     # build a graph
     two_player_graph = graph_factory.get("TwoPlayerGraph",
                                          graph_name="two_player_graph",
-                                         config_yaml="config/two_player_graph",
+                                         config_yaml="/config/two_player_graph",
                                          save_flag=True,
                                          pre_built=False,
                                          from_file=False,

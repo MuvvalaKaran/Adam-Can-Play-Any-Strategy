@@ -14,20 +14,21 @@ from wombats.automaton import active_automata
 from wombats.automaton import MinigridTransitionSystem
 
 # import local packages
-from .src.graph import graph_factory
-from .src.payoff import payoff_factory
-from .src.graph import MiniGrid
-from .src.graph import FiniteTransSys
-from .src.graph import DFAGraph
-from .src.graph import ProductAutomaton
-from .src.graph import TwoPlayerGraph
+from src.graph import graph_factory
+from src.payoff import payoff_factory
+from src.graph import MiniGrid
+from src.graph import FiniteTransSys
+from src.graph import DFAGraph
+from src.graph import ProductAutomaton
+from src.graph import TwoPlayerGraph
 
 # import available str synthesis methods
-from .src.strategy_synthesis import RegMinStrSyn
-from .src.strategy_synthesis import ReachabilitySolver
-from .src.strategy_synthesis import IrosStrSolver
+from src.strategy_synthesis import RegMinStrSyn
+from src.strategy_synthesis import ReachabilitySolver
+from src.strategy_synthesis import IrosStrSolver
+from src.strategy_synthesis import ValueIteration
 
-from .src.mpg_tool import MpgToolBox
+from src.mpg_tool import MpgToolBox
 
 assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
@@ -95,7 +96,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     def _build_product(self):
         self._product_automaton = graph_factory.get('ProductGraph',
                                                     graph_name='product_automaton',
-                                                    config_yaml='config/product_automaton',
+                                                    config_yaml='/config/product_automaton',
                                                     trans_sys=self._trans_sys,
                                                     dfa=self._dfa,
                                                     save_flag=True,
@@ -156,9 +157,9 @@ class MinigridGraph(GraphInstanceConstructionBase):
 
         regret_minigrid_TS = graph_factory.get('MiniGrid',
                                                graph_name="minigrid_TS",
-                                               config_yaml=f"config/{file_name}",
+                                               config_yaml=f"/config/{file_name}",
                                                save_flag=True,
-                                               plot=False)
+                                               plot=True)
 
         return regret_minigrid_TS, wombats_minigrid_TS
 
@@ -181,7 +182,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
     def _build_dfa(self):
         self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
-                                      config_yaml="config/automaton",
+                                      config_yaml="/config/automaton",
                                       save_flag=True,
                                       # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
                                       # sc_ltl="!(lava_red_open) U (water_blue_open)",
@@ -194,7 +195,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
     def _build_product(self):
         self._product_automaton = graph_factory.get('ProductGraph',
                                                     graph_name='product_automaton',
-                                                    config_yaml='config/product_automaton',
+                                                    config_yaml='/config/product_automaton',
                                                     trans_sys=self._trans_sys,
                                                     dfa=self._dfa,
                                                     save_flag=True,
@@ -233,7 +234,7 @@ class VariantOneGraph(GraphInstanceConstructionBase):
     def _build_product(self):
         self._product_automaton = graph_factory.get("TwoPlayerGraph",
                                                     graph_name="two_player_graph",
-                                                    config_yaml="config/two_player_graph",
+                                                    config_yaml="/config/two_player_graph",
                                                     save_flag=True,
                                                     pre_built=True,
                                                     plot=self.plot_product)
@@ -257,7 +258,7 @@ class ThreeStateExample(GraphInstanceConstructionBase):
         self._trans_sys = graph_factory.get('TS',
                                             raw_trans_sys=None,
                                             graph_name="trans_sys",
-                                            config_yaml="config/trans_sys",
+                                            config_yaml="/config/trans_sys",
                                             pre_built=True,
                                             built_in_ts_name="three_state_ts",
                                             save_flag=True,
@@ -270,7 +271,7 @@ class ThreeStateExample(GraphInstanceConstructionBase):
     def _build_dfa(self):
         self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
-                                      config_yaml="config/automaton",
+                                      config_yaml="/config/automaton",
                                       save_flag=True,
                                       sc_ltl="F c",
                                       use_alias=False,
@@ -295,7 +296,7 @@ class FiveStateExample(GraphInstanceConstructionBase):
         self._trans_sys = graph_factory.get('TS',
                                             raw_trans_sys=None,
                                             graph_name="trans_sys",
-                                            config_yaml="config/trans_sys",
+                                            config_yaml="/config/trans_sys",
                                             pre_built=True,
                                             built_in_ts_name="five_state_ts",
                                             save_flag=True,
@@ -308,7 +309,7 @@ class FiveStateExample(GraphInstanceConstructionBase):
     def _build_dfa(self):
         self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
-                                      config_yaml="config/automaton",
+                                      config_yaml="/config/automaton",
                                       save_flag=True,
                                       sc_ltl="!d U g",
                                       use_alias=False,
@@ -354,7 +355,7 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
         self._trans_sys = graph_factory.get('TS',
                                             raw_trans_sys=None,
                                             graph_name="trans_sys",
-                                            config_yaml="config/franka_abs",
+                                            config_yaml="/config/franka_abs",
                                             pre_built=False,
                                             from_file=True,
                                             built_in_ts_name="",
@@ -369,7 +370,7 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
         self._trans_sys = graph_factory.get('TS',
                                             raw_trans_sys=self._trans_sys,
                                             graph_name="trans_sys",
-                                            config_yaml="config/franka_abs",
+                                            config_yaml="/config/franka_abs",
                                             pre_built=False,
                                             from_file=False,
                                             built_in_ts_name="",
@@ -384,7 +385,7 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
     def _build_dfa(self):
         self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
-                                      config_yaml="config/automaton",
+                                      config_yaml="/config/automaton",
                                       save_flag=True,
                                       sc_ltl="F(p04p10p22)",
                                       use_alias=False,

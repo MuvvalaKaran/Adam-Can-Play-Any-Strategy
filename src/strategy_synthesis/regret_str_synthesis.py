@@ -13,11 +13,11 @@ from _collections import defaultdict
 from typing import Dict, List, Tuple, Union, Optional
 
 # import local packages
-from ...src.graph import Graph, graph_factory
-from ...src.graph import TwoPlayerGraph
-from ...src.graph import ProductAutomaton
-from ...src.payoff import Payoff
-from ...src.mpg_tool import MpgToolBox
+from ..graph import Graph, graph_factory
+from ..graph import TwoPlayerGraph
+from ..graph import ProductAutomaton
+from ..payoff import Payoff
+from ..mpg_tool import MpgToolBox
 
 
 # import local value iteration solver
@@ -226,7 +226,7 @@ class RegretMinimizationStrategySynthesis:
 
         G_hat: ProductAutomaton = graph_factory.get("ProductGraph",
                                                     graph_name="G_hat",
-                                                    config_yaml="config/G_hat",
+                                                    config_yaml="/config/G_hat",
                                                     save_flag=True)
         G_hat.construct_graph()
 
@@ -352,7 +352,7 @@ class RegretMinimizationStrategySynthesis:
 
         _g_b_graph = graph_factory.get("TwoPlayerGraph",
                                        graph_name="g_b_graph",
-                                       config_yaml="config/g_b_graph",
+                                       config_yaml="/config/g_b_graph",
                                        save_flag=True,
                                        pre_built=False,
                                        from_file=False,

@@ -49,6 +49,7 @@ def run_wombats():
                       save_flag=True,
                       plot=True)
 
+
 if __name__ == "__main__":
     # run_wombats()
 
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     trans_sys = graph_factory.get('TS',
                                   raw_trans_sys=None,
                                   graph_name="trans_sys",
-                                  config_yaml="config/trans_sys",
+                                  config_yaml="/config/trans_sys",
                                   pre_built=True,
                                   built_in_ts_name="five_state_ts",
                                   save_flag=False,
@@ -77,23 +78,19 @@ if __name__ == "__main__":
                                   human_intervention=1,
                                   plot_raw_ts=False)
 
-
-    # #
-    # # # build the dfa
+    # build the dfa
     dfa = graph_factory.get('DFA',
                             graph_name="automaton",
-                            config_yaml="config/automaton",
+                            config_yaml="/config/automaton",
                             save_flag=False,
                             sc_ltl="Fi & (!d U g)",
                             use_alias=False,
                             plot=False)
 
-
-    # #
-    # # # build the product automaton
+    # build the product automaton
     prod = graph_factory.get('ProductGraph',
                              graph_name='product_automaton',
-                             config_yaml='config/product_automaton',
+                             config_yaml='/config/product_automaton',
                              trans_sys=trans_sys,
                              dfa=dfa,
                              save_flag=False,
@@ -102,15 +99,14 @@ if __name__ == "__main__":
                              absorbing=False,
                              plot=False)
 
-
-    # # # build gmin
+    # build gmin
     gmin = graph_factory.get('GMin', graph=prod,
                              graph_name='gmin',
-                             config_yaml='config/gmin',
+                             config_yaml='/config/gmin',
                              debug=False,
                              save_flag=True,
                              plot=True)
-    # #
+
     # gmax = graph_factory.get('GMax', graph=trans_sys,
     #                          graph_name='gmax',
     #                          config_yaml='config/gmax',
@@ -118,4 +114,4 @@ if __name__ == "__main__":
     #                          save_flag=True,
     #                          plot=True)
 
-    test_build_from_file("config/gmin")
+    test_build_from_file("/config/gmin")

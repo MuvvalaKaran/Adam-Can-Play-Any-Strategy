@@ -6,10 +6,10 @@ from graphviz import Digraph
 
 # import local packages
 from .base import Graph
-from ...src.factory.builder import Builder
-from ...src.spot.promela import parse as parse_ltl, find_states, find_symbols
-from ...src.spot.spot import run_spot
-from ...src.spot.Parser import parse as parse_guard
+from ..factory.builder import Builder
+from ..spot.promela import parse as parse_ltl, find_states, find_symbols
+from ..spot.spot import run_spot
+from ..spot.Parser import parse as parse_guard
 
 
 class DFAGraph(Graph):

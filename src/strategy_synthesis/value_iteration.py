@@ -14,9 +14,8 @@ from bidict import bidict
 from typing import Optional, Union, Dict, List, Tuple
 
 # import local packages
-from src.graph import graph_factory
-from src.graph import TwoPlayerGraph
-# from src.strategy_synthesis import ReachabilitySolver
+from ..graph import graph_factory
+from ..graph import TwoPlayerGraph
 from .adversarial_game import ReachabilityGame as ReachabilitySolver
 
 # numpy int32 min value

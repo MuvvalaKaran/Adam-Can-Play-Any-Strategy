@@ -6,7 +6,7 @@ from typing import List, Tuple, Dict, Optional
 
 # local packages
 from .two_player_graph import TwoPlayerGraph
-from ...src.factory.builder import Builder
+from ..factory.builder import Builder
 
 
 class FiniteTransSys(TwoPlayerGraph):

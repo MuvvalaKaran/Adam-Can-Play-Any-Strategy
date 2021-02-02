@@ -1,4 +1,4 @@
-from ...src.spot.lexer import get_lexer
+from ..spot.lexer import get_lexer
 import itertools
 
 

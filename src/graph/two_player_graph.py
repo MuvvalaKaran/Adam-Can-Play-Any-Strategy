@@ -3,7 +3,7 @@ import math
 
 # local packages
 from .base import Graph
-from ...src.factory.builder import Builder
+from ..factory.builder import Builder
 
 from graphviz import Digraph
 

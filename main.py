@@ -451,7 +451,6 @@ def add_common_accepting_state(trans_sys: TwoPlayerGraph, plot: bool = False) ->
 def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                mini_grid_instance: Optional[MinigridGraph] = None,
                                epsilon: float = 0,
-                               shift_operation: bool = False,
                                max_human_interventions: int = 5,
                                go_fast: bool = True,
                                finite: bool = False,
@@ -477,7 +476,9 @@ def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, 
 
     # map back str to minigrid env
     if mini_grid_instance is not None:
-        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str, epsilon=epsilon)
+        controls = reg_syn_handle.get_controls_from_str_minigrid(org_str,
+                                                                 epsilon=epsilon,
+                                                                 max_human_interventions=max_human_interventions)
         mini_grid_instance.execute_str(_controls=(reg_val, controls))
     # else:
     # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
@@ -744,7 +745,6 @@ if __name__ == "__main__":
         compute_reg_minimizing_str(trans_sys,
                                    miniGrid_instance,
                                    max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                   shift_operation=False,
                                    go_fast=go_fast,
                                    epsilon=EPSILON,
                                    finite=finite,

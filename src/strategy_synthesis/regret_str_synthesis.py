@@ -52,131 +52,6 @@ class RegretMinimizationStrategySynthesis:
     def b_val(self, value: set):
         self._b_val = value
 
-    def compute_W_prime_finite(self, org_graph: Optional[TwoPlayerGraph] = None):
-        """
-        A method to compute w_prime function based on Algo 2. pseudocode.
-        This function is a mapping from each edge to a real valued number - b
-
-        b represents the best alternate value that a eve can achieve assuming Adam plays cooperatively in this
-        alternate strategy game. This is slightly different in finite payoffs in that we add that edge (u,v')
-        that we skip in infinite payoff computation. In that case its fine, as it's the edges that we encounter
-        infinitely often. But, for finite payoff computation skipping edge will effect the W_prime. Computation
-
-        Changes : We manually add the edge weight associated with (u, v') that we skip.
-        """
-
-        print("*****************Constructing W_prime finite*****************")
-
-        if isinstance(org_graph, type(None)):
-            org_graph = self.graph
-        else:
-            org_graph = org_graph
-
-        mcr_solver = ValueIteration(org_graph, competitive=False)
-        mcr_solver.solve(debug=False, plot=False)
-        INT_MAX_VAL = 2147483647
-        # as the edge weight in the value iteration are all positive, we need to manually add negative weights to them
-        val_dict = mcr_solver.state_value_dict
-        #
-        # # also the MAX value used in the ValueIteration algorithm is a finite value. So we will replace them with -inf
-        # for _s, _s_val in val_dict.items():
-        #     _new_cost = _s_val
-        #     # if _s_val > 0:
-        #     _new_cost = -1 * _s_val
-        #
-        #     if _new_cost == -1 * INT_MAX_VAL:
-        #         _new_cost = -1 * math.inf
-        #
-        #     val_dict[_s] = _new_cost
-
-        w_prime: Dict[Tuple: float] = {}
-
-        for edge in org_graph._graph.edges():
-            _u = edge[0]
-            # _v = edge[1]
-            # if the node belongs to adam, then the corresponding edge is assigned -inf
-            if org_graph._graph.nodes(data='player')[_u] == 'adam':
-                w_prime.update({edge: -1 * math.inf})
-
-            else:
-                _state_cvals = []
-                out_going_edges = set(org_graph._graph.out_edges(_u)) - {edge}
-
-                for _alt_e in out_going_edges:
-                    _v_prime = _alt_e[1]
-                    _curr_w = org_graph.get_edge_weight(_u, _v_prime)
-                    _state_cost = val_dict[_v_prime]
-                    _total_weight = _curr_w + _state_cost
-                    _state_cvals.append(_total_weight)
-
-                if len(_state_cvals) != 0:
-                    # w_prime.update({edge: max(_state_cvals)})
-                    w_prime.update({edge: min(_state_cvals)})
-                else:
-                    # w_prime.update({edge: -1 * math.inf})
-                    w_prime.update({edge: 0})
-
-        self.b_val = set(w_prime.values())
-        print(f"the value of b are {set(w_prime.values())}")
-
-        return w_prime
-
-    def __check_edge_in_cval_play(self, edge: Tuple, play: List[Tuple]):
-        """
-        A helper method to check if an edge already exists in the play associated with a node in the coop dict
-        :return: Return True id that exists else false
-        """
-
-        try:
-            u_idx = play.index(edge[0])
-            if play[u_idx + 1] == edge[1]:
-                return True
-        except ValueError:
-            return False
-        return False
-
-    def _compute_cval_finite(self, multi_thread: bool = False) -> Dict:
-        """
-        A method that pre computes all the cVals for every node in the graph and stores them in a dictionary.
-        :return: A dictionary of cVal stores in dict
-        """
-        max_coop_val = defaultdict(lambda: -1)
-        if not multi_thread:
-            for n in self.graph._graph.nodes():
-                max_coop_val[n] = (self._compute_max_cval_from_v(n))
-
-            return max_coop_val
-        else:
-            print("*****************Start Parallel Processing*****************")
-            runner = Parallel(n_jobs=NUM_CORES, verbose=50)
-            job = delayed(self._compute_max_cval_from_v_finite)
-            results = runner(job(n) for n in self.graph._graph.nodes())
-            print("*****************Stop Parallel Processing*****************")
-
-        for _n, _r in zip(self.graph._graph.nodes(), results):
-            max_coop_val[_n] = _r
-
-        return max_coop_val
-
-    def _compute_max_cval_from_v_finite(self, node: Tuple) -> float:
-        """
-        A helper method to compute the cVal from a given vertex (@node) for a give graph @graph
-        :param graph: The graph on which would like to compute the cVal
-        :param payoff_handle: instance of the @compute_value() to compute the cVal
-        :param node: The node from which we would like to compute the cVal
-        :return: returns a single max value. If multiple plays have the max_value then the very first occurance is returned
-        """
-        # construct a new graph with node as the initial vertex and compute loop_vals again
-        # 1. remove the current init node of the graph
-        # 2. add @node as the new init vertex
-        # 3. compute the loop-vals for this new graph
-        # tmp_payoff_handle = payoff_value(tmp_copied_graph, payoff_handle.get_payoff_func())
-        self.payoff.remove_attribute(self.payoff.get_init_node(), 'init')
-        self.payoff.set_init_node(node)
-        self.payoff.cycle_main()
-
-        return self.payoff.compute_cVal(node)
-
     def _compute_cval_from_mpg(self, go_fast: bool, debug: bool):
         mpg_cval_handle = MpgToolBox(self.graph, "org_graph")
         return mpg_cval_handle.compute_cval(go_fast=go_fast, debug=debug)
@@ -315,23 +190,6 @@ class RegretMinimizationStrategySynthesis:
 
         # a sample edge og g_hat: ((".","."),"."),((".","."),".") and
         # a sample edge of org_graph: (".", ""),(".", ".")
-        # lets add the constraint that the w should not be greater or equal to b
-
-        # b_max = max(self.b_val)
-
-        # for e in self.graph._graph.edges():
-        #     org_weight = self.graph._graph[e[0]][e[1]][0]['weight']
-        #
-        #     if e[1] == 'accept_all':
-        #         g_hat.add_edge(((e[0]), b), ((e[1]), b))
-        #         continue
-        #
-        #     if b == b_max:
-        #         if w_prime[e] <= b:
-        #             g_hat.add_edge(((e[0]), b), ((e[1]), b))
-        #     else:
-        #         if w_prime[e] <= b and org_weight < b:
-        #             g_hat.add_edge(((e[0]), b), ((e[1]), b))
         for e in org_game._graph.edges():
             if w_prime[e] <= b:
                 g_hat.add_edge(((e[0]), b), ((e[1]), b))
@@ -357,31 +215,6 @@ class RegretMinimizationStrategySynthesis:
                                        ('vT', 'vT', -2 * abs(self.graph.get_max_weight()) - 1)])
         return g_hat
 
-    def _construct_g_hat_nodes_finite(self, g_hat: ProductAutomaton) -> ProductAutomaton:
-        """
-        A helper function that adds the nodes v0, v1 and vT that are part of g_hat graph when
-        using finite payoff
-
-        In this construction, the terminal node will have the edge weight of -inf
-        :return: A updated instance of g_hat
-        """
-
-        g_hat.add_states_from(['v0', 'v1', 'vT'])
-
-        g_hat.add_state_attribute('v0', 'player', 'adam')
-        g_hat.add_state_attribute('v1', 'player', 'eve')
-        g_hat.add_state_attribute('vT', 'player', 'eve')
-
-        # add v0 as the initial node
-        g_hat.add_initial_state('v0')
-
-        # add the edges with the weights
-        g_hat.add_weighted_edges_from([('v0', 'v0', 0),
-                                       ('v0', 'v1', 0),
-                                       ('vT', 'vT', 0)])
-                                       # ('vT', 'vT', -1 * math.inf)])
-        return g_hat
-
     def construct_g_hat(self,
                         w_prime: Dict[Tuple, float],
                         acc_min_edge_weight: bool = False,
@@ -398,9 +231,6 @@ class RegretMinimizationStrategySynthesis:
         G_hat.construct_graph()
 
         # build g_hat
-        # if finite:
-        #     G_hat = self._construct_g_hat_nodes_finite(G_hat)
-        # else:
         G_hat = self._construct_g_hat_nodes(G_hat)
 
         # choose which game to construct g_hat from - the org game G to the shifted G_delta

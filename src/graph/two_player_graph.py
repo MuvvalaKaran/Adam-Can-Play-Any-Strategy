@@ -107,8 +107,10 @@ class TwoPlayerGraph(Graph):
         :return: An concrete instance of the built three state grpah as described in the configuration above
         """
 
+        # define constant weights
         lambda_const = +0
-        #
+        const_a = 20
+
         nstate_graph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
         nstate_graph.construct_graph()
 
@@ -135,7 +137,7 @@ class TwoPlayerGraph(Graph):
         #                                       ('(v3, 1)', '(v4, 0)', 0),
         #                                       ('(v3, 1)', '(v5, 0)', 0)])
 
-        nstate_graph.add_weighted_edges_from([('(v1, 1)', '(v2, 1)', 1),
+        nstate_graph.add_weighted_edges_from([('(v1, 1)', '(v2, 1)', const_a),
                                               ('(v2, 1)', '(v9, 1)', lambda_const),
                                               ('(v1, 1)', '(v3, 1)', 1),
                                               ('(v3, 1)', '(v6, 1)', lambda_const),
@@ -164,7 +166,7 @@ class TwoPlayerGraph(Graph):
                                               ('(v5, 1)', '(v4, 0)', 0),
                                               ('(v5, 1)', '(v6, 0)', 0),
                                               ('(v5, 1)', '(v8, 0)', 0),  # add edges after human has intervened once
-                                              ('(v1, 0)', '(v2, 0)', 1),
+                                              ('(v1, 0)', '(v2, 0)', const_a),
                                               ('(v2, 0)', '(v9, 0)', 0),
                                               ('(v1, 0)', '(v3, 0)', 1),
                                               ('(v3, 0)', '(v6, 0)', 0),

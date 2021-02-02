@@ -4,7 +4,7 @@ import warnings
 from .base import Graph
 from .trans_sys import FiniteTransSys
 from .product import ProductAutomaton
-from src.factory.builder import Builder
+from ...src.factory.builder import Builder
 from .two_player_graph import TwoPlayerGraph
 
 

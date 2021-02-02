@@ -3,10 +3,10 @@ import networkx as nx
 import yaml
 import warnings
 
-from src.config import ROOT_PATH
+from ...src.config import ROOT_PATH
 from graphviz import Digraph
 from typing import List, Tuple, Iterable
-from helper_methods import deprecated
+from ...helper_methods import deprecated
 
 
 class Graph(abc.ABC):
@@ -26,7 +26,7 @@ class Graph(abc.ABC):
     """
     def __init__(self, config_yaml, graph=None, save_flag: bool = False):
         self._graph_yaml = None
-        self._config_yaml: str = "/" + config_yaml
+        self._config_yaml: str = config_yaml
         self._save_flag: bool = save_flag
         self._graph: nx.MultiDiGraph = graph
 

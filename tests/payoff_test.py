@@ -1,7 +1,7 @@
 # a script to test infinte and finite payoff scripts are working fine or not
-from src.payoff import payoff_factory
-from src.graph import graph_factory
-from src.strategy_synthesis import RegMinStrSyn
+from ..src.payoff import payoff_factory
+from ..src.graph import graph_factory
+from ..src.strategy_synthesis import RegMinStrSyn
 
 if __name__ == "__main__":
 

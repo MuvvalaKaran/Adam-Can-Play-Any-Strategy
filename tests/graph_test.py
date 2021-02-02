@@ -1,7 +1,7 @@
 import yaml
 import gym
 
-from src.graph import graph_factory
+from ..src.graph import graph_factory
 from wombats.systems import StaticMinigridTSWrapper
 from wombats.automaton import active_automata
 

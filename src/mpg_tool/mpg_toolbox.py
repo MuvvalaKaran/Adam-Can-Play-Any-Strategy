@@ -1,4 +1,4 @@
-# a file that contains all the methods relevant to run the toolbox and interpret the output
+# a file that contains all the methods relevant to running the mean payoff games toolbox and interpret the output
 import warnings
 import re
 import subprocess as sp
@@ -19,11 +19,46 @@ CONFIG_DIR = "mpg/"
 
 
 class MpgToolBox:
-
+    """
+    A class with relevant method call to the mpg toolbox
+    graph : The input graph to the mpg toolbox
+    file_name : The name of the input file (without any extension) for the graph to be dumped in
+    node_index_map : An internal bi-directional mapping that maps an arbitrary node as tuple to an int representation.
+    Methods:
+        1. create_mpg_file : A method to dump a given graph into an appropriate format that the mpg toolbox recognizes
+        2. compute_cVal : A method to compute the strategy for a cooperative game
+        3. compute_reg_val : A method to compute the strategy for a competitive game
+    Usage of toolbox:
+    Usage: ./mpgsolver [OPTIONS] FILES
+    Solve the mean-payoff game in FILES on the GPU.
+    Options:
+      -h [ --help ]                  display this help text and exit
+      -i [ --input-file-format ] arg input file format: mpg, pg, hoa or bin
+      -o [ --output-file ] arg       output file
+      -c [ --cycle-check ]           explicitly check for non-positive cycles in
+                                     the game graph
+      --scc-partition                compute the scc partition of the game arena
+      --no-compact-colors            do not compact the colors by removing unused
+                                     colors
+      --no-auxilliary-nodes          do not add auxilliary nodes to the arena (may
+                                     lead to wrong results)
+      --sort-by-owner                sort nodes by owner (within scc with scc
+                                     partitions)
+      -d [ --device ] arg            select the device (by index or name)
+      -w [ --work-group-size ] arg   set the work group size (0=auto)
+      -p [ --print-arena ]           print the arena
+      --print-arena-info             print basic arena information
+      --device-info                  print device information
+      --profiling                    measure and print kernel profiling information
+      -t [ --timing ]                measure and print timing information
+      --no-solving                   do not solve the game
+      --zero-mean-partition          only solve the zero mean partition problem
+      --check-realizability          check realizability
+    """
     def __init__(self, graph: TwoPlayerGraph, file_name: str = None):
         self._mpg_graph = graph
         self._file_name: Optional[str] = file_name
-        self._node_index_map: Optional[bidict] = None
+        self.node_index_map: Optional[bidict] = None
 
     @property
     def mpg_graph(self):
@@ -46,6 +81,9 @@ class MpgToolBox:
             warnings.warn(f"Please ensure that the graph is of type of TwoPlayerGraph."
                           f"Currently it is of type {type(mpg_graph)}")
 
+        if len(mpg_graph._graph.nodes()) == 0:
+            warnings.warn(f"Looks like the graph has no nodes at all!")
+
         self._mpg_graph = mpg_graph
 
     @file_name.setter
@@ -57,7 +95,13 @@ class MpgToolBox:
 
         self._file_name = file_name
 
+    @node_index_map.setter
+    def node_index_map(self, mapping: Dict):
+
+        self._node_index_map = mapping
+
     def create_mpg_file(self, reg: bool = False, cval: bool  = False) -> Tuple[bidict, list]:
+
         """
         A method to create a file which adheres to the input file
         format used by the mean payoff games toolbox.
@@ -73,22 +117,13 @@ class MpgToolBox:
         :param name: The name of the file
         :return:
         """
-        # if not isinstance(graph, Graph):
-        #     warnings.warn(f"Please make sure that the graph is of type Graph")
-
         directory_add: str = CONFIG_DIR + self.file_name + ".mpg"
         # map is of the format : {state_name: str : hashed_int_val : int}
-        _node_index_map = bidict({state: index
+        self.node_index_map = bidict({state: index
                                   for index, state
                                   in enumerate(self.mpg_graph._graph.nodes)})
 
         f = open(directory_add, "w")
-
-        # get all the initial nodes of g_b(s)
-        if reg:
-            g_b_init_nodes = [_s for _s in self.mpg_graph._graph.successors("v1")]
-        else:
-            g_b_init_nodes = None
 
         # start dumping
         for node in self.mpg_graph._graph.nodes():
@@ -101,11 +136,11 @@ class MpgToolBox:
                 sys.exit(-1)
 
             # create the line
-            f.write(f"{_node_index_map[node]} {player} ")
+            f.write(f"{self.node_index_map[node]} {player} ")
 
             # get outgoing edges of a graph
             for ie, e in enumerate(self.mpg_graph._graph.edges(node)):
-                mapped_next_node = _node_index_map[e[1]]
+                mapped_next_node = self.node_index_map[e[1]]
                 edge_weight = self.mpg_graph._graph[e[0]][e[1]][0]['weight']
 
                 if edge_weight == math.inf or edge_weight == -1 * math.inf:
@@ -118,8 +153,6 @@ class MpgToolBox:
                     f.write(f"{mapped_next_node}:{int(edge_weight)}, ")
 
         f.close()
-
-        return _node_index_map, g_b_init_nodes
 
     def _get_reg_players(self, node):
         """
@@ -138,7 +171,7 @@ class MpgToolBox:
     def compute_cval(self,  go_fast: bool = True, debug: bool = False):
         print("**************************Computing cVal of all nodes in G*************************")
         # dump the graph
-        _node_index_map, _ = self.create_mpg_file(cval=True)
+        self.create_mpg_file(cval=True)
 
         ip_file_name = CONFIG_DIR + self.file_name + ".mpg"
         op_file_name = MPG_OP_ABS_DIR + f"{self.file_name}_dict.txt"
@@ -159,11 +192,11 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        coop_dict = self.read_cval_mpg_op(_node_index_map, op_file_name, debug)
+        coop_dict = self.read_cval_mpg_op(op_file_name, debug)
 
         return coop_dict
 
-    def compute_reg_val(self, go_fast: bool = True, debug: bool = False) -> Dict:
+    def compute_reg_val(self, go_fast: bool = True, debug: bool = False) -> Tuple[Dict, float]:
         """
         A helper method to run the mpg solver through terminal given a graph.
 
@@ -177,7 +210,7 @@ class MpgToolBox:
         """
         print("**************************Computing Reg Minimizing Strategy on G_hat*************************")
         # dump the graph
-        _node_index_map, _g_b_init_nodes = self.create_mpg_file(reg=True)
+        self.create_mpg_file(reg=True)
 
         ip_file_name = CONFIG_DIR + self.file_name + ".mpg"
         op_file_name = MPG_OP_ABS_DIR + f"{self.file_name}_str.txt"
@@ -198,9 +231,9 @@ class MpgToolBox:
             call_string = completed_process.stdout.decode()
             print('%s' % call_string)
 
-        str_dict = self.read_reg_mpg_op(_node_index_map, op_file_name, _g_b_init_nodes, debug=debug)
+        str_dict, final_reg_value = self.read_reg_mpg_op(op_file_name, debug=debug)
 
-        return str_dict
+        return str_dict, final_reg_value
 
     def _read_mpg_file(self, file_name: str):
         """
@@ -235,7 +268,7 @@ class MpgToolBox:
         with open(file_name, "w") as fh:
             fh.write("".join(lines[start_index + 1: stop_index]))
 
-    def read_cval_mpg_op(self, _node_index_map: bidict, file_name: str, debug: bool = False):
+    def read_cval_mpg_op(self, file_name: str, debug: bool = False):
         """
         A method that reads the output of the mean payoff game tool and returns a dictionary
 
@@ -260,7 +293,7 @@ class MpgToolBox:
                               f" Cannot divide by zero. Please check the output")
                 sys.exit(-1)
 
-            coop_dict.update({_node_index_map.inverse[int(curr_node)]: c_val})
+            coop_dict.update({self.node_index_map.inverse[int(curr_node)]: c_val})
 
         if debug:
             for _n, _v in coop_dict.items():
@@ -268,7 +301,7 @@ class MpgToolBox:
 
         return coop_dict
 
-    def read_reg_mpg_op(self, _node_index_map: bidict, file_name: str, _g_b_init_nodes: list, debug: bool = False):
+    def read_reg_mpg_op(self, file_name: str, debug: bool = False):
         """
         A method that reads the output of the mean payoff game tool and returns a dictionary
 
@@ -277,6 +310,7 @@ class MpgToolBox:
         :param file_name: The name of the file to read
         :return:
         """
+        _g_b_init_nodes = [_s for _s in self.mpg_graph._graph.successors("v1")]
 
         # dictionary to hold reg values
         reg_dict: Dict[int, float] = {}
@@ -287,8 +321,8 @@ class MpgToolBox:
         for line in f.readlines():
             curr_node, _, next_node, mean_val = line.split()
 
-            str_dict.update({_node_index_map.inverse[int(curr_node)]:
-                                 _node_index_map.inverse[int(next_node)]})
+            str_dict.update({self.node_index_map.inverse[int(curr_node)]:
+                                 self.node_index_map.inverse[int(next_node)]})
 
             try:
                 mean_val = eval(mean_val)
@@ -303,10 +337,14 @@ class MpgToolBox:
         print("******************printing Reg value********************")
         print(f"Playing in graph g_b = {b_val}")
         for _n in _g_b_init_nodes:
-            print(f"Reg value from node {_n} is: {-1 * reg_dict[str(_node_index_map[_n])]}")
+            print(f"Reg value from node {_n} is: {-1 * reg_dict[str(self.node_index_map[_n])]}")
+
+        _next_node_from_v1: tuple = str_dict["v1"]
+        _next_node_hash_value: str = str(self.node_index_map[_next_node_from_v1])
+        final_reg_val: float = reg_dict[_next_node_hash_value]
 
         if debug:
             for curr_n, next_n in str_dict.items():
                 print(f"The current node is {curr_n} and the strategy is {next_n}")
 
-        return str_dict
+        return str_dict, final_reg_val

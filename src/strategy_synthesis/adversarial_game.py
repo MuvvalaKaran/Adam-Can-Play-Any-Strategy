@@ -15,12 +15,12 @@ from ...src.graph import TwoPlayerGraph
 class ReachabilityGame:
     """
     A class that implements a Reachability algorithm to compute a set of winning region and the
-    corresponding winning strategy for both the players in a Game G = (S, E). A winning strategy induces a play for the system player that
-    satisfies the winning condition i.e or reach the accepting states on a given game.
+    corresponding winning strategy for both the players in a Game G = (S, E). A winning strategy induces a play for the
+    system player that satisfies the winning condition i.e to reach the accepting states on a given game.
 
     S : Set of all states in a given Game S = (S1 U S2) and (S1 ∩ S2 = nullset)
     W1 : Is the winning region for the system player from which it can force a visit to the accepting states
-    W2 : Set compliment of W1 (S\W1) is the winning region for the evn player
+    W2 : Set compliment of W1 (S\W1) is the winning region for the env player
 
     For a Reachability game the goal in terms of LTL could be written as : F(Accn States) i.e Eventually
     reach the accepting region. A strategy for the sys ensures that it can force a visit to the accn states from W1
@@ -28,6 +28,10 @@ class ReachabilityGame:
 
     Graph : The graph G is a two player game played between the system and the env player assuming env to be fully
     adversarial. G should be total and every node in G should be assigned a player
+
+    The code does a sanity check to ensure that every state has an outgoing edge and has a player assigned to it. A
+    state that does not have an edge is added a self-loop with weight 0 and a state that does not have a player
+    assigned is assigned as sys's (eve) state.
     """
     def __init__(self, game: TwoPlayerGraph, debug: bool = False):
         self._game = game
@@ -155,7 +159,8 @@ class ReachabilityGame:
 
     def _epsilon_greedy_choose_action(self,
                                       _human_state: tuple,
-                                      epsilon: float, _absoring_states: List[tuple]) -> Tuple[tuple, bool]:
+                                      epsilon: float, _absoring_states: List[tuple],
+                                      human_can_intervene: bool = False) -> Tuple[tuple, bool]:
         """
         Choose an action according to epsilon greedy algorithm
 
@@ -176,23 +181,33 @@ class ReachabilityGame:
         _next_states = [_next_n for _next_n in self.game._graph.successors(_human_state)]
         _did_human_move = False
 
-        # rand() return a floating point number between [0, 1)
-        if np.random.rand() < epsilon:
-            _next_state: tuple = random.choice(_next_states)
-        else:
-            # if a node belongs to sys's winning region, it does have a strategy associated with it. For those nodes,
-            # randomly, pick one
-            try:
-                _next_state: tuple = str_dict[_human_state]
-            except:
+        # if the human still has moves remaining then he follows the eps strategy else he does not move at all
+        if human_can_intervene:
+            # rand() return a floating point number between [0, 1)
+            if np.random.rand() < epsilon:
                 _next_state: tuple = random.choice(_next_states)
+            else:
+                # if a node belongs to sys's winning region, it does have a strategy associated with it. For those nodes,
+                # randomly, pick one
+                try:
+                    _next_state: tuple = str_dict[_human_state]
+                except:
+                    _next_state: tuple = random.choice(_next_states)
 
-        if _next_state[0][1] != _human_state[0][1]:
-            _did_human_move = True
+            if _next_state[0][1] != _human_state[0][1]:
+                _did_human_move = True
+        else:
+            # human follows the strategy dictated by the system
+            for _n in _next_states:
+                if _n[0][1] == _human_state[0][1]:
+                    _next_state = _n
+                    break
 
         return _next_state, _did_human_move
 
-    def get_pos_sequences(self, epsilon: float, debug: bool = False) -> List[Tuple[str, ndarray, int]]:
+    def get_pos_sequences(self, epsilon: float,
+                          debug: bool = False,
+                          max_human_interventions: int = 1) -> List[Tuple[str, ndarray, int]]:
         """
         A helper method to return a list of actions (edge labels) associated with the strategy found
         :return: A sequence of position of the robot
@@ -204,6 +219,7 @@ class ReachabilityGame:
         _trap_states = self.game.get_trap_states()
 
         _absorbing_states = _accepting_states + _trap_states
+        _human_interventions: int = 0
         _visited_states = []
         _position_sequence = []
 
@@ -211,10 +227,11 @@ class ReachabilityGame:
         _next_env_node = self.sys_str[_curr_sys_node]
 
         # randomly choose an env edge from new_env_node
-        # next_sys_node = random.choice([_n for _n in self.game._graph.successors(_next_env_node)])
+        _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
         _next_sys_node = self._epsilon_greedy_choose_action(_next_env_node,
-                                                           epsilon=epsilon,
-                                                           _absoring_states=_absorbing_states)[0]
+                                                            epsilon=epsilon,
+                                                            _absoring_states=_absorbing_states,
+                                                            human_can_intervene=_can_human_intervene)[0]
 
 
         x, y = _next_sys_node[0][0]
@@ -234,11 +251,12 @@ class ReachabilityGame:
             _next_env_node = self.sys_str[_curr_sys_node]
 
             # randomly choose an env edge from new_env_node
-            # next_sys_node = random.choice([_n for _n in self.game._graph.successors(next_env_node)])
+            _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
             if _next_env_node not in _absorbing_states:
                 _next_sys_node = self._epsilon_greedy_choose_action(_next_env_node,
                                                                     epsilon=epsilon,
-                                                                    _absoring_states=_absorbing_states)[0]
+                                                                    _absoring_states=_absorbing_states,
+                                                                    human_can_intervene=_can_human_intervene)[0]
             else:
                 _next_sys_node = _next_env_node
 

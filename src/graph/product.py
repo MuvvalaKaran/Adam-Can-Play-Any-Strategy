@@ -42,8 +42,13 @@ class ProductAutomaton(TwoPlayerGraph):
             else:
                 self.construct_product_absorbing(finite=finite)
 
+            # all the edges from the sys node to the absorbing state should have weight zero.
+            self._add_sys_to_abs_states_w_zero_wgt()
+
         else:
             self.construct_product()
+
+        self._sanity_check(debug=False)
 
     def _check_ts_ltl_compatability(self) -> bool:
         """
@@ -65,7 +70,9 @@ class ProductAutomaton(TwoPlayerGraph):
 
     def construct_product(self):
         """
-        A function that helps build the composition of TS and DFA
+        A function that helps build the composition of TS and DFA. Unlike the absorbing case, the accepting states and
+        the set of trap states are all not compressed into one.
+
         :return: The composed graph
         """
 
@@ -409,6 +416,26 @@ class ProductAutomaton(TwoPlayerGraph):
                               weight=weight,
                               actions=action)
 
+    def _add_sys_to_abs_states_w_zero_wgt(self):
+        """
+        A method that computes the set of all accepting and trap states (jointly the absorbing states), identifies the
+        sys nodes that only transit to these states, and manually overwrite the org weight to have an transition of
+        weight 0.
+
+        Originally the edge weights are carried over by the self-loop/transition at these states from the Transition
+        system. When we take the product, the weights simply get transferred. As we consider the current state
+        observation while constructing the  product, an edge transits from the sys node to these absorbing states
+        :return:
+        """
+        # add nodes that have direct edges to the absorbing state as zero
+        _accp_state = self.get_accepting_states()
+        _trap_state = self.get_trap_states()
+
+        # as absorbing states have self-loops, we also look at the self-loop weight and override it to be 0,
+        for _s in _accp_state + _trap_state:
+            for _pre_s in self._graph.predecessors(_s):
+                self._graph[_pre_s][_s][0]['weight'] = 0
+
     def _check_transition(self, _u_ts_node,
                           _v_ts_node,
                           _u_a_node,
@@ -616,8 +643,8 @@ class ProductAutomaton(TwoPlayerGraph):
                     print(f"Adding self loop of weight - {max_w} to the node {_n}")
                     print("=====================================")
                 self._graph.add_weighted_edges_from([(_n,
-                                                      _n,
-                                                      math.inf)])
+                                                      _n, 0)])
+                                                      # math.inf)])
                 # -1 * max_w)])
 
     def _prune_edges(self, debug):

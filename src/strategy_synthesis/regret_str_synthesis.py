@@ -12,11 +12,11 @@ from _collections import defaultdict
 from typing import Dict, List, Tuple, Union, Optional
 
 # import local packages
-from src.graph import Graph, graph_factory
-from src.graph import TwoPlayerGraph
-from src.graph import ProductAutomaton
-from src.payoff import Payoff
-from src.mpg_tool import MpgToolBox
+from ...src.graph import Graph, graph_factory
+from ...src.graph import TwoPlayerGraph
+from ...src.graph import ProductAutomaton
+from ...src.payoff import Payoff
+from ...src.mpg_tool import MpgToolBox
 
 # needed for multi-threading w' computation
 NUM_CORES = multiprocessing.cpu_count()

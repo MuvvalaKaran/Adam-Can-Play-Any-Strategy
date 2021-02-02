@@ -8,8 +8,8 @@ from collections import defaultdict
 from collections import deque
 
 # import local packages
-from src.graph import graph_factory
-from src.graph import TwoPlayerGraph
+from ...src.graph import graph_factory
+from ...src.graph import TwoPlayerGraph
 
 
 class ReachabilityGame:

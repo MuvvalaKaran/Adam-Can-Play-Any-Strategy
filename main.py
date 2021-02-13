@@ -448,49 +448,27 @@ def add_common_accepting_state(trans_sys: TwoPlayerGraph, plot: bool = False) ->
     return _trans_sys
 
 
-def compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
-                               mini_grid_instance: Optional[MinigridGraph] = None,
-                               epsilon: float = 0,
-                               max_human_interventions: int = 5,
-                               go_fast: bool = True,
-                               finite: bool = False,
-                               plot_result: bool = False,
-                               plot_result_only_eve: bool = False):
+def infinite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                                mini_grid_instance: Optional[MinigridGraph] = None,
+                                epsilon: float = 0,
+                                max_human_interventions: int = 5,
+                                go_fast: bool = True,
+                                finite: bool = False,
+                                plot_result: bool = False,
+                                plot_result_only_eve: bool = False):
     payoff = payoff_factory.get("cumulative", graph=trans_sys)
 
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    reg_syn_handle.infinte_reg_solver(minigrid_instance=mini_grid_instance,
-                                      plot=plot_result,
-                                      plot_only_eve=plot_result_only_eve,
-                                      simulate_minigrid=False,
-                                      go_fast=go_fast,
-                                      finite=finite,
-                                      epsilon=epsilon,
-                                      max_human_interventions=max_human_interventions)
-
-    # w_prime = reg_syn_handle.compute_W_prime(go_fast=go_fast, debug=False)
-    #
-    # # g_hat = reg_syn_handle.construct_g_hat(w_prime, game=trans_sys, finite=finite, debug=True,
-    # #                                        plot=True)
-    # g_hat = reg_syn_handle.construct_g_hat(w_prime, game=None, finite=finite, debug=True,
-    #                                        plot=False)
-    #
-    # mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
-    #
-    # reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
-    # # g_hat.plot_graph()
-    # org_str = reg_syn_handle.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_result_only_eve, plot=plot_result)
-    #
-    # # map back str to minigrid env
-    # if mini_grid_instance is not None:
-    #     controls = reg_syn_handle.get_controls_from_str_minigrid(org_str,
-    #                                                              epsilon=epsilon,
-    #                                                              max_human_interventions=max_human_interventions)
-    #     mini_grid_instance.execute_str(_controls=(reg_val, controls))
-    # else:
-    # control = reg_syn_handle.get_controls_from_str(org_str, debug=True)
+    reg_syn_handle.infinite_reg_solver(minigrid_instance=mini_grid_instance,
+                                       plot=plot_result,
+                                       plot_only_eve=plot_result_only_eve,
+                                       simulate_minigrid=False,
+                                       go_fast=go_fast,
+                                       finite=finite,
+                                       epsilon=epsilon,
+                                       max_human_interventions=max_human_interventions)
 
 
 def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
@@ -548,13 +526,11 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
 
-def new_compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
-                                   mini_grid_instance: Optional[MinigridGraph] = None,
-                                   epsilon: float = 0,
-                                   max_human_interventions: int = 5,
-                                   plot: bool = True,
-                                   reg_syn: bool = False,
-                                   alt_reg_syn: bool = False):
+def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                              mini_grid_instance: Optional[MinigridGraph] = None,
+                              epsilon: float = 0,
+                              max_human_interventions: int = 5,
+                              plot: bool = True):
     """
     A new regret computation method. Assumption: The weights on the graph represent costs and are hence non-negative.
     Sys player is trying to minimize its cumulative cost while the env player is trying to maximize the cumulative cost.
@@ -581,114 +557,19 @@ def new_compute_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGra
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    reg_syn_handle.finite_reg_solver(minigrid_instance=mini_grid_instance,
-                                     plot=plot,
-                                     plot_only_eve=False,
-                                     simulate_minigrid=True,
-                                     epsilon=epsilon,
-                                     max_human_interventions=max_human_interventions)
+    # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
+    #                                    plot=plot,
+    #                                    plot_only_eve=False,
+    #                                    simulate_minigrid=bool(mini_grid_instance),
+    #                                    epsilon=epsilon,
+    #                                    max_human_interventions=max_human_interventions)
 
-    # # Add auxiliary accepting state
-    # _game, _ = add_common_accepting_state(trans_sys, plot=False)
-    #
-    # # play reg minimizing game
-    # if reg_syn:
-    #     # let try computing coop strs instead of alternate ones
-    #     coop_mcr_solver = ValueIteration(_game, competitive=False)
-    #     coop_mcr_solver.solve(debug=True, plot=False)
-    #     coop_val_dict = coop_mcr_solver.state_value_dict
-    #
-    #     # compute competitive values from each state
-    #     comp_mcr_solver = ValueIteration(_game, competitive=True)
-    #     comp_mcr_solver.solve(debug=True, plot=False)
-    #     _comp_val_dict = comp_mcr_solver.state_value_dict
-    #
-    #     comp_vals: Dict[Tuple: float] = {}
-    #
-    #     for edge in _game._graph.edges():
-    #         _u = edge[0]
-    #         _v = edge[1]
-    #
-    #         # if the node belongs to adam, then the corresponding edge is assigned -inf
-    #         if _game._graph.nodes(data='player')[_u] == 'adam':
-    #             comp_vals.update({edge: 0})
-    #
-    #         else:
-    #             _state_cost = _comp_val_dict[_v]
-    #             _curr_w = _game.get_edge_weight(_u, _v)
-    #             _total_weight = _curr_w + _state_cost
-    #
-    #             comp_vals.update({edge: _total_weight})
-    #
-    #     # now that we comp and coop value for each edge(str), we construct a new graph with the edge weight given by
-    #     # comp(sigma, tau) - coop(sigma', tau)
-    #
-    #     _adv_reg_game: TwoPlayerGraph = copy.deepcopy(_game)
-    #
-    #     for _e in _game._graph.edges():
-    #         _u = _e[0]
-    #         _v = _e[1]
-    #
-    #         if _game._graph.nodes(data='player')[_u] == 'adam':
-    #             _new_weight = 0
-    #             _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
-    #             continue
-    #
-    #         # if the out-degree of a sys state is exactly one then _new_weight is 0
-    #         if _game._graph.out_degree(_u) == 1:
-    #             _new_weight = 0
-    #         else:
-    #             # _new_weight = comp_vals[_e] - alt_coop_vals[_e]
-    #             _new_weight = comp_vals[_e] - coop_val_dict[_u]
-    #
-    #         _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
-    #
-    #     # now lets play a adversarial game on this new graph and compute reg minimizing strs
-    #     adv_mcr_solver = ValueIteration(_adv_reg_game, competitive=True)
-    #     str_dict = adv_mcr_solver.solve(debug=True, plot=False)
-    #     trans_sys = _adv_reg_game
-    #     # remove edges to the tmp_accp state for ease of plotting
-    #     trans_sys._graph.remove_edge('trap', 'tmp_accp')
-    #     trans_sys._graph.remove_edge('accept_all', 'tmp_accp')
-    #     trans_sys.add_weighted_edges_from([('accept_all', 'accept_all', 0), ('trap', 'trap', 0)])
-    #
-    # elif alt_reg_syn:
-    #     # compute the competitive strategy for the human player
-    #     pass
-    #
-    # # play a pure adversarial game
-    # else:
-    #     mcr_solver = ValueIteration(_game, competitive=True)
-    #     str_dict = mcr_solver.solve(debug=True, plot=False)
-    #
-    # if plot:
-    #     # add str attr
-    #     trans_sys.set_edge_attribute('strategy', False)
-    #
-    #     # add edges that belong to str as True (red for visualization)
-    #     for curr_node, next_node in str_dict.items():
-    #         if next_node == "tmp_accp":
-    #             next_node = curr_node
-    #
-    #         if isinstance(next_node, list):
-    #             for n_node in next_node:
-    #                 trans_sys._graph.edges[curr_node, n_node, 0]['strategy'] = True
-    #         else:
-    #             trans_sys._graph.edges[curr_node, next_node, 0]['strategy'] = True
-    #
-    #     trans_sys.plot_graph()
-    #
-    # if mini_grid_instance:
-    #     str_dict["accept_all"] = "accept_all"
-    #     str_dict["T0_S2"] = "T0_S2"
-    #     payoff = payoff_factory.get("cumulative", graph=trans_sys)
-    #     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
-    #
-    #     controls = reg_syn_handle.get_controls_from_str_minigrid(str_dict,
-    #                                                              epsilon=epsilon,
-    #                                                              max_human_interventions=max_human_interventions)
-    #     mini_grid_instance.execute_str(_controls=(0, controls))
-    # sys.exit(-1)
+    reg_syn_handle.finite_reg_solver_2(minigrid_instance=mini_grid_instance,
+                                       plot=plot,
+                                       plot_only_eve=False,
+                                       simulate_minigrid=bool(mini_grid_instance),
+                                       epsilon=epsilon,
+                                       max_human_interventions=max_human_interventions)
 
 
 if __name__ == "__main__":
@@ -704,15 +585,15 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = True
+    gym_minigrid = False
     three_state_ts = False
     five_state_ts = False
-    variant_1_paper = False
+    variant_1_paper = True
     franka_abs = False
 
     # solver to call
-    finite_reg_synthesis = False
-    infinte_reg_synthesis = True
+    finite_reg_synthesis = True
+    infinte_reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
     miniGrid_instance = None
@@ -755,22 +636,20 @@ if __name__ == "__main__":
     print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
 
     if finite_reg_synthesis:
-        new_compute_reg_minimizing_str(trans_sys,
-                                       miniGrid_instance,
-                                       epsilon=EPSILON,
-                                       max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                       plot=False,
-                                       reg_syn=True,
-                                       alt_reg_syn=False)
+        finite_reg_minimizing_str(trans_sys,
+                                  miniGrid_instance,
+                                  epsilon=EPSILON,
+                                  max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
+                                  plot=True)
     elif infinte_reg_synthesis:
-        compute_reg_minimizing_str(trans_sys,
-                                   miniGrid_instance,
-                                   max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                   go_fast=go_fast,
-                                   epsilon=EPSILON,
-                                   finite=finite,
-                                   plot_result=False,
-                                   plot_result_only_eve=False)
+        infinite_reg_minimizing_str(trans_sys,
+                                    miniGrid_instance,
+                                    max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
+                                    go_fast=go_fast,
+                                    epsilon=EPSILON,
+                                    finite=finite,
+                                    plot_result=False,
+                                    plot_result_only_eve=False)
     elif adversarial_game:
         compute_winning_str(trans_sys,
                             miniGrid_instance,

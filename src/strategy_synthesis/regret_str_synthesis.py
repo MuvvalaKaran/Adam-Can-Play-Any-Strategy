@@ -54,13 +54,20 @@ class RegretMinimizationStrategySynthesis:
     def b_val(self, value: set):
         self._b_val = value
 
-    def finite_reg_solver(self,
-                          minigrid_instance,
-                          plot: bool = False,
-                          plot_only_eve: bool = False,
-                          simulate_minigrid: bool = False,
-                          epsilon: float = 0,
-                          max_human_interventions: int = 5):
+    def finite_reg_solver_3(self, minigrid_instance,
+                            plot: bool = False,
+                            plot_only_eve: bool = False,
+                            simulate_minigrid: bool = False,
+                            epsilon: float = 0,
+                            max_human_interventions: int = 5):
+        pass
+
+    def finite_reg_solver_2(self, minigrid_instance,
+                            plot: bool = False,
+                            plot_only_eve: bool = False,
+                            simulate_minigrid: bool = False,
+                            epsilon: float = 0,
+                            max_human_interventions: int = 5):
         """
         A parent function that computes regret minimizing strategy for the system player for cumulative payoff function.
 
@@ -71,11 +78,111 @@ class RegretMinimizationStrategySynthesis:
         Steps:
 
         1. Add an auxiliary tmp_accp state from the accepting state and the trap state. The edge weight is 0 and W_bar
-           respectively. W_bar is equak to : (|V| - 1) x W where W is the max absolute weight
-        2. Compute the best competitive value and best alternate value for each strategy i.e edge for sys node.
-        3. Reg = competitive - cooperative(w')
-        4. On this reg graph we then play competitive game i.e Sys: Min player and Env: Max player
-        5. Map back these strategies to the original game.
+           respectively. W_bar is equal to : (|V| - 1) x W where W is the max absolute weight
+        2. Compute the best cooperative value from each edge
+        3. reg^{s, t} = max_t Val^{v}(s, t) - min_t' Val^{v}(s, t)
+        4. After computing a reg value associate with a given strategy s, we then fix the str for Env. The strategies
+           that env player plays are the memoryless adversarial strategies that maximizes cumulative COST. Then, after
+           fixing the strategies for the env player we compute strategies for the sys player that minimizes cumulative
+           regret.
+
+
+        :return:
+        """
+        # Add auxiliary accepting state
+        self.add_common_accepting_state(plot=False)
+
+        # compute cooperative values
+        coop_mcr_solver = ValueIteration(self.graph, competitive=False)
+        coop_mcr_solver.solve(debug=True, plot=False)
+        coop_val_dict = coop_mcr_solver.state_value_dict
+
+        # compute competitive values from each state
+        comp_mcr_solver = ValueIteration(self.graph, competitive=True)
+        _comp_str_dict = comp_mcr_solver.solve(debug=True, plot=False)
+        _comp_val_dict = comp_mcr_solver.state_value_dict
+
+        # now we compute reg for each edge(str) as follows: comp(v) - coop(v) where v = sigma(u)
+
+        _adv_reg_game: TwoPlayerGraph = copy.deepcopy(self.graph)
+
+        for _e in self.graph._graph.edges():
+            _u = _e[0]
+            _v = _e[1]
+
+            # we only add edges that are optimal for the evn player.
+            if self.graph._graph.nodes(data='player')[_u] == 'adam':
+                if _v == _comp_str_dict[_u]:
+                    _new_weight = 0
+                    _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+                else:
+                    _adv_reg_game._graph.remove_edge(_u, _v)
+
+            elif self.graph._graph.nodes(data='player')[_u] == 'eve':
+                _new_weight = _comp_val_dict[_v] - coop_val_dict[_v]
+                _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+
+        # now lets play a adversarial game on this new graph and compute reg minimizing strs
+        adv_mcr_solver = ValueIteration(_adv_reg_game, competitive=True)
+        str_dict = adv_mcr_solver.solve(debug=True, plot=False)
+
+        # remove edges to the tmp_accp state for ease of plotting
+        _curr_tmp_accp = self.graph.get_accepting_states()[0]
+        _pre_accp_node = copy.copy(_adv_reg_game._graph.predecessors(_curr_tmp_accp))
+        _pre_accp: list = []
+        for _node in _pre_accp_node:
+            self.graph._graph.remove_edge(_node, _curr_tmp_accp)
+            self.graph.add_weighted_edges_from([(_node, _node, 0)])
+            # our str dict has this term where the original accepting state and the trap state are pointing to the
+            # arbitrary tmp_accp state. we need to rectify this
+
+            if str_dict.get(_node):
+                str_dict[_node] = _node
+
+        if plot:
+            self.plot_str_for_cumulative_reg(game_venue=self.graph,
+                                             str_dict=str_dict,
+                                             only_eve=plot_only_eve,
+                                             plot=plot)
+
+        if simulate_minigrid:
+            self.graph = _adv_reg_game
+            self.graph.add_accepting_state("accept_all")
+            self.graph.remove_state_attr("tmp_accp", "accepting")
+            if minigrid_instance is None:
+                warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
+                sys.exit(-1)
+
+            _controls = self.get_controls_from_str_minigrid(str_dict=str_dict,
+                                                            epsilon=epsilon,
+                                                            max_human_interventions=max_human_interventions)
+
+            minigrid_instance.execute_str(_controls=(0, _controls))
+
+    def finite_reg_solver_1(self,
+                            minigrid_instance,
+                            plot: bool = False,
+                            plot_only_eve: bool = False,
+                            simulate_minigrid: bool = False,
+                            epsilon: float = 0,
+                            max_human_interventions: int = 5):
+        """
+        A parent function that computes regret minimizing strategy for the system player for cumulative payoff function.
+
+        In this game, we assume that the weights on the graph represent costs and hence are non-negative. The objective
+        of the system player is to minimize its cumulative regret while the env player is trying to maximize the
+        cumulative regret.
+
+        Steps:
+
+        1. Add an auxiliary tmp_accp state from the accepting state and the trap state. The edge weight is 0 and W_bar
+           respectively. W_bar is equal to : (|V| - 1) x W where W is the max absolute weight
+        2. Compute the best cooperative value from each edge
+        3. reg^{s, t} = max_t Val^{v}(s, t) - cVal^{v}
+        4. After computing a reg value associate with a given strategy s, we then fix the str for Env. The strategies
+           that env player plays are the memoryless adversarial strategies that maximizes cumulative COST. Then, after
+           fixing the strategies for the env player we compute strategies for the sys player that minimizes cumulative
+           regret.
 
 
         :return:
@@ -90,7 +197,7 @@ class RegretMinimizationStrategySynthesis:
 
         # compute competitive values from each state
         comp_mcr_solver = ValueIteration(self.graph, competitive=True)
-        comp_mcr_solver.solve(debug=True, plot=False)
+        _comp_str_dict = comp_mcr_solver.solve(debug=True, plot=False)
         _comp_val_dict = comp_mcr_solver.state_value_dict
 
         comp_vals: Dict[Tuple: float] = {}
@@ -110,8 +217,8 @@ class RegretMinimizationStrategySynthesis:
 
                 comp_vals.update({edge: _total_weight})
 
-        # now that we comp and coop value for each edge(str), we construct a new graph with the edge weight given by
-        # comp(sigma, tau) - coop(sigma', tau)
+        # now that we comp for each edge(str) and coop value for each state, we construct a new graph with the edge
+        # weight given by: comp(sigma) - coop(_u)
 
         _adv_reg_game: TwoPlayerGraph = copy.deepcopy(self.graph)
 
@@ -119,31 +226,29 @@ class RegretMinimizationStrategySynthesis:
             _u = _e[0]
             _v = _e[1]
 
+            # we only add edges that are optimal for the evn player.
             if self.graph._graph.nodes(data='player')[_u] == 'adam':
-                _new_weight = 0
-                _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
-                continue
+                if _v == _comp_str_dict[_u]:
+                    _new_weight = 0
+                    _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+                else:
+                    _adv_reg_game._graph.remove_edge(_u, _v)
 
-            # if the out-degree of a sys state is exactly one then _new_weight is 0
-            if self.graph._graph.out_degree(_u) == 1:
-                _new_weight = 0
-            else:
-                # _new_weight = comp_vals[_e] - alt_coop_vals[_e]
+            elif self.graph._graph.nodes(data='player')[_u] == 'eve':
                 _new_weight = comp_vals[_e] - coop_val_dict[_u]
-
-            _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+                _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
 
         # now lets play a adversarial game on this new graph and compute reg minimizing strs
         adv_mcr_solver = ValueIteration(_adv_reg_game, competitive=True)
         str_dict = adv_mcr_solver.solve(debug=True, plot=False)
 
         # remove edges to the tmp_accp state for ease of plotting
-        _curr_tmp_accp = _adv_reg_game.get_accepting_states()[0]
+        _curr_tmp_accp = self.graph.get_accepting_states()[0]
         _pre_accp_node = copy.copy(_adv_reg_game._graph.predecessors(_curr_tmp_accp))
         _pre_accp : list = []
         for _node in _pre_accp_node:
-            _adv_reg_game._graph.remove_edge(_node, _curr_tmp_accp)
-            _adv_reg_game.add_weighted_edges_from([(_node, _node, 0)])
+            self.graph._graph.remove_edge(_node, _curr_tmp_accp)
+            self.graph.add_weighted_edges_from([(_node, _node, 0)])
             # our str dict has this term where the original accepting state and the trap state are pointing to the
             # arbitrary tmp_accp state. we need to rectify this
 
@@ -151,7 +256,7 @@ class RegretMinimizationStrategySynthesis:
                 str_dict[_node] = _node
 
         if plot:
-            self.plot_str_for_cumulative_reg(game_venue=_adv_reg_game,
+            self.plot_str_for_cumulative_reg(game_venue=self.graph,
                                              str_dict=str_dict,
                                              only_eve=plot_only_eve,
                                              plot=plot)
@@ -222,7 +327,7 @@ class RegretMinimizationStrategySynthesis:
         if plot:
             self.graph.plot_graph()
 
-    def infinte_reg_solver(self,
+    def infinite_reg_solver(self,
                            minigrid_instance,
                            plot: bool = False,
                            plot_only_eve: bool = False,

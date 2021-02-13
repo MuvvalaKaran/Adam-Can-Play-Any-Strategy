@@ -16,8 +16,10 @@ from typing import Dict, List, Tuple, Union, Optional
 from ..graph import Graph, graph_factory
 from ..graph import TwoPlayerGraph
 from ..graph import ProductAutomaton
+from ..graph import MiniGrid
 from ..payoff import Payoff
 from ..mpg_tool import MpgToolBox
+
 
 
 # import local value iteration solver
@@ -51,6 +53,214 @@ class RegretMinimizationStrategySynthesis:
     @b_val.setter
     def b_val(self, value: set):
         self._b_val = value
+
+    def finite_reg_solver(self,
+                          minigrid_instance,
+                          plot: bool = False,
+                          plot_only_eve: bool = False,
+                          simulate_minigrid: bool = False,
+                          epsilon: float = 0,
+                          max_human_interventions: int = 5):
+        """
+        A parent function that computes regret minimizing strategy for the system player for cumulative payoff function.
+
+        In this game, we assume that the weights on the graph represent costs and hence are non-negative. The objective
+        of the system player is to minimize its cumulative regret while the env player is trying to maximize the
+        cumulative regret.
+
+        Steps:
+
+        1. Add an auxiliary tmp_accp state from the accepting state and the trap state. The edge weight is 0 and W_bar
+           respectively. W_bar is equak to : (|V| - 1) x W where W is the max absolute weight
+        2. Compute the best competitive value and best alternate value for each strategy i.e edge for sys node.
+        3. Reg = competitive - cooperative(w')
+        4. On this reg graph we then play competitive game i.e Sys: Min player and Env: Max player
+        5. Map back these strategies to the original game.
+
+
+        :return:
+        """
+        # Add auxiliary accepting state
+        self.add_common_accepting_state(plot=False)
+
+        # compute cooperative str
+        coop_mcr_solver = ValueIteration(self.graph, competitive=False)
+        coop_mcr_solver.solve(debug=True, plot=False)
+        coop_val_dict = coop_mcr_solver.state_value_dict
+
+        # compute competitive values from each state
+        comp_mcr_solver = ValueIteration(self.graph, competitive=True)
+        comp_mcr_solver.solve(debug=True, plot=False)
+        _comp_val_dict = comp_mcr_solver.state_value_dict
+
+        comp_vals: Dict[Tuple: float] = {}
+
+        for edge in self.graph._graph.edges():
+            _u = edge[0]
+            _v = edge[1]
+
+            # if the node belongs to adam, then the corresponding edge is assigned -inf
+            if self.graph._graph.nodes(data='player')[_u] == 'adam':
+                comp_vals.update({edge: 0})
+
+            else:
+                _state_cost = _comp_val_dict[_v]
+                _curr_w = self.graph.get_edge_weight(_u, _v)
+                _total_weight = _curr_w + _state_cost
+
+                comp_vals.update({edge: _total_weight})
+
+        # now that we comp and coop value for each edge(str), we construct a new graph with the edge weight given by
+        # comp(sigma, tau) - coop(sigma', tau)
+
+        _adv_reg_game: TwoPlayerGraph = copy.deepcopy(self.graph)
+
+        for _e in self.graph._graph.edges():
+            _u = _e[0]
+            _v = _e[1]
+
+            if self.graph._graph.nodes(data='player')[_u] == 'adam':
+                _new_weight = 0
+                _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+                continue
+
+            # if the out-degree of a sys state is exactly one then _new_weight is 0
+            if self.graph._graph.out_degree(_u) == 1:
+                _new_weight = 0
+            else:
+                # _new_weight = comp_vals[_e] - alt_coop_vals[_e]
+                _new_weight = comp_vals[_e] - coop_val_dict[_u]
+
+            _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+
+        # now lets play a adversarial game on this new graph and compute reg minimizing strs
+        adv_mcr_solver = ValueIteration(_adv_reg_game, competitive=True)
+        str_dict = adv_mcr_solver.solve(debug=True, plot=False)
+
+        # remove edges to the tmp_accp state for ease of plotting
+        _curr_tmp_accp = _adv_reg_game.get_accepting_states()[0]
+        _pre_accp_node = copy.copy(_adv_reg_game._graph.predecessors(_curr_tmp_accp))
+        _pre_accp : list = []
+        for _node in _pre_accp_node:
+            _adv_reg_game._graph.remove_edge(_node, _curr_tmp_accp)
+            _adv_reg_game.add_weighted_edges_from([(_node, _node, 0)])
+            # our str dict has this term where the original accepting state and the trap state are pointing to the
+            # arbitrary tmp_accp state. we need to rectify this
+
+            if str_dict.get(_node):
+                str_dict[_node] = _node
+
+        if plot:
+            self.plot_str_for_cumulative_reg(game_venue=_adv_reg_game,
+                                             str_dict=str_dict,
+                                             only_eve=plot_only_eve,
+                                             plot=plot)
+
+        if simulate_minigrid:
+            self.graph = _adv_reg_game
+            self.graph.add_accepting_state("accept_all")
+            self.graph.remove_state_attr("tmp_accp", "accepting")
+            if minigrid_instance is None:
+                warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
+                sys.exit(-1)
+
+            _controls = self.get_controls_from_str_minigrid(str_dict=str_dict,
+                                                            epsilon=epsilon,
+                                                            max_human_interventions=max_human_interventions)
+
+            minigrid_instance.execute_str(_controls=(0, _controls))
+
+    def add_common_accepting_state(self, plot: bool = False):
+        """
+        A helper method that adds a auxiliary accepting state from the current accepting state as well as the trap state
+        to the new accepting state. This helper methos is called by the finite_reg_solver method to augment the existing
+        graph as follows:
+
+        trap--W_bar --> new_accp (self-loop weight 0)
+                 /^
+                /
+               0
+              /
+             /
+            /
+        Acc
+
+        W_bar : Highest payoff any state could ever achieve when playing total-payoff game in cooperative setting,
+        assuming strategies to be non-cylic, will be equal to (|V| -1)W where W is the max absolute weight.
+
+        Now we remove Acc as the accepting state and add new_accp as the new accepting state and initialize this state
+        to 0 in the value iteration algorithm - essentially eliminating a trap region.
+
+        :return:
+        """
+
+        old_accp_states = self.graph.get_accepting_states()
+        trap_states = self.graph.get_trap_states()
+        _num_of_nodes = len(list(self.graph._graph.nodes))
+        _W = abs(self.graph.get_max_weight())
+        w_bar = ((_num_of_nodes - 1) * _W)
+
+        # remove self-loops of accepting states and add edge from that state to the new accepting state with edge
+        # weight 0
+        for _accp in old_accp_states:
+            self.graph._graph.remove_edge(_accp, _accp)
+            self.graph.remove_state_attr(_accp, "accepting")
+            self.graph.add_state_attribute(_accp, "player", "eve")
+            self.graph.add_weighted_edges_from([(_accp, 'tmp_accp', 0)])
+
+        # remove self-loops of trap states and add edge from that state to the new accepting state with edge weight
+        # w_bar
+        for _trap in trap_states:
+            self.graph._graph.remove_edge(_trap, _trap)
+            self.graph.add_state_attribute(_trap, "player", "eve")
+            self.graph.add_weighted_edges_from([(_trap, 'tmp_accp', w_bar)])
+
+        self.graph.add_weighted_edges_from([('tmp_accp', 'tmp_accp', 0)])
+        self.graph.add_accepting_state('tmp_accp')
+        self.graph.add_state_attribute('tmp_accp', "player", "eve")
+
+        if plot:
+            self.graph.plot_graph()
+
+    def infinte_reg_solver(self,
+                           minigrid_instance,
+                           plot: bool = False,
+                           plot_only_eve: bool = False,
+                           simulate_minigrid: bool = False,
+                           go_fast: bool = True,
+                           finite: bool = False,
+                           epsilon: float = 0,
+                           max_human_interventions: int = 5):
+        """
+        A method to compute payoff when using a type of infinite payoff. The weights associated with the game are costs
+        and are non-negative.
+
+        :param minigrid_instance:
+        :param plot:
+        :param plot_only_eve:
+        :param simulate_minigrid:
+        :param epsilon:
+        :param max_human_interventions:
+        :return:
+        """
+
+        # compute w_prime
+        w_prime = self.compute_W_prime(go_fast=go_fast, debug=False)
+
+        g_hat = self.construct_g_hat(w_prime, game=None, finite=finite, debug=True,
+                                     plot=False)
+
+        mpg_g_hat_handle = MpgToolBox(g_hat, "g_hat")
+
+        reg_dict, reg_val = mpg_g_hat_handle.compute_reg_val(go_fast=True, debug=False)
+        # g_hat.plot_graph()
+        org_str = self.plot_str_from_mgp(g_hat, reg_dict, only_eve=plot_only_eve, plot=plot)
+
+        if minigrid_instance is not None:
+            controls = self.get_controls_from_str_minigrid(org_str,
+                                                           epsilon=epsilon,
+                                                           max_human_interventions=max_human_interventions)
+            minigrid_instance.execute_str(_controls=(reg_val, controls))
 
     def _compute_cval_from_mpg(self, go_fast: bool, debug: bool):
         mpg_cval_handle = MpgToolBox(self.graph, "org_graph")
@@ -444,12 +654,12 @@ class RegretMinimizationStrategySynthesis:
         """
 
         for curr_node, next_node in combined_strategy.items():
-                if g_hat._graph.nodes[curr_node].get("player") == "eve":
-                    if isinstance(next_node, list):
-                        for n_node in next_node:
-                            g_hat._graph.edges[curr_node, n_node, 0]['strategy'] = True
-                    else:
-                        g_hat._graph.edges[curr_node, next_node, 0]['strategy'] = True
+            if g_hat._graph.nodes[curr_node].get("player") == "eve":
+                if isinstance(next_node, list):
+                    for n_node in next_node:
+                        g_hat._graph.edges[curr_node, n_node, 0]['strategy'] = True
+                else:
+                    g_hat._graph.edges[curr_node, next_node, 0]['strategy'] = True
 
     def _from_str_mpg_to_str(self, combined_str: Dict):
         original_str = {}
@@ -649,6 +859,30 @@ class RegretMinimizationStrategySynthesis:
 
         return _position_sequence
 
+    def plot_str_for_cumulative_reg(self,
+                                    game_venue: TwoPlayerGraph,
+                                    str_dict: Dict,
+                                    only_eve: bool = False,
+                                    plot: bool = False):
+        """
+        A helper method that add a strategy flag to very edge in the original game. Then it iterates through the
+        strategy dict and sets the edges for both the sys player and env player in the strategy dict as True.
+
+        The plot_graph() function colors edges that have this strategy as red.
+        :return:
+        """
+
+        self.graph.set_edge_attribute('strategy', False)
+
+        if only_eve:
+            self._add_strategy_flag_only_eve(game_venue, str_dict)
+        else:
+            self._add_strategy_flag(game_venue, str_dict)
+
+        if plot:
+            game_venue.plot_graph()
+
+
     def plot_str_from_mgp(self,
                           g_hat: TwoPlayerGraph,
                           str_dict: Dict,
@@ -668,6 +902,7 @@ class RegretMinimizationStrategySynthesis:
         else:
             self._add_strategy_flag(g_hat, str_dict)
 
+        # Map back strategies from g_hat to the original abstraction
         org_str = self._from_str_mpg_to_str(str_dict)
 
         if only_eve:

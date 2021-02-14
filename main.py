@@ -140,8 +140,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_5.value
-        ENV_ID = MiniGridLavaEnv.env_3.value
+        # ENV_ID = MiniGridEmptyEnv.env_6.value
+        ENV_ID = MiniGridLavaEnv.env_1.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -185,8 +185,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       config_yaml="/config/automaton",
                                       save_flag=True,
                                       # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
-                                      # sc_ltl="!(lava_red_open) U (water_blue_open)",
-                                      sc_ltl="!(lava_red_open) U (goal_green_open)",
+                                      sc_ltl="!(lava_red_open) U (water_blue_open)",
+                                      # sc_ltl="!(lava_red_open) U (goal_green_open)",
                                       # sc_ltl="F (goal_green_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
@@ -392,62 +392,6 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
                                       plot=self.plot_dfa)
 
 
-def add_common_accepting_state(trans_sys: TwoPlayerGraph, plot: bool = False) -> TwoPlayerGraph:
-    """
-    A method that adds a auxiliary accepting state from the current accepting state as well as the trap state to
-    the new accepting state. Visually
-
-    trap--W_bar --> new_accp (self-loop weight 0)
-             /^
-            /
-           0
-          /
-         /
-        /
-    Acc
-
-    W_bar : Highest payoff any state could ever achieve when playing total-payoff game in cooperative setting,
-    assuming strategies to be non-cylic, will be equal to (|V| -1)W where W is the max absolute weight.
-
-    Now we remove Acc as the accepting state and add new_accp as the new accepting state and initialize this state
-    to 0 in the value iteration algorithm - essentially eliminating a trap region.
-
-    :return:
-    """
-    # remove the current accepting state
-    _trans_sys = copy.deepcopy(trans_sys)
-
-    old_accp_states = _trans_sys.get_accepting_states()
-    trap_states = _trans_sys.get_trap_states()
-    _num_of_nodes = len(list(_trans_sys._graph.nodes))
-    _W = abs(_trans_sys.get_max_weight())
-    w_bar = ((_num_of_nodes - 1) * _W)
-
-    # remove self-loops of accepting states and add edge from that state to the new accepting state with edge
-    # weight 0
-    for _accp in old_accp_states:
-        _trans_sys._graph.remove_edge(_accp, _accp)
-        _trans_sys.remove_state_attr(_accp, "accepting")
-        _trans_sys.add_state_attribute(_accp, "player", "eve")
-        _trans_sys.add_weighted_edges_from([(_accp, 'tmp_accp', 0)])
-
-    # remove self-loops of trap states and add edge from that state to the new accepting state with edge weight
-    # w_bar
-    for _trap in trap_states:
-        _trans_sys._graph.remove_edge(_trap, _trap)
-        _trans_sys.add_state_attribute(_trap, "player", "eve")
-        _trans_sys.add_weighted_edges_from([(_trap, 'tmp_accp', w_bar)])
-
-    _trans_sys.add_weighted_edges_from([('tmp_accp', 'tmp_accp', 0)])
-    _trans_sys.add_accepting_state('tmp_accp')
-    _trans_sys.add_state_attribute('tmp_accp', "player", "eve")
-
-    if plot:
-        _trans_sys.plot_graph()
-
-    return _trans_sys
-
-
 def infinite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                 mini_grid_instance: Optional[MinigridGraph] = None,
                                 epsilon: float = 0,
@@ -557,19 +501,21 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
-    #                                    plot=plot,
-    #                                    plot_only_eve=False,
-    #                                    simulate_minigrid=bool(mini_grid_instance),
-    #                                    epsilon=epsilon,
-    #                                    max_human_interventions=max_human_interventions)
-
-    reg_syn_handle.finite_reg_solver_2(minigrid_instance=mini_grid_instance,
+    reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
                                        plot=plot,
                                        plot_only_eve=False,
                                        simulate_minigrid=bool(mini_grid_instance),
                                        epsilon=epsilon,
-                                       max_human_interventions=max_human_interventions)
+                                       max_human_interventions=max_human_interventions,
+                                       compute_reg_for_human=False)
+
+    # reg_syn_handle.finite_reg_solver_2(minigrid_instance=mini_grid_instance,
+    #                                    plot=plot,
+    #                                    plot_only_eve=False,
+    #                                    simulate_minigrid=bool(mini_grid_instance),
+    #                                    epsilon=epsilon,
+    #                                    max_human_interventions=max_human_interventions,
+    #                                    compute_reg_for_human=False)
 
 
 if __name__ == "__main__":
@@ -578,17 +524,17 @@ if __name__ == "__main__":
     EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
     IROS_FLAG = False
     ENERGY_BOUND = 30
-    ALLOWED_HUMAN_INTERVENTIONS = 0
+    ALLOWED_HUMAN_INTERVENTIONS = 2
 
     # some constants related to computation
     finite = True
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = False
+    gym_minigrid = True
     three_state_ts = False
     five_state_ts = False
-    variant_1_paper = True
+    variant_1_paper = False
     franka_abs = False
 
     # solver to call
@@ -640,7 +586,7 @@ if __name__ == "__main__":
                                   miniGrid_instance,
                                   epsilon=EPSILON,
                                   max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                  plot=True)
+                                  plot=False)
     elif infinte_reg_synthesis:
         infinite_reg_minimizing_str(trans_sys,
                                     miniGrid_instance,

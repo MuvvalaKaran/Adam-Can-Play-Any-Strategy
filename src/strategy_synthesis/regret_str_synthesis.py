@@ -67,7 +67,8 @@ class RegretMinimizationStrategySynthesis:
                             plot_only_eve: bool = False,
                             simulate_minigrid: bool = False,
                             epsilon: float = 0,
-                            max_human_interventions: int = 5):
+                            max_human_interventions: int = 5,
+                            compute_reg_for_human: bool = False):
         """
         A parent function that computes regret minimizing strategy for the system player for cumulative payoff function.
 
@@ -113,7 +114,10 @@ class RegretMinimizationStrategySynthesis:
             # we only add edges that are optimal for the evn player.
             if self.graph._graph.nodes(data='player')[_u] == 'adam':
                 if _v == _comp_str_dict[_u]:
-                    _new_weight = 0
+                    if compute_reg_for_human:
+                        _new_weight = _comp_val_dict[_v] - coop_val_dict[_v]
+                    else:
+                        _new_weight = 0
                     _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
                 else:
                     _adv_reg_game._graph.remove_edge(_u, _v)
@@ -146,7 +150,7 @@ class RegretMinimizationStrategySynthesis:
                                              plot=plot)
 
         if simulate_minigrid:
-            self.graph = _adv_reg_game
+            # self.graph = _adv_reg_game
             self.graph.add_accepting_state("accept_all")
             self.graph.remove_state_attr("tmp_accp", "accepting")
             if minigrid_instance is None:
@@ -165,7 +169,8 @@ class RegretMinimizationStrategySynthesis:
                             plot_only_eve: bool = False,
                             simulate_minigrid: bool = False,
                             epsilon: float = 0,
-                            max_human_interventions: int = 5):
+                            max_human_interventions: int = 5,
+                            compute_reg_for_human: bool = False):
         """
         A parent function that computes regret minimizing strategy for the system player for cumulative payoff function.
 
@@ -208,7 +213,16 @@ class RegretMinimizationStrategySynthesis:
 
             # if the node belongs to adam, then the corresponding edge is assigned -inf
             if self.graph._graph.nodes(data='player')[_u] == 'adam':
-                comp_vals.update({edge: 0})
+
+                # as human edges have 0 edge weight _total_weight = _state_cost
+                if compute_reg_for_human:
+                    _state_cost = _comp_val_dict[_v]
+                    _curr_w = self.graph.get_edge_weight(_u, _v)
+                    _total_weight = _curr_w + _state_cost
+
+                    comp_vals.update({edge: _total_weight})
+                else:
+                    comp_vals.update({edge: 0})
 
             else:
                 _state_cost = _comp_val_dict[_v]
@@ -229,7 +243,10 @@ class RegretMinimizationStrategySynthesis:
             # we only add edges that are optimal for the evn player.
             if self.graph._graph.nodes(data='player')[_u] == 'adam':
                 if _v == _comp_str_dict[_u]:
-                    _new_weight = 0
+                    if compute_reg_for_human:
+                        _new_weight = comp_vals[_e] - coop_val_dict[_u]
+                    else:
+                        _new_weight = 0
                     _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
                 else:
                     _adv_reg_game._graph.remove_edge(_u, _v)
@@ -262,7 +279,7 @@ class RegretMinimizationStrategySynthesis:
                                              plot=plot)
 
         if simulate_minigrid:
-            self.graph = _adv_reg_game
+            # self.graph = _adv_reg_game
             self.graph.add_accepting_state("accept_all")
             self.graph.remove_state_attr("tmp_accp", "accepting")
             if minigrid_instance is None:

@@ -337,8 +337,11 @@ class ValueIteration:
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
             _val = (_node_int, self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0])
-            # _val = (_node_int, pre_vec[_node_int][0])
-            _succ_vals.append(_val)
+            if pre_vec[_node_int][0] == INT_MAX_VAL:
+                _succ_vals.append((_node_int, INT_MAX_VAL))
+            else:
+                # _val = (_node_int, pre_vec[_node_int][0])
+                _succ_vals.append(_val)
 
         # get org node int value
         if self.competitive:

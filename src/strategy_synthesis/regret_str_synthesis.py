@@ -54,15 +54,80 @@ class RegretMinimizationStrategySynthesis:
     def b_val(self, value: set):
         self._b_val = value
 
-    def finite_reg_solver_3(self, minigrid_instance,
+    def finite_reg_solver_3(self,
+                            minigrid_instance,
                             plot: bool = False,
                             plot_only_eve: bool = False,
                             simulate_minigrid: bool = False,
                             epsilon: float = 0,
                             max_human_interventions: int = 5):
-        pass
+        """
+        This method implements the online reg computation approach. Reg is defined as
 
-    def finite_reg_solver_2(self, minigrid_instance,
+        reg^{s, t} = Val^{v}(s, t) - min_s' min_t' Val^{v}(s', t')
+
+        min_s, max_t reg^{s, t} = min_s, max_t Val^{v}(s, t) - min_s' min_t' Val^{v}(s', t')
+
+        We start from the accepting state and back-propagate the values. As state values converge we subtract the
+        corresponding cooperative value from that state. This is an online version of computing regret and the algorithm
+        has been implemented in the value_iteration module under the online_reg_solver() method name.
+
+        :param minigrid_instance:
+        :param plot:
+        :param plot_only_eve:
+        :param simulate_minigrid:
+        :param epsilon:
+        :param max_human_interventions:
+        :return:
+        """
+
+        # Add auxiliary accepting state
+        self.add_common_accepting_state(plot=False)
+
+        # compute cooperative values
+        coop_mcr_solver = ValueIteration(self.graph, competitive=False)
+        coop_mcr_solver.solve(debug=True, plot=False)
+        coop_val_dict = coop_mcr_solver.state_value_dict
+
+        # compute reg
+        reg_mcr_solver = ValueIteration(self.graph, competitive=True)
+        reg_str_dict = reg_mcr_solver.online_reg_solver(cval=coop_val_dict, debug=False, plot=False)
+
+        # remove edges to the tmp_accp state for ease of plotting
+        _curr_tmp_accp = self.graph.get_accepting_states()[0]
+        _pre_accp_node = copy.copy(self.graph._graph.predecessors(_curr_tmp_accp))
+        _pre_accp: list = []
+        for _node in _pre_accp_node:
+            self.graph._graph.remove_edge(_node, _curr_tmp_accp)
+            self.graph.add_weighted_edges_from([(_node, _node, 0)])
+            # our str dict has this term where the original accepting state and the trap state are pointing to the
+            # arbitrary tmp_accp state. we need to rectify this
+
+            if reg_str_dict.get(_node):
+                reg_str_dict[_node] = _node
+
+        if plot:
+            self.plot_str_for_cumulative_reg(game_venue=self.graph,
+                                             str_dict=reg_str_dict,
+                                             only_eve=plot_only_eve,
+                                             plot=plot)
+
+        if simulate_minigrid:
+            # self.graph = _adv_reg_game
+            self.graph.add_accepting_state("accept_all")
+            self.graph.remove_state_attr("tmp_accp", "accepting")
+            if minigrid_instance is None:
+                warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
+                sys.exit(-1)
+
+            _controls = self.get_controls_from_str_minigrid(str_dict=reg_str_dict,
+                                                            epsilon=epsilon,
+                                                            max_human_interventions=max_human_interventions)
+
+            minigrid_instance.execute_str(_controls=(0, _controls))
+
+    def finite_reg_solver_2(self,
+                            minigrid_instance,
                             plot: bool = False,
                             plot_only_eve: bool = False,
                             simulate_minigrid: bool = False,

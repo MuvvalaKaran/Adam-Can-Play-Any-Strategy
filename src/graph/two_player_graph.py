@@ -109,7 +109,7 @@ class TwoPlayerGraph(Graph):
 
         # define constant weights
         lambda_const = +0
-        const_a = 20
+        const_a = 1
 
         nstate_graph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
         nstate_graph.construct_graph()

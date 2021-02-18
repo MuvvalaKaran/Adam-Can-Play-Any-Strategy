@@ -7,7 +7,7 @@ import copy
 import operator
 import random
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from networkx import DiGraph
 from numpy import ndarray
 from bidict import bidict
@@ -167,9 +167,104 @@ class ValueIteration:
         for _n in _trap_states:
             self.org_graph.add_state_attribute(_n, "player", "adam")
 
+    def online_reg_solver(self, cval: dict, debug: bool = False, plot: bool = False):
+        """
+        This is a online variant of computing regret. In this algorithm, as states converge to their state values we
+        subtract the cooperative values associated with that state. We then lock the state value and strategy for that
+        state to avoid/resetting the state value to itself.
+
+        :param cval: A dict that maps a state in the game to its corresponding cooperative value
+        :param debug:
+        :param plot:
+        :return:
+        """
+
+        # initially in the org val_vector the target node(s) will value 0
+        _accp_state = self.org_graph.get_accepting_states()[0]
+        _init_node = self.org_graph.get_initial_states()[0][0]
+        _init_int_node = self.node_int_map[_init_node]
+
+        self._add_trap_state_player()
+
+        _val_vector = copy.deepcopy(self.val_vector)
+        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+
+        iter_var = 0
+        _max_str_dict = {}
+        _min_str_dict = {}
+        _min_reach_str_dict = {}
+        _max_reach_str_dict = {}
+
+        converged_states = deque()
+
+        while not self._is_same(_val_pre, _val_vector):
+            if debug:
+                if iter_var % 1000 == 0:
+                    print(f"{iter_var} Iterations")
+                    # print(f"Init state value: {self.val_vector[_init_int_node]}")
+
+            _val_pre = copy.copy(_val_vector)
+            iter_var += 1
+
+            for _n in self.org_graph._graph.nodes():
+                _int_node = self.node_int_map[_n]
+
+                if _n == _accp_state or _n in converged_states:
+                    continue
+
+                if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
+                    _val_vector[_int_node][0], _next_max_node = self._get_max_env_val(_n, _val_pre)
+                    _max_str_dict[_n] = self.node_int_map.inverse[_next_max_node]
+
+                elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                    _val_vector[_int_node][0], _next_min_node = self._get_min_sys_val(_n, _val_pre)
+
+                    if _val_vector[_int_node] != _val_pre[_int_node]:
+                        _min_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+
+                        if _val_pre[_int_node] == INT_MAX_VAL:
+                            _min_reach_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+
+            # check if any of the state have converged
+            for _n in self.org_graph._graph.nodes():
+                _int_node = self.node_int_map[_n]
+
+                if _n == _accp_state or _n in converged_states:
+                    continue
+
+                # if a state has converged we then subtract that cooperative value from that state
+                if _val_pre[_int_node] != INT_MAX_VAL and _val_vector[_int_node] == _val_pre[_int_node]:
+                    # _val_vector[_int_node] = _val_vector[_int_node] - cval[_n]
+                    _val_vector[_int_node] = cval[_n] - _val_vector[_int_node]
+                    converged_states.append(_n)
+
+                    # note: for now check if any state value become negative or not because of this computation
+                    if _val_vector[_int_node] < 0:
+                        print(f"state {_n} in iteration {iter_var} is assigned {_val_vector[_int_node]} after"
+                              f"subtracting its cooperative value")
+
+            self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
+
+        # update the state value dict
+        for i in range(self.num_of_nodes):
+            _s = self.node_int_map.inverse[i]
+            self.state_value_dict.update({_s: self.val_vector[i][iter_var]})
+
+        if plot:
+            self._add_state_costs_to_graph()
+            self.org_graph.plot_graph()
+
+        if debug:
+            print(f"Number of iteration to converge: {iter_var}")
+            print(f"Init state value: {self.state_value_dict[_init_node]}")
+            self._sanity_check()
+            # self.print_state_values()
+
+        return {**_max_str_dict, **_min_str_dict}
+
     def solve(self, debug: bool = False, plot: bool = False):
         """
-        A method tHat implements Algorithm 1 from the paper. The operation performed at each step can be represented by
+        A method that implements Algorithm 1 from the paper. The operation performed at each step can be represented by
         an operator say F.  F here is the _get_max_env_val() and _get_min_sys_val() methods. F is a monotonic operator
         and is monotonically decreasing - meaning the function should not increase (it must not increase)! and converges
         to the greatest fixed point of F.

@@ -185,8 +185,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       config_yaml="/config/automaton",
                                       save_flag=True,
                                       # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
-                                      sc_ltl="!(lava_red_open) U (water_blue_open)",
-                                      # sc_ltl="!(lava_red_open) U (goal_green_open)",
+                                      # sc_ltl="!(lava_red_open) U (water_blue_open)",
+                                      sc_ltl="!(lava_red_open) U (goal_green_open)",
                                       # sc_ltl="F (goal_green_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
@@ -474,7 +474,8 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
                               mini_grid_instance: Optional[MinigridGraph] = None,
                               epsilon: float = 0,
                               max_human_interventions: int = 5,
-                              plot: bool = True):
+                              plot: bool = True,
+                              compute_reg_for_human: bool = False):
     """
     A new regret computation method. Assumption: The weights on the graph represent costs and are hence non-negative.
     Sys player is trying to minimize its cumulative cost while the env player is trying to maximize the cumulative cost.
@@ -501,13 +502,13 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
-                                       plot=plot,
-                                       plot_only_eve=False,
-                                       simulate_minigrid=bool(mini_grid_instance),
-                                       epsilon=epsilon,
-                                       max_human_interventions=max_human_interventions,
-                                       compute_reg_for_human=False)
+    # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
+    #                                    plot=plot,
+    #                                    plot_only_eve=False,
+    #                                    simulate_minigrid=bool(mini_grid_instance),
+    #                                    epsilon=epsilon,
+    #                                    max_human_interventions=max_human_interventions,
+    #                                    compute_reg_for_human=compute_reg_for_human)
 
     # reg_syn_handle.finite_reg_solver_2(minigrid_instance=mini_grid_instance,
     #                                    plot=plot,
@@ -515,7 +516,14 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     #                                    simulate_minigrid=bool(mini_grid_instance),
     #                                    epsilon=epsilon,
     #                                    max_human_interventions=max_human_interventions,
-    #                                    compute_reg_for_human=False)
+    #                                    compute_reg_for_human=compute_reg_for_human)
+
+    reg_syn_handle.finite_reg_solver_3(minigrid_instance=mini_grid_instance,
+                                       plot=plot,
+                                       plot_only_eve=False,
+                                       simulate_minigrid=bool(mini_grid_instance),
+                                       epsilon=epsilon,
+                                       max_human_interventions=max_human_interventions)
 
 
 if __name__ == "__main__":
@@ -531,10 +539,10 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = True
+    gym_minigrid = False
     three_state_ts = False
     five_state_ts = False
-    variant_1_paper = False
+    variant_1_paper = True
     franka_abs = False
 
     # solver to call
@@ -586,7 +594,8 @@ if __name__ == "__main__":
                                   miniGrid_instance,
                                   epsilon=EPSILON,
                                   max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                  plot=False)
+                                  plot=False,
+                                  compute_reg_for_human=False)
     elif infinte_reg_synthesis:
         infinite_reg_minimizing_str(trans_sys,
                                     miniGrid_instance,

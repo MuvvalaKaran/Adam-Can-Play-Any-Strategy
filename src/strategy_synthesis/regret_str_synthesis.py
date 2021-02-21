@@ -91,7 +91,7 @@ class RegretMinimizationStrategySynthesis:
 
         # compute reg
         reg_mcr_solver = ValueIteration(self.graph, competitive=True)
-        reg_str_dict = reg_mcr_solver.online_reg_solver(cval=coop_val_dict, debug=False, plot=False)
+        reg_str_dict = reg_mcr_solver.online_reg_solver(cval=coop_val_dict, debug=False, plot=True)
 
         # remove edges to the tmp_accp state for ease of plotting
         _curr_tmp_accp = self.graph.get_accepting_states()[0]

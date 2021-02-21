@@ -71,7 +71,9 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 2
+    human_intervention: int = 1
+    human_intervention_cost: int = 0
+    human_non_intervention_cost: int = 0
 
     def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
         self.finite = _finite
@@ -141,7 +143,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_6.value
-        ENV_ID = MiniGridLavaEnv.env_1.value
+        ENV_ID = MiniGridLavaEnv.env_3.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -174,7 +176,9 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                             get_iros_ts=self.get_iros_ts,
                                             graph_name=raw_trans_sys._graph_name,
                                             config_yaml=raw_trans_sys._config_yaml,
-                                            human_intervention=self.human_intervention,
+                                            human_interventions=self.human_intervention,
+                                            human_intervention_cost=self.human_intervention_cost,
+                                            human_non_intervention_cost=self.human_non_intervention_cost,
                                             save_flag=True,
                                             plot_raw_minigrid=self._plot_minigrid,
                                             plot=self.plot_ts)
@@ -539,10 +543,10 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = False
+    gym_minigrid = True
     three_state_ts = False
     five_state_ts = False
-    variant_1_paper = True
+    variant_1_paper = False
     franka_abs = False
 
     # solver to call

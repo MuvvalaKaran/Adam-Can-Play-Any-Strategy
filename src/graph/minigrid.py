@@ -69,13 +69,19 @@ class MiniGrid(FiniteTransSys):
                 self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
 
     def from_raw_minigrid_TS(self,
+                             human_intervention_cost: int,
+                             human_non_intervention_cost: int,
                              human_interventions: int = 1,
                              plot_raw_ts: bool = False,
                              get_iros_ts: bool = False,
                              debug: bool = False) -> 'MiniGrid()':
         self._sanity_check(debug=debug)
         if not get_iros_ts:
-            minigrid_game_ts = self.automate_construction(human_interventions, plot_raw_ts, debug=debug)
+            minigrid_game_ts = self.automate_construction(k=human_interventions,
+                                                          human_intervention_cost=human_intervention_cost,
+                                                          human_non_intervention_cost=human_non_intervention_cost,
+                                                          plot_raw_ts=plot_raw_ts,
+                                                          debug=debug)
         else:
             minigrid_game_ts = self.get_iros_17_ts(human_interventions, plot_raw_ts, debug=debug)
         self._graph = minigrid_game_ts._graph
@@ -84,13 +90,23 @@ class MiniGrid(FiniteTransSys):
 
     # a method that builds a deterministic TS with human nodes from a raw abstraction from gym-minigrid env
     # with sys nodes only
-    def automate_construction(self, k: int, plot_raw_ts: bool = False, debug: bool = False) -> FiniteTransSys:
+    def automate_construction(self,
+                              k: int,
+                              human_non_intervention_cost: int = 0,
+                              human_intervention_cost: int = 0,
+                              plot_raw_ts: bool = False,
+                              debug: bool = False) -> FiniteTransSys:
         """
         Given a TS with only the system node, we add human nodes after every transition that the system can take.
         The human can pick the robot in a 2d grid world and place it in any of its neighbouring cells. He/she can
         intervene only k times.
 
         :param k: # of time the human can intervene
+        :param human_intervention_cost:
+        :param human_non_intervention_cost:
+        :param plot_raw_ts:
+        :param debug:
+
         :return:
         """
         if plot_raw_ts:
@@ -98,7 +114,7 @@ class MiniGrid(FiniteTransSys):
 
         eve_node_lst = []
         adam_node_lst = []
-        two_player_graph_ts = FiniteTransSys(f"game_{self._graph_name}", f"config/minigrid_game_TS", self._save_flag)
+        two_player_graph_ts = FiniteTransSys(f"game_{self._graph_name}", f"/config/minigrid_game_TS", self._save_flag)
         two_player_graph_ts.construct_graph()
 
         # lets create k copies of the states
@@ -138,7 +154,10 @@ class MiniGrid(FiniteTransSys):
         _ix, _iy = self.__get_pos_from_minigrid_state(_init_node[0][0])
         two_player_graph_ts.add_initial_state(((_ix, _iy), k))
 
-        self._build_game_edges(human_interventions=k, two_player_game=two_player_graph_ts)
+        self._build_game_edges(human_interventions=k,
+                               two_player_game=two_player_graph_ts,
+                               human_intervention_cost=human_intervention_cost,
+                               human_non_intervention_cost=human_non_intervention_cost)
 
         # add the original atomic proposition to the new states
         for _n in self._graph.nodes.data():
@@ -150,7 +169,11 @@ class MiniGrid(FiniteTransSys):
 
         return two_player_graph_ts
 
-    def _build_game_edges(self, human_interventions: int, two_player_game: FiniteTransSys):
+    def _build_game_edges(self,
+                          human_interventions: int,
+                          two_player_game: FiniteTransSys,
+                          human_intervention_cost: int = 0,
+                          human_non_intervention_cost: int = 0):
         for _e in self._graph.edges.data():
             _u = _e[0]
             _v = _e[1]
@@ -161,9 +184,18 @@ class MiniGrid(FiniteTransSys):
 
             for ik in reversed(range(human_interventions + 1)):
                 if ik != 0:
-                    self._build_game_transitions_ik(two_player_game, _ux, _uy, _vx, _vy, _attr, ik)
+                    self._build_game_transitions_ik(_game=two_player_game,
+                                                    _ux=_ux,_uy=_uy,
+                                                    _vx=_vx, _vy=_vy,
+                                                    human_intervention_cost=human_intervention_cost,
+                                                    human_non_intervention_cost=human_non_intervention_cost,
+                                                    _attr=_attr, ik=ik)
                 else:
-                    self._build_game_transition(two_player_game, _ux, _uy, _vx, _vy, _attr)
+                    self._build_game_transition(_game=two_player_game,
+                                                _ux=_ux, _uy=_uy,
+                                                _vx=_vx, _vy=_vy,
+                                                human_non_intervention_cost=human_non_intervention_cost,
+                                                _attr=_attr)
 
     def _build_game_transition(self,
                                _game: FiniteTransSys,
@@ -171,7 +203,8 @@ class MiniGrid(FiniteTransSys):
                                _uy: int,
                                _vx: int,
                                _vy: int,
-                               _attr: dict,):
+                               human_non_intervention_cost: int,
+                               _attr: dict):
         # add edge from sys node to human node
         self._add_game_transition(_game,
                                   _u_game_state=((_ux, _uy), 0),
@@ -184,16 +217,19 @@ class MiniGrid(FiniteTransSys):
                                   _u_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), 0),
                                   _v_game_state=((_vx, _vy), 0),
                                   actions=_attr.get("actions"),
-                                  weight=0)
+                                  weight=human_non_intervention_cost)
 
     def _build_game_transitions_ik(self,
-                                _game: FiniteTransSys,
-                                _ux: int,
-                                _uy: int,
-                                _vx: int,
-                                _vy: int,
-                                _attr: dict,
-                                ik: int):
+                                   _game: FiniteTransSys,
+                                   _ux: int,
+                                   _uy: int,
+                                   _vx: int,
+                                   _vy: int,
+                                   human_intervention_cost: int,
+                                   human_non_intervention_cost: int,
+                                   _attr: dict,
+                                   ik: int):
+
         # add edge from sys node to human node
         self._add_game_transition(_game,
                                   _u_game_state=((_ux, _uy), ik),
@@ -206,7 +242,7 @@ class MiniGrid(FiniteTransSys):
                                   _u_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), ik),
                                   _v_game_state=((_vx, _vy), ik),
                                   actions=_attr.get("actions"),
-                                  weight=0)
+                                  weight=human_non_intervention_cost)
 
         # add transition from a human node to the neighbouring nodes
         # check if _ux + 1 and _ux - 1 exists. Similarly, check if _uy + 1 and _uy - 1 exists
@@ -219,7 +255,7 @@ class MiniGrid(FiniteTransSys):
                                           _u_game_state=((f"h{(_ux, _uy)}{(_vx, _vy)}"), ik),
                                           _v_game_state=(cell, ik - 1),
                                           actions="m",
-                                          weight=0)
+                                          weight=human_intervention_cost)
 
     def _add_game_transition(self,
                              _game: FiniteTransSys,
@@ -293,7 +329,7 @@ class MiniGrid(FiniteTransSys):
 
         eve_node_lst = []
 
-        two_player_graph_ts = FiniteTransSys(f"game_{self._graph_name}", f"config/minigrid_game_TS", self._save_flag)
+        two_player_graph_ts = FiniteTransSys(f"game_{self._graph_name}", f"/config/minigrid_game_TS", self._save_flag)
         two_player_graph_ts.construct_graph()
 
         # lets create k copies of the system states
@@ -456,9 +492,11 @@ class MiniGridBuilder(Builder):
     def __call__(self,
                  graph_name: str,
                  config_yaml: str,
-                 human_intervention: int = 1,
+                 human_interventions: int = 1,
+                 human_intervention_cost: int = 0,
+                 human_non_intervention_cost: int = 0,
                  raw_minigrid_ts: Optional[MiniGrid] = None,
-                 get_iros_ts : bool = False,
+                 get_iros_ts: bool = False,
                  save_flag: bool = False,
                  plot: bool = False,
                  plot_raw_minigrid: bool = False,
@@ -474,17 +512,19 @@ class MiniGridBuilder(Builder):
         :param plot:
         :return:
         """
-        print(f"No. of times the human can intervene is : {human_intervention}")
+        print(f"No. of times the human can intervene is : {human_interventions}")
 
-        if not isinstance(human_intervention, int):
+        if not isinstance(human_interventions, int):
             try:
-                human_intervention = int(human_intervention)
+                human_intervention = int(human_interventions)
             except ValueError:
                 warnings.warn("Please make sure the number of times the human can intervene is integer. e.g 1, 1.0.")
                 sys.exit(-1)
 
         if raw_minigrid_ts:
-            self._instance = raw_minigrid_ts.from_raw_minigrid_TS(human_interventions=human_intervention,
+            self._instance = raw_minigrid_ts.from_raw_minigrid_TS(human_intervention_cost=human_intervention_cost,
+                                                                  human_non_intervention_cost=human_non_intervention_cost,
+                                                                  human_interventions=human_interventions,
                                                                   plot_raw_ts=plot_raw_minigrid,
                                                                   get_iros_ts=get_iros_ts,
                                                                   debug=debug)

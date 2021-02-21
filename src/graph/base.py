@@ -459,7 +459,7 @@ class Graph(abc.ABC):
                 _accp_state.append(n[0])
 
         if len(_accp_state) == 0:
-            warnings.warn("WARNING: The set of accepting states is empty. Returning an empty list.")
+            warnings.warn("WARNING: The set of accepting states is empty. Returning an empty list. ")
 
         return _accp_state
 
@@ -481,6 +481,25 @@ class Graph(abc.ABC):
             warnings.warn("WARNING: The set of trap states is empty. Returning an empty list.")
 
         return _trap_state
+
+    def get_absorbing_state(self):
+        """
+        A function to get set of absorbing states - this consists of accepting as well trap states
+        :return: a list of states - # of elements >= 0
+        """
+
+        _abs_states = []
+
+        for _n in self._graph.nodes():
+            if len(list(self._graph.successors(_n))) == 1:
+                for _next_n in self._graph.successors(_n):
+                    if _next_n == _n:
+                        _abs_states.append(_n)
+
+        if len(_abs_states) == 0:
+            warnings.warn("WARNING: The set of absorbing states is empty. Returning an empty list")
+
+        return _abs_states
 
     def remove_state_attr(self, state: Union[Tuple, str], attr: str):
         """

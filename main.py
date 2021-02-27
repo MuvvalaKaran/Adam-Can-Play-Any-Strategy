@@ -71,7 +71,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 1
+    human_intervention: int = 2
     human_intervention_cost: int = 0
     human_non_intervention_cost: int = 0
 
@@ -143,7 +143,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_6.value
-        ENV_ID = MiniGridLavaEnv.env_3.value
+        ENV_ID = MiniGridLavaEnv.env_1.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -478,7 +478,7 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
                               mini_grid_instance: Optional[MinigridGraph] = None,
                               epsilon: float = 0,
                               max_human_interventions: int = 5,
-                              plot: bool = True,
+                              plot: bool = False,
                               compute_reg_for_human: bool = False):
     """
     A new regret computation method. Assumption: The weights on the graph represent costs and are hence non-negative.
@@ -506,13 +506,13 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
-    #                                    plot=plot,
-    #                                    plot_only_eve=False,
-    #                                    simulate_minigrid=bool(mini_grid_instance),
-    #                                    epsilon=epsilon,
-    #                                    max_human_interventions=max_human_interventions,
-    #                                    compute_reg_for_human=compute_reg_for_human)
+    reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
+                                       plot=plot,
+                                       plot_only_eve=False,
+                                       simulate_minigrid=bool(mini_grid_instance),
+                                       epsilon=epsilon,
+                                       max_human_interventions=max_human_interventions,
+                                       compute_reg_for_human=compute_reg_for_human)
 
     # reg_syn_handle.finite_reg_solver_2(minigrid_instance=mini_grid_instance,
     #                                    plot=plot,
@@ -521,13 +521,6 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     #                                    epsilon=epsilon,
     #                                    max_human_interventions=max_human_interventions,
     #                                    compute_reg_for_human=compute_reg_for_human)
-
-    reg_syn_handle.finite_reg_solver_3(minigrid_instance=mini_grid_instance,
-                                       plot=plot,
-                                       plot_only_eve=False,
-                                       simulate_minigrid=bool(mini_grid_instance),
-                                       epsilon=epsilon,
-                                       max_human_interventions=max_human_interventions)
 
 
 if __name__ == "__main__":

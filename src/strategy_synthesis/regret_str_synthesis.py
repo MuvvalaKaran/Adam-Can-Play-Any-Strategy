@@ -20,8 +20,6 @@ from ..graph import MiniGrid
 from ..payoff import Payoff
 from ..mpg_tool import MpgToolBox
 
-
-
 # import local value iteration solver
 from .value_iteration import ValueIteration
 
@@ -53,78 +51,6 @@ class RegretMinimizationStrategySynthesis:
     @b_val.setter
     def b_val(self, value: set):
         self._b_val = value
-
-    def finite_reg_solver_3(self,
-                            minigrid_instance,
-                            plot: bool = False,
-                            plot_only_eve: bool = False,
-                            simulate_minigrid: bool = False,
-                            epsilon: float = 0,
-                            max_human_interventions: int = 5):
-        """
-        This method implements the online reg computation approach. Reg is defined as
-
-        reg^{s, t} = Val^{v}(s, t) - min_s' min_t' Val^{v}(s', t')
-
-        min_s, max_t reg^{s, t} = min_s, max_t Val^{v}(s, t) - min_s' min_t' Val^{v}(s', t')
-
-        We start from the accepting state and back-propagate the values. As state values converge we subtract the
-        corresponding cooperative value from that state. This is an online version of computing regret and the algorithm
-        has been implemented in the value_iteration module under the online_reg_solver() method name.
-
-        :param minigrid_instance:
-        :param plot:
-        :param plot_only_eve:
-        :param simulate_minigrid:
-        :param epsilon:
-        :param max_human_interventions:
-        :return:
-        """
-
-        # Add auxiliary accepting state
-        self.add_common_accepting_state(plot=False)
-
-        # compute cooperative values
-        coop_mcr_solver = ValueIteration(self.graph, competitive=False)
-        coop_mcr_solver.solve(debug=True, plot=False)
-        coop_val_dict = coop_mcr_solver.state_value_dict
-
-        # compute reg
-        reg_mcr_solver = ValueIteration(self.graph, competitive=True)
-        reg_str_dict = reg_mcr_solver.online_reg_solver(cval=coop_val_dict, debug=False, plot=True)
-
-        # remove edges to the tmp_accp state for ease of plotting
-        _curr_tmp_accp = self.graph.get_accepting_states()[0]
-        _pre_accp_node = copy.copy(self.graph._graph.predecessors(_curr_tmp_accp))
-        _pre_accp: list = []
-        for _node in _pre_accp_node:
-            self.graph._graph.remove_edge(_node, _curr_tmp_accp)
-            self.graph.add_weighted_edges_from([(_node, _node, 0)])
-            # our str dict has this term where the original accepting state and the trap state are pointing to the
-            # arbitrary tmp_accp state. we need to rectify this
-
-            if reg_str_dict.get(_node):
-                reg_str_dict[_node] = _node
-
-        if plot:
-            self.plot_str_for_cumulative_reg(game_venue=self.graph,
-                                             str_dict=reg_str_dict,
-                                             only_eve=plot_only_eve,
-                                             plot=plot)
-
-        if simulate_minigrid:
-            # self.graph = _adv_reg_game
-            self.graph.add_accepting_state("accept_all")
-            self.graph.remove_state_attr("tmp_accp", "accepting")
-            if minigrid_instance is None:
-                warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
-                sys.exit(-1)
-
-            _controls = self.get_controls_from_str_minigrid(str_dict=reg_str_dict,
-                                                            epsilon=epsilon,
-                                                            max_human_interventions=max_human_interventions)
-
-            minigrid_instance.execute_str(_controls=(0, _controls))
 
     def finite_reg_solver_2(self,
                             minigrid_instance,
@@ -165,39 +91,38 @@ class RegretMinimizationStrategySynthesis:
 
         # compute competitive values from each state
         comp_mcr_solver = ValueIteration(self.graph, competitive=True)
-        _comp_str_dict = comp_mcr_solver.solve(debug=True, plot=False)
+        comp_mcr_solver.solve(debug=True, plot=False)
+        _env_str_dict = comp_mcr_solver.env_str_dict
         _comp_val_dict = comp_mcr_solver.state_value_dict
 
         # now we compute reg for each edge(str) as follows: comp(v) - coop(v) where v = sigma(u)
+        _sys_reg_val_dict: Dict[Tuple: float] = {}
+        _sys_reg_str_dict: Dict[Tuple: float] = {}
 
-        _adv_reg_game: TwoPlayerGraph = copy.deepcopy(self.graph)
+        for _s in self.graph._graph.nodes():
+            # doing this computation only for sys state
+            if self.graph._graph.nodes(data='player')[_s] == 'adam':
+                continue
 
-        for _e in self.graph._graph.edges():
-            _u = _e[0]
-            _v = _e[1]
+            # get all the outgoing edges
+            _min_reg = (math.inf, '')
+            for _e in self.graph._graph.out_edges(_s):
+                _u = _e[0]
+                _v = _e[1]
 
-            # we only add edges that are optimal for the evn player.
-            if self.graph._graph.nodes(data='player')[_u] == 'adam':
-                if _v == _comp_str_dict[_u]:
-                    if compute_reg_for_human:
-                        _new_weight = _comp_val_dict[_v] - coop_val_dict[_v]
-                    else:
-                        _new_weight = 0
-                    _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
-                else:
-                    _adv_reg_game._graph.remove_edge(_u, _v)
+                _edge_reg_val = _comp_val_dict[_v] - coop_val_dict[_v]
+                _sys_reg_val_dict.update({_e: _edge_reg_val})
+                if _min_reg[0] > _edge_reg_val:
+                    _min_reg = (_edge_reg_val, _v)
 
-            elif self.graph._graph.nodes(data='player')[_u] == 'eve':
-                _new_weight = _comp_val_dict[_v] - coop_val_dict[_v]
-                _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
+            _sys_reg_str_dict.update({_s: _min_reg[1]})
 
-        # now lets play a adversarial game on this new graph and compute reg minimizing strs
-        adv_mcr_solver = ValueIteration(_adv_reg_game, competitive=True)
-        str_dict = adv_mcr_solver.solve(debug=True, plot=False)
+        # combine sys and env str dict
+        _reg_str_dict = {**_sys_reg_str_dict, **_env_str_dict}
 
         # remove edges to the tmp_accp state for ease of plotting
         _curr_tmp_accp = self.graph.get_accepting_states()[0]
-        _pre_accp_node = copy.copy(_adv_reg_game._graph.predecessors(_curr_tmp_accp))
+        _pre_accp_node = copy.copy(self.graph._graph.predecessors(_curr_tmp_accp))
         _pre_accp: list = []
         for _node in _pre_accp_node:
             self.graph._graph.remove_edge(_node, _curr_tmp_accp)
@@ -205,28 +130,35 @@ class RegretMinimizationStrategySynthesis:
             # our str dict has this term where the original accepting state and the trap state are pointing to the
             # arbitrary tmp_accp state. we need to rectify this
 
-            if str_dict.get(_node):
-                str_dict[_node] = _node
+            if _reg_str_dict.get(_node):
+                _reg_str_dict[_node] = _node
 
         if plot:
             self.plot_str_for_cumulative_reg(game_venue=self.graph,
-                                             str_dict=str_dict,
+                                             str_dict=_reg_str_dict,
                                              only_eve=plot_only_eve,
                                              plot=plot)
 
         if simulate_minigrid:
-            # self.graph = _adv_reg_game
+            # get the regret value of the game
+            _init_state = self.graph.get_initial_states()[0][0]
+            _game_reg_value: float = math.inf
+            for _e in self.graph._graph.out_edges(_init_state):
+                if _sys_reg_val_dict.get(_e):
+                    _game_reg_value = _sys_reg_val_dict[_e]
+                    break
+
             self.graph.add_accepting_state("accept_all")
             self.graph.remove_state_attr("tmp_accp", "accepting")
             if minigrid_instance is None:
                 warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
                 sys.exit(-1)
 
-            _controls = self.get_controls_from_str_minigrid(str_dict=str_dict,
+            _controls = self.get_controls_from_str_minigrid(str_dict=_reg_str_dict,
                                                             epsilon=epsilon,
                                                             max_human_interventions=max_human_interventions)
 
-            minigrid_instance.execute_str(_controls=(0, _controls))
+            minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
 
     def finite_reg_solver_1(self,
                             minigrid_instance,
@@ -249,7 +181,7 @@ class RegretMinimizationStrategySynthesis:
            respectively. W_bar is equal to : (|V| - 1) x W where W is the max absolute weight
         2. Compute the best cooperative value from each edge
         3. reg^{s, t} = max_t Val^{v}(s, t) - cVal^{v}
-        4. After computing a reg value associate with a given strategy s, we then fix the str for Env. The strategies
+        4. After computing a reg value associated with a given strategy s, we then fix the str for Env. The strategies
            that env player plays are the memoryless adversarial strategies that maximizes cumulative COST. Then, after
            fixing the strategies for the env player we compute strategies for the sys player that minimizes cumulative
            regret.
@@ -267,66 +199,21 @@ class RegretMinimizationStrategySynthesis:
 
         # compute competitive values from each state
         comp_mcr_solver = ValueIteration(self.graph, competitive=True)
-        _comp_str_dict = comp_mcr_solver.solve(debug=True, plot=False)
+        comp_mcr_solver.solve(debug=True, plot=False)
+        _comp_str_dict = comp_mcr_solver.str_dict
         _comp_val_dict = comp_mcr_solver.state_value_dict
 
-        comp_vals: Dict[Tuple: float] = {}
+        # compute reg value associated with each state
+        _reg_val_dict: Dict[Tuple: float] = {}
 
-        for edge in self.graph._graph.edges():
-            _u = edge[0]
-            _v = edge[1]
+        for _s in self.graph._graph.nodes:
 
-            # if the node belongs to adam, then the corresponding edge is assigned -inf
-            if self.graph._graph.nodes(data='player')[_u] == 'adam':
-
-                # as human edges have 0 edge weight _total_weight = _state_cost
-                if compute_reg_for_human:
-                    _state_cost = _comp_val_dict[_v]
-                    _curr_w = self.graph.get_edge_weight(_u, _v)
-                    _total_weight = _curr_w + _state_cost
-
-                    comp_vals.update({edge: _total_weight})
-                else:
-                    comp_vals.update({edge: 0})
-
-            else:
-                _state_cost = _comp_val_dict[_v]
-                _curr_w = self.graph.get_edge_weight(_u, _v)
-                _total_weight = _curr_w + _state_cost
-
-                comp_vals.update({edge: _total_weight})
-
-        # now that we comp for each edge(str) and coop value for each state, we construct a new graph with the edge
-        # weight given by: comp(sigma) - coop(_u)
-
-        _adv_reg_game: TwoPlayerGraph = copy.deepcopy(self.graph)
-
-        for _e in self.graph._graph.edges():
-            _u = _e[0]
-            _v = _e[1]
-
-            # we only add edges that are optimal for the evn player.
-            if self.graph._graph.nodes(data='player')[_u] == 'adam':
-                if _v == _comp_str_dict[_u]:
-                    if compute_reg_for_human:
-                        _new_weight = comp_vals[_e] - coop_val_dict[_u]
-                    else:
-                        _new_weight = 0
-                    _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
-                else:
-                    _adv_reg_game._graph.remove_edge(_u, _v)
-
-            elif self.graph._graph.nodes(data='player')[_u] == 'eve':
-                _new_weight = comp_vals[_e] - coop_val_dict[_u]
-                _adv_reg_game._graph[_u][_v][0]['weight'] = _new_weight
-
-        # now lets play a adversarial game on this new graph and compute reg minimizing strs
-        adv_mcr_solver = ValueIteration(_adv_reg_game, competitive=True)
-        str_dict = adv_mcr_solver.solve(debug=True, plot=False)
+            _reg_val: float = _comp_val_dict[_s] - coop_val_dict[_s]
+            _reg_val_dict.update({_s: _reg_val})
 
         # remove edges to the tmp_accp state for ease of plotting
         _curr_tmp_accp = self.graph.get_accepting_states()[0]
-        _pre_accp_node = copy.copy(_adv_reg_game._graph.predecessors(_curr_tmp_accp))
+        _pre_accp_node = copy.copy(self.graph._graph.predecessors(_curr_tmp_accp))
         _pre_accp : list = []
         for _node in _pre_accp_node:
             self.graph._graph.remove_edge(_node, _curr_tmp_accp)
@@ -334,28 +221,31 @@ class RegretMinimizationStrategySynthesis:
             # our str dict has this term where the original accepting state and the trap state are pointing to the
             # arbitrary tmp_accp state. we need to rectify this
 
-            if str_dict.get(_node):
-                str_dict[_node] = _node
+            if _comp_str_dict.get(_node):
+                _comp_str_dict[_node] = _node
 
         if plot:
             self.plot_str_for_cumulative_reg(game_venue=self.graph,
-                                             str_dict=str_dict,
+                                             str_dict=_comp_str_dict,
                                              only_eve=plot_only_eve,
                                              plot=plot)
 
         if simulate_minigrid:
-            # self.graph = _adv_reg_game
+            # get the regret value of the game
+            _init_state = self.graph.get_initial_states()[0][0]
+            _game_reg_value: float = _reg_val_dict.get(_init_state)
+
             self.graph.add_accepting_state("accept_all")
             self.graph.remove_state_attr("tmp_accp", "accepting")
             if minigrid_instance is None:
                 warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
                 sys.exit(-1)
 
-            _controls = self.get_controls_from_str_minigrid(str_dict=str_dict,
+            _controls = self.get_controls_from_str_minigrid(str_dict=_comp_str_dict,
                                                             epsilon=epsilon,
                                                             max_human_interventions=max_human_interventions)
 
-            minigrid_instance.execute_str(_controls=(0, _controls))
+            minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
 
     def add_common_accepting_state(self, plot: bool = False):
         """

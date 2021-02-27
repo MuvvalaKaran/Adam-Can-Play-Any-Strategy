@@ -35,6 +35,9 @@ class ValueIteration:
         self._MAX_POSSIBLE_W: int = 0
         self.W: int = 0
         self._state_value_dict: Optional[dict] = defaultdict(lambda: -1)
+        self._str_dict: Dict = defaultdict(lambda: -1)
+        self._sys_str_dict: Dict = defaultdict(lambda: -1)
+        self._env_str_dict: Dict = defaultdict(lambda: -1)
         self._initialize_val_vector()
 
     @property
@@ -64,6 +67,18 @@ class ValueIteration:
     @property
     def state_value_dict(self):
         return self._state_value_dict
+
+    @property
+    def str_dict(self):
+        return self._str_dict
+
+    @property
+    def sys_str_dict(self):
+        return self._sys_str_dict
+
+    @property
+    def env_str_dict(self):
+        return self._env_str_dict
 
     @property
     def node_int_map(self):
@@ -126,7 +141,6 @@ class ValueIteration:
                               " vertex")
                 self._initialize_target_state_costs()
 
-
         for _s in _trap_states:
             _node_int = self.node_int_map[_s]
             self.val_vector[_node_int][0] = 0
@@ -166,129 +180,6 @@ class ValueIteration:
 
         for _n in _trap_states:
             self.org_graph.add_state_attribute(_n, "player", "adam")
-
-    def online_reg_solver(self, cval: dict, debug: bool = False, plot: bool = False):
-        """
-        This is a online variant of computing regret. In this algorithm, as states converge to their state values we
-        subtract the cooperative values associated with that state. We then lock the state value and strategy for that
-        state to avoid/resetting the state value to itself.
-
-        :param cval: A dict that maps a state in the game to its corresponding cooperative value
-        :param debug:
-        :param plot:
-        :return:
-        """
-
-        # initially in the org val_vector the target node(s) will value 0
-        _accp_state = self.org_graph.get_accepting_states()[0]
-        _init_node = self.org_graph.get_initial_states()[0][0]
-        _init_int_node = self.node_int_map[_init_node]
-
-        self._add_trap_state_player()
-
-        _val_vector = copy.deepcopy(self.val_vector)
-        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
-
-        iter_var = 0
-        _max_str_dict = {}
-        _min_str_dict = {}
-        _min_reach_str_dict = {}
-        _max_reach_str_dict = {}
-
-        converged_states = deque()
-
-        while not self._is_same(_val_pre, _val_vector):
-            if debug:
-                if iter_var % 1000 == 0:
-                    print(f"{iter_var} Iterations")
-                    # print(f"Init state value: {self.val_vector[_init_int_node]}")
-
-            _val_pre = copy.copy(_val_vector)
-            iter_var += 1
-
-            for _n in self.org_graph._graph.nodes():
-                _int_node = self.node_int_map[_n]
-
-                if _n == _accp_state or _n in converged_states:
-                    converged_states.append(_n)
-                    continue
-
-                if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
-                    _val_vector[_int_node][0], _next_max_node = self._get_max_env_val(_n, _val_pre)
-                    _max_str_dict[_n] = self.node_int_map.inverse[_next_max_node]
-
-                elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-                    _val_vector[_int_node][0], _next_min_node = self._get_min_sys_val(_n, _val_pre)
-
-                    if _val_vector[_int_node] != _val_pre[_int_node]:
-                        _min_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
-
-                        if _val_pre[_int_node] == INT_MAX_VAL:
-                            _min_reach_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
-
-            # check if any of the state have converged
-            for _n in self.org_graph._graph.nodes():
-                _int_node = self.node_int_map[_n]
-
-                if _n == _accp_state\
-                        or _n in converged_states\
-                        or self.org_graph.get_state_w_attribute(_n, "player") == "adam":
-                    continue
-
-                # if a state has converged we then subtract that cooperative value from that state
-                if _val_pre[_int_node] != INT_MAX_VAL and\
-                        _val_vector[_int_node] == _val_pre[_int_node] and\
-                        self._check_state_converged(_n, converged_states):
-                    # _val_vector[_int_node] = _val_vector[_int_node] - cval[_n]
-                    _val_vector[_int_node] = cval[_n] - _val_vector[_int_node]
-                    converged_states.append(_n)
-
-                    # note: for now check if any state value become negative or not because of this computation
-                    if debug and _val_vector[_int_node] < 0:
-                        print(f"state {_n} in iteration {iter_var} is assigned {_val_vector[_int_node]} after"
-                              f"subtracting its cooperative value")
-
-            self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
-
-        _str_dict = {**_max_str_dict, **_min_str_dict}
-
-        # update the state value dict
-        for i in range(self.num_of_nodes):
-            _s = self.node_int_map.inverse[i]
-            self.state_value_dict.update({_s: self.val_vector[i][iter_var]})
-
-        if plot:
-            self._add_state_costs_to_graph()
-            self.add_str_flag(_str_dict)
-            self.org_graph.plot_graph()
-
-        if debug:
-            print(f"Number of iteration to converge: {iter_var}")
-            print(f"Init state value: {self.state_value_dict[_init_node]}")
-            self._sanity_check()
-            # self.print_state_values()
-
-        return _str_dict
-
-    def _check_state_converged(self, state: Union[Tuple, str], converged_states: deque) -> bool:
-        """
-        A helper method called by the online_reg_solver function to check if a state has converged or not. We call a
-        state converged when all its neighbouring states have also converged i.e all the neighbouring states in the
-        converged_states queue. We return the value as True if the states have converged else we return False.
-        :return: bool value
-        """
-
-        # if there are no neighbour then will automatically return true
-        _converged = True
-
-        for _n in self.org_graph._graph.neighbors(state):
-            if _n in converged_states:
-                _converged = True
-            else:
-                _converged = False
-                break
-
-        return _converged
 
     def solve(self, debug: bool = False, plot: bool = False):
         """
@@ -374,11 +265,13 @@ class ValueIteration:
             else:
                 _max_str_dict["v0"] = "v0"
 
-        _str_dict = {**_max_str_dict, **_min_str_dict}
+        self._sys_str_dict = _min_str_dict
+        self._env_str_dict = _max_str_dict
+        self._str_dict = {**_max_str_dict, **_min_str_dict}
 
         if plot:
             self._add_state_costs_to_graph()
-            self.add_str_flag(_str_dict)
+            self.add_str_flag()
             self.org_graph.plot_graph()
 
         if debug:
@@ -386,8 +279,6 @@ class ValueIteration:
             print(f"Init state value: {self.state_value_dict[_init_node]}")
             self._sanity_check()
             # self.print_state_values()
-
-        return _str_dict
 
     def _sanity_check(self):
         """
@@ -491,7 +382,7 @@ class ValueIteration:
         for _n in self.org_graph._graph.nodes():
             self.org_graph.add_state_attribute(_n, "ap", self.state_value_dict[_n])
 
-    def add_str_flag(self, str_dict: Dict):
+    def add_str_flag(self):
         """
 
         :param str_dict:
@@ -499,7 +390,7 @@ class ValueIteration:
         """
         self.org_graph.set_edge_attribute('strategy', False)
 
-        for curr_node, next_node in str_dict.items():
+        for curr_node, next_node in self._str_dict.items():
             if isinstance(next_node, list):
                 for n_node in next_node:
                     self.org_graph._graph.edges[curr_node, n_node, 0]['strategy'] = True

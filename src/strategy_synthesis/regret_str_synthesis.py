@@ -299,7 +299,10 @@ class RegretMinimizationStrategySynthesis:
         if plot:
             self.graph.plot_graph()
 
-    def target_weighted_arena_finitie_reg_solver(self, debug: bool = False, plot_str: bool = False, plot: bool = False):
+    def target_weighted_arena_finitie_reg_solver(self,
+                                                 debug: bool = False,
+                                                 plot_only_eve: bool = False,
+                                                 plot: bool = False):
         """
         A function to compute a Regret Minimizing strategy by constructing the Graph of best alternative G'.
         Please refer to  arXiv:1002.1456v3 Section 2 For the theory.
@@ -317,12 +320,15 @@ class RegretMinimizationStrategySynthesis:
 
         # play minmax game to compute regret minimizing strategy
         minmax_mcr_solver = ValueIteration(_graph_of_alts, competitive=True)
-        minmax_mcr_solver.solve(debug=True, plot=False)
+        minmax_mcr_solver.solve(debug=True, plot=True)
         _comp_str_dict = minmax_mcr_solver.str_dict
         _comp_val_dict = minmax_mcr_solver.state_value_dict
 
         if plot:
-            _graph_of_alts.plot_graph()
+            self.plot_str_for_cumulative_reg(game_venue=_graph_of_alts,
+                                             str_dict=_comp_str_dict,
+                                             only_eve=plot_only_eve,
+                                             plot=plot)
 
     def _construct_graph_of_best_alternatives(self, best_alt_values_dict: Dict) -> TwoPlayerGraph:
         """
@@ -351,13 +357,13 @@ class RegretMinimizationStrategySynthesis:
                                            from_file=False,
                                            plot=False)
 
-        # get the max weight and create a set([W] U {+inf}) = [0, 1, 2, ...W, +inf]
+        # get the max weight and create a set([W] U {+inf}) = [0, 1, 2, ... W, +inf]
         _max_weight: Optional[int, float] = self.graph.get_max_weight()
 
         if isinstance(_max_weight, float):
             warnings.warn("Max weight is of type float. For TWA Construction max weight should be a integer")
 
-        _possible_best_alt_values = [i for i in range(_max_weight)]
+        _possible_best_alt_values = [i for i in range(_max_weight + 1)]
         _possible_best_alt_values.append(math.inf)
 
         # construct nodes
@@ -406,18 +412,18 @@ class RegretMinimizationStrategySynthesis:
                 else:
                     warnings.warn(f"Encountered a state {_s} with an invalid player attribute")
 
-            # add accepting state attribute
-            _accp_states: list = self.graph.get_accepting_states()
+        # add accepting state attribute
+        _accp_states: list = self.graph.get_accepting_states()
 
-            for _accp_s in _accp_states:
-                for _ba_val in range(_max_weight):
-                    _accp_s = (_accp_s, _ba_val)
+        for _accp_s in _accp_states:
+            for _ba_val in range(_max_weight + 1):
+                _new_accp_s = (_accp_s, _ba_val)
 
-                    if not _graph_of_alts._graph.has_node(_accp_s):
-                        warnings.warn(f"Trying to add a new accepting node {_accp_s} to the graph of best alternatives."
-                                      f"This should not happen. Check your construction code")
+                if not _graph_of_alts._graph.has_node(_accp_s):
+                    warnings.warn(f"Trying to add a new accepting node {_new_accp_s} to the graph of best alternatives."
+                                  f"This should not happen. Check your construction code")
 
-                    _graph_of_alts.add_accepting_state(_accp_s)
+                _graph_of_alts.add_accepting_state(_new_accp_s)
 
         return _graph_of_alts
 
@@ -433,7 +439,7 @@ class RegretMinimizationStrategySynthesis:
 
         # pre-compute cooperative values form each state
         coop_mcr_solver = ValueIteration(self.graph, competitive=False)
-        coop_mcr_solver.solve(debug=True, plot=False)
+        coop_mcr_solver.solve(debug=False, plot=False)
         coop_val_dict = coop_mcr_solver.state_value_dict
 
         _best_alternate_values: Dict[Optional[tuple], Optional[int, float]] = defaultdict(lambda: -1)
@@ -451,7 +457,7 @@ class RegretMinimizationStrategySynthesis:
                     if _succ == _v:
                         continue
 
-                    _curr_edge_weight = self.graph.get_edge_attributes(_u, _v, "weight")
+                    _curr_edge_weight = self.graph.get_edge_attributes(_u, _succ, "weight")
 
                     _curr_edge_coop_val: Optional[int, float] = _curr_edge_weight + coop_val_dict.get(_u)
                     if _curr_edge_weight < _min_coop_val:

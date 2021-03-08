@@ -215,6 +215,32 @@ class MinigridGraph(GraphInstanceConstructionBase):
         return self._wombats_minigrid_TS
 
 
+class EdgeWeightedArena(GraphInstanceConstructionBase):
+    """
+    A class that constructs concrete instance of Edge Weighted arena as per Filliot's paper.
+    """
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False):
+        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
+
+    def _build_dfa(self):
+        pass
+
+    def _build_ts(self):
+        pass
+
+    def _build_product(self):
+        self._product_automaton = graph_factory.get("TwoPlayerGraph",
+                                                    graph_name="target_weighted_arena",
+                                                    config_yaml="/config/target_weighted_arena",
+                                                    save_flag=True,
+                                                    pre_built=True,
+                                                    plot=self.plot_product)
+
+
 class VariantOneGraph(GraphInstanceConstructionBase):
     """
     A class that constructs a concrete instance of the TwoPlayerGraph(G) based on the example on Pg 2. of the paper.
@@ -506,13 +532,15 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
-                                       plot=plot,
-                                       plot_only_eve=False,
-                                       simulate_minigrid=bool(mini_grid_instance),
-                                       epsilon=epsilon,
-                                       max_human_interventions=max_human_interventions,
-                                       compute_reg_for_human=compute_reg_for_human)
+    reg_syn_handle.target_weighted_arena_finitie_reg_solver(debug=False, plot=plot, plot_only_eve=False)
+
+    # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
+    #                                    plot=plot,
+    #                                    plot_only_eve=False,
+    #                                    simulate_minigrid=bool(mini_grid_instance),
+    #                                    epsilon=epsilon,
+    #                                    max_human_interventions=max_human_interventions,
+    #                                    compute_reg_for_human=compute_reg_for_human)
 
     # reg_syn_handle.finite_reg_solver_2(minigrid_instance=mini_grid_instance,
     #                                    plot=plot,
@@ -536,10 +564,11 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = True
+    gym_minigrid = False
     three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
+    target_weighted_arena = True
     franka_abs = False
 
     # solver to call
@@ -575,6 +604,10 @@ if __name__ == "__main__":
         variant_1_instance = VariantOneGraph(_finite=finite,
                                              _plot_prod=False)
         trans_sys = variant_1_instance.product_automaton
+
+    elif target_weighted_arena:
+        twa_graph = EdgeWeightedArena(_plot_prod=False)
+        trans_sys = twa_graph.product_automaton
 
     elif franka_abs:
         franka_instance = FrankaAbstractionGraph(_finite=finite)

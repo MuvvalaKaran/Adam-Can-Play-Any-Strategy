@@ -1,5 +1,6 @@
 import networkx as nx
 import math
+import warnings
 
 # local packages
 from .base import Graph
@@ -104,7 +105,7 @@ class TwoPlayerGraph(Graph):
         :param graph_name:
         :param config_yaml:
         :param save_flag:
-        :return: An concrete instance of the built three state grpah as described in the configuration above
+        :return: An concrete instance of the built three state graph as described in the configuration above
         """
 
         # define constant weights
@@ -294,6 +295,55 @@ class TwoPlayerGraph(Graph):
 
         return nstate_graph
 
+    @classmethod
+    def build_twa_example(cls: 'TwoPlayerGraph',
+                          graph_name: str,
+                          config_yaml: str,
+                          save_flag: bool = False) -> 'TwoPlayerGraph()':
+
+        """
+        A class method to construct a sample Two player target weighted arena (TWA)
+
+        :param graph_name:
+        :param config_yaml:
+        :param save_flag:
+        :return: An concrete instance of the built Target weighted graph
+        """
+
+        _twa_graph: TwoPlayerGraph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
+        _twa_graph.construct_graph()
+
+        _twa_graph.add_state('A', player="adam")
+        _twa_graph.add_state('C', player="eve")
+        _twa_graph.add_state('B', player="eve")
+        _twa_graph.add_state('D', player="adam")
+        _twa_graph.add_state('E', player="eve")
+        _twa_graph.add_state('F', player="adam")
+        _twa_graph.add_state('G', player="eve")
+        _twa_graph.add_state('H', player="eve")
+        _twa_graph.add_state('I', player="eve")
+        _twa_graph.add_state('J', player="eve")
+
+        _twa_graph.add_weighted_edges_from([('A', 'B', 0),
+                                            ('A', 'C', 0),
+                                            ('B', 'C', 0),
+                                            ('B', 'D', 0),
+                                            ('C', 'F', 0),
+                                            ('C', 'E', 3),
+                                            ('D', 'G', 3),
+                                            ('D', 'H', 0),
+                                            ('F', 'I', 4),
+                                            ('F', 'J', 0)])
+        _twa_graph.add_initial_state('A')
+        _twa_graph.add_accepting_states_from(['E', 'G', 'H', 'I', 'J'])
+
+        # for leaf nodes let's add a self-loop (for the construction to be in consistent with infinite play game)
+        for _s in _twa_graph._graph.nodes():
+            if len(list(_twa_graph._graph.successors(_s))) == 0:
+                _twa_graph.add_weighted_edges_from([(_s, _s, 0)])
+
+        return _twa_graph
+
 
 class TwoPlayerGraphBuilder(Builder):
     """
@@ -329,7 +379,12 @@ class TwoPlayerGraphBuilder(Builder):
             self._instance._graph_yaml = self._from_yaml(config_yaml)
 
         if pre_built:
-            self._instance = TwoPlayerGraph.build_running_ex(graph_name, config_yaml, save_flag)
+            if graph_name == "two_player_graph":
+                self._instance = TwoPlayerGraph.build_running_ex(graph_name, config_yaml, save_flag)
+            elif graph_name == "target_weighted_arena":
+                self._instance = TwoPlayerGraph.build_twa_example(graph_name, config_yaml, save_flag)
+            else:
+                warnings.warn("Please enter a valid graph name to load a pre-built graph.")
 
         if plot:
             self._instance.plot_graph()

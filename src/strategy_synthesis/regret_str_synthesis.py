@@ -9,7 +9,7 @@ import operator
 import numpy as np
 from numpy import ndarray
 from joblib import Parallel, delayed
-from _collections import defaultdict
+from collections import defaultdict
 from typing import Dict, List, Tuple, Union, Optional
 
 # import local packages
@@ -298,6 +298,171 @@ class RegretMinimizationStrategySynthesis:
 
         if plot:
             self.graph.plot_graph()
+
+    def target_weighted_arena_finitie_reg_solver(self, debug: bool = False, plot_str: bool = False, plot: bool = False):
+        """
+        A function to compute a Regret Minimizing strategy by constructing the Graph of best alternative G'.
+        Please refer to  arXiv:1002.1456v3 Section 2 For the theory.
+
+        Input: A Target weighted arena with all the edges that do not transit to a target (leaf node) have zero edge
+        weight and edges that transit to the same leaf node have the same edge weight.
+
+        :return:
+        """
+        # compute the best alternative from each edge for cumulative payoff
+        _best_alternate_values: Dict = self._get_best_alternatives_dict()
+
+        # construct graph of best alternatives (G')
+        _graph_of_alts = self._construct_graph_of_best_alternatives(_best_alternate_values)
+
+        # play minmax game to compute regret minimizing strategy
+        minmax_mcr_solver = ValueIteration(_graph_of_alts, competitive=True)
+        minmax_mcr_solver.solve(debug=True, plot=False)
+        _comp_str_dict = minmax_mcr_solver.str_dict
+        _comp_val_dict = minmax_mcr_solver.state_value_dict
+
+        if plot:
+            _graph_of_alts.plot_graph()
+
+    def _construct_graph_of_best_alternatives(self, best_alt_values_dict: Dict) -> TwoPlayerGraph:
+        """
+        A function that construct the graph of best alternative.
+
+        Constructing G' (Graph of best alternative) :
+
+        S' = S x ([W] U {+inf}) ; W = Maximum weight in the Graph. and [W] = [0, 1, 2, .... W]
+        A graph betwen two states (s, b), (s, b') exists iff s to s' is a valid edge in G and
+            b' = b if s belong to the MAX/ Env player
+            b' = min(b, ba(s, s')) if s belongs to MIN/ Sys player
+
+        ba(s, s'): IS the best alternative value you can secure if you take some other edge from s.
+            ba(s, s') = +inf if s belongs to MAX/Env player
+            ba(s, s') = min of all the edges and +inf if there are no alternate edges
+
+        C' = S' ∩ (C1 x [W]) and target states in G' the edge weight on G' is the edge weight on the original graph
+        :return:
+        """
+
+        _graph_of_alts = graph_factory.get("TwoPlayerGraph",
+                                           graph_name="graph_of_alts_TWA",
+                                           config_yaml="/config/graph_of_alts_TWA",
+                                           save_flag=True,
+                                           pre_built=False,
+                                           from_file=False,
+                                           plot=False)
+
+        # get the max weight and create a set([W] U {+inf}) = [0, 1, 2, ...W, +inf]
+        _max_weight: Optional[int, float] = self.graph.get_max_weight()
+
+        if isinstance(_max_weight, float):
+            warnings.warn("Max weight is of type float. For TWA Construction max weight should be a integer")
+
+        _possible_best_alt_values = [i for i in range(_max_weight)]
+        _possible_best_alt_values.append(math.inf)
+
+        # construct nodes
+        for _s in self.graph._graph.nodes():
+            for _best_alt in _possible_best_alt_values:
+                # get original state attributes
+                _org_state_attrs = self.graph._graph.nodes[_s]
+                _new_state = (_s, _best_alt)
+                _graph_of_alts.add_state(_new_state, **_org_state_attrs)
+
+        # add valid transition
+        for _s in self.graph._graph.nodes():
+            for _best_alt in _possible_best_alt_values:
+                _curr_state = (_s, _best_alt)
+                if self.graph.get_state_w_attribute(_s, "player") == "adam":
+                    # get successors of the MAX/Env player state in the original graph and add edge to the successor
+                    # with same best alternate values
+                    for _org_succ in self.graph._graph.successors(_s):
+                        _succ = (_org_succ, _best_alt)
+
+                        if not _graph_of_alts._graph.has_node(_succ):
+                            warnings.warn(f"Trying to add a new node {_succ} to the graph of best alternatives."
+                                          f"This should not happen. Check your construction code")
+
+                        _org_edge_attrs = self.graph._graph.edges[_s, _org_succ, 0]
+                        _graph_of_alts.add_edge(u=_curr_state,
+                                                v=_succ,
+                                                **_org_edge_attrs)
+
+                elif self.graph.get_state_w_attribute(_s, "player") == "eve":
+                    # get the successors of the MIN/Sys player state in the original graph and edge to the successor
+                    # who have satisfy min(b', ba(s, s'))
+                    for _org_succ in self.graph._graph.successors(_s):
+                        _ba = best_alt_values_dict.get((_s, _org_succ))
+                        _next_state_ba_value = min(_best_alt, _ba)
+
+                        _succ = (_org_succ, _next_state_ba_value)
+                        if not _graph_of_alts._graph.has_node(_succ):
+                            warnings.warn(f"Trying to add a new node {_succ} to the graph of best alternatives."
+                                          f"This should not happen. Check your construction code")
+
+                        _org_edge_attrs = self.graph._graph.edges[_s, _org_succ, 0]
+                        _graph_of_alts.add_edge(u=_curr_state,
+                                                v=_succ,
+                                                **_org_edge_attrs)
+                else:
+                    warnings.warn(f"Encountered a state {_s} with an invalid player attribute")
+
+            # add accepting state attribute
+            _accp_states: list = self.graph.get_accepting_states()
+
+            for _accp_s in _accp_states:
+                for _ba_val in range(_max_weight):
+                    _accp_s = (_accp_s, _ba_val)
+
+                    if not _graph_of_alts._graph.has_node(_accp_s):
+                        warnings.warn(f"Trying to add a new accepting node {_accp_s} to the graph of best alternatives."
+                                      f"This should not happen. Check your construction code")
+
+                    _graph_of_alts.add_accepting_state(_accp_s)
+
+        return _graph_of_alts
+
+    def _get_best_alternatives_dict(self) -> Dict:
+        """
+        A function that computes the best alternate (ba) value for each edge in the graph.
+
+        If a state belongs to Adam :- ba = +inf
+        if a state belongs to Eve :- ba(s, s') = minimum of all the cooperative values for successors s'' s.t.
+         s'' not equal to s'.  If there is no alternate edge to choose from, then ba(s, s') = +inf
+        :return:
+        """
+
+        # pre-compute cooperative values form each state
+        coop_mcr_solver = ValueIteration(self.graph, competitive=False)
+        coop_mcr_solver.solve(debug=True, plot=False)
+        coop_val_dict = coop_mcr_solver.state_value_dict
+
+        _best_alternate_values: Dict[Optional[tuple], Optional[int, float]] = defaultdict(lambda: -1)
+
+        for _e in self.graph._graph.edges():
+            _u = _e[0]
+            _v = _e[1]
+
+            if self.graph.get_state_w_attribute(_u, "player") == "adam":
+                _best_alternate_values.update({_e: math.inf})
+
+            elif self.graph.get_state_w_attribute(_u, "player") == "eve":
+                _min_coop_val = math.inf
+                for _succ in self.graph._graph.successors(_u):
+                    if _succ == _v:
+                        continue
+
+                    _curr_edge_weight = self.graph.get_edge_attributes(_u, _v, "weight")
+
+                    _curr_edge_coop_val: Optional[int, float] = _curr_edge_weight + coop_val_dict.get(_u)
+                    if _curr_edge_weight < _min_coop_val:
+                        _min_coop_val = _curr_edge_coop_val
+
+                _best_alternate_values.update({_e: _min_coop_val})
+
+            else:
+                warnings.warn(f"Encountered a state {_u} with an invalid player attribute")
+
+        return _best_alternate_values
 
     def infinite_reg_solver(self,
                            minigrid_instance,

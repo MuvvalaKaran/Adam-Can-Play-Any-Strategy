@@ -333,7 +333,7 @@ class TwoPlayerGraph(Graph):
                                             ('D', 'G', 3),
                                             ('D', 'H', 0),
                                             ('F', 'I', 4),
-                                            ('F', 'J', 0)])
+                                            ('F', 'J', 0), ('F', 'B', 0)])
         _twa_graph.add_initial_state('A')
         _twa_graph.add_accepting_states_from(['E', 'G', 'H', 'I', 'J'])
 
@@ -343,6 +343,76 @@ class TwoPlayerGraph(Graph):
                 _twa_graph.add_weighted_edges_from([(_s, _s, 0)])
 
         return _twa_graph
+
+    @classmethod
+    def build_ewa_example(cls: 'TwoPlayerGraph',
+                          graph_name: str,
+                          config_yaml: str,
+                          save_flag: bool = False) -> 'TwoPlayerGraph()':
+
+        """
+        A class method to construct a sample Two player Edge weighted arena (WWA)
+
+        :param graph_name:
+        :param config_yaml:
+        :param save_flag:
+        :return: An concrete instance of the built Earget weighted graph
+        """
+
+        _ewa_graph: TwoPlayerGraph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
+        _ewa_graph.construct_graph()
+
+        _ewa_graph.add_state('A', player="adam")
+        _ewa_graph.add_state('C', player="eve")
+        _ewa_graph.add_state('B', player="eve")
+        _ewa_graph.add_state('D', player="adam")
+        _ewa_graph.add_state('E', player="eve")
+        _ewa_graph.add_state('F', player="adam")
+        _ewa_graph.add_state('G', player="eve")
+        _ewa_graph.add_state('H', player="eve")
+        _ewa_graph.add_state('I', player="eve")
+        _ewa_graph.add_state('J', player="eve")
+
+        _ewa_graph.add_weighted_edges_from([('A', 'B', 0),
+                                            ('A', 'C', 0),
+                                            ('B', 'C', 1),
+                                            ('B', 'D', 1),
+                                            ('C', 'F', 1),
+                                            ('C', 'E', 2),
+                                            ('D', 'G', 2),
+                                            ('D', 'H', 0),
+                                            ('F', 'I', 2),
+                                            ('F', 'J', 0)])
+        _ewa_graph.add_initial_state('A')
+        _ewa_graph.add_accepting_states_from(['E', 'G', 'H', 'I', 'J'])
+
+        # simple example
+        # _ewa_graph.add_state('A', player="adam")
+        # _ewa_graph.add_state('B', player="eve")
+        # _ewa_graph.add_state('C', player="eve")
+        # _ewa_graph.add_state('D', player="adam")
+        # _ewa_graph.add_state('E', player="eve")
+        # _ewa_graph.add_state('F', player="eve")
+        # _ewa_graph.add_state('G', player="eve")
+        # _ewa_graph.add_state('H', player="eve")
+        #
+        # _ewa_graph.add_weighted_edges_from([('A', 'C', 0),
+        #                                     ('A', 'B', 0),
+        #                                     ('B', 'C', 1),
+        #                                     ('B', 'D', 0),
+        #                                     ('C', 'E', 0),
+        #                                     ('C', 'F', 1),
+        #                                     ('D', 'G', 1),
+        #                                     ('D', 'H', 0)])
+        # _ewa_graph.add_initial_state('A')
+        # _ewa_graph.add_accepting_states_from(['E', 'F', 'G', 'H'])
+
+        # for leaf nodes let's add a self-loop (for the construction to be in consistent with infinite play game)
+        for _s in _ewa_graph._graph.nodes():
+            if len(list(_ewa_graph._graph.successors(_s))) == 0:
+                _ewa_graph.add_weighted_edges_from([(_s, _s, 0)])
+
+        return _ewa_graph
 
 
 class TwoPlayerGraphBuilder(Builder):
@@ -383,6 +453,8 @@ class TwoPlayerGraphBuilder(Builder):
                 self._instance = TwoPlayerGraph.build_running_ex(graph_name, config_yaml, save_flag)
             elif graph_name == "target_weighted_arena":
                 self._instance = TwoPlayerGraph.build_twa_example(graph_name, config_yaml, save_flag)
+            elif graph_name == "edge_weighted_arena":
+                self._instance = TwoPlayerGraph.build_ewa_example(graph_name, config_yaml, save_flag)
             else:
                 warnings.warn("Please enter a valid graph name to load a pre-built graph.")
 

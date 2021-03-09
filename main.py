@@ -143,7 +143,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_6.value
-        ENV_ID = MiniGridLavaEnv.env_1.value
+        ENV_ID = MiniGridLavaEnv.env_3.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -220,11 +220,22 @@ class EdgeWeightedArena(GraphInstanceConstructionBase):
     A class that constructs concrete instance of Edge Weighted arena as per Filliot's paper.
     """
     def __init__(self,
+                 _graph_type: str,
                  _finite: bool = False,
                  _plot_ts: bool = False,
                  _plot_dfa: bool = False,
                  _plot_prod: bool = False):
+        self.graph_type = _graph_type
+        self._initialize_graph_type()
         super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
+
+    def _initialize_graph_type(self):
+        valid_graph_type = ['ewa', 'twa']
+
+        if self.graph_type not in valid_graph_type:
+            warnings.warn(f"The current graph type {self.graph_type} doe not bleong to the set of valid graph options"
+                          f"{valid_graph_type}")
+            sys.exit(-1)
 
     def _build_dfa(self):
         pass
@@ -233,12 +244,22 @@ class EdgeWeightedArena(GraphInstanceConstructionBase):
         pass
 
     def _build_product(self):
-        self._product_automaton = graph_factory.get("TwoPlayerGraph",
-                                                    graph_name="target_weighted_arena",
-                                                    config_yaml="/config/target_weighted_arena",
-                                                    save_flag=True,
-                                                    pre_built=True,
-                                                    plot=self.plot_product)
+        if self.graph_type == "twa":
+            self._product_automaton = graph_factory.get("TwoPlayerGraph",
+                                                        graph_name="target_weighted_arena",
+                                                        config_yaml="/config/target_weighted_arena",
+                                                        save_flag=True,
+                                                        pre_built=True,
+                                                        plot=self.plot_product)
+        elif self.graph_type == "ewa":
+            self._product_automaton = graph_factory.get("TwoPlayerGraph",
+                                                        graph_name="edge_weighted_arena",
+                                                        config_yaml="/config/edge_weighted_arena",
+                                                        save_flag=True,
+                                                        pre_built=True,
+                                                        plot=self.plot_product)
+        else:
+            warnings.warn("PLease enter a valid graph type")
 
 
 class VariantOneGraph(GraphInstanceConstructionBase):
@@ -532,7 +553,13 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    reg_syn_handle.target_weighted_arena_finitie_reg_solver(debug=False, plot=plot, plot_only_eve=False)
+    # reg_syn_handle.target_weighted_arena_finite_reg_solver(twa_graph=trans_sys,
+    #                                                        debug=False,
+    #                                                        plot_w_vals=True,
+    #                                                        plot=plot,
+    #                                                        plot_only_eve=False)
+
+    reg_syn_handle.edge_weighted_arena_finite_reg_solver(purge_states=True, plot=False)
 
     # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
     #                                    plot=plot,
@@ -606,7 +633,8 @@ if __name__ == "__main__":
         trans_sys = variant_1_instance.product_automaton
 
     elif target_weighted_arena:
-        twa_graph = EdgeWeightedArena(_plot_prod=False)
+        twa_graph = EdgeWeightedArena(_graph_type="ewa",
+                                      _plot_prod=False)
         trans_sys = twa_graph.product_automaton
 
     elif franka_abs:

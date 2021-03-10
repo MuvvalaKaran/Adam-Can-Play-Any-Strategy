@@ -321,8 +321,6 @@ class RegretMinimizationStrategySynthesis:
 
         :return:
         """
-        # # Add auxiliary accepting state
-        # self.add_common_accepting_state(plot=False)
 
         # construct a TWA given the graph
         self.graph_of_utility = self._construct_graph_of_utility()
@@ -461,9 +459,10 @@ class RegretMinimizationStrategySynthesis:
                     _succ_state = (_org_succ, _next_u)
 
                     if not _graph_of_utls._graph.has_node(_succ_state):
-                        warnings.warn(f"Trying to add a new node {_succ_state} to the graph of utility."
-                                      f"This should not happen. Check your construction code")
-                        continue
+                        if _next_u <= _max_bounded_str_value:
+                            warnings.warn(f"Trying to add a new node {_succ_state} to the graph of utility."
+                                          f"This should not happen. Check your construction code")
+                            continue
 
                     _org_edge_attrs = self.graph._graph.edges[_s, _org_succ, 0]
                     _graph_of_utls.add_edge(u=_curr_state,
@@ -610,27 +609,28 @@ class RegretMinimizationStrategySynthesis:
         :param game:
         :return:
         """
+        print("Starting purging nodes")
         # get the initial state
         _init_state = game.get_initial_states()[0][0]
         _org_node_set: set = set(game._graph.nodes())
 
-        _visited = set()
+        stack = deque()
+        path: set = set()
 
-        # add the initial state to the visit stack
-        def dfs(visited: set, node):
-            if node not in visited:
-                visited.add(node)
-                for _neighbour in game._graph.successors(node):
-                    if _neighbour == node:
-                        continue
-                    dfs(visited, _neighbour)
+        stack.append(_init_state)
+        while stack:
+            vertex = stack.pop()
+            if vertex in path:
+                continue
+            path.add(vertex)
+            for _neighbour in game._graph.successors(vertex):
+                stack.append(_neighbour)
 
-            return visited
-
-        _valid_states = dfs(_visited, _init_state)
+        _valid_states = path
 
         _nodes_to_be_purged = _org_node_set - _valid_states
         game._graph.remove_nodes_from(_nodes_to_be_purged)
+        print("Done purging nodes")
 
     def _compute_reg_for_edge_to_target_nodes(self, game: Graph):
         """
@@ -667,7 +667,7 @@ class RegretMinimizationStrategySynthesis:
 
         # pre-compute cooperative values form each state
         coop_mcr_solver = ValueIteration(two_player_game, competitive=False)
-        coop_mcr_solver.solve(debug=False, plot=False)
+        coop_mcr_solver.solve(debug=True, plot=False)
         coop_val_dict = coop_mcr_solver.state_value_dict
 
         _best_alternate_values: Dict[Optional[tuple], Optional[int, float]] = defaultdict(lambda: -1)

@@ -71,7 +71,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 2
+    human_intervention: int = 0
     human_intervention_cost: int = 0
     human_non_intervention_cost: int = 0
 
@@ -553,8 +553,12 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
+    if mini_grid_instance:
+        reg_syn_handle.add_common_accepting_state(plot=False)
+
     # reg_syn_handle.target_weighted_arena_finite_reg_solver(twa_graph=trans_sys,
     #                                                        debug=False,
+    #                                                        purge_states=True,
     #                                                        plot_w_vals=True,
     #                                                        plot=plot,
     #                                                        plot_only_eve=False)
@@ -591,11 +595,11 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = False
+    gym_minigrid = True
     three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
-    target_weighted_arena = True
+    target_weighted_arena = False
     franka_abs = False
 
     # solver to call
@@ -624,7 +628,10 @@ if __name__ == "__main__":
         trans_sys = three_state_ts_instance.product_automaton
 
     elif five_state_ts:
-        five_state_ts = FiveStateExample(_finite=finite)
+        five_state_ts = FiveStateExample(_finite=finite,
+                                         _plot_ts=False,
+                                         _plot_dfa=False,
+                                         _plot_prod=False)
         trans_sys = five_state_ts.product_automaton
 
     elif variant_1_paper:

@@ -181,6 +181,74 @@ class ValueIteration:
         for _n in _trap_states:
             self.org_graph.add_state_attribute(_n, "player", "adam")
 
+    def cooperative_solver(self, debug: bool = False, plot: bool = False):
+        """
+        A Method to compute the cooperative value form each state when both players are playing minimally.
+
+        All states are initialized to at infinity. We start from the accepting state and propagate back our costs.
+        While doing so, we both players are acting the same, minimally, essentially turning this game into a single
+        player game. The algorithm terminates when we reach a fixed point.
+
+        THe initial state will have finite state value.
+
+        :param debug: A Flag to print the iteration number we are at
+        :param plot: A flag to plot the strategies as well as the values that states converged to
+        :return:
+        """
+
+        # initially in the org val_vector the target node(s) will value 0
+        _accp_state = self.org_graph.get_accepting_states()[0]
+        _init_node = self.org_graph.get_initial_states()[0][0]
+        _init_int_node = self.node_int_map[_init_node]
+
+        self._add_trap_state_player()
+
+        _val_vector = copy.deepcopy(self.val_vector)
+        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+
+        iter_var = 0
+
+        _str_dict = {}
+
+        while not self._is_same(_val_pre, _val_vector):
+            if debug:
+                if iter_var % 1000 == 0:
+                    print(f"{iter_var} Iterations")
+
+            _val_pre = copy.copy(_val_vector)
+            iter_var += 1
+
+            for _n in self.org_graph._graph.nodes():
+                # are we making an assumption that there is only one accepting state?
+                if _n == _accp_state:
+                    continue
+
+                _int_node = self.node_int_map[_n]
+
+                # we don't need to check if that state belong to adam or eve. They both behave the same.
+                _val_vector[_int_node][0], _next_min_node = self._get_min_sys_val(_n, _val_pre)
+                if _val_vector[_int_node] != _val_pre[_int_node]:
+                    _str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+
+            self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
+
+        # update the state value dict
+        for i in range(self.num_of_nodes):
+            _s = self.node_int_map.inverse[i]
+            self.state_value_dict.update({_s: self.val_vector[i][iter_var]})
+
+        self._str_dict = _str_dict
+
+        if plot:
+            self._add_state_costs_to_graph()
+            self.add_str_flag()
+            self.org_graph.plot_graph()
+
+        if debug:
+            print(f"Number of iteration to converge: {iter_var}")
+            print(f"Init state value: {self.state_value_dict[_init_node]}")
+            self._sanity_check()
+
     def solve(self, debug: bool = False, plot: bool = False):
         """
         A method that implements Algorithm 1 from the paper. The operation performed at each step can be represented by
@@ -215,9 +283,9 @@ class ValueIteration:
 
         while not self._is_same(_val_pre, _val_vector):
             if debug:
-                if iter_var % 1000 == 0:
-                    print(f"{iter_var} Iterations")
-                    # print(f"Init state value: {self.val_vector[_init_int_node]}")
+                # if iter_var % 1000 == 0:
+                print(f"{iter_var} Iterations")
+
             _val_pre = copy.copy(_val_vector)
             iter_var += 1
 
@@ -239,15 +307,6 @@ class ValueIteration:
 
                         if _val_pre[_int_node] == INT_MAX_VAL:
                             _min_reach_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
-
-            for _n in self.org_graph._graph.nodes():
-                _int_node = self.node_int_map[_n]
-
-                if _n == _accp_state:
-                    continue
-
-                if _val_vector[_int_node][0] < -1 * (self.num_of_nodes - 1) * self.W:
-                    _val_vector[_int_node][0] = INT_MIN_VAL
 
             self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
 

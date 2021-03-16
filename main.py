@@ -71,7 +71,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 1
+    human_intervention: int = 2
     human_intervention_cost: int = 0
     human_non_intervention_cost: int = 0
 
@@ -141,7 +141,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-AlternateLavaComparison_AllCorridorsOpen-v0'
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
-        ENV_ID = 'MiniGrid-Empty-5x5 -v0'
+        ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_6.value
         # ENV_ID = MiniGridLavaEnv.env_6.value
 
@@ -553,8 +553,8 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
-    if mini_grid_instance:
-        reg_syn_handle.add_common_accepting_state(plot=False)
+    # if mini_grid_instance:
+    #     reg_syn_handle.add_common_accepting_state(plot=False)
 
     # reg_syn_handle.target_weighted_arena_finite_reg_solver(twa_graph=trans_sys,
     #                                                        debug=False,

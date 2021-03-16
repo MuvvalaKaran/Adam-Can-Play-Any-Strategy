@@ -31,8 +31,8 @@ class ProductAutomaton(TwoPlayerGraph):
     def compose_graph(self, absorbing: bool = False, finite: bool = False, from_iros_ts: bool = False):
 
         # throw a warning if the DFA does NOT contain any symbol that appears in the set of observations in TS
-        if not self._check_ts_ltl_compatability():
-            warnings.warn("Please make sure that the formula is composed of symbols that are part of the aps in the TS")
+        # if not self._check_ts_ltl_compatability():
+        #     warnings.warn("Please make sure that the formula is composed of symbols that are part of the aps in the TS")
 
         if absorbing:
 

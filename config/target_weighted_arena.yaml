@@ -1,0 +1,102 @@
+alphabet_size: 15
+edges:
+- !!python/tuple
+  - A
+  - B
+  - weight: 0
+- !!python/tuple
+  - A
+  - C
+  - weight: 0
+- !!python/tuple
+  - C
+  - F
+  - weight: 0
+- !!python/tuple
+  - C
+  - E
+  - weight: 3
+- !!python/tuple
+  - B
+  - C
+  - weight: 0
+- !!python/tuple
+  - B
+  - D
+  - weight: 0
+- !!python/tuple
+  - D
+  - G
+  - weight: 3
+- !!python/tuple
+  - D
+  - H
+  - weight: 1
+- !!python/tuple
+  - E
+  - E
+  - weight: 0
+- !!python/tuple
+  - F
+  - I
+  - weight: 4
+- !!python/tuple
+  - F
+  - J
+  - weight: 2
+- !!python/tuple
+  - G
+  - G
+  - weight: 0
+- !!python/tuple
+  - H
+  - H
+  - weight: 0
+- !!python/tuple
+  - I
+  - I
+  - weight: 0
+- !!python/tuple
+  - J
+  - J
+  - weight: 0
+nodes:
+- !!python/tuple
+  - A
+  - init: true
+    player: adam
+- !!python/tuple
+  - C
+  - player: eve
+- !!python/tuple
+  - B
+  - player: eve
+- !!python/tuple
+  - D
+  - player: adam
+- !!python/tuple
+  - E
+  - accepting: true
+    player: eve
+- !!python/tuple
+  - F
+  - player: adam
+- !!python/tuple
+  - G
+  - accepting: true
+    player: eve
+- !!python/tuple
+  - H
+  - accepting: true
+    player: eve
+- !!python/tuple
+  - I
+  - accepting: true
+    player: eve
+- !!python/tuple
+  - J
+  - accepting: true
+    player: eve
+num_obs: 3
+num_states: 10
+start_state: A

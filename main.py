@@ -71,7 +71,7 @@ class GraphInstanceConstructionBase(abc.ABC):
     and product automaton graph construction at the fundamental level. The flag manipulates the weights associated with
     the absorbing states(if any) in raw transition system and the absorbing states in product automaton.
     """
-    human_intervention: int = 0
+    human_intervention: int = 1
     human_intervention_cost: int = 0
     human_non_intervention_cost: int = 0
 
@@ -141,9 +141,9 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-AlternateLavaComparison_AllCorridorsOpen-v0'
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
-        # ENV_ID = 'MiniGrid-Empty-5x5-v0'
+        ENV_ID = 'MiniGrid-Empty-5x5 -v0'
         # ENV_ID = MiniGridEmptyEnv.env_6.value
-        ENV_ID = MiniGridLavaEnv.env_3.value
+        # ENV_ID = MiniGridLavaEnv.env_6.value
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -190,8 +190,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       save_flag=True,
                                       # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
                                       # sc_ltl="!(lava_red_open) U (water_blue_open)",
-                                      sc_ltl="!(lava_red_open) U (goal_green_open)",
-                                      # sc_ltl="F (goal_green_open)",
+                                      # sc_ltl="!(lava_red_open) U (goal_green_open)",
+                                      sc_ltl="F (goal_green_open)",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -563,7 +563,9 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     #                                                        plot=plot,
     #                                                        plot_only_eve=False)
 
-    reg_syn_handle.edge_weighted_arena_finite_reg_solver(purge_states=True, plot=False)
+    reg_syn_handle.edge_weighted_arena_finite_reg_solver(minigrid_instance=mini_grid_instance,
+                                                         purge_states=True,
+                                                         plot=False)
 
     # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
     #                                    plot=plot,
@@ -640,7 +642,7 @@ if __name__ == "__main__":
         trans_sys = variant_1_instance.product_automaton
 
     elif target_weighted_arena:
-        twa_graph = EdgeWeightedArena(_graph_type="ewa",
+        twa_graph = EdgeWeightedArena(_graph_type="twa",
                                       _plot_prod=False)
         trans_sys = twa_graph.product_automaton
 

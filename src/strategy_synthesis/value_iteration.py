@@ -197,11 +197,11 @@ class ValueIteration:
         """
 
         # initially in the org val_vector the target node(s) will value 0
-        _accp_state = self.org_graph.get_accepting_states()[0]
+        _accp_state = set(self.org_graph.get_accepting_states())
         _init_node = self.org_graph.get_initial_states()[0][0]
         _init_int_node = self.node_int_map[_init_node]
 
-        self._add_trap_state_player()
+        # self._add_trap_state_player()
 
         _val_vector = copy.deepcopy(self.val_vector)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
@@ -220,7 +220,7 @@ class ValueIteration:
 
             for _n in self.org_graph._graph.nodes():
                 # are we making an assumption that there is only one accepting state?
-                if _n == _accp_state:
+                if _n in _accp_state:
                     continue
 
                 _int_node = self.node_int_map[_n]
@@ -266,7 +266,7 @@ class ValueIteration:
         :return:
         """
         # initially in the org val_vector the target node(s) will value 0
-        _accp_state = self.org_graph.get_accepting_states()[0]
+        _accp_state = set(self.org_graph.get_accepting_states())
         _init_node = self.org_graph.get_initial_states()[0][0]
         _init_int_node = self.node_int_map[_init_node]
 
@@ -292,7 +292,7 @@ class ValueIteration:
             for _n in self.org_graph._graph.nodes():
                 _int_node = self.node_int_map[_n]
 
-                if _n == _accp_state:
+                if _n in _accp_state:
                     continue
 
                 if self.org_graph.get_state_w_attribute(_n, "player") == "adam":

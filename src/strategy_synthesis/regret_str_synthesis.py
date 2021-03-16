@@ -19,6 +19,7 @@ from ..graph import ProductAutomaton
 from ..graph import MiniGrid
 from ..payoff import Payoff
 from ..mpg_tool import MpgToolBox
+from ..helper_methods import deprecated
 
 # import local value iteration solver
 from .value_iteration import ValueIteration
@@ -54,6 +55,7 @@ class RegretMinimizationStrategySynthesis:
     def b_val(self, value: set):
         self._b_val = value
 
+    @deprecated
     def finite_reg_solver_2(self,
                             minigrid_instance,
                             plot: bool = False,
@@ -80,7 +82,7 @@ class RegretMinimizationStrategySynthesis:
            fixing the strategies for the env player we compute strategies for the sys player that minimizes cumulative
            regret.
 
-
+        Note: This implementaton is flawed will be updated in future commits.
         :return:
         """
         # Add auxiliary accepting state
@@ -196,7 +198,7 @@ class RegretMinimizationStrategySynthesis:
 
         # compute cooperative str
         coop_mcr_solver = ValueIteration(self.graph, competitive=False)
-        coop_mcr_solver.solve(debug=True, plot=False)
+        coop_mcr_solver.cooperative_solver(debug=False, plot=False)
         coop_val_dict = coop_mcr_solver.state_value_dict
 
         # compute competitive values from each state
@@ -277,7 +279,8 @@ class RegretMinimizationStrategySynthesis:
         trap_states = self.graph.get_trap_states()
         _num_of_nodes = len(list(self.graph._graph.nodes))
         _W = abs(self.graph.get_max_weight())
-        w_bar = ((_num_of_nodes - 1) * _W)
+        # w_bar = ((_num_of_nodes - 1) * _W)
+        w_bar = 0
 
         # remove self-loops of accepting states and add edge from that state to the new accepting state with edge
         # weight 0
@@ -302,8 +305,9 @@ class RegretMinimizationStrategySynthesis:
             self.graph.plot_graph()
 
     def edge_weighted_arena_finite_reg_solver(self,
+                                              minigrid_instance,
                                               purge_states: bool = True,
-                                              plot: bool = False):
+                                              plot: bool = False) -> Dict:
         """
         A function that computes a Regret Minimizing strategy by constructing the Graph of Utility G'. This graph (G')
         is of the form Target weighted arena (TWA).  The utility information is added to the nodes of G to construct
@@ -321,9 +325,16 @@ class RegretMinimizationStrategySynthesis:
 
         :return:
         """
+        # compute the minmax value of the game
+        comp_mcr_solver = ValueIteration(self.graph, competitive=True)
+        comp_mcr_solver.solve(debug=False, plot=False)
+
+        # init state value
+        _init_state = self.graph.get_initial_states()[0][0]
+        min_max_value = comp_mcr_solver.state_value_dict[_init_state]
 
         # construct a TWA given the graph
-        self.graph_of_utility = self._construct_graph_of_utility()
+        self.graph_of_utility = self._construct_graph_of_utility(min_max_value)
 
         # helper method to remove the state that cannot reached from the initial state of G'
         if purge_states:
@@ -332,20 +343,38 @@ class RegretMinimizationStrategySynthesis:
         if plot:
             self.graph_of_utility.plot_graph()
 
+        print(f"#nodes in the graph of utility after pruning:{len(self.graph_of_utility._graph.nodes())}")
+        print(f"#edges in the graph of utility after pruning:{len(self.graph_of_utility._graph.edges())}")
+
         # Compute strs on this new TWA Graph
-        self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
-                                                     debug=False,
-                                                     plot_w_vals=True,
-                                                     plot_only_eve=False,
-                                                     plot=False)
+        if minigrid_instance:
+            reg_strs = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
+                                                                    minigrid_instance=minigrid_instance,
+                                                                    debug=False,
+                                                                    plot_w_vals=False,
+                                                                    plot_only_eve=False,
+                                                                    plot=False,
+                                                                    simulate_minigrid=True)
+        else:
+            reg_strs = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
+                                                                    minigrid_instance=minigrid_instance,
+                                                                    debug=False,
+                                                                    plot_w_vals=False,
+                                                                    plot_only_eve=False,
+                                                                    plot=False,
+                                                                    simulate_minigrid=False)
+
+        return reg_strs
 
     def target_weighted_arena_finite_reg_solver(self,
                                                 twa_graph: TwoPlayerGraph,
+                                                minigrid_instance,
                                                 debug: bool = False,
                                                 purge_states: bool = True,
                                                 plot_w_vals: bool = False,
                                                 plot_only_eve: bool = False,
-                                                plot: bool = False):
+                                                plot: bool = False,
+                                                simulate_minigrid: bool = False) -> Dict:
         """
         A function to compute a Regret Minimizing strategy by constructing the Graph of best alternative G'.
         Please refer to  arXiv:1002.1456v3 Section 2 For the theory.
@@ -368,7 +397,11 @@ class RegretMinimizationStrategySynthesis:
         # construct graph of best alternatives (G')
         self.graph_of_alternatives =\
             self._new_construct_graph_of_best_alternatives(twa_game=twa_graph,
-                                                       best_alt_values_dict=_best_alternate_values)
+                                                           best_alt_values_dict=_best_alternate_values)
+
+        if debug:
+            print(f"#nodes in the graph of alternative before purging :{len(self.graph_of_alternatives._graph.nodes())}")
+            print(f"#edges in the product graph is :{len(self.graph_of_alternatives._graph.edges())}")
 
         # for all the edge that transit to a target state we need to compute the regret associate with that
         self._compute_reg_for_edge_to_target_nodes(game=self.graph_of_alternatives)
@@ -377,9 +410,13 @@ class RegretMinimizationStrategySynthesis:
         if purge_states:
             self._remove_non_reachable_states(self.graph_of_alternatives)
 
+        if debug:
+            print(f"#nodes in the graph of alternative after purging :{len(self.graph_of_alternatives._graph.nodes())}")
+            print(f"#edges in the graph of alternative after purging :{len(self.graph_of_alternatives._graph.edges())}")
+
         # play minmax game to compute regret minimizing strategy
         minmax_mcr_solver = ValueIteration(self.graph_of_alternatives, competitive=True)
-        minmax_mcr_solver.solve(debug=True, plot=plot_w_vals)
+        minmax_mcr_solver.solve(debug=False, plot=plot_w_vals)
         _comp_str_dict = minmax_mcr_solver.str_dict
         _comp_val_dict = minmax_mcr_solver.state_value_dict
 
@@ -389,7 +426,24 @@ class RegretMinimizationStrategySynthesis:
                                              only_eve=plot_only_eve,
                                              plot=plot)
 
-    def _construct_graph_of_utility(self):
+        if simulate_minigrid:
+            _init_state = self.graph_of_alternatives.get_initial_states()[0][0]
+            _game_reg_value: float = _comp_val_dict.get(_init_state)
+            # get the regret value of the game
+            if minigrid_instance is None:
+                warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
+                sys.exit(-1)
+
+            _controls = self.get_controls_from_finite_memory_str_minigrid(graph=self.graph_of_alternatives,
+                                                                          str_dict=_comp_str_dict,
+                                                                          epsilon=0,
+                                                                          max_human_interventions=3)
+
+            minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
+
+        return _comp_str_dict
+
+    def _construct_graph_of_utility(self, min_max_val):
         """
         A function to construct the graph of utility given an Edge Weighted Arena (EWA).
 
@@ -410,12 +464,13 @@ class RegretMinimizationStrategySynthesis:
         """
 
         # get the max bound on the value of strategies
-        _max_weight: Optional[int, float] = self.graph.get_max_weight()
+        # _max_weight: Optional[int, float] = self.graph.get_max_weight()
 
-        if isinstance(_max_weight, float):
-            warnings.warn("Max weight is of type float. For TWA Construction max weight should be a integer")
+        # if isinstance(_max_weight, float):
+            # warnings.warn("Max weight is of type float. For TWA Construction max weight should be a integer")
 
-        _max_bounded_str_value = 2 * _max_weight * len(self.graph._graph.nodes)
+        # _max_bounded_str_value = _max_weight * len(self.graph._graph.nodes)
+        _max_bounded_str_value = min_max_val
 
         _graph_of_utls = graph_factory.get("TwoPlayerGraph",
                                            graph_name="graph_of_utls_TWA",
@@ -470,6 +525,13 @@ class RegretMinimizationStrategySynthesis:
                                             **_org_edge_attrs)
 
                     _graph_of_utls._graph[_curr_state][_succ_state][0]['weight'] = 0
+
+                    # if _new_u > _max_bounded_str_valut then there wont be any outhgoing edges from this state
+                    if _next_u > _max_bounded_str_value:
+                        # add a self loop with edge weight 0
+                        _graph_of_utls.add_edge(u=_succ_state,
+                                                v=_succ_state,
+                                                weight=0)
 
         # construct target states
         _accp_states: list = self.graph.get_accepting_states()
@@ -539,9 +601,9 @@ class RegretMinimizationStrategySynthesis:
                     for _org_succ in twa_game._graph.successors(_s):
                         _succ = (_org_succ, _best_alt)
 
-                        if not _graph_of_alts._graph.has_node(_succ):
-                            warnings.warn(f"Trying to add a new node {_succ} to the graph of best alternatives."
-                                          f"This should not happen. Check your construction code")
+                        # if not _graph_of_alts._graph.has_node(_succ):
+                        #     warnings.warn(f"Trying to add a new node {_succ} to the graph of best alternatives."
+                        #                   f"This should not happen. Check your construction code")
 
                         _org_edge_attrs = twa_game._graph.edges[_s, _org_succ, 0]
                         _graph_of_alts.add_edge(u=_curr_state,
@@ -556,18 +618,17 @@ class RegretMinimizationStrategySynthesis:
                         _next_state_ba_value = min(_best_alt, _ba)
 
                         _succ = (_org_succ, _next_state_ba_value)
-                        if not _graph_of_alts._graph.has_node(_succ):
-                            warnings.warn(f"Trying to add a new node {_succ} to the graph of best alternatives."
-                                          f"This should not happen. Check your construction code")
+                        # if not _graph_of_alts._graph.has_node(_succ):
+                        #     warnings.warn(f"Trying to add a new node {_succ} to the graph of best alternatives."
+                        #                   f"This should not happen. Check your construction code")
 
                         _org_edge_attrs = twa_game._graph.edges[_s, _org_succ, 0]
                         _graph_of_alts.add_edge(u=_curr_state,
                                                 v=_succ,
                                                 **_org_edge_attrs)
-                else:
-                    warnings.warn(f"Encountered a state {_s} with an invalid player attribute")
+                # else:
+                #     warnings.warn(f"Encountered a state {_s} with an invalid player attribute")
 
-        # add accepting state attribute
         _accp_states: list = twa_game.get_accepting_states()
 
         for _accp_s in _accp_states:
@@ -578,115 +639,6 @@ class RegretMinimizationStrategySynthesis:
                     warnings.warn(
                         f"Trying to add a new accepting node {_new_accp_s} to the graph of best alternatives."
                         f"This should not happen. Check your construction code")
-
-                _graph_of_alts.add_accepting_state(_new_accp_s)
-
-        return _graph_of_alts
-
-    def _construct_graph_of_best_alternatives(self,
-                                              twa_game: TwoPlayerGraph,
-                                              best_alt_values_dict: Dict) -> TwoPlayerGraph:
-        """
-        A function that construct the graph of best alternative.
-
-        Constructing G' (Graph of best alternative):
-
-        S' = S x ([W] U {+inf}) ; W = Maximum weight in the Graph. and [W] = [0, 1, 2, .... W]
-        An edge between two states (s, b), (s, b') exists iff s to s' is a valid edge in G and
-            b' = b if s belong to the MAX/ Env player
-            b' = min(b, ba(s, s')) if s belongs to MIN/ Sys player
-
-        ba(s, s'): IS the best alternative value you can secure if you take some other edge from s.
-            ba(s, s') = +inf if s belongs to MAX/Env player
-            ba(s, s') = min of all the edges and +inf if there are no alternate edges
-
-        C' = S' ∩ (C1 x [W]) are the target states in G' and the edge weight on G' is the edge weight on the original
-        graph.
-
-        :return:
-        """
-
-        _graph_of_alts = graph_factory.get("TwoPlayerGraph",
-                                           graph_name="graph_of_alts_TWA",
-                                           config_yaml="/config/graph_of_alts_TWA",
-                                           save_flag=True,
-                                           pre_built=False,
-                                           from_file=False,
-                                           plot=False)
-
-        # get the max weight and create a set([W] U {+inf}) = [0, 1, 2, ... W, +inf]
-        _max_weight: Optional[int, float] = twa_game.get_max_weight()
-
-        # get initial states
-        _init_state = twa_game.get_initial_states()[0][0]
-
-        if isinstance(_max_weight, float):
-            warnings.warn("Max weight is of type float. For TWA Construction max weight should be a integer")
-
-        _possible_best_alt_values = [i for i in range(_max_weight + 1)]
-        _possible_best_alt_values.append(math.inf)
-
-        # construct nodes
-        for _s in twa_game._graph.nodes():
-            for _best_alt in _possible_best_alt_values:
-                # get original state attributes
-                _org_state_attrs = twa_game._graph.nodes[_s]
-                _new_state = (_s, _best_alt)
-                _graph_of_alts.add_state(_new_state, **_org_state_attrs)
-                _graph_of_alts._graph.nodes[_new_state]['accepting'] = False
-                _graph_of_alts._graph.nodes[_new_state]['init'] = False
-                # only the original initial state with +inf as best alternative should be assigned the init state attr
-                if _s == _init_state and _best_alt == math.inf:
-                    _graph_of_alts._graph.nodes[_new_state]['init'] = True
-
-        # add valid transition
-        for _s in twa_game._graph.nodes():
-            for _best_alt in _possible_best_alt_values:
-                _curr_state = (_s, _best_alt)
-                if twa_game.get_state_w_attribute(_s, "player") == "adam":
-                    # get successors of the MAX/Env player state in the original graph and add edge to the successor
-                    # with same best alternate values
-                    for _org_succ in twa_game._graph.successors(_s):
-                        _succ = (_org_succ, _best_alt)
-
-                        if not _graph_of_alts._graph.has_node(_succ):
-                            warnings.warn(f"Trying to add a new node {_succ} to the graph of best alternatives."
-                                          f"This should not happen. Check your construction code")
-
-                        _org_edge_attrs = twa_game._graph.edges[_s, _org_succ, 0]
-                        _graph_of_alts.add_edge(u=_curr_state,
-                                                v=_succ,
-                                                **_org_edge_attrs)
-
-                elif twa_game.get_state_w_attribute(_s, "player") == "eve":
-                    # get the successors of the MIN/Sys player state in the original graph and edge to the successor
-                    # who have satisfy min(b', ba(s, s'))
-                    for _org_succ in twa_game._graph.successors(_s):
-                        _ba = best_alt_values_dict.get((_s, _org_succ))
-                        _next_state_ba_value = min(_best_alt, _ba)
-
-                        _succ = (_org_succ, _next_state_ba_value)
-                        if not _graph_of_alts._graph.has_node(_succ):
-                            warnings.warn(f"Trying to add a new node {_succ} to the graph of best alternatives."
-                                          f"This should not happen. Check your construction code")
-
-                        _org_edge_attrs = twa_game._graph.edges[_s, _org_succ, 0]
-                        _graph_of_alts.add_edge(u=_curr_state,
-                                                v=_succ,
-                                                **_org_edge_attrs)
-                else:
-                    warnings.warn(f"Encountered a state {_s} with an invalid player attribute")
-
-        # add accepting state attribute
-        _accp_states: list = twa_game.get_accepting_states()
-
-        for _accp_s in _accp_states:
-            for _ba_val in range(_max_weight + 1):
-                _new_accp_s = (_accp_s, _ba_val)
-
-                if not _graph_of_alts._graph.has_node(_new_accp_s):
-                    warnings.warn(f"Trying to add a new accepting node {_new_accp_s} to the graph of best alternatives."
-                                  f"This should not happen. Check your construction code")
 
                 _graph_of_alts.add_accepting_state(_new_accp_s)
 
@@ -758,7 +710,7 @@ class RegretMinimizationStrategySynthesis:
 
         # pre-compute cooperative values form each state
         coop_mcr_solver = ValueIteration(two_player_game, competitive=False)
-        coop_mcr_solver.cooperative_solver(debug=False, plot=False)
+        coop_mcr_solver.cooperative_solver(debug=True, plot=False)
         coop_val_dict = coop_mcr_solver.state_value_dict
 
         _best_alternate_values: Dict[Optional[tuple], Optional[int, float]] = defaultdict(lambda: -1)
@@ -784,8 +736,8 @@ class RegretMinimizationStrategySynthesis:
 
                 _best_alternate_values.update({_e: _min_coop_val})
 
-            else:
-                warnings.warn(f"Encountered a state {_u} with an invalid player attribute")
+            # else:
+            #     warnings.warn(f"Encountered a state {_u} with an invalid player attribute")
 
         return _best_alternate_values
 
@@ -1282,6 +1234,48 @@ class RegretMinimizationStrategySynthesis:
 
         return control_sequence
 
+    def _epsilon_greedy_finite_choose_action(self,
+                                             graph,
+                                             _human_state: tuple,
+                                             str_dict: Dict[tuple, tuple],
+                                             epsilon: float, _absoring_states: List[tuple],
+                                             human_can_intervene: bool = False) -> Tuple[tuple, bool]:
+        """
+        Choose an action according to epsilon greedy algorithm
+
+        Using this policy we either select a random human action with epsilon probability and the human can select the
+        optimal action (as given in the str dict if any) with 1-epsilon probability.
+
+        This method returns a human action based on the above algorithm.
+        :param _human_state: The current state in the game from which we need to pick an action
+        :return: Tuple(next_state, flag) . flag = True if human decides to take an action.
+        """
+
+        if graph.get_state_w_attribute(_human_state, "player") != "adam":
+            warnings.warn("WARNING: Randomly choosing action for a non human state!")
+
+        _next_states = [_next_n for _next_n in graph._graph.successors(_human_state)]
+        _did_human_move = False
+
+        # if the human still has moves remaining then he follows the eps strategy else he does not move at all
+        if human_can_intervene:
+            # rand() return a floating point number between [0, 1)
+            if np.random.rand() < epsilon:
+                _next_state: tuple = random.choice(_next_states)
+            else:
+                _next_state: tuple = str_dict[_human_state]
+
+            if _next_state[0][1] != _human_state[0][1]:
+                _did_human_move = True
+        else:
+            # human follows the strategy dictated by the system
+            for _n in _next_states:
+                if _n[0][1] == _human_state[0][1]:
+                    _next_state = _n
+                    break
+
+        return _next_state, _did_human_move
+
     def _epsilon_greedy_choose_action(self,
                                       _human_state: tuple,
                                       str_dict: Dict[tuple, tuple],
@@ -1322,6 +1316,112 @@ class RegretMinimizationStrategySynthesis:
                     break
 
         return _next_state, _did_human_move
+
+    def get_controls_from_finite_memory_str_minigrid(self,
+                                                     graph,
+                                                     str_dict: Dict[tuple, tuple],
+                                                     epsilon: float,
+                                                     max_human_interventions: int = 1,
+                                                     debug: bool = False) -> List[Tuple[str, ndarray, int]]:
+        """
+        A helper method to return a list of actions (edge labels) associated with the strategy found
+
+        NOTE: after system node you need to have a human node.
+        :param str_dict: The regret minimizing strategy
+        :return: A sequence of labels that to be executed by the robot
+        """
+        if not isinstance(epsilon, float):
+            try:
+                epsilon = float(epsilon)
+                if epsilon > 1:
+                    warnings.warn("Please make sure that the value of epsilon is <=1")
+            except ValueError:
+                print(ValueError)
+
+        if not isinstance(max_human_interventions, int) or max_human_interventions < 0:
+            warnings.warn("Please make sure that the max human intervention bound should >= 0")
+
+        _start_state = graph.get_initial_states()[0][0]
+        _total_human_intervention = _start_state[0][1]
+        _accepting_states = graph.get_accepting_states()
+        _trap_states = graph.get_trap_states()
+
+        _absorbing_states = _accepting_states + _trap_states
+        _human_interventions: int = 0
+        _visited_states = []
+        _position_sequence = []
+
+        curr_sys_node = _start_state
+        next_env_node = str_dict[curr_sys_node]
+
+        _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
+        next_sys_node = self._epsilon_greedy_finite_choose_action(graph,
+                                                                  next_env_node,
+                                                                  str_dict,
+                                                                  epsilon=epsilon,
+                                                                  _absoring_states=_absorbing_states,
+                                                                  human_can_intervene=_can_human_intervene)[0]
+
+        (x, y) = next_sys_node[0][0][0][0]
+        _human_interventions: int = _total_human_intervention - next_sys_node[0][0][0][1]
+
+        next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
+
+        _visited_states.append(curr_sys_node)
+        _visited_states.append(next_sys_node)
+
+        _entered_absorbing_state = False
+
+        while 1:
+            _position_sequence.append(next_pos)
+
+            curr_sys_node = next_sys_node
+            next_env_node = str_dict[curr_sys_node]
+
+            if curr_sys_node == next_env_node:
+                x, y = next_sys_node[0][0][0][0]
+                _human_interventions: int = _total_human_intervention - next_sys_node[0][0][0][1]
+                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
+                _visited_states.append(next_sys_node)
+                break
+
+            # update the next sys node only if you not transiting to an absorbing state
+            if next_env_node not in _absorbing_states and\
+                    graph.get_state_w_attribute(next_env_node, "player") == "adam":
+                _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
+                next_sys_node = self._epsilon_greedy_finite_choose_action(graph,
+                                                                          next_env_node,
+                                                                          str_dict,
+                                                                          epsilon=epsilon,
+                                                                          _absoring_states=_absorbing_states,
+                                                                          human_can_intervene=_can_human_intervene)[0]
+
+            # if transiting to an absorbing state then due to the self transition the next sys node will be the same as
+            # the current env node which is an absorbing itself. Technically an absorbing state IS NOT assigned any
+            # player.
+            else:
+                next_sys_node = next_env_node
+
+            if next_sys_node in _visited_states:
+                break
+
+            # if you enter a trap/ accepting state then do not add that transition in _pos_sequence
+            elif next_sys_node in _absorbing_states:
+                _entered_absorbing_state = True
+                break
+            else:
+                x, y = next_sys_node[0][0][0][0]
+                _human_interventions: int = _total_human_intervention - next_sys_node[0][0][0][1]
+                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
+                _visited_states.append(next_sys_node)
+
+        if not _entered_absorbing_state:
+            _position_sequence.append(next_pos)
+
+        if debug:
+            print([_n for _n in _position_sequence])
+
+        return _position_sequence
 
     def get_controls_from_str_minigrid(self,
                                        str_dict: Dict[tuple, tuple],

@@ -333,7 +333,8 @@ class TwoPlayerGraph(Graph):
                                             ('D', 'G', 3),
                                             ('D', 'H', 0),
                                             ('F', 'I', 4),
-                                            ('F', 'J', 0), ('F', 'B', 0)])
+                                            ('F', 'J', 0),
+                                            ('F', 'B', 0)])
         _twa_graph.add_initial_state('A')
         _twa_graph.add_accepting_states_from(['E', 'G', 'H', 'I', 'J'])
 
@@ -362,29 +363,31 @@ class TwoPlayerGraph(Graph):
         _ewa_graph: TwoPlayerGraph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
         _ewa_graph.construct_graph()
 
-        _ewa_graph.add_state('A', player="adam")
-        _ewa_graph.add_state('C', player="eve")
-        _ewa_graph.add_state('B', player="eve")
-        _ewa_graph.add_state('D', player="adam")
-        _ewa_graph.add_state('E', player="eve")
-        _ewa_graph.add_state('F', player="adam")
-        _ewa_graph.add_state('G', player="eve")
-        _ewa_graph.add_state('H', player="eve")
-        _ewa_graph.add_state('I', player="eve")
-        _ewa_graph.add_state('J', player="eve")
-
-        _ewa_graph.add_weighted_edges_from([('A', 'B', 0),
-                                            ('A', 'C', 0),
-                                            ('B', 'C', 1),
-                                            ('B', 'D', 1),
-                                            ('C', 'F', 1),
-                                            ('C', 'E', 2),
-                                            ('D', 'G', 2),
-                                            ('D', 'H', 0),
-                                            ('F', 'I', 2),
-                                            ('F', 'J', 0)])
-        _ewa_graph.add_initial_state('A')
-        _ewa_graph.add_accepting_states_from(['E', 'G', 'H', 'I', 'J'])
+        # example from the paper
+        # _ewa_graph.add_state('A', player="adam")
+        # _ewa_graph.add_state('C', player="eve")
+        # _ewa_graph.add_state('B', player="eve")
+        # _ewa_graph.add_state('D', player="adam")
+        # _ewa_graph.add_state('E', player="eve")
+        # _ewa_graph.add_state('F', player="adam")
+        # _ewa_graph.add_state('G', player="eve")
+        # _ewa_graph.add_state('H', player="eve")
+        # _ewa_graph.add_state('I', player="eve")
+        # _ewa_graph.add_state('J', player="eve")
+        #
+        # _ewa_graph.add_weighted_edges_from([('A', 'B', 0),
+        #                                     ('A', 'C', 0),
+        #                                     ('B', 'C', 1),
+        #                                     # ('B', 'D', 1),
+        #                                     ('C', 'F', 0),
+        #                                     ('C', 'E', 2),
+        #                                     ('D', 'G', 2),
+        #                                     ('D', 'H', 0),
+        #                                     ('F', 'B', 0),
+        #                                     ('F', 'I', 2),
+        #                                     ('F', 'J', 0)])
+        # _ewa_graph.add_initial_state('A')
+        # _ewa_graph.add_accepting_states_from(['E', 'G', 'H', 'I', 'J'])
 
         # simple example
         # _ewa_graph.add_state('A', player="adam")
@@ -400,12 +403,71 @@ class TwoPlayerGraph(Graph):
         #                                     ('A', 'B', 0),
         #                                     ('B', 'C', 1),
         #                                     ('B', 'D', 0),
-        #                                     ('C', 'E', 0),
+        #                                     ('C', 'E', 2),
         #                                     ('C', 'F', 1),
-        #                                     ('D', 'G', 1),
+        #                                     ('F', 'B', 0),
+        #                                     ('D', 'G', 2),
         #                                     ('D', 'H', 0)])
         # _ewa_graph.add_initial_state('A')
-        # _ewa_graph.add_accepting_states_from(['E', 'F', 'G', 'H'])
+        # _ewa_graph.add_accepting_states_from(['E', 'F', 'G'])
+
+        # simple example where init state belongs to Sys player's winning region
+        # _ewa_graph.add_state('v1', player="eve")
+        # _ewa_graph.add_state('v2', player="adam")
+        # _ewa_graph.add_state('v3', player="eve")
+        # _ewa_graph.add_state('v4', player="adam")
+        # # _ewa_graph.add_state('v5', player="eve")
+        # _ewa_graph.add_state('v6', player="adam")
+        # # _ewa_graph.add_state('v7', player="adam")
+        # # _ewa_graph.add_state('v8', player="eve")
+        # _ewa_graph.add_state('v9', player="eve")
+        # # _ewa_graph.add_state('v10', player="eve")
+        # # _ewa_graph.add_state('v11', player="eve")
+        # _ewa_graph.add_state('v12', player="eve")
+        #
+        # _ewa_graph.add_weighted_edges_from([('v1', 'v2', 1),
+        #                                     # ('v1', 'v4', 1),
+        #                                     # ('v4', 'v5', 0),
+        #                                     ('v2', 'v3', 0),
+        #                                     ('v2', 'v9', 0),
+        #                                     ('v3', 'v4', 6),
+        #                                     ('v3', 'v2', 1),
+        #                                     # ('v2', 'v9', 0),
+        #                                     ('v3', 'v6', 3),
+        #                                     # ('v3', 'v7', 1),
+        #                                     # ('v7', 'v8', 0),
+        #                                     ('v6', 'v9', 0),
+        #                                     ('v6', 'v4', 5),
+        #                                     # ('v5', 'v6', 3),
+        #                                     # ('v8', 'v12', 5),
+        #                                     # ('v10', 'v12', 5),
+        #                                     ('v9', 'v12', 0),])
+        #                                     # ('v11', 'v12', 0),
+        #                                     # ('v4', 'v9', 0), ('v5', 'v4', 1)])
+
+        # game in Env's winning region
+        _ewa_graph.add_state('v1', player="adam")
+        _ewa_graph.add_state('v2', player="eve")
+        _ewa_graph.add_state('v3', player="adam")
+        _ewa_graph.add_state('v4', player="eve")
+        _ewa_graph.add_state('v5', player="adam")
+        _ewa_graph.add_state('v6', player="adam")
+        _ewa_graph.add_state('v7', player="eve")
+        _ewa_graph.add_state('v8', player="adam")
+        _ewa_graph.add_state('v12', player="adam")
+
+        _ewa_graph.add_weighted_edges_from([('v1', 'v2', 1),
+                                            ('v2', 'v3', 0),
+                                            # ('v2', 'v6', 0),
+                                            ('v3', 'v4', 1),
+                                            ('v4', 'v5', 0),
+                                            ('v3', 'v7', 1),
+                                            ('v7', 'v8', 0),
+                                            ('v5', 'v2', 1),
+                                            ('v8', 'v12', 0), ('v2', 'v6', 2)])#, ('v6', 'v5', 10)])
+
+        _ewa_graph.add_initial_state('v1')
+        _ewa_graph.add_accepting_states_from(['v12', 'v6'])
 
         # for leaf nodes let's add a self-loop (for the construction to be in consistent with infinite play game)
         for _s in _ewa_graph._graph.nodes():

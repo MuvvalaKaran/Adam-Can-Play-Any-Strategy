@@ -157,7 +157,8 @@ class ValueIteration:
         self._num_of_nodes = len(list(self.org_graph._graph.nodes))
         self._W = abs(self.org_graph.get_max_weight())
         self._node_int_map = bidict({state: index for index, state in enumerate(self.org_graph._graph.nodes)})
-        self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+        # self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+        self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
         self._initialize_target_state_costs()
 
     def _is_same(self, pre_val_vec, curr_val_vec):
@@ -204,7 +205,8 @@ class ValueIteration:
         # self._add_trap_state_player()
 
         _val_vector = copy.deepcopy(self.val_vector)
-        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+        # _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
         iter_var = 0
 
@@ -232,10 +234,16 @@ class ValueIteration:
 
             self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
 
+        # safely convert values in the last col of val vector to ints
+        _int_val_vector = self.val_vector[:, -1].astype(int)
+
         # update the state value dict
         for i in range(self.num_of_nodes):
             _s = self.node_int_map.inverse[i]
-            self.state_value_dict.update({_s: self.val_vector[i][iter_var]})
+            if _int_val_vector[i] < 0:
+                self.state_value_dict.update({_s: math.inf})
+            else:
+                self.state_value_dict.update({_s: _int_val_vector[i]})
 
         self._str_dict = _str_dict
 
@@ -273,7 +281,8 @@ class ValueIteration:
         self._add_trap_state_player()
 
         _val_vector = copy.deepcopy(self.val_vector)
-        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+        # _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
         iter_var = 0
         _max_str_dict = {}
@@ -305,15 +314,22 @@ class ValueIteration:
                     if _val_vector[_int_node] != _val_pre[_int_node]:
                         _min_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
 
-                        if _val_pre[_int_node] == INT_MAX_VAL:
+                        if _val_pre[_int_node] == math.inf:
                             _min_reach_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
 
             self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
 
+        # safely convert values in the last col of val vector to ints
+        _int_val_vector = self.val_vector[:, -1].astype(int)
+
         # update the state value dict
         for i in range(self.num_of_nodes):
             _s = self.node_int_map.inverse[i]
-            self.state_value_dict.update({_s: self.val_vector[i][iter_var]})
+            # the above conversion converts math.inf to negative vals, we restore them to be inf
+            if _int_val_vector[i] < 0:
+                self.state_value_dict.update({_s: math.inf})
+            else:
+                self.state_value_dict.update({_s: _int_val_vector[i]})
 
         # for v0 we have to specially make an exception if v1 has value higher than 0 then go down else take self-loop
         if self.competitive and self.org_graph._graph_name == "G_hat":
@@ -413,11 +429,11 @@ class ValueIteration:
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
             _val = (_node_int, self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0])
-            if pre_vec[_node_int][0] == INT_MAX_VAL:
-                _succ_vals.append((_node_int, INT_MAX_VAL))
-            else:
+            # if pre_vec[_node_int][0] == INT_MAX_VAL:
+            #     _succ_vals.append((_node_int, INT_MAX_VAL))
+            # else:
                 # _val = (_node_int, pre_vec[_node_int][0])
-                _succ_vals.append(_val)
+            _succ_vals.append(_val)
 
         # get org node int value
         if self.competitive:
@@ -426,10 +442,10 @@ class ValueIteration:
             _next_node_int, _val = min(_succ_vals, key=operator.itemgetter(1))
 
         _curr_node_int = self.node_int_map[node]
-        if INT_MIN_VAL <= _val <= INT_MAX_VAL:
-            return _val, _next_node_int
+        # if INT_MIN_VAL <= _val <= INT_MAX_VAL:
+        return _val, _next_node_int
 
-        return pre_vec[_curr_node_int][0], _next_node_int
+        # return pre_vec[_curr_node_int][0], _next_node_int
 
     def _add_state_costs_to_graph(self):
         """
@@ -470,17 +486,17 @@ class ValueIteration:
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
             _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
-            if pre_vec[_node_int][0] == INT_MAX_VAL:
-                _succ_vals.append((_node_int, INT_MAX_VAL))
-            else:
-                _succ_vals.append((_node_int, _val))
+            # if pre_vec[_node_int][0] == INT_MAX_VAL:
+            #     _succ_vals.append((_node_int, INT_MAX_VAL))
+            # else:
+            _succ_vals.append((_node_int, _val))
 
         _next_node_int, _val = min(_succ_vals, key=operator.itemgetter(1))
 
-        if INT_MIN_VAL <= _val <= INT_MAX_VAL:
-            return _val, _next_node_int
-
-        _curr_node_int = self.node_int_map[node]
-        _val = pre_vec[_curr_node_int][0]
-
+        # if INT_MIN_VAL <= _val <= INT_MAX_VAL:
         return _val, _next_node_int
+
+        # _curr_node_int = self.node_int_map[node]
+        # _val = pre_vec[_curr_node_int][0]
+        #
+        # return _val, _next_node_int

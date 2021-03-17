@@ -597,11 +597,11 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = True
+    gym_minigrid = False
     three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
-    target_weighted_arena = False
+    target_weighted_arena = True
     franka_abs = False
 
     # solver to call
@@ -642,7 +642,7 @@ if __name__ == "__main__":
         trans_sys = variant_1_instance.product_automaton
 
     elif target_weighted_arena:
-        twa_graph = EdgeWeightedArena(_graph_type="twa",
+        twa_graph = EdgeWeightedArena(_graph_type="ewa",
                                       _plot_prod=False)
         trans_sys = twa_graph.product_automaton
 

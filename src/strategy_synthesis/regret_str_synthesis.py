@@ -331,7 +331,7 @@ class RegretMinimizationStrategySynthesis:
 
         # init state value
         _init_state = self.graph.get_initial_states()[0][0]
-        min_max_value = comp_mcr_solver.state_value_dict[_init_state]
+        min_max_value = comp_mcr_solver.state_value_dict[_init_state] * 2
 
         # construct a TWA given the graph
         self.graph_of_utility = self._construct_graph_of_utility(min_max_value)
@@ -349,20 +349,20 @@ class RegretMinimizationStrategySynthesis:
         # Compute strs on this new TWA Graph
         if minigrid_instance:
             reg_strs, reg_val = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
-                                                                    minigrid_instance=minigrid_instance,
-                                                                    debug=False,
-                                                                    plot_w_vals=False,
-                                                                    plot_only_eve=False,
-                                                                    plot=False,
-                                                                    simulate_minigrid=True)
+                                                                             minigrid_instance=minigrid_instance,
+                                                                             debug=False,
+                                                                             plot_w_vals=False,
+                                                                             plot_only_eve=False,
+                                                                             plot=False,
+                                                                             simulate_minigrid=True)
         else:
             reg_strs, reg_val = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
-                                                                    minigrid_instance=minigrid_instance,
-                                                                    debug=False,
-                                                                    plot_w_vals=False,
-                                                                    plot_only_eve=False,
-                                                                    plot=False,
-                                                                    simulate_minigrid=False)
+                                                                             minigrid_instance=minigrid_instance,
+                                                                             debug=False,
+                                                                             plot_w_vals=True,
+                                                                             plot_only_eve=False,
+                                                                             plot=False,
+                                                                             simulate_minigrid=False)
 
         return reg_strs, reg_val
 
@@ -496,6 +496,10 @@ class RegretMinimizationStrategySynthesis:
                 if _s == _init_state and _u == 0:
                     _graph_of_utls._graph.nodes[_new_state]['init'] = True
 
+        # manually add a sink state with player attribute adam
+        # we add sink as accepting so as not not backpropagate inf in coop value plays
+        _graph_of_utls.add_state("vT", accepting=False, init=False, player="eve")
+
         # construct edges
         for _s in self.graph._graph.nodes():
             for _u in range(_max_bounded_str_value + 1):
@@ -520,19 +524,32 @@ class RegretMinimizationStrategySynthesis:
                                           f"This should not happen. Check your construction code")
                             continue
 
-                    _org_edge_attrs = self.graph._graph.edges[_s, _org_succ, 0]
-                    _graph_of_utls.add_edge(u=_curr_state,
-                                            v=_succ_state,
-                                            **_org_edge_attrs)
-
-                    _graph_of_utls._graph[_curr_state][_succ_state][0]['weight'] = 0
-
-                    # if _new_u > _max_bounded_str_valut then there wont be any outhgoing edges from this state
-                    if _next_u > _max_bounded_str_value:
-                        # add a self loop with edge weight 0
-                        _graph_of_utls.add_edge(u=_succ_state,
+                    # if the next state is within the bounds then, add that state to the graph of utility with edge
+                    # weight 0
+                    if _next_u <= _max_bounded_str_value:
+                        _org_edge_attrs = self.graph._graph.edges[_s, _org_succ, 0]
+                        _graph_of_utls.add_edge(u=_curr_state,
                                                 v=_succ_state,
-                                                weight=0)
+                                                **_org_edge_attrs)
+
+                        _graph_of_utls._graph[_curr_state][_succ_state][0]['weight'] = 0
+
+                    # if _next_u > _max_bounded_str_value then add an edge from the current state to a sink state
+                    if _next_u > _max_bounded_str_value:
+                        # add a self loop with edge weight 0 if it already does not exists
+                        _succ_state = "vT"
+                        if not _graph_of_utls._graph.has_edge(_curr_state, _succ_state):
+                            _graph_of_utls.add_edge(u=_curr_state, v=_succ_state, weight=_max_bounded_str_value)
+                        # if not _graph_of_utls._graph.has_edge(_succ_state, _succ_state):
+                        #     _graph_of_utls.add_edge(u=_succ_state,
+                        #                             v=_succ_state,
+                        #                             weight=0)
+
+        # manually add a self-loop to the terminal state because every states should have atleast one out-going edges
+        # the self-loop will have edge weight 0.
+        _graph_of_utls.add_edge(u="vT",
+                                v="vT",
+                                weight=0)
 
         # construct target states
         _accp_states: list = self.graph.get_accepting_states()

@@ -307,7 +307,7 @@ class RegretMinimizationStrategySynthesis:
     def edge_weighted_arena_finite_reg_solver(self,
                                               minigrid_instance,
                                               purge_states: bool = True,
-                                              plot: bool = False) -> Dict:
+                                              plot: bool = False) -> Tuple[Dict, float]:
         """
         A function that computes a Regret Minimizing strategy by constructing the Graph of Utility G'. This graph (G')
         is of the form Target weighted arena (TWA).  The utility information is added to the nodes of G to construct
@@ -348,7 +348,7 @@ class RegretMinimizationStrategySynthesis:
 
         # Compute strs on this new TWA Graph
         if minigrid_instance:
-            reg_strs = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
+            reg_strs, reg_val = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
                                                                     minigrid_instance=minigrid_instance,
                                                                     debug=False,
                                                                     plot_w_vals=False,
@@ -356,7 +356,7 @@ class RegretMinimizationStrategySynthesis:
                                                                     plot=False,
                                                                     simulate_minigrid=True)
         else:
-            reg_strs = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
+            reg_strs, reg_val = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
                                                                     minigrid_instance=minigrid_instance,
                                                                     debug=False,
                                                                     plot_w_vals=False,
@@ -364,7 +364,7 @@ class RegretMinimizationStrategySynthesis:
                                                                     plot=False,
                                                                     simulate_minigrid=False)
 
-        return reg_strs
+        return reg_strs, reg_val
 
     def target_weighted_arena_finite_reg_solver(self,
                                                 twa_graph: TwoPlayerGraph,
@@ -374,7 +374,7 @@ class RegretMinimizationStrategySynthesis:
                                                 plot_w_vals: bool = False,
                                                 plot_only_eve: bool = False,
                                                 plot: bool = False,
-                                                simulate_minigrid: bool = False) -> Dict:
+                                                simulate_minigrid: bool = False) -> Tuple[Dict, float]:
         """
         A function to compute a Regret Minimizing strategy by constructing the Graph of best alternative G'.
         Please refer to  arXiv:1002.1456v3 Section 2 For the theory.
@@ -419,6 +419,8 @@ class RegretMinimizationStrategySynthesis:
         minmax_mcr_solver.solve(debug=False, plot=plot_w_vals)
         _comp_str_dict = minmax_mcr_solver.str_dict
         _comp_val_dict = minmax_mcr_solver.state_value_dict
+        _init_state = self.graph_of_alternatives.get_initial_states()[0][0]
+        _game_reg_value: float = _comp_val_dict.get(_init_state)
 
         if plot_only_eve:
             self.plot_str_for_cumulative_reg(game_venue=self.graph_of_alternatives,
@@ -427,8 +429,7 @@ class RegretMinimizationStrategySynthesis:
                                              plot=plot)
 
         if simulate_minigrid:
-            _init_state = self.graph_of_alternatives.get_initial_states()[0][0]
-            _game_reg_value: float = _comp_val_dict.get(_init_state)
+
             # get the regret value of the game
             if minigrid_instance is None:
                 warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
@@ -441,7 +442,7 @@ class RegretMinimizationStrategySynthesis:
 
             minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
 
-        return _comp_str_dict
+        return _comp_str_dict, _game_reg_value
 
     def _construct_graph_of_utility(self, min_max_val):
         """
@@ -467,7 +468,7 @@ class RegretMinimizationStrategySynthesis:
         # _max_weight: Optional[int, float] = self.graph.get_max_weight()
 
         # if isinstance(_max_weight, float):
-            # warnings.warn("Max weight is of type float. For TWA Construction max weight should be a integer")
+        #     warnings.warn("Max weight is of type float. For TWA Construction max weight should be a integer")
 
         # _max_bounded_str_value = _max_weight * len(self.graph._graph.nodes)
         _max_bounded_str_value = min_max_val

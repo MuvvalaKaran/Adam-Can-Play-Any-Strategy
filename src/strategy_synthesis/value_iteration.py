@@ -278,7 +278,7 @@ class ValueIteration:
         _init_node = self.org_graph.get_initial_states()[0][0]
         _init_int_node = self.node_int_map[_init_node]
 
-        self._add_trap_state_player()
+        # self._add_trap_state_player()
 
         _val_vector = copy.deepcopy(self.val_vector)
         # _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)

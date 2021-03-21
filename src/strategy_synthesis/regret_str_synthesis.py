@@ -307,7 +307,7 @@ class RegretMinimizationStrategySynthesis:
     def edge_weighted_arena_finite_reg_solver(self,
                                               minigrid_instance,
                                               purge_states: bool = True,
-                                              plot: bool = False) -> Tuple[Dict, float]:
+                                              plot: bool = False) -> Tuple[Dict, Dict]:
         """
         A function that computes a Regret Minimizing strategy by constructing the Graph of Utility G'. This graph (G')
         is of the form Target weighted arena (TWA).  The utility information is added to the nodes of G to construct
@@ -327,12 +327,12 @@ class RegretMinimizationStrategySynthesis:
         """
         # compute the minmax value of the game
         comp_mcr_solver = ValueIteration(self.graph, competitive=True)
-        comp_mcr_solver.solve(debug=False, plot=False)
+        # comp_mcr_solver.solve(debug=False, plot=False)
 
         # init state value
         _init_state = self.graph.get_initial_states()[0][0]
-        min_max_value = comp_mcr_solver.state_value_dict[_init_state] * 2
-
+        # min_max_value = comp_mcr_solver.state_value_dict[_init_state] * 2
+        min_max_value = 40
         # construct a TWA given the graph
         self.graph_of_utility = self._construct_graph_of_utility(min_max_value)
 
@@ -348,23 +348,23 @@ class RegretMinimizationStrategySynthesis:
 
         # Compute strs on this new TWA Graph
         if minigrid_instance:
-            reg_strs, reg_val = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
-                                                                             minigrid_instance=minigrid_instance,
-                                                                             debug=False,
-                                                                             plot_w_vals=False,
-                                                                             plot_only_eve=False,
-                                                                             plot=False,
-                                                                             simulate_minigrid=True)
+            reg_strs, reg_vals = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
+                                                                              minigrid_instance=minigrid_instance,
+                                                                              debug=False,
+                                                                              plot_w_vals=False,
+                                                                              plot_only_eve=False,
+                                                                              plot=False,
+                                                                              simulate_minigrid=True)
         else:
-            reg_strs, reg_val = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
-                                                                             minigrid_instance=minigrid_instance,
-                                                                             debug=False,
-                                                                             plot_w_vals=True,
-                                                                             plot_only_eve=False,
-                                                                             plot=False,
-                                                                             simulate_minigrid=False)
+            reg_strs, reg_vals = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
+                                                                              minigrid_instance=minigrid_instance,
+                                                                              debug=False,
+                                                                              plot_w_vals=False,
+                                                                              plot_only_eve=False,
+                                                                              plot=False,
+                                                                              simulate_minigrid=False)
 
-        return reg_strs, reg_val
+        return reg_strs, reg_vals
 
     def target_weighted_arena_finite_reg_solver(self,
                                                 twa_graph: TwoPlayerGraph,
@@ -416,7 +416,7 @@ class RegretMinimizationStrategySynthesis:
 
         # play minmax game to compute regret minimizing strategy
         minmax_mcr_solver = ValueIteration(self.graph_of_alternatives, competitive=True)
-        minmax_mcr_solver.solve(debug=False, plot=plot_w_vals)
+        minmax_mcr_solver.solve(debug=True, plot=plot_w_vals)
         _comp_str_dict = minmax_mcr_solver.str_dict
         _comp_val_dict = minmax_mcr_solver.state_value_dict
         _init_state = self.graph_of_alternatives.get_initial_states()[0][0]
@@ -442,7 +442,7 @@ class RegretMinimizationStrategySynthesis:
 
             minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
 
-        return _comp_str_dict, _game_reg_value
+        return _comp_str_dict, _comp_val_dict
 
     def _construct_graph_of_utility(self, min_max_val):
         """
@@ -728,7 +728,7 @@ class RegretMinimizationStrategySynthesis:
 
         # pre-compute cooperative values form each state
         coop_mcr_solver = ValueIteration(two_player_game, competitive=False)
-        coop_mcr_solver.cooperative_solver(debug=True, plot=False)
+        coop_mcr_solver.cooperative_solver(debug=False, plot=False)
         coop_val_dict = coop_mcr_solver.state_value_dict
 
         _best_alternate_values: Dict[Optional[tuple], Optional[int, float]] = defaultdict(lambda: -1)

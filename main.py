@@ -30,14 +30,14 @@ from src.strategy_synthesis import ValueIteration
 
 from src.mpg_tool import MpgToolBox
 
-assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
+# assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
 # directory where we will be storing all the configuration files related to graphs
 DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/config/"
 
 """
 Note: When you create a NxN world, two units of width and height are consumed for drawing the boundary.
-So a 4x4 world will be a 2x2 env and 5x5 will be a 3x3 env respectively.  
+So a 4x4 world will be a 2x2 env and 5x5 will be a 3x3 env respectively.
 """
 
 

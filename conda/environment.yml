@@ -1,4 +1,4 @@
-name: adam_can_play_any_strategy
+name: adam_can_play_any_strategy2
 channels:
   - anaconda
   - conda-forge

@@ -1,65 +1,75 @@
-alphabet_size: 15
+alphabet_size: 14
 edges:
 - !!python/tuple
   - v1
   - v2
-  - weight: 1
-- !!python/tuple
-  - v1
-  - v4
-  - weight: 1
+  - strategy: true
+    weight: 1
 - !!python/tuple
   - v2
   - v3
-  - weight: 0
+  - strategy: true
+    weight: 0
 - !!python/tuple
   - v2
   - v9
-  - weight: 0
+  - strategy: false
+    weight: 0
+- !!python/tuple
+  - v3
+  - v4
+  - strategy: true
+    weight: 1
+- !!python/tuple
+  - v3
+  - v2
+  - strategy: false
+    weight: 1
 - !!python/tuple
   - v3
   - v6
-  - weight: 9
-- !!python/tuple
-  - v3
-  - v7
-  - weight: 1
+  - strategy: false
+    weight: 6
 - !!python/tuple
   - v4
   - v5
-  - weight: 0
+  - strategy: true
+    weight: 0
+- !!python/tuple
+  - v4
+  - v9
+  - strategy: false
+    weight: 0
 - !!python/tuple
   - v5
   - v6
-  - weight: 3
+  - strategy: true
+    weight: 3
+- !!python/tuple
+  - v5
+  - v4
+  - strategy: false
+    weight: 1
 - !!python/tuple
   - v6
   - v9
-  - weight: 0
-- !!python/tuple
-  - v7
-  - v8
-  - weight: 0
-- !!python/tuple
-  - v8
-  - v10
-  - weight: 11
+  - strategy: true
+    weight: 0
 - !!python/tuple
   - v9
-  - v11
-  - weight: 0
-- !!python/tuple
-  - v10
   - v12
-  - weight: 0
-- !!python/tuple
-  - v11
-  - v12
-  - weight: 0
+  - strategy: true
+    weight: 0
 - !!python/tuple
   - v12
   - v12
-  - weight: 0
+  - strategy: true
+    weight: 0
+- !!python/tuple
+  - tmp_accp
+  - tmp_accp
+  - strategy: false
+    weight: 0
 nodes:
 - !!python/tuple
   - v1
@@ -81,24 +91,15 @@ nodes:
   - v6
   - player: adam
 - !!python/tuple
-  - v7
-  - player: adam
-- !!python/tuple
-  - v8
-  - player: eve
-- !!python/tuple
   - v9
   - player: eve
 - !!python/tuple
-  - v10
-  - player: eve
-- !!python/tuple
-  - v11
-  - player: eve
-- !!python/tuple
   - v12
+  - player: eve
+- !!python/tuple
+  - tmp_accp
   - accepting: true
     player: eve
 num_obs: 3
-num_states: 12
+num_states: 9
 start_state: v1

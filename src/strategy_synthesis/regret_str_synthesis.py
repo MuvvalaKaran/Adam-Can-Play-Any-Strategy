@@ -251,6 +251,72 @@ class RegretMinimizationStrategySynthesis:
 
             minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
 
+    def pure_games_solver(self,
+                          minigrid_instance,
+                          cooperative: bool,
+                          plot: bool = False,
+                          plot_only_eve: bool = False,
+                          simulate_minigrid: bool = False,
+                          epsilon: float = 0,
+                          max_human_interventions: int = 5,
+                          compute_reg_for_human: bool = False):
+        """
+        A parent function that computes a strategy for the system player under PURE ADVERSARIAL game.
+
+        :return:
+        """
+        # Add auxiliary accepting state
+        self.add_common_accepting_state(plot=False)
+
+        # # compute cooperative str
+        if cooperative:
+            coop_mcr_solver = ValueIteration(self.graph, competitive=False)
+            coop_mcr_solver.cooperative_solver(debug=False, plot=True)
+            _comp_str_dict = coop_mcr_solver.str_dict
+            _comp_val_dict = coop_mcr_solver.state_value_dict
+        # compute competitive values from each state
+        else:
+            comp_mcr_solver = ValueIteration(self.graph, competitive=True)
+            comp_mcr_solver.solve(debug=True, plot=True)
+            _comp_str_dict = comp_mcr_solver.str_dict
+            _comp_val_dict = comp_mcr_solver.state_value_dict
+
+        # remove edges to the tmp_accp state for ease of plotting
+        _curr_tmp_accp = self.graph.get_accepting_states()[0]
+        _pre_accp_node = copy.copy(self.graph._graph.predecessors(_curr_tmp_accp))
+        _pre_accp : list = []
+        for _node in _pre_accp_node:
+            self.graph._graph.remove_edge(_node, _curr_tmp_accp)
+            self.graph.add_weighted_edges_from([(_node, _node, 0)])
+            # our str dict has this term where the original accepting state and the trap state are pointing to the
+            # arbitrary tmp_accp state. we need to rectify this
+
+            if _comp_str_dict.get(_node):
+                _comp_str_dict[_node] = _node
+
+        if plot:
+            self.plot_str_for_cumulative_reg(game_venue=self.graph,
+                                             str_dict=_comp_str_dict,
+                                             only_eve=plot_only_eve,
+                                             plot=plot)
+
+        # if simulate_minigrid:
+        #     # get the regret value of the game
+        #     _init_state = self.graph.get_initial_states()[0][0]
+        #     _game_reg_value: float = _comp_str_dict.get(_init_state)
+
+        #     self.graph.add_accepting_state("accept_all")
+        #     self.graph.remove_state_attr("tmp_accp", "accepting")
+        #     if minigrid_instance is None:
+        #         warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
+        #         sys.exit(-1)
+
+        #     _controls = self.get_controls_from_str_minigrid(str_dict=_comp_str_dict,
+        #                                                     epsilon=epsilon,
+        #                                                     max_human_interventions=max_human_interventions)
+
+        #     minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
+
     def add_common_accepting_state(self, plot: bool = False):
         """
         A helper method that adds a auxiliary accepting state from the current accepting state as well as the trap state

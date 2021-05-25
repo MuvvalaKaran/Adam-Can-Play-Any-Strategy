@@ -1,3 +1,4 @@
+import os
 import abc
 import networkx as nx
 import yaml
@@ -78,8 +79,8 @@ class Graph(abc.ABC):
         if view:
             dot_object.view(cleanup=True)
 
-        dot_object.render(Graph._get_project_root_directory() + f'plots/{graph_name}', view=view,
-                          cleanup=True)
+        directory = os.path.join(Graph._get_project_root_directory(), 'plots')
+        dot_object.render(filename=graph_name, directory=directory, view=view, cleanup=True)
 
     def build_graph_from_file(self):
         """
@@ -159,6 +160,7 @@ class Graph(abc.ABC):
         A helper method to dump the graph data to a yaml file, read the yaml file and plotting the graph itself
         :return: None
         """
+        print('Plotting ')
         # dump to yaml file
         self.dump_to_yaml()
         # read the yaml file

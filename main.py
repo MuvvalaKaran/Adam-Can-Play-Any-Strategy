@@ -106,7 +106,8 @@ class GraphInstanceConstructionBase(abc.ABC):
                                                     debug=False,
                                                     absorbing=True,
                                                     finite=self.finite,
-                                                    plot=self.plot_product)
+                                                    plot=self.plot_product,
+                                                    weighting='automatonOnly')
 
     @property
     def product_automaton(self):
@@ -184,7 +185,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                             plot=self.plot_ts)
 
     def _build_dfa(self):
-        self._dfa = graph_factory.get('DFA',
+        self._dfa = graph_factory.get('PDFA',
                                       graph_name="automaton",
                                       config_yaml="/config/automaton",
                                       save_flag=True,
@@ -320,11 +321,17 @@ class ThreeStateExample(GraphInstanceConstructionBase):
                                             plot_raw_ts=False)
 
     def _build_dfa(self):
-        self._dfa = graph_factory.get('DFA',
-                                      graph_name="automaton",
-                                      config_yaml="/config/automaton",
+        # self._dfa = graph_factory.get('DFA',
+        #                               graph_name="automaton",
+        #                               config_yaml="/config/automaton",
+        #                               save_flag=True,
+        #                               sc_ltl="F c",
+        #                               use_alias=False,
+        #                               plot=self.plot_dfa)
+        self._dfa = graph_factory.get('PDFA',
+                                      graph_name="pdfa",
+                                      config_yaml="/config/PDFA_three_states_twogoals",
                                       save_flag=True,
-                                      sc_ltl="F c",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -358,11 +365,17 @@ class FiveStateExample(GraphInstanceConstructionBase):
                                             plot_raw_ts=False)
 
     def _build_dfa(self):
-        self._dfa = graph_factory.get('DFA',
-                                      graph_name="automaton",
-                                      config_yaml="/config/automaton",
+        # self._dfa = graph_factory.get('DFA',
+        #                               graph_name="automaton",
+        #                               config_yaml="/config/automaton",
+        #                               save_flag=True,
+        #                               sc_ltl="!d U g",
+        #                               use_alias=False,
+        #                               plot=self.plot_dfa)
+        self._dfa = graph_factory.get('PDFA',
+                                      graph_name="pdfa",
+                                      config_yaml="/config/PDFA_five_states_twogoals",
                                       save_flag=True,
-                                      sc_ltl="!d U g",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -434,7 +447,7 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
         # self._trans_sys.fancy_graph()
 
     def _build_dfa(self):
-        self._dfa = graph_factory.get('DFA',
+        self._dfa = graph_factory.get('PDFA',
                                       graph_name="automaton",
                                       config_yaml="/config/automaton",
                                       save_flag=True,
@@ -521,8 +534,7 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
 
-def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
-                              mini_grid_instance: Optional[MinigridGraph] = None,
+def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid], mini_grid_instance: Optional[MinigridGraph] = None,
                               epsilon: float = 0,
                               max_human_interventions: int = 5,
                               plot: bool = False,
@@ -584,6 +596,38 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     #                                    compute_reg_for_human=compute_reg_for_human)
 
 
+def pure_game(
+    trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+    cooperative: bool,
+    mini_grid_instance: Optional[MinigridGraph] = None,
+    epsilon: float = 0,
+    max_human_interventions: int = 5,
+    plot: bool = False,
+    compute_reg_for_human: bool = False):
+
+    payoff = payoff_factory.get("cumulative", graph=trans_sys)
+
+    # build an instance of strategy minimization class
+    reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
+    reg_syn_handle.pure_games_solver(minigrid_instance=mini_grid_instance,
+                                     cooperative=cooperative,
+                                     plot=plot,
+                                     plot_only_eve=False,
+                                    #  simulate_minigrid=bool(mini_grid_instance),
+                                     simulate_minigrid=False,
+                                     epsilon=epsilon,
+                                     max_human_interventions=max_human_interventions,
+                                     compute_reg_for_human=compute_reg_for_human)
+
+
+def pure_adversarial_game(**kwargs):
+    pure_game(cooperative=False, **kwargs)
+
+
+def pure_cooperative_game(**kwargs):
+    pure_game(cooperative=True, **kwargs)
+
+
 if __name__ == "__main__":
 
     # define some constants
@@ -598,18 +642,24 @@ if __name__ == "__main__":
 
     # some constants that allow for appr _instance creations
     gym_minigrid = False
-    three_state_ts = False
+    three_state_ts = True
     five_state_ts = False
     variant_1_paper = False
-    target_weighted_arena = True
+    target_weighted_arena = False
     franka_abs = False
 
     # solver to call
-    finite_reg_synthesis = True
+    finite_reg_synthesis = False
     infinte_reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
     miniGrid_instance = None
+
+    pure_adversarial = True
+    pure_cooperative = False
+
+    # pure_adversarial = False
+    # pure_cooperative = True
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
@@ -624,9 +674,9 @@ if __name__ == "__main__":
 
     elif three_state_ts:
         three_state_ts_instance = ThreeStateExample(_finite=finite,
-                                                    _plot_ts=False,
-                                                    _plot_dfa=False,
-                                                    _plot_prod=False)
+                                                    _plot_ts=True,
+                                                    _plot_dfa=True,
+                                                    _plot_prod=True)
         trans_sys = three_state_ts_instance.product_automaton
 
     elif five_state_ts:
@@ -688,6 +738,20 @@ if __name__ == "__main__":
                                     debug=False,
                                     print_str=False,
                                     epsilon=EPSILON)
+    elif pure_adversarial:
+        pure_adversarial_game(trans_sys=trans_sys,
+                              mini_grid_instance=miniGrid_instance,
+                              epsilon=EPSILON,
+                              max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
+                              plot=True,
+                              compute_reg_for_human=False)
+    elif pure_cooperative:
+        pure_cooperative_game(trans_sys=trans_sys,
+                              mini_grid_instance=miniGrid_instance,
+                              epsilon=EPSILON,
+                              max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
+                              plot=True,
+                              compute_reg_for_human=False)
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

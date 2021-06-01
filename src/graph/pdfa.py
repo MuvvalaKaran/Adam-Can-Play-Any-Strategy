@@ -13,6 +13,8 @@ from ..spot.promela import parse as parse_ltl, find_states, find_symbols
 from ..spot.spot import run_spot
 from ..spot.Parser import parse as parse_guard
 
+# ACCEPTING_STATE_NAME = 'qA'
+
 
 class PDFAGraph(Graph):
 
@@ -47,6 +49,8 @@ class PDFAGraph(Graph):
         :return: An instance of PDFAGraph with nodes, edges, and transition labels that enable those transitions
         """
 
+        # self.add_state(ACCEPTING_STATE_NAME, accepting=True)
+
         # add nodes
         for node_name, attr in graph_yaml['nodes'].items():
             self.add_state(node_name)
@@ -59,6 +63,16 @@ class PDFAGraph(Graph):
 
             if attr['final_probability'] > 0:
                 self.add_accepting_state(node_name)
+                # prob = attr['final_probability']
+                # transition_formula = f'(true)'
+                # transition_expr = parse_guard(transition_formula)
+                # self.add_edge(node_name,
+                #               ACCEPTING_STATE_NAME,
+                #               symbol='true',
+                #               prob=prob,
+                #               weight=float(-np.log(prob)),
+                #               guard=transition_expr,
+                #               guard_formula=transition_formula)
 
         # add edges
         for start_name, edge_dict in graph_yaml['edges'].items():
@@ -80,77 +94,6 @@ class PDFAGraph(Graph):
                                   guard=transition_expr,
                                   guard_formula=transition_formula)
 
-    def dump_to_yaml(self, config_file_name: str = None) -> None:
-        """
-        A method to dump the contents of the @self._graph in to @self._file_name yaml document which the Graph()
-        class @read_yaml_file() reads to visualize it. By convention we dump files into config/file_name.yaml file.
-
-        A sample dump should looks like this :
-
-        >>> graph :
-        >>>    vertices:
-        >>>             tuple
-        >>>             {'player' : 'eve'/'adam'}
-        >>>    edges:
-        >>>        parent_node, child_node, edge_weight
-        """
-        if config_file_name is None:
-            config_file_name = str(self._config_yaml + '.yaml')
-
-        config_file_add = Graph._get_project_root_directory() + config_file_name
-
-        data_dict = dict(
-                alphabet_size=len(self._graph.edges()),
-                num_states=len(self._graph.nodes),
-                num_obs=3,
-                start_state=self.get_initial_states()[0][0],
-                nodes=[node for node in self._graph.nodes.data()],
-                edges=[edge for edge in self._graph.edges.data()]
-        )
-
-        try:
-            with open(config_file_add, 'w') as outfile:
-                yaml.dump(data_dict, outfile, default_flow_style=False)
-
-        except FileNotFoundError:
-            print(FileNotFoundError)
-            print(f"The file {config_file_name} could not be found."
-                  f" This could be because I could not find the folder to dump in")
-
-    def read_yaml_file(self, file_name: str = None) -> None:
-        """
-        Reads the configuration yaml file @self._config_yaml associated with graph of
-        type Networkx.LabelledDiGraph and store it in @self._graph_yaml
-        :return:
-        """
-        if self._config_yaml is not None:
-            if file_name is None:
-                file_name = self._config_yaml + ".yaml"
-
-            file_add = Graph._get_project_root_directory() + file_name
-            try:
-                with open(file_add, 'r') as stream:
-                    graph_data = yaml.load(stream, Loader=yaml.Loader)
-
-            except FileNotFoundError as error:
-                print(error)
-                print(f"The file {file_name} does not exist")
-
-            self._graph_yaml = graph_data
-
-    def plot_graph(self):
-        """
-        A helper method to dump the graph data to a yaml file, read the yaml file and plotting the graph itself
-        :return: None
-        """
-        autogen_filename = str(self._config_yaml + '_autogen.yaml')
-        # dump to yaml file
-        self.dump_to_yaml(autogen_filename)
-        # read the yaml file
-        self.read_yaml_file(autogen_filename)
-        # plot it
-        self.fancy_graph()
-
     def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
@@ -163,8 +106,9 @@ class PDFAGraph(Graph):
                 dot.node(f'{str(n[0])}', _attributes={"style": "filled", "fillcolor": color[1]})
             if n[1].get("accepting"):
                 # default color for accepting node is purple
+                xlabel = str(n[1]['final_probability'])
                 dot.node(f'{str(n[0])}',
-                         _attributes={"shape": "doublecircle", "style": "filled", "fillcolor": color[2]})
+                         _attributes={"shape": "doublecircle", "style": "filled", "fillcolor": color[2], "xlabel": xlabel})
 
         # add all the edges
         edges = self._graph_yaml["edges"]

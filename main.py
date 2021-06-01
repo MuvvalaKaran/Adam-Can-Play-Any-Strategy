@@ -4,6 +4,7 @@ import abc
 import warnings
 import sys
 import copy
+import argparse
 
 import numpy as np
 from typing import Tuple, Optional, Dict, Union
@@ -75,14 +76,20 @@ class GraphInstanceConstructionBase(abc.ABC):
     human_intervention_cost: int = 0
     human_non_intervention_cost: int = 0
 
-    def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
+    def __init__(self,
+                 _finite: bool,
+                 _plot_ts: bool,
+                 _plot_dfa: bool,
+                 _plot_prod: bool):
         self.finite = _finite
         self.plot_ts = _plot_ts
         self.plot_dfa = _plot_dfa
         self.plot_product = _plot_prod
+
         self._trans_sys: Optional[FiniteTransSys] = None
         self._dfa: Optional[DFAGraph] = None
         self._product_automaton: Optional[ProductAutomaton] = None
+
         self._build_ts()
         self._build_dfa()
         self._build_product()
@@ -100,14 +107,13 @@ class GraphInstanceConstructionBase(abc.ABC):
                                                     graph_name='product_automaton',
                                                     config_yaml='/config/product_automaton',
                                                     trans_sys=self._trans_sys,
-                                                    dfa=self._dfa,
+                                                    automaton=self._dfa,
                                                     save_flag=True,
-                                                    prune=False,
-                                                    debug=False,
+                                                    prune=True,
+                                                    debug=True,
                                                     absorbing=True,
                                                     finite=self.finite,
-                                                    plot=self.plot_product,
-                                                    weighting='automatonOnly')
+                                                    plot=self.plot_product)
 
     @property
     def product_automaton(self):
@@ -202,7 +208,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                                     graph_name='product_automaton',
                                                     config_yaml='/config/product_automaton',
                                                     trans_sys=self._trans_sys,
-                                                    dfa=self._dfa,
+                                                    automaton=self._dfa,
                                                     save_flag=True,
                                                     prune=False,
                                                     debug=False,
@@ -336,6 +342,91 @@ class ThreeStateExample(GraphInstanceConstructionBase):
                                       plot=self.plot_dfa)
 
 
+class TwoGoalsExample(GraphInstanceConstructionBase):
+    """
+    A class that implements the two goals transition system in the FiniteTransitionSystem class.
+    """
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False,
+                 prune: bool = False,
+                 plot_auto_graph: bool = False,
+                 plot_trans_graph: bool = False,
+                 weighting: str = 'automatonOnly',
+                 complete_graph_players=['eve'],
+                 integrate_accepting: bool = True,
+                 unknown_symbol: bool = False,
+                 multiple_accepting: bool = False):
+
+        self._plot_auto_graph = plot_auto_graph
+        self._plot_trans_graph = plot_trans_graph
+
+        self._prune = prune
+        self._weighting = weighting
+        self._complete_graph_players = complete_graph_players
+        self._integrate_accepting = integrate_accepting
+
+        if unknown_symbol:
+            self._ts_config = "/config/two_goals_with_unknown"
+        else:
+            self._ts_config = "/config/two_goals"
+
+        if multiple_accepting:
+            self._auto_config = "/config/PDFA_multiple_accepting"
+        else:
+            self._auto_config = "/config/PDFA_twogoals"
+
+        super().__init__(_finite=_finite,
+                         _plot_ts=_plot_ts,
+                         _plot_dfa=_plot_dfa,
+                         _plot_prod=_plot_prod)
+
+    def _build_ts(self):
+        self._trans_sys = graph_factory.get(
+            'TS',
+            raw_trans_sys=None,
+            graph_name="trans_sys",
+            config_yaml=self._ts_config,
+            pre_built=False,
+            from_file=True,
+            save_flag=True,
+            debug=False,
+            plot=self.plot_ts,
+            human_intervention=0,
+            finite=self.finite,
+            plot_raw_ts=False)
+
+    def _build_dfa(self):
+        self._dfa = graph_factory.get(
+            'PDFA',
+            graph_name="pdfa",
+            config_yaml=self._auto_config,
+            save_flag=True,
+            use_alias=False,
+            plot=self.plot_dfa)
+
+    def _build_product(self):
+        self._product_automaton = graph_factory.get(
+            'ProductGraph',
+            graph_name='product_automaton',
+            config_yaml='/config/product_automaton',
+            trans_sys=self._trans_sys,
+            automaton=self._dfa,
+            save_flag=True,
+            prune=self._prune,
+            debug=True,
+            absorbing=True,
+            finite=self.finite,
+            plot=self.plot_product,
+            plot_auto_graph=self._plot_auto_graph,
+            plot_trans_graph=self._plot_trans_graph,
+            weighting=self._weighting,
+            complete_graph_players=self._complete_graph_players,
+            integrate_accepting=self._integrate_accepting)
+
+
 class FiveStateExample(GraphInstanceConstructionBase):
     """
     A class that implements the built-in five state raw transition system in the FiniteTransitionSystem class. We then
@@ -447,7 +538,7 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
         # self._trans_sys.fancy_graph()
 
     def _build_dfa(self):
-        self._dfa = graph_factory.get('PDFA',
+        self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
                                       config_yaml="/config/automaton",
                                       save_flag=True,
@@ -462,16 +553,16 @@ def infinite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
                                 max_human_interventions: int = 5,
                                 go_fast: bool = True,
                                 finite: bool = False,
-                                plot_result: bool = False,
-                                plot_result_only_eve: bool = False):
+                                plot: bool = False,
+                                plot_only_eve: bool = False):
     payoff = payoff_factory.get("cumulative", graph=trans_sys)
 
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
 
     reg_syn_handle.infinite_reg_solver(minigrid_instance=mini_grid_instance,
-                                       plot=plot_result,
-                                       plot_only_eve=plot_result_only_eve,
+                                       plot=plot,
+                                       plot_only_eve=plot_only_eve,
                                        simulate_minigrid=False,
                                        go_fast=go_fast,
                                        finite=finite,
@@ -603,7 +694,8 @@ def pure_game(
     epsilon: float = 0,
     max_human_interventions: int = 5,
     plot: bool = False,
-    compute_reg_for_human: bool = False):
+    compute_reg_for_human: bool = False,
+    integrate_accepting: bool = False):
 
     payoff = payoff_factory.get("cumulative", graph=trans_sys)
 
@@ -617,7 +709,8 @@ def pure_game(
                                      simulate_minigrid=False,
                                      epsilon=epsilon,
                                      max_human_interventions=max_human_interventions,
-                                     compute_reg_for_human=compute_reg_for_human)
+                                     compute_reg_for_human=compute_reg_for_human,
+                                     integrate_accepting=integrate_accepting)
 
 
 def pure_adversarial_game(**kwargs):
@@ -628,130 +721,142 @@ def pure_cooperative_game(**kwargs):
     pure_game(cooperative=True, **kwargs)
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--epsilon", type=int, default=0,
+        help="0 - the best strategy (for human too) and 1 - Completely random")
+    parser.add_argument("--iros_flag", action="store_true", default=False,
+        help="Whether to run experiements for IROS")
+    parser.add_argument("--energy-bound", type=int, default=30,
+        help="Energy Bound")
+    parser.add_argument("--allowed_human_interventions", type=int, default=2,
+        help="No. of times allowed for humans to intervene")
+    parser.add_argument("--finite", action="store_true", default=False,
+        help="")
+    parser.add_argument("--go_fast", action="store_true", default=False,
+        help="")
+    parser.add_argument("--ts", type=str, default='two_goal',
+        help="Choose which layer to add entropy (top, bottom, both, or None)",
+        choices=['gym_minigrid', 'three_state', 'five_state', 'two_goal',
+                 'variant_1_paper', 'target_weighted_arena', 'franka_abs'])
+    parser.add_argument("--solver", type=str, default='pure_adv',
+        help="Choose which layer to add entropy (top, bottom, both, or None)",
+        choices=['finite_reg_synthesis', 'infinite_reg_synthesis', 'adversarial_game',
+        'iros_str_synthesis', 'pure_adv', 'pure_coop'])
+    parser.add_argument("--plot_ts", action="store_true", default=False,
+        help="")
+    parser.add_argument("--plot_dfa", action="store_true", default=False,
+        help="")
+    parser.add_argument("--plot_prod", action="store_true", default=False,
+        help="")
+    parser.add_argument("--plot", action="store_true", default=True,
+        help="")
+    parser.add_argument("--plot_auto_graph", action="store_true", default=False,
+        help="")
+    parser.add_argument("--plot_trans_graph", action="store_true", default=False,
+        help="")
+    parser.add_argument("--prune", action="store_true", default=False,
+        help="")
+    parser.add_argument("--unknown_symbol", action="store_true", default=False,
+        help="")
+    parser.add_argument("--multiple_accepting", action="store_true", default=False,
+        help="")
+    parser.add_argument("--integrate_accepting", type=str, default='only_accepts',
+        help="",
+        choices=['only_accepts', 'include_absorbs'])
+    parser.add_argument("--weighting", type=str, default='automatonOnly',
+        help="",
+        choices=['linear', 'weightedlinear', 'automatonOnly'])
+    # See how to pass a list as an argument
+    # https://stackoverflow.com/questions/15753701/how-can-i-pass-a-list-as-a-command-line-argument-with-argparse
+    parser.add_argument("-p", "--complete_graph_players", nargs='+', default=['adam'],
+        help="",
+        choices=['eve', 'adam'])
+
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = parse_arguments()
 
-    # define some constants
-    EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
-    IROS_FLAG = False
-    ENERGY_BOUND = 30
-    ALLOWED_HUMAN_INTERVENTIONS = 2
+    minigrid_instance = None
 
-    # some constants related to computation
-    finite = True
-    go_fast = True
+    integrate_only_accepts =  True if args.integrate_accepting == 'only_accepts' else False
+    integrate_absorbs =  True if args.integrate_accepting == 'include_absorbs' else False
 
-    # some constants that allow for appr _instance creations
-    gym_minigrid = False
-    three_state_ts = True
-    five_state_ts = False
-    variant_1_paper = False
-    target_weighted_arena = False
-    franka_abs = False
-
-    # solver to call
-    finite_reg_synthesis = False
-    infinte_reg_synthesis = False
-    adversarial_game = False
-    iros_str_synthesis = False
-    miniGrid_instance = None
-
-    pure_adversarial = True
-    pure_cooperative = False
-
-    # pure_adversarial = False
-    # pure_cooperative = True
+    ts_kwargs = {'_finite': args.finite,
+                 '_plot_ts': args.plot_ts,
+                 '_plot_dfa': args.plot_dfa,
+                 '_plot_prod': args.plot_prod}
 
     # build the graph G on which we will compute the regret minimizing strategy
-    if gym_minigrid:
-        miniGrid_instance = MinigridGraph(_finite=finite,
-                                          _iros_ts=IROS_FLAG,
-                                          _plot_minigrid=False,
-                                          _plot_ts=False,
-                                          _plot_dfa=False,
-                                          _plot_prod=False)
-        trans_sys = miniGrid_instance.product_automaton
-        wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
-
-    elif three_state_ts:
-        three_state_ts_instance = ThreeStateExample(_finite=finite,
-                                                    _plot_ts=True,
-                                                    _plot_dfa=True,
-                                                    _plot_prod=True)
-        trans_sys = three_state_ts_instance.product_automaton
-
-    elif five_state_ts:
-        five_state_ts = FiveStateExample(_finite=finite,
-                                         _plot_ts=False,
-                                         _plot_dfa=False,
-                                         _plot_prod=False)
-        trans_sys = five_state_ts.product_automaton
-
-    elif variant_1_paper:
-        variant_1_instance = VariantOneGraph(_finite=finite,
-                                             _plot_prod=False)
-        trans_sys = variant_1_instance.product_automaton
-
-    elif target_weighted_arena:
-        twa_graph = EdgeWeightedArena(_graph_type="ewa",
-                                      _plot_prod=False)
-        trans_sys = twa_graph.product_automaton
-
-    elif franka_abs:
-        franka_instance = FrankaAbstractionGraph(_finite=finite)
-        trans_sys = franka_instance.product_automaton
+    if args.ts == 'gym_minigrid':
+        ts = MinigridGraph(_iros_ts=args.iros_flag, _plot_minigrid=False, **ts_kwargs)
+        minigrid_instance = ts
+    elif args.ts == 'three_state':
+        ts = ThreeStateExample(**ts_kwargs)
+    elif args.ts == 'five_state':
+        ts = FiveStateExample(**ts_kwargs)
+    elif args.ts == 'two_goal':
+        ts = TwoGoalsExample(plot_auto_graph=args.plot_auto_graph,
+                             plot_trans_graph=args.plot_trans_graph,
+                             prune=args.prune,
+                             weighting=args.weighting,
+                             complete_graph_players=args.complete_graph_players,
+                             integrate_accepting=integrate_only_accepts,
+                             unknown_symbol=args.unknown_symbol,
+                             multiple_accepting=args.multiple_accepting,
+                             **ts_kwargs)
+    elif args.ts == 'variant_1_paper':
+        ts = VariantOneGraph(**ts_kwargs)
+    elif args.ts == 'target_weighted_arena':
+        ts = EdgeWeightedArena(_graph_type="ewa", **ts_kwargs)
+    elif args.ts == 'franka_abs':
+        ts = FrankaAbstractionGraph(**ts_kwargs)
     else:
         warnings.warn("Please ensure at-least one of the flags is True")
         sys.exit(-1)
 
+    trans_sys = ts.product_automaton
+
     print(f"No. of nodes in the product graph is :{len(trans_sys._graph.nodes())}")
     print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
 
-    if finite_reg_synthesis:
-        finite_reg_minimizing_str(trans_sys,
-                                  miniGrid_instance,
-                                  epsilon=EPSILON,
-                                  max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                  plot=False,
-                                  compute_reg_for_human=False)
-    elif infinte_reg_synthesis:
-        infinite_reg_minimizing_str(trans_sys,
-                                    miniGrid_instance,
-                                    max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                    go_fast=go_fast,
-                                    epsilon=EPSILON,
-                                    finite=finite,
-                                    plot_result=False,
-                                    plot_result_only_eve=False)
-    elif adversarial_game:
-        compute_winning_str(trans_sys,
-                            miniGrid_instance,
-                            max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                            debug=True,
-                            epsilon=EPSILON,
+    solver_kwargs = {'trans_sys': trans_sys,
+                     'mini_grid_instance': minigrid_instance,
+                     'epsilon': args.epsilon,
+                     'max_human_interventions': args.allowed_human_interventions}
+
+    if args.solver == 'finite_reg_synthesis':
+        finite_reg_minimizing_str(plot=args.plot,
+                                  compute_reg_for_human=False,
+                                  **solver_kwargs)
+    elif args.solver == 'infinte_reg_synthesis':
+        infinite_reg_minimizing_str(go_fast=args.go_fast,
+                                    finite=args.finite,
+                                    plot=args.plot,
+                                    plot_only_eve=False,
+                                    **solver_kwargs)
+    elif args.solver == 'adversarial_game':
+        compute_winning_str(debug=True,
                             print_winning_regions=False,
-                            print_str=False)
-    elif iros_str_synthesis:
-        compute_bounded_winning_str(trans_sys,
-                                    mini_grid_instance=miniGrid_instance,
-                                    energy_bound=ENERGY_BOUND,
-                                    max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
+                            print_str=False,
+                            **solver_kwargs)
+    elif args.solver == 'iros_str_synthesis':
+        compute_bounded_winning_str(energy_bound=args.energy_bound,
                                     debug=False,
                                     print_str=False,
-                                    epsilon=EPSILON)
-    elif pure_adversarial:
-        pure_adversarial_game(trans_sys=trans_sys,
-                              mini_grid_instance=miniGrid_instance,
-                              epsilon=EPSILON,
-                              max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                              plot=True,
-                              compute_reg_for_human=False)
-    elif pure_cooperative:
-        pure_cooperative_game(trans_sys=trans_sys,
-                              mini_grid_instance=miniGrid_instance,
-                              epsilon=EPSILON,
-                              max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                              plot=True,
-                              compute_reg_for_human=False)
+                                    **solver_kwargs)
+    elif args.solver == 'pure_adv':
+        pure_adversarial_game(plot=args.plot,
+                              compute_reg_for_human=False,
+                              integrate_accepting=integrate_absorbs,
+                              **solver_kwargs)
+    elif args.solver == 'pure_coop':
+        pure_cooperative_game(plot=args.plot,
+                              compute_reg_for_human=False,
+                              integrate_accepting=integrate_absorbs,
+                              **solver_kwargs)
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

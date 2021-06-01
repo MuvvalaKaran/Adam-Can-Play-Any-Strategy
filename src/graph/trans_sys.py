@@ -393,6 +393,10 @@ class TransitionSystemBuilder(Builder):
                                            debug)
         elif from_file:
             self._instance._graph_yaml = self._from_yaml(config_yaml)
+            self._instance.build_graph_from_file()
+
+        if plot:
+            self._instance.plot_graph()
 
         return self._instance
 

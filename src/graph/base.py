@@ -76,8 +76,8 @@ class Graph(abc.ABC):
         :param graph_name: String to identity the name by which the graph is saved as
         :param view: flag for viewing the object
         """
-        if view:
-            dot_object.view(cleanup=True)
+        # if view:
+        #     dot_object.view(cleanup=True)
 
         directory = os.path.join(Graph._get_project_root_directory(), 'plots')
         dot_object.render(filename=graph_name, directory=directory, view=view, cleanup=True)
@@ -155,18 +155,35 @@ class Graph(abc.ABC):
             print(f"The file {config_file_name} could not be found."
                   f" This could be because I could not find the folder to dump in")
 
-    def plot_graph(self):
+    def plot_graph(self, save_yaml: bool = False):
         """
         A helper method to dump the graph data to a yaml file, read the yaml file and plotting the graph itself
         :return: None
         """
-        print('Plotting ')
-        # dump to yaml file
-        self.dump_to_yaml()
-        # read the yaml file
-        self.read_yaml_file()
+        if save_yaml:
+            # dump to yaml file
+            self.dump_to_yaml()
+            # read the yaml file
+            self.read_yaml_file()
+        else:
+            self._update_graph_yaml()
+
         # plot it
         self.fancy_graph()
+
+    def _update_graph_yaml(self):
+        """
+        Instead of exporting to a yaml file,
+        simply update _graph_yaml
+        """
+        self._graph_yaml = dict(
+                alphabet_size=len(self._graph.edges()),
+                num_states=len(self._graph.nodes),
+                num_obs=3,
+                start_state=self.get_initial_states()[0][0],
+                nodes=[node for node in self._graph.nodes.data()],
+                edges=[edge for edge in self._graph.edges.data()]
+        )
 
     def add_state(self, state_name: nx.nodes, **kwargs) -> None:
         """

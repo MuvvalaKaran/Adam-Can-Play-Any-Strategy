@@ -1,0 +1,42 @@
+alphabet_size: 4
+edges:
+- !!python/tuple
+  - d1
+  - d2
+  - actions: extend
+    weight: 1
+- !!python/tuple
+  - d2
+  - d3
+  - actions: turn_on
+    weight: 1
+- !!python/tuple
+  - d2
+  - d1
+  - actions: retract
+    weight: 1
+- !!python/tuple
+  - d3
+  - d2
+  - actions: turn_off
+    weight: 1
+nodes:
+- !!python/tuple
+  - d1
+  - ap:
+    - dr
+    - doff
+    init: true
+- !!python/tuple
+  - d2
+  - ap:
+    - de
+    - doff
+- !!python/tuple
+  - d3
+  - ap:
+    - de
+    - don
+num_obs: 3
+num_states: 3
+start_state: d1

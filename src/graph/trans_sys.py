@@ -324,6 +324,88 @@ class FiniteTransSys(TwoPlayerGraph):
 
         return trans_sys
 
+    @classmethod
+    def get_camera_ts(cls,
+                      graph_name: str,
+                      config_yaml: str,
+                      save_flag: bool = False,
+                      debug: bool = False,
+                      plot: bool = False,
+                      human_intervention: int = 1,
+                      plot_raw_ts: bool = False):
+        """
+        A method that returns a concrete instance of a Transition System that belong to a camera
+        :return:
+        """
+
+        trans_name = graph_name
+        trans_sys = FiniteTransSys(trans_name, f"config/{trans_name}", save_flag=save_flag)
+        trans_sys.construct_graph()
+        trans_sys.add_states_from(['c1', 'c2', 'c3'])
+        trans_sys.add_state_attribute('c1', 'ap', ['coff', 'soff'])
+        trans_sys.add_state_attribute('c2', 'ap', ['con', 'soff'])
+        trans_sys.add_state_attribute('c3', 'ap', ['con', 'son'])
+
+        trans_sys.add_edge('c1', 'c2', actions='turn_on', weight=1)
+        trans_sys.add_edge('c2', 'c3', actions='open_shutter', weight=1)
+        trans_sys.add_edge('c3', 'c2', actions='close_shutter', weight=1)
+        trans_sys.add_edge('c2', 'c1', actions='turn_off', weight=1)
+
+        trans_sys.add_initial_state('c1')
+
+        trans_sys._graph_name = graph_name
+        trans_sys._config_yaml = config_yaml
+
+        if plot:
+            trans_sys.plot_graph()
+
+        if debug:
+            trans_sys.print_nodes()
+            trans_sys.print_edges()
+
+        return trans_sys
+
+    @classmethod
+    def get_drill_ts(cls,
+                     graph_name: str,
+                     config_yaml: str,
+                     save_flag: bool = False,
+                     debug: bool = False,
+                     plot: bool = False,
+                     human_intervention: int = 1,
+                     plot_raw_ts: bool = False):
+        """
+        A method that returns a concrete instance of a Transition System that belong to a drill
+        :return:
+        """
+
+        trans_name = graph_name
+        trans_sys = FiniteTransSys(trans_name, f"config/{trans_name}", save_flag=save_flag)
+        trans_sys.construct_graph()
+        trans_sys.add_states_from(['d1', 'd2', 'd3'])
+        trans_sys.add_state_attribute('d1', 'ap', ['dr', 'doff'])
+        trans_sys.add_state_attribute('d2', 'ap', ['de', 'doff'])
+        trans_sys.add_state_attribute('d3', 'ap', ['de', 'don'])
+
+        trans_sys.add_edge('d1', 'd2', actions='extend', weight=1)
+        trans_sys.add_edge('d2', 'd3', actions='turn_on', weight=1)
+        trans_sys.add_edge('d3', 'd2', actions='turn_off', weight=1)
+        trans_sys.add_edge('d2', 'd1', actions='retract', weight=1)
+
+        trans_sys.add_initial_state('d1')
+
+        trans_sys._graph_name = graph_name
+        trans_sys._config_yaml = config_yaml
+
+        if plot:
+            trans_sys.plot_graph()
+
+        if debug:
+            trans_sys.print_nodes()
+            trans_sys.print_edges()
+
+        return trans_sys
+
 
 class TransitionSystemBuilder(Builder):
 
@@ -436,6 +518,8 @@ class TransitionSystemBuilder(Builder):
         """
         self._pre_built.update({"three_state_ts": self._instance.get_three_state_ts})
         self._pre_built.update({"five_state_ts": self._instance.get_five_state_ts})
+        self._pre_built.update({"camera_ts": self._instance.get_camera_ts})
+        self._pre_built.update({"drill_ts": self._instance.get_drill_ts})
 
     def _from_built_in_ts(self,
                           ts_name: str,

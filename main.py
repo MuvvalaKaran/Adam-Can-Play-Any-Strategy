@@ -1,4 +1,4 @@
-import gym
+# import gym
 import enum
 import abc
 import warnings
@@ -213,6 +213,54 @@ class MinigridGraph(GraphInstanceConstructionBase):
     @property
     def wombats_minigrid_TS(self):
         return self._wombats_minigrid_TS
+
+
+class MultiToolPlanner(GraphInstanceConstructionBase):
+    """
+    A class that takes the product of multiple transition systems associated with each tool. Given a shared task in LTL
+    we then compute a high level strategy associated with system of tools.
+    """
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False):
+        self._trans_sys_1: Optional[FiniteTransSys] = None
+        self._trans_sys_2: Optional[FiniteTransSys] = None
+        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
+
+    def _build_ts(self):
+        self._trans_sys_1 = graph_factory.get('TS',
+                                              raw_trans_sys=None,
+                                              graph_name="drill_trans_sys",
+                                              config_yaml="/config/drill_trans_sys",
+                                              pre_built=True,
+                                              built_in_ts_name="drill_ts",
+                                              save_flag=True,
+                                              debug=False,
+                                              plot=self.plot_ts,
+                                              human_intervention=1,
+                                              finite=self.finite,
+                                              plot_raw_ts=False)
+
+        self._trans_sys_2 = graph_factory.get('TS',
+                                              raw_trans_sys=None,
+                                              graph_name="camera_trans_sys",
+                                              config_yaml="/config/camera_trans_sys",
+                                              pre_built=True,
+                                              built_in_ts_name="camera_ts",
+                                              save_flag=True,
+                                              debug=False,
+                                              plot=self.plot_ts,
+                                              human_intervention=1,
+                                              finite=self.finite,
+                                              plot_raw_ts=False)
+
+    def _build_dfa(self):
+        pass
+
+    def _build_product(self):
+        pass
 
 
 class EdgeWeightedArena(GraphInstanceConstructionBase):
@@ -601,8 +649,9 @@ if __name__ == "__main__":
     three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
-    target_weighted_arena = True
+    target_weighted_arena = False
     franka_abs = False
+    multitool_abs = True
 
     # solver to call
     finite_reg_synthesis = True
@@ -649,6 +698,14 @@ if __name__ == "__main__":
     elif franka_abs:
         franka_instance = FrankaAbstractionGraph(_finite=finite)
         trans_sys = franka_instance.product_automaton
+
+    elif multitool_abs:
+        multitool_graph = MultiToolPlanner(_finite=finite,
+                                           _plot_ts=True,
+                                           _plot_dfa=False,
+                                           _plot_prod=False)
+        sys.exit(-1)
+
     else:
         warnings.warn("Please ensure at-least one of the flags is True")
         sys.exit(-1)

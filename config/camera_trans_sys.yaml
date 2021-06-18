@@ -1,0 +1,42 @@
+alphabet_size: 4
+edges:
+- !!python/tuple
+  - c1
+  - c2
+  - actions: turn_on
+    weight: 1
+- !!python/tuple
+  - c2
+  - c3
+  - actions: open_shutter
+    weight: 1
+- !!python/tuple
+  - c2
+  - c1
+  - actions: turn_off
+    weight: 1
+- !!python/tuple
+  - c3
+  - c2
+  - actions: close_shutter
+    weight: 1
+nodes:
+- !!python/tuple
+  - c1
+  - ap:
+    - coff
+    - soff
+    init: true
+- !!python/tuple
+  - c2
+  - ap:
+    - con
+    - soff
+- !!python/tuple
+  - c3
+  - ap:
+    - con
+    - son
+num_obs: 3
+num_states: 3
+start_state: c1

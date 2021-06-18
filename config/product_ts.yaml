@@ -1,0 +1,532 @@
+alphabet_size: 49
+edges:
+- !!python/tuple
+  - &id001 !!python/tuple
+    - d1
+    - c1
+  - !!python/tuple
+    - d1
+    - c1
+  - actions:
+    - retract
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id001
+  - &id002 !!python/tuple
+    - d1
+    - c2
+  - actions:
+    - retract
+    - cturn_on
+    weight: 1
+- !!python/tuple
+  - *id001
+  - &id004 !!python/tuple
+    - d2
+    - c1
+  - actions:
+    - extend
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id001
+  - &id005 !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - extend
+    - cturn_on
+    weight: 1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - d1
+    - c1
+  - actions:
+    - retract
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - d1
+    - c2
+  - actions:
+    - retract
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - d1
+    - c3
+  - actions:
+    - retract
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - d2
+    - c1
+  - actions:
+    - extend
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - extend
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id002
+  - !!python/tuple
+    - d2
+    - c3
+  - actions:
+    - extend
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - &id003 !!python/tuple
+    - d1
+    - c3
+  - !!python/tuple
+    - d1
+    - c2
+  - actions:
+    - retract
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - d1
+    - c3
+  - actions:
+    - retract
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - extend
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id003
+  - !!python/tuple
+    - d2
+    - c3
+  - actions:
+    - extend
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - d1
+    - c1
+  - actions:
+    - retract
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - d1
+    - c2
+  - actions:
+    - retract
+    - cturn_on
+    weight: 1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - d2
+    - c1
+  - actions:
+    - dturn_off
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - dturn_off
+    - cturn_on
+    weight: 1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - d3
+    - c1
+  - actions:
+    - dturn_on
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id004
+  - !!python/tuple
+    - d3
+    - c2
+  - actions:
+    - dturn_on
+    - cturn_on
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d1
+    - c1
+  - actions:
+    - retract
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d1
+    - c2
+  - actions:
+    - retract
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d1
+    - c3
+  - actions:
+    - retract
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d2
+    - c1
+  - actions:
+    - dturn_off
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - dturn_off
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d2
+    - c3
+  - actions:
+    - dturn_off
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d3
+    - c1
+  - actions:
+    - dturn_on
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d3
+    - c2
+  - actions:
+    - dturn_on
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id005
+  - !!python/tuple
+    - d3
+    - c3
+  - actions:
+    - dturn_on
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - &id006 !!python/tuple
+    - d2
+    - c3
+  - !!python/tuple
+    - d1
+    - c2
+  - actions:
+    - retract
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - d1
+    - c3
+  - actions:
+    - retract
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - dturn_off
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - d2
+    - c3
+  - actions:
+    - dturn_off
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - d3
+    - c2
+  - actions:
+    - dturn_on
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id006
+  - !!python/tuple
+    - d3
+    - c3
+  - actions:
+    - dturn_on
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - &id007 !!python/tuple
+    - d3
+    - c1
+  - !!python/tuple
+    - d2
+    - c1
+  - actions:
+    - dturn_off
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - dturn_off
+    - cturn_on
+    weight: 1
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - d3
+    - c1
+  - actions:
+    - dturn_onn
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id007
+  - !!python/tuple
+    - d3
+    - c2
+  - actions:
+    - dturn_onn
+    - cturn_on
+    weight: 1
+- !!python/tuple
+  - &id008 !!python/tuple
+    - d3
+    - c2
+  - !!python/tuple
+    - d2
+    - c1
+  - actions:
+    - dturn_off
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - dturn_off
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - d2
+    - c3
+  - actions:
+    - dturn_off
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - d3
+    - c1
+  - actions:
+    - dturn_onn
+    - cturn_off
+    weight: 1
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - d3
+    - c2
+  - actions:
+    - dturn_onn
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id008
+  - !!python/tuple
+    - d3
+    - c3
+  - actions:
+    - dturn_onn
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - &id009 !!python/tuple
+    - d3
+    - c3
+  - !!python/tuple
+    - d2
+    - c2
+  - actions:
+    - dturn_off
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - d2
+    - c3
+  - actions:
+    - dturn_off
+    - open_shutter
+    weight: 1
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - d3
+    - c2
+  - actions:
+    - dturn_onn
+    - close_shutter
+    weight: 1
+- !!python/tuple
+  - *id009
+  - !!python/tuple
+    - d3
+    - c3
+  - actions:
+    - dturn_onn
+    - open_shutter
+    weight: 1
+nodes:
+- !!python/tuple
+  - *id001
+  - ap:
+    - doff
+    - dr
+    - coff
+    - soff
+    init: true
+    player: eve
+- !!python/tuple
+  - *id002
+  - ap:
+    - doff
+    - con
+    - dr
+    - soff
+    player: eve
+- !!python/tuple
+  - *id003
+  - ap:
+    - doff
+    - con
+    - dr
+    - son
+    player: eve
+- !!python/tuple
+  - *id004
+  - ap:
+    - doff
+    - de
+    - coff
+    - soff
+    player: eve
+- !!python/tuple
+  - *id005
+  - ap:
+    - doff
+    - con
+    - de
+    - soff
+    player: eve
+- !!python/tuple
+  - *id006
+  - ap:
+    - doff
+    - con
+    - de
+    - son
+    player: eve
+- !!python/tuple
+  - *id007
+  - ap:
+    - soff
+    - de
+    - coff
+    - don
+    player: eve
+- !!python/tuple
+  - *id008
+  - ap:
+    - con
+    - de
+    - soff
+    - don
+    player: eve
+- !!python/tuple
+  - *id009
+  - ap:
+    - con
+    - de
+    - son
+    - don
+    player: eve
+num_obs: 3
+num_states: 9
+start_state: *id001

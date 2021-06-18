@@ -8,7 +8,7 @@ edges:
 - !!python/tuple
   - d2
   - d3
-  - actions: turn_on
+  - actions: dturn_on
     weight: 1
 - !!python/tuple
   - d2
@@ -18,7 +18,7 @@ edges:
 - !!python/tuple
   - d3
   - d2
-  - actions: turn_off
+  - actions: dturn_off
     weight: 1
 nodes:
 - !!python/tuple

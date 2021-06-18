@@ -56,7 +56,7 @@ class DFAGraph(Graph):
             if _s == "T0_init":
                 self.add_initial_state(_s)
             
-            if _s == "accept_all":
+            if _s == "accept_all" or "accept" in _s:
                 self.add_accepting_state(_s)
         
         # add edges

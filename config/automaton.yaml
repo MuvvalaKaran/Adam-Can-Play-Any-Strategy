@@ -1,61 +1,669 @@
-alphabet_size: 5
+alphabet_size: 24
 edges:
 - !!python/tuple
-  - accept_all
-  - accept_all
-  - guard: !!python/object:src.spot.Parser.TrueExpression
-      formula: '1'
-    guard_formula: '1'
-- !!python/tuple
-  - T0_S2
-  - T0_S2
+  - T0_S7
+  - T0_S7
   - guard: !!python/object:src.spot.Parser.SymbolExpression
       formula: (true)
       name: 'true'
       symbol: 'true'
     guard_formula: (true)
 - !!python/tuple
+  - T0_S0
+  - T0_S0
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((con) && (!(de)) && (!(don)) && (!(son)))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.SymbolExpression
+            name: con
+            symbol: con
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!de'
+            symbol: de
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!don'
+          symbol: don
+      right: !!python/object:src.spot.Parser.NotSymbolExpression
+        name: '!son'
+        symbol: son
+    guard_formula: ((con) && (!(de)) && (!(don)) && (!(son)))
+- !!python/tuple
+  - T0_S0
+  - accept_S4
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((!(de)) && (!(don)) && (son))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!de'
+          symbol: de
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!don'
+          symbol: don
+      right: !!python/object:src.spot.Parser.SymbolExpression
+        name: son
+        symbol: son
+    guard_formula: ((!(de)) && (!(don)) && (son))
+- !!python/tuple
+  - T0_S0
+  - T0_S6
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((de) && (!(don))) || ((!(de)) && (don)) || ((!(con)) && (!(de)) &&
+        (!(son))) || ((!(co)) && (de)))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ORExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.SymbolExpression
+              name: de
+              symbol: de
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!don'
+              symbol: don
+          right: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!de'
+              symbol: de
+            right: !!python/object:src.spot.Parser.SymbolExpression
+              name: don
+              symbol: don
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!con'
+              symbol: con
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!de'
+              symbol: de
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!son'
+            symbol: son
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!co'
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+    guard_formula: (((de) && (!(don))) || ((!(de)) && (don)) || ((!(con)) && (!(de))
+      && (!(son))) || ((!(co)) && (de)))
+- !!python/tuple
+  - T0_S0
+  - T0_S7
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((co) && (de) && (don))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: co
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+      right: !!python/object:src.spot.Parser.SymbolExpression
+        name: don
+        symbol: don
+    guard_formula: ((co) && (de) && (don))
+- !!python/tuple
+  - T0_S3
   - T0_init
-  - accept_all
-  - guard: !!python/object:src.spot.Parser.SymbolExpression
-      formula: (water_blue_open)
-      name: water_blue_open
-      symbol: water_blue_open
-    guard_formula: (water_blue_open)
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((!(con)) && (!(don)) && (!(son))) || ((!(con)) && (!(de)) && (!(son)))
+        || ((!(co)) && (!(con)) && (!(son))))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!con'
+              symbol: con
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!don'
+              symbol: don
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!son'
+            symbol: son
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!con'
+              symbol: con
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!de'
+              symbol: de
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!son'
+            symbol: son
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!co'
+            symbol: co
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!con'
+            symbol: con
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!son'
+          symbol: son
+    guard_formula: (((!(con)) && (!(don)) && (!(son))) || ((!(con)) && (!(de)) &&
+      (!(son))) || ((!(co)) && (!(con)) && (!(son))))
+- !!python/tuple
+  - T0_S3
+  - T0_S3
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((con) && (!(don)) && (!(son))) || ((con) && (!(de)) && (!(son)))
+        || ((!(co)) && (con) && (!(son))))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.SymbolExpression
+              name: con
+              symbol: con
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!don'
+              symbol: don
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!son'
+            symbol: son
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.SymbolExpression
+              name: con
+              symbol: con
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!de'
+              symbol: de
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!son'
+            symbol: son
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!co'
+            symbol: co
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: con
+            symbol: con
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!son'
+          symbol: son
+    guard_formula: (((con) && (!(don)) && (!(son))) || ((con) && (!(de)) && (!(son)))
+      || ((!(co)) && (con) && (!(son))))
+- !!python/tuple
+  - T0_S3
+  - T0_S5
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((!(don)) && (son)) || ((!(de)) && (son)) || ((!(co)) && (son)))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!don'
+            symbol: don
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: son
+            symbol: son
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!de'
+            symbol: de
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: son
+            symbol: son
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!co'
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: son
+          symbol: son
+    guard_formula: (((!(don)) && (son)) || ((!(de)) && (son)) || ((!(co)) && (son)))
+- !!python/tuple
+  - T0_S3
+  - T0_S7
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((co) && (de) && (don))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: co
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+      right: !!python/object:src.spot.Parser.SymbolExpression
+        name: don
+        symbol: don
+    guard_formula: ((co) && (de) && (don))
+- !!python/tuple
+  - T0_S1
+  - T0_S1
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((!(con)) && (de) && (!(don)) && (!(son)))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!con'
+            symbol: con
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: de
+            symbol: de
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!don'
+          symbol: don
+      right: !!python/object:src.spot.Parser.NotSymbolExpression
+        name: '!son'
+        symbol: son
+    guard_formula: ((!(con)) && (de) && (!(don)) && (!(son)))
+- !!python/tuple
+  - T0_S1
+  - T0_S5
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((!(don)) && (son)) || ((!(de)) && (son)) || ((!(de)) && (!(don)))
+        || ((con) && (!(don))) || ((con) && (!(de))) || ((!(co)) && (son)) || ((!(co))
+        && (con)))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ORExpression
+          left: !!python/object:src.spot.Parser.ORExpression
+            left: !!python/object:src.spot.Parser.ORExpression
+              left: !!python/object:src.spot.Parser.ORExpression
+                left: !!python/object:src.spot.Parser.ANDExpression
+                  left: !!python/object:src.spot.Parser.NotSymbolExpression
+                    name: '!don'
+                    symbol: don
+                  right: !!python/object:src.spot.Parser.SymbolExpression
+                    name: son
+                    symbol: son
+                right: !!python/object:src.spot.Parser.ANDExpression
+                  left: !!python/object:src.spot.Parser.NotSymbolExpression
+                    name: '!de'
+                    symbol: de
+                  right: !!python/object:src.spot.Parser.SymbolExpression
+                    name: son
+                    symbol: son
+              right: !!python/object:src.spot.Parser.ANDExpression
+                left: !!python/object:src.spot.Parser.NotSymbolExpression
+                  name: '!de'
+                  symbol: de
+                right: !!python/object:src.spot.Parser.NotSymbolExpression
+                  name: '!don'
+                  symbol: don
+            right: !!python/object:src.spot.Parser.ANDExpression
+              left: !!python/object:src.spot.Parser.SymbolExpression
+                name: con
+                symbol: con
+              right: !!python/object:src.spot.Parser.NotSymbolExpression
+                name: '!don'
+                symbol: don
+          right: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.SymbolExpression
+              name: con
+              symbol: con
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!de'
+              symbol: de
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!co'
+            symbol: co
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: son
+            symbol: son
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!co'
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: con
+          symbol: con
+    guard_formula: (((!(don)) && (son)) || ((!(de)) && (son)) || ((!(de)) && (!(don)))
+      || ((con) && (!(don))) || ((con) && (!(de))) || ((!(co)) && (son)) || ((!(co))
+      && (con)))
+- !!python/tuple
+  - T0_S1
+  - T0_S6
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((!(con)) && (!(de)) && (don) && (!(son))) || ((!(co)) && (!(con))
+        && (don) && (!(son))))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!con'
+              symbol: con
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!de'
+              symbol: de
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: don
+            symbol: don
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!son'
+          symbol: son
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!co'
+              symbol: co
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!con'
+              symbol: con
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: don
+            symbol: don
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!son'
+          symbol: son
+    guard_formula: (((!(con)) && (!(de)) && (don) && (!(son))) || ((!(co)) && (!(con))
+      && (don) && (!(son))))
+- !!python/tuple
+  - T0_S1
+  - T0_S7
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((co) && (de) && (don))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: co
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+      right: !!python/object:src.spot.Parser.SymbolExpression
+        name: don
+        symbol: don
+    guard_formula: ((co) && (de) && (don))
+- !!python/tuple
+  - accept_S4
+  - accept_S4
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: ((!(co)) || (!(de)) || (!(don)))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!co'
+          symbol: co
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!de'
+          symbol: de
+      right: !!python/object:src.spot.Parser.NotSymbolExpression
+        name: '!don'
+        symbol: don
+    guard_formula: ((!(co)) || (!(de)) || (!(don)))
+- !!python/tuple
+  - accept_S4
+  - T0_S7
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((co) && (de) && (don))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: co
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+      right: !!python/object:src.spot.Parser.SymbolExpression
+        name: don
+        symbol: don
+    guard_formula: ((co) && (de) && (don))
 - !!python/tuple
   - T0_init
   - T0_init
-  - guard: !!python/object:src.spot.Parser.ANDExpression
-      formula: ((!(lava_red_open)) && (!(water_blue_open)))
-      left: !!python/object:src.spot.Parser.NotSymbolExpression
-        name: '!lava_red_open'
-        symbol: lava_red_open
-      right: !!python/object:src.spot.Parser.NotSymbolExpression
-        name: '!water_blue_open'
-        symbol: water_blue_open
-    guard_formula: ((!(lava_red_open)) && (!(water_blue_open)))
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((!(con)) && (!(don))) || ((!(con)) && (!(de))) || ((!(co)) && (!(con))))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!con'
+            symbol: con
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!don'
+            symbol: don
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!con'
+            symbol: con
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!de'
+            symbol: de
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!co'
+          symbol: co
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!con'
+          symbol: con
+    guard_formula: (((!(con)) && (!(don))) || ((!(con)) && (!(de))) || ((!(co)) &&
+      (!(con))))
 - !!python/tuple
   - T0_init
-  - T0_S2
+  - T0_S3
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((con) && (!(don))) || ((con) && (!(de))) || ((!(co)) && (con)))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.SymbolExpression
+            name: con
+            symbol: con
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!don'
+            symbol: don
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.SymbolExpression
+            name: con
+            symbol: con
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!de'
+            symbol: de
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!co'
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: con
+          symbol: con
+    guard_formula: (((con) && (!(don))) || ((con) && (!(de))) || ((!(co)) && (con)))
+- !!python/tuple
+  - T0_init
+  - T0_S7
   - guard: !!python/object:src.spot.Parser.ANDExpression
-      formula: ((lava_red_open) && (!(water_blue_open)))
-      left: !!python/object:src.spot.Parser.SymbolExpression
-        name: lava_red_open
-        symbol: lava_red_open
+      formula: ((co) && (de) && (don))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: co
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+      right: !!python/object:src.spot.Parser.SymbolExpression
+        name: don
+        symbol: don
+    guard_formula: ((co) && (de) && (don))
+- !!python/tuple
+  - T0_S5
+  - T0_S1
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((!(con)) && (de) && (!(don)) && (!(son))) || ((!(co)) && (!(con))
+        && (de) && (!(son))))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!con'
+              symbol: con
+            right: !!python/object:src.spot.Parser.SymbolExpression
+              name: de
+              symbol: de
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!don'
+            symbol: don
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!son'
+          symbol: son
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!co'
+              symbol: co
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!con'
+              symbol: con
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: de
+            symbol: de
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!son'
+          symbol: son
+    guard_formula: (((!(con)) && (de) && (!(don)) && (!(son))) || ((!(co)) && (!(con))
+      && (de) && (!(son))))
+- !!python/tuple
+  - T0_S5
+  - T0_S5
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: ((!(de)) || ((!(don)) && (son)) || ((con) && (!(don))) || ((!(co))
+        && (son)) || ((!(co)) && (con)))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ORExpression
+          left: !!python/object:src.spot.Parser.ORExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!de'
+              symbol: de
+            right: !!python/object:src.spot.Parser.ANDExpression
+              left: !!python/object:src.spot.Parser.NotSymbolExpression
+                name: '!don'
+                symbol: don
+              right: !!python/object:src.spot.Parser.SymbolExpression
+                name: son
+                symbol: son
+          right: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.SymbolExpression
+              name: con
+              symbol: con
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!don'
+              symbol: don
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!co'
+            symbol: co
+          right: !!python/object:src.spot.Parser.SymbolExpression
+            name: son
+            symbol: son
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!co'
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: con
+          symbol: con
+    guard_formula: ((!(de)) || ((!(don)) && (son)) || ((con) && (!(don))) || ((!(co))
+      && (son)) || ((!(co)) && (con)))
+- !!python/tuple
+  - T0_S5
+  - T0_S7
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((co) && (de) && (don))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: co
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+      right: !!python/object:src.spot.Parser.SymbolExpression
+        name: don
+        symbol: don
+    guard_formula: ((co) && (de) && (don))
+- !!python/tuple
+  - T0_S6
+  - T0_S0
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((con) && (!(de)) && (!(don)))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: con
+          symbol: con
+        right: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!de'
+          symbol: de
       right: !!python/object:src.spot.Parser.NotSymbolExpression
-        name: '!water_blue_open'
-        symbol: water_blue_open
-    guard_formula: ((lava_red_open) && (!(water_blue_open)))
+        name: '!don'
+        symbol: don
+    guard_formula: ((con) && (!(de)) && (!(don)))
+- !!python/tuple
+  - T0_S6
+  - T0_S6
+  - guard: !!python/object:src.spot.Parser.ORExpression
+      formula: (((de) && (!(don))) || ((!(de)) && (don)) || ((!(con)) && (!(de)))
+        || ((!(co)) && (de)))
+      left: !!python/object:src.spot.Parser.ORExpression
+        left: !!python/object:src.spot.Parser.ORExpression
+          left: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.SymbolExpression
+              name: de
+              symbol: de
+            right: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!don'
+              symbol: don
+          right: !!python/object:src.spot.Parser.ANDExpression
+            left: !!python/object:src.spot.Parser.NotSymbolExpression
+              name: '!de'
+              symbol: de
+            right: !!python/object:src.spot.Parser.SymbolExpression
+              name: don
+              symbol: don
+        right: !!python/object:src.spot.Parser.ANDExpression
+          left: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!con'
+            symbol: con
+          right: !!python/object:src.spot.Parser.NotSymbolExpression
+            name: '!de'
+            symbol: de
+      right: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.NotSymbolExpression
+          name: '!co'
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+    guard_formula: (((de) && (!(don))) || ((!(de)) && (don)) || ((!(con)) && (!(de)))
+      || ((!(co)) && (de)))
+- !!python/tuple
+  - T0_S6
+  - T0_S7
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((co) && (de) && (don))
+      left: !!python/object:src.spot.Parser.ANDExpression
+        left: !!python/object:src.spot.Parser.SymbolExpression
+          name: co
+          symbol: co
+        right: !!python/object:src.spot.Parser.SymbolExpression
+          name: de
+          symbol: de
+      right: !!python/object:src.spot.Parser.SymbolExpression
+        name: don
+        symbol: don
+    guard_formula: ((co) && (de) && (don))
 nodes:
 - !!python/tuple
-  - accept_all
-  - accepting: true
-- !!python/tuple
-  - T0_S2
+  - T0_S7
   - {}
+- !!python/tuple
+  - T0_S0
+  - {}
+- !!python/tuple
+  - T0_S3
+  - {}
+- !!python/tuple
+  - T0_S1
+  - {}
+- !!python/tuple
+  - accept_S4
+  - accepting: true
 - !!python/tuple
   - T0_init
   - init: true
+- !!python/tuple
+  - T0_S5
+  - {}
+- !!python/tuple
+  - T0_S6
+  - {}
 num_obs: 3
-num_states: 3
+num_states: 8
 start_state: T0_init

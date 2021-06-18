@@ -3,7 +3,7 @@ edges:
 - !!python/tuple
   - c1
   - c2
-  - actions: turn_on
+  - actions: cturn_on
     weight: 1
 - !!python/tuple
   - c2
@@ -13,7 +13,7 @@ edges:
 - !!python/tuple
   - c2
   - c1
-  - actions: turn_off
+  - actions: cturn_off
     weight: 1
 - !!python/tuple
   - c3

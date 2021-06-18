@@ -346,10 +346,14 @@ class FiniteTransSys(TwoPlayerGraph):
         trans_sys.add_state_attribute('c2', 'ap', ['con', 'soff'])
         trans_sys.add_state_attribute('c3', 'ap', ['con', 'son'])
 
-        trans_sys.add_edge('c1', 'c2', actions='turn_on', weight=1)
+        trans_sys.add_edge('c1', 'c2', actions='cturn_on', weight=1)
         trans_sys.add_edge('c2', 'c3', actions='open_shutter', weight=1)
         trans_sys.add_edge('c3', 'c2', actions='close_shutter', weight=1)
-        trans_sys.add_edge('c2', 'c1', actions='turn_off', weight=1)
+        trans_sys.add_edge('c2', 'c1', actions='cturn_off', weight=1)
+
+        trans_sys.add_edge('c1', 'c1', actions='cturn_off', weight=1)
+        trans_sys.add_edge('c2', 'c2', actions='close_shutter', weight=1)
+        trans_sys.add_edge('c3', 'c3', actions='open_shutter', weight=1)
 
         trans_sys.add_initial_state('c1')
 
@@ -388,9 +392,13 @@ class FiniteTransSys(TwoPlayerGraph):
         trans_sys.add_state_attribute('d3', 'ap', ['de', 'don'])
 
         trans_sys.add_edge('d1', 'd2', actions='extend', weight=1)
-        trans_sys.add_edge('d2', 'd3', actions='turn_on', weight=1)
-        trans_sys.add_edge('d3', 'd2', actions='turn_off', weight=1)
+        trans_sys.add_edge('d2', 'd3', actions='dturn_on', weight=1)
+        trans_sys.add_edge('d3', 'd2', actions='dturn_off', weight=1)
         trans_sys.add_edge('d2', 'd1', actions='retract', weight=1)
+
+        trans_sys.add_edge('d1', 'd1', actions='retract', weight=1)
+        trans_sys.add_edge('d2', 'd2', actions='dturn_off', weight=1)
+        trans_sys.add_edge('d3', 'd3', actions='dturn_onn', weight=1)
 
         trans_sys.add_initial_state('d1')
 
@@ -405,6 +413,123 @@ class FiniteTransSys(TwoPlayerGraph):
             trans_sys.print_edges()
 
         return trans_sys
+
+    @staticmethod
+    def compose_transition_systems(trans_sys_1: 'FiniteTransSys',
+                                   trans_sys_2: 'FiniteTransSys',
+                                   graph_name: str,
+                                   config_yaml: str,
+                                   save_flag: bool = False,
+                                   debug: bool = False,
+                                   plot: bool = False,
+                                   synchronized: bool = False) -> 'FiniteTransSys':
+        """
+        A method to construct the product of two transition system.
+
+        Node: combination of the nodes in the original transition system
+        edge: an edge between two nodes in the product exists iff there is an edge in either of the original
+              transition system
+
+        atomic
+        proposition: The atomic proposition associated with the new state is the union of the atomic propositions
+                     associated with original states in their transition systems.
+
+        :return:
+        """
+
+        prod_trans_name = graph_name
+
+        prod_trans_sys = FiniteTransSys(prod_trans_name, f"config/{prod_trans_name}", save_flag=save_flag)
+        prod_trans_sys.construct_graph()
+        prod_trans_sys._graph_name = graph_name
+        prod_trans_sys._config_yaml = config_yaml
+
+        for _u_ts1 in trans_sys_1._graph.nodes():
+            for _u_ts2 in trans_sys_2._graph.nodes():
+
+                _u_prod_node = FiniteTransSys._compose_two_nodes(prod_trans_sys,
+                                                                 trans_sys_1,
+                                                                 trans_sys_2,
+                                                                 _u_ts1,
+                                                                 _u_ts2)
+
+                for _v_ts1 in trans_sys_1._graph.nodes():
+                    for _v_ts2 in trans_sys_2._graph.nodes():
+
+                        _v_prod_node = FiniteTransSys._compose_two_nodes(prod_trans_sys,
+                                                                         trans_sys_1,
+                                                                         trans_sys_2,
+                                                                         _v_ts1,
+                                                                         _v_ts2)
+
+                        # actions will be the union of the two edge actions in both the transition systems as well
+                        _ts1_action: list = []
+                        _ts2_action: list = []
+                        if trans_sys_1._graph.has_edge(_u_ts1, _v_ts1):
+                            _ts1_action.append(trans_sys_1.get_edge_attributes(_u_ts1, _v_ts1, 'actions'))
+
+                        if trans_sys_2._graph.has_edge(_u_ts2, _v_ts2):
+                            _ts2_action.append(trans_sys_2.get_edge_attributes(_u_ts2, _v_ts2, 'actions'))
+
+                        _action = _ts1_action + _ts2_action
+
+                        if not synchronized:
+                            # if there exists an edge between (_u_ts_1, _v_ts_1) or (_u_ts_2, _v_ts_2) then create an
+                            # edge in the product graph
+                            if trans_sys_1._graph.has_edge(_u_ts1, _v_ts1) or\
+                                    trans_sys_2._graph.has_edge(_u_ts2, _v_ts2):
+                                prod_trans_sys.add_edge(_u_prod_node,
+                                                        _v_prod_node,
+                                                        actions=_action,
+                                                        weight=1)
+                        else:
+                            # if there exists an edge between (_u_ts_1, _v_ts_1) and (_u_ts_2, _v_ts_2) then create an
+                            # edge in the product graph
+                            if trans_sys_1._graph.has_edge(_u_ts1, _v_ts1) and \
+                                    trans_sys_2._graph.has_edge(_u_ts2, _v_ts2):
+                                prod_trans_sys.add_edge(_u_prod_node,
+                                                        _v_prod_node,
+                                                        actions=_action,
+                                                        weight=1)
+
+        if plot:
+            prod_trans_sys.plot_graph()
+
+        if debug:
+            prod_trans_sys.print_nodes()
+            prod_trans_sys.print_edges()
+
+        return prod_trans_sys
+
+    @staticmethod
+    def _compose_two_nodes(prod_trans_system: 'FiniteTransSys', ts1, ts2, ts_1_node, ts_2_node) -> Tuple:
+        """
+        A helper function to compose two nodes.
+
+        name: new node is a tuple of the two org transition systems
+        label: new node label is union of the two nodes
+        :param ts_1_node: str/tuple
+        :param ts_2_node: str/tuple
+        :return: a product node
+        """
+
+        _p_node = (ts_1_node, ts_2_node)
+
+        if not prod_trans_system._graph.has_node(_p_node):
+            prod_trans_system._graph.add_node(_p_node)
+            _prod_label = set(ts1._graph.nodes[ts_1_node].get('ap')).union(set(ts2._graph.nodes[ts_2_node].get('ap')))
+            prod_trans_system._graph.nodes[_p_node]['ap'] = list(_prod_label)
+
+        if (ts1._graph.nodes[ts_1_node].get('init') and
+                ts2._graph.nodes[ts_2_node].get('init')):
+            # if both the transition node and the dfa node are belong to the initial state sets then set this
+            # product node as initial too
+            prod_trans_system._graph.nodes[_p_node]['init'] = True
+
+        # setting all nodes to belong to Sys player
+        prod_trans_system._graph.nodes[_p_node]['player'] = "eve"
+
+        return _p_node
 
 
 class TransitionSystemBuilder(Builder):

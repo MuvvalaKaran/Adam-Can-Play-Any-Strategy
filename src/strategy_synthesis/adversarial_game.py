@@ -281,6 +281,21 @@ class ReachabilityGame:
 
         return _position_sequence
 
+    def plot_winning_strategy(self):
+        """
+        A helper function to plot a the winning str on a graph.
+
+        Note: This function has a hardcoded plot function. Hence you do not need to call the plot_graph() manually.
+        :return: None
+        """
+
+        self.game.set_edge_attribute('strategy', False)
+
+        for curr_node, next_node in self .sys_str.items():
+            self.game._graph.edges[curr_node, next_node, 0]['strategy'] = True
+
+        self.game.plot_graph()
+
     def print_winning_region(self):
 
         print("====================================")
@@ -293,6 +308,8 @@ class ReachabilityGame:
         print("printing System player strategy")
         for _u, _v in self.sys_str.items():
             print(f"{_u} ------> {_v}")
+            action = self.game.get_edge_attributes(_u, _v, 'actions')
+            print(action)
 
         print("printing Env player strategy")
         for _u, _v in self.env_str.items():

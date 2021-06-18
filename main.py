@@ -1,4 +1,4 @@
-# import gym
+import gym
 import enum
 import abc
 import warnings
@@ -223,10 +223,14 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
     def __init__(self,
                  _finite: bool = False,
                  _plot_ts: bool = False,
+                 _plot_ts_prod: bool = False,
                  _plot_dfa: bool = False,
-                 _plot_prod: bool = False):
+                 _plot_prod: bool = False,
+                 _synchronized: bool = False):
         self._trans_sys_1: Optional[FiniteTransSys] = None
         self._trans_sys_2: Optional[FiniteTransSys] = None
+        self.plot_ts_prod: bool = _plot_ts_prod
+        self.synchronized: bool = _synchronized
         super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
 
     def _build_ts(self):
@@ -256,11 +260,73 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
                                               finite=self.finite,
                                               plot_raw_ts=False)
 
+        # this is a static method
+        self._trans_sys = FiniteTransSys.compose_transition_systems(trans_sys_1=self._trans_sys_1,
+                                                                    trans_sys_2=self._trans_sys_2,
+                                                                    graph_name="product_ts",
+                                                                    config_yaml="/config/product_ts",
+                                                                    save_flag=True,
+                                                                    debug=False,
+                                                                    plot=self.plot_ts_prod,
+                                                                    synchronized=self.synchronized)
+
     def _build_dfa(self):
-        pass
+        # _cosafe_and_safe_fr = "F(con &" \
+        #                       " F(con & son &" \
+        #                       " F(coff & soff & de &" \
+        #                       " F(coff & soff & don &" \
+        #                       " F(dr & doff & con &" \
+        #                       " F(dr & doff & con & son))))))" \
+        #                       " & G(con -> (dr | dff))"
+        #
+        # _cosafe_fr = "F(con &" \
+        #                       " F(con & son &" \
+        #                       " F(coff & soff & de &" \
+        #                       " F(coff & soff & don &" \
+        #                       " F(dr & doff & con &" \
+        #                       " F(dr & doff & con & son))))))"
+
+        _cosafe_and_safe_fr = "F(con &" \
+                              " F(con & son &" \
+                              " F(!con & !son & de &" \
+                              " F(!con & !son & don &" \
+                              " F(!de & !don & con &" \
+                              " F(!de & !don & con & son))))))" \
+                              " & G(con -> !(de & don))"
+
+        _cosafe_fr = "F(con &" \
+                              " F(con & son &" \
+                              " F(!con & !son & de &" \
+                              " F(!con & !son & don &" \
+                              " F(!de & !don & con &" \
+                              " F(!de & !don & con & son))))))"
+
+        _updated_fr = "F(con & X(son & F(!con & !son & de & X(!con & !son & don &" \
+                      " F(!de & !don & con & X(!de & !don & son))))))"
+
+        _updated_fr_w_safety = "F(con & X(son & F(!con & !son & de & X(!con & !son & don &" \
+                      " F(!de & !don & con & X(!de & !don & son)))))) & G(co -> !(de & don))"
+
+        self._dfa = graph_factory.get('DFA',
+                                      graph_name="automaton",
+                                      config_yaml="/config/automaton",
+                                      save_flag=True,
+                                      sc_ltl=_updated_fr_w_safety,
+                                      use_alias=False,
+                                      plot=self.plot_dfa)
 
     def _build_product(self):
-        pass
+        self._product_automaton = graph_factory.get('ProductGraph',
+                                                    graph_name='product_automaton',
+                                                    config_yaml='/config/product_automaton',
+                                                    trans_sys=self._trans_sys,
+                                                    dfa=self._dfa,
+                                                    save_flag=True,
+                                                    prune=False,
+                                                    debug=False,
+                                                    absorbing=True,
+                                                    finite=self.finite,
+                                                    plot=self.plot_product)
 
 
 class EdgeWeightedArena(GraphInstanceConstructionBase):
@@ -540,6 +606,44 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
         iros_solver.print_map_dict()
 
 
+def compute_multi_tool_planning(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+                                debug: bool = False,
+                                print_winning_regions: bool = False,
+                                print_str: bool = False):
+    """
+    A function to compute a high level strategy for multiple tools given a common (shared/dependent) task
+    :param trans_sys:
+    :param debug:
+    :param print_winning_regions:
+    :param print_str:
+    :return:
+    """
+    reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
+    reachability_game_handle.reachability_solver()
+    _sys_str_dict = reachability_game_handle.sys_str
+    _env_str_dict = reachability_game_handle.env_str
+
+    if print_winning_regions:
+        reachability_game_handle.print_winning_region()
+
+    if print_str:
+        # reachability_game_handle.print_winning_strategies()
+        winning_str: dict = reachability_game_handle.sys_str
+        _init_state = trans_sys.get_initial_states()
+
+        _curr_state = _init_state[0][0]
+        _next_state = winning_str.get(_curr_state)
+        action = trans_sys.get_edge_attributes(_curr_state, _next_state, "actions")
+        print(action)
+        while _next_state != _curr_state:
+            _curr_state = _next_state
+            _next_state = winning_str.get(_curr_state)
+            action = trans_sys.get_edge_attributes(_curr_state, _next_state, "actions")
+            print(action)
+
+    reachability_game_handle.plot_winning_strategy()
+
+
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                         mini_grid_instance: Optional[MinigridGraph] = None,
                         epsilon: float = 0,
@@ -654,11 +758,12 @@ if __name__ == "__main__":
     multitool_abs = True
 
     # solver to call
-    finite_reg_synthesis = True
+    finite_reg_synthesis = False
     infinte_reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
     miniGrid_instance = None
+    multitool_str_synthesis = True
 
     # build the graph G on which we will compute the regret minimizing strategy
     if gym_minigrid:
@@ -701,11 +806,12 @@ if __name__ == "__main__":
 
     elif multitool_abs:
         multitool_graph = MultiToolPlanner(_finite=finite,
-                                           _plot_ts=True,
+                                           _plot_ts=False,
                                            _plot_dfa=False,
-                                           _plot_prod=False)
-        sys.exit(-1)
-
+                                           _plot_prod=False,
+                                           _plot_ts_prod=False,
+                                           _synchronized=True)
+        trans_sys = multitool_graph.product_automaton
     else:
         warnings.warn("Please ensure at-least one of the flags is True")
         sys.exit(-1)
@@ -729,6 +835,11 @@ if __name__ == "__main__":
                                     finite=finite,
                                     plot_result=False,
                                     plot_result_only_eve=False)
+    elif multitool_str_synthesis:
+        compute_multi_tool_planning(trans_sys,
+                                    debug=False,
+                                    print_winning_regions=False,
+                                    print_str=True)
     elif adversarial_game:
         compute_winning_str(trans_sys,
                             miniGrid_instance,

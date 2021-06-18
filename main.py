@@ -225,12 +225,10 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
                  _plot_ts: bool = False,
                  _plot_ts_prod: bool = False,
                  _plot_dfa: bool = False,
-                 _plot_prod: bool = False,
-                 _synchronized: bool = False):
+                 _plot_prod: bool = False):
         self._trans_sys_1: Optional[FiniteTransSys] = None
         self._trans_sys_2: Optional[FiniteTransSys] = None
         self.plot_ts_prod: bool = _plot_ts_prod
-        self.synchronized: bool = _synchronized
         super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
 
     def _build_ts(self):
@@ -267,45 +265,18 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
                                                                     config_yaml="/config/product_ts",
                                                                     save_flag=True,
                                                                     debug=False,
-                                                                    plot=self.plot_ts_prod,
-                                                                    synchronized=self.synchronized)
+                                                                    plot=self.plot_ts_prod)
 
     def _build_dfa(self):
-        # _cosafe_and_safe_fr = "F(con &" \
-        #                       " F(con & son &" \
-        #                       " F(coff & soff & de &" \
-        #                       " F(coff & soff & don &" \
-        #                       " F(dr & doff & con &" \
-        #                       " F(dr & doff & con & son))))))" \
-        #                       " & G(con -> (dr | dff))"
-        #
-        # _cosafe_fr = "F(con &" \
-        #                       " F(con & son &" \
-        #                       " F(coff & soff & de &" \
-        #                       " F(coff & soff & don &" \
-        #                       " F(dr & doff & con &" \
-        #                       " F(dr & doff & con & son))))))"
-
-        _cosafe_and_safe_fr = "F(con &" \
-                              " F(con & son &" \
-                              " F(!con & !son & de &" \
-                              " F(!con & !son & don &" \
-                              " F(!de & !don & con &" \
-                              " F(!de & !don & con & son))))))" \
-                              " & G(con -> !(de & don))"
-
-        _cosafe_fr = "F(con &" \
-                              " F(con & son &" \
-                              " F(!con & !son & de &" \
-                              " F(!con & !son & don &" \
-                              " F(!de & !don & con &" \
-                              " F(!de & !don & con & son))))))"
-
         _updated_fr = "F(con & X(son & F(!con & !son & de & X(!con & !son & don &" \
                       " F(!de & !don & con & X(!de & !don & son))))))"
 
         _updated_fr_w_safety = "F(con & X(son & F(!con & !son & de & X(!con & !son & don &" \
-                      " F(!de & !don & con & X(!de & !don & son)))))) & G(co -> !(de & don))"
+                      " F(!de & !don & con & X(!de & !don & son)))))) & G(con -> !(de & don))"
+
+        _updated_fr_w_safety_1 = "F(con & X(son & F(de & X(don & F(con & X(son)))))) &" \
+                                 " G((con | son)-> !(de & don)) &" \
+                                 " G((de | don) -> !(con & son))"
 
         self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
@@ -809,8 +780,7 @@ if __name__ == "__main__":
                                            _plot_ts=False,
                                            _plot_dfa=False,
                                            _plot_prod=False,
-                                           _plot_ts_prod=False,
-                                           _synchronized=True)
+                                           _plot_ts_prod=False)
         trans_sys = multitool_graph.product_automaton
     else:
         warnings.warn("Please ensure at-least one of the flags is True")

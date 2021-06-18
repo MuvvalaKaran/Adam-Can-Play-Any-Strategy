@@ -421,13 +421,12 @@ class FiniteTransSys(TwoPlayerGraph):
                                    config_yaml: str,
                                    save_flag: bool = False,
                                    debug: bool = False,
-                                   plot: bool = False,
-                                   synchronized: bool = False) -> 'FiniteTransSys':
+                                   plot: bool = False) -> 'FiniteTransSys':
         """
         A method to construct the product of two transition system.
 
         Node: combination of the nodes in the original transition system
-        edge: an edge between two nodes in the product exists iff there is an edge in either of the original
+        edge: an edge between two nodes in the product exists iff there is an edge in both of the original
               transition system
 
         atomic
@@ -473,24 +472,14 @@ class FiniteTransSys(TwoPlayerGraph):
 
                         _action = _ts1_action + _ts2_action
 
-                        if not synchronized:
-                            # if there exists an edge between (_u_ts_1, _v_ts_1) or (_u_ts_2, _v_ts_2) then create an
-                            # edge in the product graph
-                            if trans_sys_1._graph.has_edge(_u_ts1, _v_ts1) or\
-                                    trans_sys_2._graph.has_edge(_u_ts2, _v_ts2):
-                                prod_trans_sys.add_edge(_u_prod_node,
-                                                        _v_prod_node,
-                                                        actions=_action,
-                                                        weight=1)
-                        else:
-                            # if there exists an edge between (_u_ts_1, _v_ts_1) and (_u_ts_2, _v_ts_2) then create an
-                            # edge in the product graph
-                            if trans_sys_1._graph.has_edge(_u_ts1, _v_ts1) and \
-                                    trans_sys_2._graph.has_edge(_u_ts2, _v_ts2):
-                                prod_trans_sys.add_edge(_u_prod_node,
-                                                        _v_prod_node,
-                                                        actions=_action,
-                                                        weight=1)
+                        # if there exists an edge between (_u_ts_1, _v_ts_1) and (_u_ts_2, _v_ts_2) then create an
+                        # edge in the product graph
+                        if trans_sys_1._graph.has_edge(_u_ts1, _v_ts1) and \
+                                trans_sys_2._graph.has_edge(_u_ts2, _v_ts2):
+                            prod_trans_sys.add_edge(_u_prod_node,
+                                                    _v_prod_node,
+                                                    actions=_action,
+                                                    weight=1)
 
         if plot:
             prod_trans_sys.plot_graph()

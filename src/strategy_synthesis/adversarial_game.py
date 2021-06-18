@@ -308,8 +308,6 @@ class ReachabilityGame:
         print("printing System player strategy")
         for _u, _v in self.sys_str.items():
             print(f"{_u} ------> {_v}")
-            action = self.game.get_edge_attributes(_u, _v, 'actions')
-            print(action)
 
         print("printing Env player strategy")
         for _u, _v in self.env_str.items():

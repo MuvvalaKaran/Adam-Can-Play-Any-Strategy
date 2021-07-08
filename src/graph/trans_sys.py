@@ -8,6 +8,9 @@ from typing import List, Tuple, Dict, Optional
 from .two_player_graph import TwoPlayerGraph
 from ..factory.builder import Builder
 
+# regex for to check if the sun and cmaera are in the same cell
+import re
+
 
 class FiniteTransSys(TwoPlayerGraph):
 
@@ -325,6 +328,185 @@ class FiniteTransSys(TwoPlayerGraph):
         return trans_sys
 
     @classmethod
+    def get_sun_ts_for_imaging(cls,
+                               graph_name: str,
+                               config_yaml: str,
+                               save_flag: bool = False,
+                               debug: bool = False,
+                               plot: bool = False,
+                               human_intervention: int = 1,
+                               plot_raw_ts: bool = False):
+        # flag that determines if the sun can travel diagonally or not
+        diagonal: bool = False
+
+        trans_name = graph_name
+        trans_sys = FiniteTransSys(trans_name, f"config/{trans_name}", save_flag=save_flag)
+        trans_sys.construct_graph()
+        trans_sys.add_states_from(['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9'])
+        # trans_sys.add_state_attribute('s1', 'ap', 'a')
+        # trans_sys.add_state_attribute('s2', 'ap', 'b')
+        # trans_sys.add_state_attribute('s3', 'ap', 'c')
+        # trans_sys.add_state_attribute('s4', 'ap', 'd')
+        # trans_sys.add_state_attribute('s5', 'ap', 'e')
+        # trans_sys.add_state_attribute('s6', 'ap', 'f')
+        # trans_sys.add_state_attribute('s7', 'ap', 'g')
+        # trans_sys.add_state_attribute('s8', 'ap', 'h')
+        # trans_sys.add_state_attribute('s9', 'ap', 'i')
+
+        trans_sys.add_edge('s1', 's1', actions='stay', weight=1)
+        trans_sys.add_edge('s2', 's2', actions='stay', weight=1)
+        trans_sys.add_edge('s3', 's3', actions='stay', weight=1)
+        trans_sys.add_edge('s4', 's4', actions='stay', weight=1)
+        trans_sys.add_edge('s5', 's5', actions='stay', weight=1)
+        trans_sys.add_edge('s6', 's6', actions='stay', weight=1)
+        trans_sys.add_edge('s7', 's7', actions='stay', weight=1)
+        trans_sys.add_edge('s8', 's8', actions='stay', weight=1)
+        trans_sys.add_edge('s9', 's9', actions='stay', weight=1)
+
+        trans_sys.add_edge('s1', 's2', actions='east', weight=1)
+        trans_sys.add_edge('s1', 's4', actions='north', weight=1)
+
+        trans_sys.add_edge('s2', 's3', actions='east', weight=1)
+        trans_sys.add_edge('s2', 's1', actions='west', weight=1)
+        trans_sys.add_edge('s2', 's5', actions='north', weight=1)
+
+        trans_sys.add_edge('s3', 's2', actions='west', weight=1)
+        trans_sys.add_edge('s3', 's6', actions='north', weight=1)
+
+        trans_sys.add_edge('s4', 's5', actions='east', weight=1)
+        trans_sys.add_edge('s4', 's7', actions='north', weight=1)
+        trans_sys.add_edge('s4', 's1', actions='south', weight=1)
+
+        trans_sys.add_edge('s5', 's6', actions='east', weight=1)
+        trans_sys.add_edge('s5', 's4', actions='west', weight=1)
+        trans_sys.add_edge('s5', 's8', actions='north', weight=1)
+        trans_sys.add_edge('s5', 's2', actions='south', weight=1)
+
+        trans_sys.add_edge('s6', 's5', actions='west', weight=1)
+        trans_sys.add_edge('s6', 's9', actions='north', weight=1)
+        trans_sys.add_edge('s6', 's3', actions='south', weight=1)
+
+        trans_sys.add_edge('s7', 's8', actions='east', weight=1)
+        trans_sys.add_edge('s7', 's4', actions='south', weight=1)
+
+        trans_sys.add_edge('s8', 's9', actions='east', weight=1)
+        trans_sys.add_edge('s8', 's7', actions='west', weight=1)
+        trans_sys.add_edge('s8', 's5', actions='south', weight=1)
+
+        trans_sys.add_edge('s9', 's8', actions='west', weight=1)
+        trans_sys.add_edge('s9', 's6', actions='south', weight=1)
+
+        if diagonal:
+            trans_sys.add_edge('s9', 's5', actions='southwest', weight=1)
+
+            trans_sys.add_edge('s8', 's4', actions='southwest', weight=1)
+            trans_sys.add_edge('s8', 's6', actions='southeast', weight=1)
+
+            trans_sys.add_edge('s7', 's5', actions='southeast', weight=1)
+
+            trans_sys.add_edge('s6', 's8', actions='northwest', weight=1)
+            trans_sys.add_edge('s6', 's2', actions='southwest', weight=1)
+
+            trans_sys.add_edge('s5', 's9', actions='northeast', weight=1)
+            trans_sys.add_edge('s5', 's7', actions='northwest', weight=1)
+            trans_sys.add_edge('s5', 's3', actions='southeast', weight=1)
+            trans_sys.add_edge('s5', 's1', actions='southwest', weight=1)
+
+            trans_sys.add_edge('s4', 's8', actions='northeast', weight=1)
+            trans_sys.add_edge('s4', 's2', actions='southeast', weight=1)
+
+            trans_sys.add_edge('s3', 's5', actions='northwest', weight=1)
+
+            trans_sys.add_edge('s2', 's6', actions='northeast', weight=1)
+            trans_sys.add_edge('s2', 's4', actions='northwest', weight=1)
+
+            trans_sys.add_edge('s1', 's5', actions='northeast', weight=1)
+
+        trans_sys.add_initial_state('s9')
+
+        trans_sys._graph_name = graph_name
+        trans_sys._config_yaml = config_yaml
+
+        if plot:
+            trans_sys.plot_graph()
+
+        if debug:
+            trans_sys.print_nodes()
+            trans_sys.print_edges()
+
+        return trans_sys
+
+    @classmethod
+    def get_camera_ts_for_imaging(cls,
+                                  graph_name: str,
+                                  config_yaml: str,
+                                  save_flag: bool = False,
+                                  debug: bool = False,
+                                  plot: bool = False,
+                                  human_intervention: int = 1,
+                                  plot_raw_ts: bool = False):
+        trans_name = graph_name
+        trans_sys = FiniteTransSys(trans_name, f"config/{trans_name}", save_flag=save_flag)
+        trans_sys.construct_graph()
+        trans_sys.add_states_from(['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9'])
+        trans_sys.add_state_attribute('r1', 'ap', 'a')
+        trans_sys.add_state_attribute('r2', 'ap', 'b')
+        trans_sys.add_state_attribute('r3', 'ap', 'c')
+        trans_sys.add_state_attribute('r4', 'ap', 'd')
+        trans_sys.add_state_attribute('r5', 'ap', 'e')
+        trans_sys.add_state_attribute('r6', 'ap', 'f')
+        trans_sys.add_state_attribute('r7', 'ap', 'g')
+        trans_sys.add_state_attribute('r8', 'ap', 'h')
+        trans_sys.add_state_attribute('r9', 'ap', 'i')
+
+        trans_sys.add_edge('r1', 'r2', actions='east', weight=1)
+        trans_sys.add_edge('r1', 'r4', actions='north', weight=1)
+
+        trans_sys.add_edge('r2', 'r3', actions='east', weight=1)
+        trans_sys.add_edge('r2', 'r1', actions='west', weight=1)
+        trans_sys.add_edge('r2', 'r5', actions='north', weight=1)
+
+        trans_sys.add_edge('r3', 'r2', actions='west', weight=1)
+        trans_sys.add_edge('r3', 'r6', actions='north', weight=1)
+
+        trans_sys.add_edge('r4', 'r5', actions='east', weight=1)
+        trans_sys.add_edge('r4', 'r7', actions='north', weight=1)
+        trans_sys.add_edge('r4', 'r1', actions='south', weight=1)
+
+        trans_sys.add_edge('r5', 'r6', actions='east', weight=1)
+        trans_sys.add_edge('r5', 'r4', actions='west', weight=1)
+        trans_sys.add_edge('r5', 'r8', actions='north', weight=1)
+        trans_sys.add_edge('r5', 'r2', actions='south', weight=1)
+
+        trans_sys.add_edge('r6', 'r5', actions='west', weight=1)
+        trans_sys.add_edge('r6', 'r9', actions='north', weight=1)
+        trans_sys.add_edge('r6', 'r3', actions='south', weight=1)
+
+        trans_sys.add_edge('r7', 'r8', actions='east', weight=1)
+        trans_sys.add_edge('r7', 'r4', actions='south', weight=1)
+
+        trans_sys.add_edge('r8', 'r9', actions='east', weight=1)
+        trans_sys.add_edge('r8', 'r7', actions='west', weight=1)
+        trans_sys.add_edge('r8', 'r5', actions='south', weight=1)
+
+        trans_sys.add_edge('r9', 'r8', actions='west', weight=1)
+        trans_sys.add_edge('r9', 'r6', actions='south', weight=1)
+
+        trans_sys.add_initial_state('r1')
+
+        trans_sys._graph_name = graph_name
+        trans_sys._config_yaml = config_yaml
+
+        if plot:
+            trans_sys.plot_graph()
+
+        if debug:
+            trans_sys.print_nodes()
+            trans_sys.print_edges()
+
+        return trans_sys
+
+    @classmethod
     def get_camera_ts(cls,
                       graph_name: str,
                       config_yaml: str,
@@ -506,8 +688,19 @@ class FiniteTransSys(TwoPlayerGraph):
 
         if not prod_trans_system._graph.has_node(_p_node):
             prod_trans_system._graph.add_node(_p_node)
-            _prod_label = set(ts1._graph.nodes[ts_1_node].get('ap')).union(set(ts2._graph.nodes[ts_2_node].get('ap')))
-            prod_trans_system._graph.nodes[_p_node]['ap'] = list(_prod_label)
+
+            sun_loc = re.findall(r'-?\d+\.?\d*', ts_1_node)[0]
+            robo_loc = re.findall(r'-?\d+\.?\d*', ts_2_node)[0]
+            if int(sun_loc) == int(robo_loc):
+                _prod_label = set('s')
+                prod_trans_system._graph.nodes[_p_node]['ap'] = list(_prod_label)
+
+            else:
+                try:
+                    _prod_label = set(ts1._graph.nodes[ts_1_node].get('ap')).union(set(ts2._graph.nodes[ts_2_node].get('ap')))
+                except:
+                    _prod_label = set(ts2._graph.nodes[ts_2_node].get('ap'))
+                prod_trans_system._graph.nodes[_p_node]['ap'] = list(_prod_label)
 
         if (ts1._graph.nodes[ts_1_node].get('init') and
                 ts2._graph.nodes[ts_2_node].get('init')):
@@ -634,6 +827,8 @@ class TransitionSystemBuilder(Builder):
         self._pre_built.update({"five_state_ts": self._instance.get_five_state_ts})
         self._pre_built.update({"camera_ts": self._instance.get_camera_ts})
         self._pre_built.update({"drill_ts": self._instance.get_drill_ts})
+        self._pre_built.update({"camera_imaging_ts": self._instance.get_camera_ts_for_imaging})
+        self._pre_built.update({"sun_imaging_ts": self._instance.get_sun_ts_for_imaging})
 
     def _from_built_in_ts(self,
                           ts_name: str,

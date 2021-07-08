@@ -187,8 +187,10 @@ def run_spot(formula: str, debug=False):
     if not isinstance(formula, str):
         warnings.warn("Please make sure the input formula is of type string.")
 
-    process = Popen(["ltl2tgba", "--complete", "--ba", "--state-based-acceptance",
-                               "--deterministic", "--spin", f"--formula={formula}"], stdout=PIPE)
+    # process = Popen(["ltl2tgba", "--complete", "--ba", "--state-based-acceptance",
+    #                            "--deterministic", "--spin", f"--formula={formula}"], stdout=PIPE)
+    process = Popen(["ltl2tgba", "--ba", "--state-based-acceptance",
+                     "--deterministic", "--spin", f"--formula={formula}"], stdout=PIPE)
     (raw_output, err) = process.communicate()
     if err:
         print(err)

@@ -4,6 +4,9 @@ import abc
 import warnings
 import sys
 import copy
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import matplotlib.image as mping
 
 import numpy as np
 from typing import Tuple, Optional, Dict, Union
@@ -234,10 +237,10 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
     def _build_ts(self):
         self._trans_sys_1 = graph_factory.get('TS',
                                               raw_trans_sys=None,
-                                              graph_name="drill_trans_sys",
-                                              config_yaml="/config/drill_trans_sys",
+                                              graph_name="sun_imaging_trans_sys",
+                                              config_yaml="/config/sun_imaging_trans_sys",
                                               pre_built=True,
-                                              built_in_ts_name="drill_ts",
+                                              built_in_ts_name="sun_imaging_ts",
                                               save_flag=True,
                                               debug=False,
                                               plot=self.plot_ts,
@@ -247,10 +250,10 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
 
         self._trans_sys_2 = graph_factory.get('TS',
                                               raw_trans_sys=None,
-                                              graph_name="camera_trans_sys",
-                                              config_yaml="/config/camera_trans_sys",
+                                              graph_name="camera_imaging_trans_sys",
+                                              config_yaml="/config/camera_imaging_trans_sys",
                                               pre_built=True,
-                                              built_in_ts_name="camera_ts",
+                                              built_in_ts_name="camera_imaging_ts",
                                               save_flag=True,
                                               debug=False,
                                               plot=self.plot_ts,
@@ -268,6 +271,8 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
                                                                     plot=self.plot_ts_prod)
 
     def _build_dfa(self):
+        _survey_fr = "G(!s) & F(a & F(b & F(c & F(d & F(e & F(f & F(g & F(h & F(i)))))))))"
+
         _updated_fr = "F(con & X(son & F(!con & !son & de & X(!con & !son & don &" \
                       " F(!de & !don & con & X(!de & !don & son))))))"
 
@@ -282,7 +287,8 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
                                       graph_name="automaton",
                                       config_yaml="/config/automaton",
                                       save_flag=True,
-                                      sc_ltl=_updated_fr_w_safety,
+                                      # sc_ltl=_updated_fr_w_safety,
+                                      sc_ltl=_survey_fr,
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -528,6 +534,84 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
                                       plot=self.plot_dfa)
 
 
+class plotterClass():
+
+    def __init__(self, fig_title, robo_file_path=None, xlabel=None, ylabel=None):
+        self.fig = None
+        self.ax = None
+        self.fig_title = fig_title
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+
+        # initialize a figure an axes handle
+        self._create_ax_fig()
+        if robo_file_path is not None:
+            self.robot_patch = mping.imread(robo_file_path)
+
+    def _create_ax_fig(self):
+        self.fig = plt.figure(num=self.fig_title)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlabel(self.xlabel)
+        self.ax.set_ylabel(self.ylabel)
+
+    def plot_gridworld(self, print_grid_num=False, fontsize=None,  *args):
+        # the env here the original env of size (N x M)
+        # fig_title = args[0]
+
+        cmax = 3
+        rmax = 3
+
+        # flag to print the grid numbers
+        if print_grid_num:
+            # we need to offset both the x and y to print in the center of the grid
+            for x in range(cmax):
+                for y in range(rmax):
+                    off_x, off_y = x + 0.5, y + 0.5
+                    self.plot_grid_num((off_x, off_y), value=f"{x, y}", fontsize=fontsize)
+
+        # the location of the x_ticks is the middle of the grid
+        def offset_ticks(x, offset=0.5):
+            return x + offset
+
+        # ticks = locations of the ticks and labels = label of the ticks
+        self.ax.set_xticks(ticks=list(map(offset_ticks, range(cmax))), minor=False)
+        self.ax.set_xticklabels(labels=range(cmax))
+        self.ax.set_yticks(ticks=list(map(offset_ticks, range(rmax))), minor=False)
+        self.ax.set_yticklabels(labels=range(rmax))
+
+        # add points for gridline plotting
+        self.ax.set_xticks(ticks=range(cmax), minor=True)
+        self.ax.set_yticks(ticks=range(rmax), minor=True)
+
+        # set x and y limits to adjust the view
+        self.ax.set_xlim(left=0, right=cmax)
+        self.ax.set_ylim(bottom=0, top=rmax)
+
+        # set the gridlines at the minor xticks positions
+        self.ax.yaxis.grid(True, which='minor')
+        self.ax.xaxis.grid(True, which='minor')
+
+    def plot_grid_num(self, xy, value, offset=None, **kwargs):
+        """
+        A method to add text to the grid world
+        :param xy: (x, y) position of the text. No offset included in here
+        :type xy: tuple
+        :param value: The text that should go at each block
+        :type value: basestring
+        :param offset: how much to offset the values by in both x and y direction
+        :type offset: int
+        :param kwargs:
+        :type kwargs:
+        """
+        x, y, = xy
+        self.ax.annotate(value,
+                         xy=(x, y),
+                         xycoords='data',
+                         horizontalalignment='center',
+                         verticalalignment='center',
+                         **kwargs)
+
+
 def infinite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                 mini_grid_instance: Optional[MinigridGraph] = None,
                                 epsilon: float = 0,
@@ -612,7 +696,10 @@ def compute_multi_tool_planning(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
             action = trans_sys.get_edge_attributes(_curr_state, _next_state, "actions")
             print(action)
 
-    reachability_game_handle.plot_winning_strategy()
+    final_plot = plotterClass(fig_title="Apriori imaging", xlabel='x', ylabel='y')
+    final_plot.plot_gridworld(print_grid_num=True, fontsize=10)
+
+    # reachability_game_handle.plot_winning_strategy()
 
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],

@@ -422,7 +422,7 @@ class FiniteTransSys(TwoPlayerGraph):
 
             trans_sys.add_edge('s1', 's5', actions='northeast', weight=1)
 
-        trans_sys.add_initial_state('s9')
+        trans_sys.add_initial_state('s7')
 
         trans_sys._graph_name = graph_name
         trans_sys._config_yaml = config_yaml
@@ -492,7 +492,7 @@ class FiniteTransSys(TwoPlayerGraph):
         trans_sys.add_edge('r9', 'r8', actions='west', weight=1)
         trans_sys.add_edge('r9', 'r6', actions='south', weight=1)
 
-        trans_sys.add_initial_state('r1')
+        trans_sys.add_initial_state('r5')
 
         trans_sys._graph_name = graph_name
         trans_sys._config_yaml = config_yaml

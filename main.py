@@ -8,6 +8,7 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import matplotlib.image as mping
 
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 import numpy as np
 from typing import Tuple, Optional, Dict, Union
 
@@ -271,7 +272,8 @@ class MultiToolPlanner(GraphInstanceConstructionBase):
                                                                     plot=self.plot_ts_prod)
 
     def _build_dfa(self):
-        _survey_fr = "G(!s) & F(a & F(b & F(c & F(d & F(e & F(f & F(g & F(h & F(i)))))))))"
+        # _survey_fr = "G(!s) & F(a & Fb & Fc & F(d & Fe & Ff & F(g & Fh & Fi)))"
+        _survey_fr = "G(!s) & F(a & Fb & F(c & Fd & F(e & Ff & F(g & Fh & Fi))))"
 
         _updated_fr = "F(con & X(son & F(!con & !son & de & X(!con & !son & don &" \
                       " F(!de & !don & con & X(!de & !don & son))))))"
@@ -534,7 +536,7 @@ class FrankaAbstractionGraph(GraphInstanceConstructionBase):
                                       plot=self.plot_dfa)
 
 
-class plotterClass():
+class PlotterClass:
 
     def __init__(self, fig_title, robo_file_path=None, xlabel=None, ylabel=None):
         self.fig = None
@@ -660,6 +662,34 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
     if print_str:
         iros_solver.print_map_dict()
 
+def add_patch(ax, shape, xy, color='green', robo_image='sun_img.png', action=None, alpha=0.5):
+    x, y = xy
+    shape_case = {
+        'circle': 1,
+        'sun': 2
+    }
+
+    if shape_case[shape] == 1:
+        circle = patches.Circle(
+            (x, y),
+            radius=0.2,
+            color=color,
+            alpha=1  # transparency value
+        )
+        ax.add_patch(circle)
+
+        return circle
+
+    elif shape_case[shape] == 2:
+        robo_image = plt.imread(robo_image)
+        imageBox = OffsetImage(robo_image, zoom=0.1)
+        ab = AnnotationBbox(imageBox, xy, frameon=False)
+        ax.add_artist(ab)
+
+        return ab
+    else:
+        return warnings.warn("Not a valid shape. Need to add that patch to the _add_patch function")
+
 
 def compute_multi_tool_planning(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                 debug: bool = False,
@@ -678,26 +708,73 @@ def compute_multi_tool_planning(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
     _sys_str_dict = reachability_game_handle.sys_str
     _env_str_dict = reachability_game_handle.env_str
 
+    final_plot = PlotterClass(fig_title="Apriori imaging", xlabel='x', ylabel='y')
+    final_plot.plot_gridworld(print_grid_num=True, fontsize=10)
+
+    def offset_ticks(x, offset=0.5):
+        return x + offset
+
+    robo_state_pos_map = {
+        'r1': (0, 0),
+        'r2': (1, 0),
+        'r3': (2, 0),
+        'r4': (0, 1),
+        'r5': (1, 1),
+        'r6': (2, 1),
+        'r7': (0, 2),
+        'r8': (1, 2),
+        'r9': (2, 2),
+    }
+
+    sun_state_pos_map = {
+        's1': (0, 0),
+        's2': (1, 0),
+        's3': (2, 0),
+        's4': (0, 1),
+        's5': (1, 1),
+        's6': (2, 1),
+        's7': (0, 2),
+        's8': (1, 2),
+        's9': (2, 2),
+    }
+
     if print_winning_regions:
         reachability_game_handle.print_winning_region()
 
     if print_str:
         # reachability_game_handle.print_winning_strategies()
+        time_step = 0
         winning_str: dict = reachability_game_handle.sys_str
         _init_state = trans_sys.get_initial_states()
-
+        # sun state, camera state
         _curr_state = _init_state[0][0]
+        curr_sys_xy = robo_state_pos_map.get(_curr_state[0][1])
+        curr_env_xy = sun_state_pos_map.get(_curr_state[0][0])
         _next_state = winning_str.get(_curr_state)
         action = trans_sys.get_edge_attributes(_curr_state, _next_state, "actions")
         print(action)
+
+        sys_patch = add_patch(ax=final_plot.ax, shape='circle', xy=tuple(map(offset_ticks, curr_sys_xy)))
+        env_patch = add_patch(ax=final_plot.ax, shape='sun', xy=tuple(map(offset_ticks, curr_env_xy)))
+
+        plt.savefig(f"frames/grid_{time_step}.png", dpi=200)
         while _next_state != _curr_state:
+            time_step += 1
+            sys_patch.remove()
+
             _curr_state = _next_state
+            curr_sys_xy = robo_state_pos_map.get(_curr_state[0][1])
+            curr_env_xy = sun_state_pos_map.get(_curr_state[0][0])
+            sys_patch = add_patch(ax=final_plot.ax, shape='circle', xy=tuple(map(offset_ticks, curr_sys_xy)))
+            plt.savefig(f"frames/grid_{time_step}_1.png", dpi=200)
+
+            env_patch.remove()
+            env_patch = add_patch(ax=final_plot.ax, shape='sun', xy=tuple(map(offset_ticks, curr_env_xy)))
+            plt.savefig(f"frames/grid_{time_step}_2.png", dpi=200)
+
             _next_state = winning_str.get(_curr_state)
             action = trans_sys.get_edge_attributes(_curr_state, _next_state, "actions")
             print(action)
-
-    final_plot = plotterClass(fig_title="Apriori imaging", xlabel='x', ylabel='y')
-    final_plot.plot_gridworld(print_grid_num=True, fontsize=10)
 
     # reachability_game_handle.plot_winning_strategy()
 

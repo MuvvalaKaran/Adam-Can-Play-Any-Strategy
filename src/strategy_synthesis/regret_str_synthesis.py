@@ -327,14 +327,19 @@ class RegretMinimizationStrategySynthesis:
         """
         # compute the minmax value of the game
         comp_mcr_solver = ValueIteration(self.graph, competitive=True)
-        # comp_mcr_solver.solve(debug=False, plot=False)
+        comp_mcr_solver.solve(debug=False, plot=False)
 
         # init state value
         _init_state = self.graph.get_initial_states()[0][0]
-        # min_max_value = comp_mcr_solver.state_value_dict[_init_state] * 2
-        min_max_value = 40
+        min_max_value = comp_mcr_solver.state_value_dict[_init_state].item() * 1.2
+        # min_max_value = comp_mcr_solver.state_value_dict[_init_state].item()
+        min_max_value = math.ceil(min_max_value)
+        # min_max_value = 6
         # construct a TWA given the graph
         self.graph_of_utility = self._construct_graph_of_utility(min_max_value)
+
+        print(f"#nodes in the graph of utility before pruning:{len(self.graph_of_utility._graph.nodes())}")
+        print(f"#edges in the graph of utility before pruning:{len(self.graph_of_utility._graph.edges())}")
 
         # helper method to remove the state that cannot reached from the initial state of G'
         if purge_states:
@@ -358,7 +363,7 @@ class RegretMinimizationStrategySynthesis:
         else:
             reg_strs, reg_vals = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
                                                                               minigrid_instance=minigrid_instance,
-                                                                              debug=False,
+                                                                              debug=True,
                                                                               plot_w_vals=False,
                                                                               plot_only_eve=False,
                                                                               plot=False,
@@ -400,8 +405,8 @@ class RegretMinimizationStrategySynthesis:
                                                            best_alt_values_dict=_best_alternate_values)
 
         if debug:
-            print(f"#nodes in the graph of alternative before purging :{len(self.graph_of_alternatives._graph.nodes())}")
-            print(f"#edges in the product graph is :{len(self.graph_of_alternatives._graph.edges())}")
+            print(f"#nodes in the graph of alternative before pruning :{len(self.graph_of_alternatives._graph.nodes())}")
+            print(f"#edges in the graph of alternative before pruning :{len(self.graph_of_alternatives._graph.edges())}")
 
         # for all the edge that transit to a target state we need to compute the regret associate with that
         self._compute_reg_for_edge_to_target_nodes(game=self.graph_of_alternatives)
@@ -411,8 +416,8 @@ class RegretMinimizationStrategySynthesis:
             self._remove_non_reachable_states(self.graph_of_alternatives)
 
         if debug:
-            print(f"#nodes in the graph of alternative after purging :{len(self.graph_of_alternatives._graph.nodes())}")
-            print(f"#edges in the graph of alternative after purging :{len(self.graph_of_alternatives._graph.edges())}")
+            print(f"#nodes in the graph of alternative after pruning :{len(self.graph_of_alternatives._graph.nodes())}")
+            print(f"#edges in the graph of alternative after pruning :{len(self.graph_of_alternatives._graph.edges())}")
 
         # play minmax game to compute regret minimizing strategy
         minmax_mcr_solver = ValueIteration(self.graph_of_alternatives, competitive=True)

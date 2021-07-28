@@ -4,11 +4,9 @@ import yaml
 import warnings
 
 from ..config import ROOT_PATH
-# from ..src.config import ROOT_PATH
 from graphviz import Digraph
 from typing import List, Tuple, Iterable, Union
 from ..helper_methods import deprecated
-# from src.helper_methods import deprecated
 
 
 class Graph(abc.ABC):

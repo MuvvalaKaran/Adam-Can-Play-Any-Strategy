@@ -1,11 +1,7 @@
-import gym
-import enum
 import abc
 import warnings
 import sys
-import copy
 
-import numpy as np
 from typing import Tuple, Optional, Dict, Union
 
 # import local packages
@@ -19,12 +15,6 @@ from src.graph import TwoPlayerGraph
 from src.strategy_synthesis import RegMinStrSyn
 from src.strategy_synthesis import ReachabilitySolver
 from src.strategy_synthesis import IrosStrSolver
-from src.strategy_synthesis import ValueIteration
-
-# assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
-
-# directory where we will be storing all the configuration files related to graphs
-DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/config/"
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -229,7 +219,7 @@ class FiveStateExample(GraphInstanceConstructionBase):
                                       plot=self.plot_dfa)
 
 
-def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                                 energy_bound: int = 0,
                                 debug: bool = False,
                                 print_str: bool = False):
@@ -248,7 +238,7 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
         iros_solver.print_map_dict()
 
 
-def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                         debug: bool = False,
                         print_winning_regions: bool = False,
                         print_str: bool = False):
@@ -270,12 +260,7 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
 
-def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
-                              mini_grid_instance=None,
-                              epsilon: float = 0,
-                              max_human_interventions: int = 5,
-                              plot: bool = False,
-                              compute_reg_for_human: bool = False):
+def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     """
     A new regret computation method. Assumption: The weights on the graph represent costs and are hence non-negative.
     Sys player is trying to minimize its cumulative cost while the env player is trying to maximize the cumulative cost.
@@ -297,10 +282,10 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     :return:
     """
 
-    payoff = payoff_factory.get("cumulative", graph=trans_sys)
+    # payoff = payoff_factory.get("cumulative", graph=trans_sys)
 
     # build an instance of strategy minimization class
-    reg_syn_handle = RegMinStrSyn(trans_sys, None)
+    reg_syn_handle = RegMinStrSyn(trans_sys)
 
     # if mini_grid_instance:
     #     reg_syn_handle.add_common_accepting_state(plot=False)
@@ -312,8 +297,7 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     #                                                        plot=plot,
     #                                                        plot_only_eve=False)
 
-    reg_syn_handle.edge_weighted_arena_finite_reg_solver(minigrid_instance=mini_grid_instance,
-                                                         purge_states=True,
+    reg_syn_handle.edge_weighted_arena_finite_reg_solver(purge_states=True,
                                                          plot=False)
 
     # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
@@ -390,11 +374,7 @@ if __name__ == "__main__":
     print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")
 
     if finite_reg_synthesis:
-        finite_reg_minimizing_str(trans_sys,
-                                  epsilon=EPSILON,
-                                  max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                  plot=False,
-                                  compute_reg_for_human=False)
+        finite_reg_minimizing_str(trans_sys)
     elif adversarial_game:
         compute_winning_str(trans_sys,
                             debug=True,

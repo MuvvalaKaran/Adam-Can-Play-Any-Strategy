@@ -311,11 +311,11 @@ class ValueIteration:
                 elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
                     _val_vector[_int_node][0], _next_min_node = self._get_min_sys_val(_n, _val_pre)
 
-                    # if _val_vector[_int_node] != _val_pre[_int_node]:
-                    _min_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+                    if _val_vector[_int_node] != _val_pre[_int_node]:
+                        _min_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
 
-                    if _val_pre[_int_node] == math.inf:
-                        _min_reach_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
+                        if _val_pre[_int_node] == math.inf:
+                            _min_reach_str_dict[_n] = self.node_int_map.inverse[_next_min_node]
 
             self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
 

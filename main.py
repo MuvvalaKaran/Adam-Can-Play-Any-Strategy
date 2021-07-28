@@ -8,15 +8,8 @@ import copy
 import numpy as np
 from typing import Tuple, Optional, Dict, Union
 
-# import wombats packages
-from wombats.systems import StaticMinigridTSWrapper
-from wombats.automaton import active_automata
-from wombats.automaton import MinigridTransitionSystem
-
 # import local packages
 from src.graph import graph_factory
-from src.payoff import payoff_factory
-from src.graph import MiniGrid
 from src.graph import FiniteTransSys
 from src.graph import DFAGraph
 from src.graph import ProductAutomaton
@@ -28,39 +21,10 @@ from src.strategy_synthesis import ReachabilitySolver
 from src.strategy_synthesis import IrosStrSolver
 from src.strategy_synthesis import ValueIteration
 
-from src.mpg_tool import MpgToolBox
-
 # assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
 # directory where we will be storing all the configuration files related to graphs
 DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/config/"
-
-"""
-Note: When you create a NxN world, two units of width and height are consumed for drawing the boundary.
-So a 4x4 world will be a 2x2 env and 5x5 will be a 3x3 env respectively.
-"""
-
-
-class MiniGridEmptyEnv(enum.Enum):
-    env_4 = 'MiniGrid-Empty-4x4-v0'
-    env_5 = 'MiniGrid-Empty-5x5-v0'
-    env_6 = 'MiniGrid-Empty-6x6-v0'
-    env_8 = 'MiniGrid-Empty-8x8-v0'
-    env_16 = 'MiniGrid-Empty-16x16-v0'
-    renv_3 = 'MiniGrid-Empty-Random-3x3-v0'
-    renv_4 = 'MiniGrid-Empty-Random-4x4-v0'
-    renv_5 = 'MiniGrid-Empty-Random-5x5-v0'
-    renv_6 = 'MiniGrid-Empty-Random-6x6-v0'
-
-
-class MiniGridLavaEnv(enum.Enum):
-    env_1 = 'MiniGrid-DistShift1-v0'
-    env_2 = 'MiniGrid-DistShift2-v0'
-    env_3 = 'MiniGrid-LavaGapS5-v0'
-    env_4 = 'MiniGrid-LavaGapS6-v0'
-    env_5 = 'MiniGrid-LavaGapS7-v0'
-    env_6 = 'MiniGrid-Lava_NoEntry-v0'
-    env_7 = 'MiniGrid-Lava_SmallEntry-v0'
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -111,108 +75,6 @@ class GraphInstanceConstructionBase(abc.ABC):
     @property
     def product_automaton(self):
         return self._product_automaton
-
-
-class MinigridGraph(GraphInstanceConstructionBase):
-    """
-    A concrete implementation of an instance of FiniteTransitionSystem from an env in gym-minigrid. Given an Env we
-    build a "raw transition system" that only includes system nodes. We then add human/env nodes by using an instance of
-    FiniteTransitionSystem(TS) and building the concrete instance. Given a fixed syntactically co-safe LTL formula, we
-    compose the TS and the DFA to get an instance of the product automaton(G). We compute a regret Minimizing strategy
-    on this Product Graph G.
-
-    wombat_minigrid_TS: An concrete instance of MiniGridTransitionSystem from wombats tool given an env.
-    """
-
-    def __init__(self,
-                 _finite: bool = False,
-                 _iros_ts: bool = False,
-                 _plot_ts: bool = False,
-                 _plot_dfa: bool = False,
-                 _plot_prod: bool = False,
-                 _plot_minigrid: bool = False):
-        self._wombats_minigrid_TS: Optional[MinigridTransitionSystem] = None
-        self._plot_minigrid = _plot_minigrid
-        self.get_iros_ts = _iros_ts
-        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
-
-    def __get_TS_from_wombats(self) -> Tuple[MiniGrid, MinigridTransitionSystem]:
-        # ENV_ID = 'MiniGrid-LavaComparison_noDryingOff-v0'
-        # ENV_ID = 'MiniGrid-AlternateLavaComparison_AllCorridorsOpen-v0'
-        # ENV_ID = 'MiniGrid-DistShift1-v0'
-        # ENV_ID = 'MiniGrid-LavaGapS5-v0'
-        ENV_ID = 'MiniGrid-Empty-5x5-v0'
-        # ENV_ID = MiniGridEmptyEnv.env_6.value
-        # ENV_ID = MiniGridLavaEnv.env_6.value
-
-        env = gym.make(ENV_ID)
-        env = StaticMinigridTSWrapper(env, actions_type='simple_static')
-        env.render()
-
-        wombats_minigrid_TS = active_automata.get(automaton_type='TS',
-                                                  graph_data=env,
-                                                  graph_data_format='minigrid')
-
-        # file to dump the TS corresponding to the gym env
-        file_name = ENV_ID + '_TS'
-        wombats_minigrid_TS.to_yaml_file(DIR + file_name + ".yaml")
-
-        regret_minigrid_TS = graph_factory.get('MiniGrid',
-                                               graph_name="minigrid_TS",
-                                               config_yaml=f"/config/{file_name}",
-                                               save_flag=True,
-                                               plot=False)
-
-        return regret_minigrid_TS, wombats_minigrid_TS
-
-    def execute_str(self, _controls):
-        self._wombats_minigrid_TS.run(_controls, record_video=True, show_steps=True)
-
-    def _build_ts(self):
-        raw_trans_sys, self._wombats_minigrid_TS = self.__get_TS_from_wombats()
-
-        self._trans_sys = graph_factory.get('MiniGrid',
-                                            raw_minigrid_ts=raw_trans_sys,
-                                            get_iros_ts=self.get_iros_ts,
-                                            graph_name=raw_trans_sys._graph_name,
-                                            config_yaml=raw_trans_sys._config_yaml,
-                                            human_interventions=self.human_intervention,
-                                            human_intervention_cost=self.human_intervention_cost,
-                                            human_non_intervention_cost=self.human_non_intervention_cost,
-                                            save_flag=True,
-                                            plot_raw_minigrid=self._plot_minigrid,
-                                            plot=self.plot_ts)
-
-    def _build_dfa(self):
-        self._dfa = graph_factory.get('DFA',
-                                      graph_name="automaton",
-                                      config_yaml="/config/automaton",
-                                      save_flag=True,
-                                      # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
-                                      # sc_ltl="!(lava_red_open) U (water_blue_open)",
-                                      # sc_ltl="!(lava_red_open) U (goal_green_open)",
-                                      sc_ltl="F (goal_green_open)",
-                                      use_alias=False,
-                                      plot=self.plot_dfa)
-
-    # over ride method to add the attribute self.get_iros_ts
-    def _build_product(self):
-        self._product_automaton = graph_factory.get('ProductGraph',
-                                                    graph_name='product_automaton',
-                                                    config_yaml='/config/product_automaton',
-                                                    trans_sys=self._trans_sys,
-                                                    dfa=self._dfa,
-                                                    save_flag=True,
-                                                    prune=False,
-                                                    debug=False,
-                                                    iros_ts=self.get_iros_ts,
-                                                    absorbing=True,
-                                                    finite=self.finite,
-                                                    plot=self.plot_product)
-
-    @property
-    def wombats_minigrid_TS(self):
-        return self._wombats_minigrid_TS
 
 
 class EdgeWeightedArena(GraphInstanceConstructionBase):
@@ -367,34 +229,8 @@ class FiveStateExample(GraphInstanceConstructionBase):
                                       plot=self.plot_dfa)
 
 
-def infinite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
-                                mini_grid_instance: Optional[MinigridGraph] = None,
-                                epsilon: float = 0,
-                                max_human_interventions: int = 5,
-                                go_fast: bool = True,
-                                finite: bool = False,
-                                plot_result: bool = False,
-                                plot_result_only_eve: bool = False):
-    payoff = payoff_factory.get("cumulative", graph=trans_sys)
-
-    # build an instance of strategy minimization class
-    reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
-
-    reg_syn_handle.infinite_reg_solver(minigrid_instance=mini_grid_instance,
-                                       plot=plot_result,
-                                       plot_only_eve=plot_result_only_eve,
-                                       simulate_minigrid=False,
-                                       go_fast=go_fast,
-                                       finite=finite,
-                                       epsilon=epsilon,
-                                       max_human_interventions=max_human_interventions)
-
-
 def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
-                                epsilon: float = 0,
                                 energy_bound: int = 0,
-                                max_human_interventions: int = 5,
-                                mini_grid_instance: Optional[MinigridGraph] = None,
                                 debug: bool = False,
                                 print_str: bool = False):
 
@@ -403,10 +239,6 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
     if iros_solver.solve(debug=debug):
         print(f"There EXISTS a winning strategy from the  initial game state {_start_state} "
               f"with max cost of {iros_solver.str_map[_start_state]['cost']}")
-        controls = iros_solver.get_controls_from_str_minigrid(epsilon=epsilon,
-                                                              debug=debug,
-                                                              max_human_interventions=max_human_interventions)
-        mini_grid_instance.execute_str(controls)
 
     else:
         print(f"There DOES NOT exists a winning strategy from the  initial game state {_start_state} "
@@ -417,9 +249,6 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph,
 
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
-                        mini_grid_instance: Optional[MinigridGraph] = None,
-                        epsilon: float = 0,
-                        max_human_interventions: int = 5,
                         debug: bool = False,
                         print_winning_regions: bool = False,
                         print_str: bool = False):
@@ -437,16 +266,12 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGri
 
     if reachability_game_handle.is_winning():
         print("Assuming Env to be adversarial, sys CAN force a visit to the accepting states")
-        control = reachability_game_handle.get_pos_sequences(debug=False,
-                                                             epsilon=epsilon,
-                                                             max_human_interventions=max_human_interventions)
-        mini_grid_instance.execute_str(_controls=control)
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
 
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
-                              mini_grid_instance: Optional[MinigridGraph] = None,
+                              mini_grid_instance=None,
                               epsilon: float = 0,
                               max_human_interventions: int = 5,
                               plot: bool = False,
@@ -475,7 +300,7 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, M
     payoff = payoff_factory.get("cumulative", graph=trans_sys)
 
     # build an instance of strategy minimization class
-    reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
+    reg_syn_handle = RegMinStrSyn(trans_sys, None)
 
     # if mini_grid_instance:
     #     reg_syn_handle.add_common_accepting_state(plot=False)
@@ -521,7 +346,6 @@ if __name__ == "__main__":
     go_fast = True
 
     # some constants that allow for appr _instance creations
-    gym_minigrid = False
     three_state_ts = False
     five_state_ts = False
     variant_1_paper = False
@@ -532,20 +356,9 @@ if __name__ == "__main__":
     infinte_reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
-    miniGrid_instance = None
 
     # build the graph G on which we will compute the regret minimizing strategy
-    if gym_minigrid:
-        miniGrid_instance = MinigridGraph(_finite=finite,
-                                          _iros_ts=IROS_FLAG,
-                                          _plot_minigrid=False,
-                                          _plot_ts=False,
-                                          _plot_dfa=False,
-                                          _plot_prod=False)
-        trans_sys = miniGrid_instance.product_automaton
-        wombats_minigrid_TS = miniGrid_instance.wombats_minigrid_TS
-
-    elif three_state_ts:
+    if three_state_ts:
         three_state_ts_instance = ThreeStateExample(_finite=finite,
                                                     _plot_ts=False,
                                                     _plot_dfa=False,
@@ -578,36 +391,20 @@ if __name__ == "__main__":
 
     if finite_reg_synthesis:
         finite_reg_minimizing_str(trans_sys,
-                                  miniGrid_instance,
                                   epsilon=EPSILON,
                                   max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
                                   plot=False,
                                   compute_reg_for_human=False)
-    elif infinte_reg_synthesis:
-        infinite_reg_minimizing_str(trans_sys,
-                                    miniGrid_instance,
-                                    max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
-                                    go_fast=go_fast,
-                                    epsilon=EPSILON,
-                                    finite=finite,
-                                    plot_result=False,
-                                    plot_result_only_eve=False)
     elif adversarial_game:
         compute_winning_str(trans_sys,
-                            miniGrid_instance,
-                            max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
                             debug=True,
-                            epsilon=EPSILON,
                             print_winning_regions=False,
                             print_str=False)
     elif iros_str_synthesis:
         compute_bounded_winning_str(trans_sys,
-                                    mini_grid_instance=miniGrid_instance,
                                     energy_bound=ENERGY_BOUND,
-                                    max_human_interventions=ALLOWED_HUMAN_INTERVENTIONS,
                                     debug=False,
-                                    print_str=False,
-                                    epsilon=EPSILON)
+                                    print_str=False)
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

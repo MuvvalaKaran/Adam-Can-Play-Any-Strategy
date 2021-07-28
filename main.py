@@ -367,82 +367,6 @@ class FiveStateExample(GraphInstanceConstructionBase):
                                       plot=self.plot_dfa)
 
 
-class FrankaAbstractionGraph(GraphInstanceConstructionBase):
-
-    def __init__(self,
-                 _finite: bool = False,
-                 _plot_ts: bool = False,
-                 _plot_dfa: bool = False,
-                 _plot_prod: bool = False):
-        super().__init__(_finite=_finite, _plot_ts=_plot_ts, _plot_dfa=_plot_dfa, _plot_prod=_plot_prod)
-
-    def _build_graph_from_yaml(self):
-        if self._trans_sys._graph_yaml is None:
-            warnings.warn("Please ensure that you have first loaded the config data. You can do this by"
-                          "setting the respective True in the builder instance.")
-
-        _nodes = self._trans_sys._graph_yaml['nodes']
-        _start_state = self._trans_sys._graph_yaml['start_state']
-
-        # each node has an atomic proposition and a player associated with it. Some states also init and
-        # accepting attributes associated with them
-        for _n, _n_attr in _nodes.items():
-            state_name = _n
-            ap = _n_attr.get('observation')
-
-            self._trans_sys.add_state(state_name, ap=ap, player="eve")
-
-        self._trans_sys.add_initial_state(_start_state)
-
-        _edges = self._trans_sys._graph_yaml['edges']
-
-        for _u, _v in _edges.items():
-            if _v is not None:
-                for _n, _n_attr in _v.items():
-                    _action = _n_attr.get('symbols')
-                    self._trans_sys.add_edge(_u, _n, weight="-1", actions=_action)
-
-    def _build_ts(self):
-        self._trans_sys = graph_factory.get('TS',
-                                            raw_trans_sys=None,
-                                            graph_name="trans_sys",
-                                            config_yaml="/config/franka_abs",
-                                            pre_built=False,
-                                            from_file=True,
-                                            built_in_ts_name="",
-                                            save_flag=True,
-                                            debug=False,
-                                            plot=self.plot_ts,
-                                            human_intervention=0,
-                                            finite=self.finite,
-                                            plot_raw_ts=False)
-
-        self._build_graph_from_yaml()
-        self._trans_sys = graph_factory.get('TS',
-                                            raw_trans_sys=self._trans_sys,
-                                            graph_name="trans_sys",
-                                            config_yaml="/config/franka_abs",
-                                            pre_built=False,
-                                            from_file=False,
-                                            built_in_ts_name="",
-                                            save_flag=True,
-                                            debug=False,
-                                            plot=self.plot_ts,
-                                            human_intervention=0,
-                                            finite=self.finite,
-                                            plot_raw_ts=False)
-        # self._trans_sys.fancy_graph()
-
-    def _build_dfa(self):
-        self._dfa = graph_factory.get('DFA',
-                                      graph_name="automaton",
-                                      config_yaml="/config/automaton",
-                                      save_flag=True,
-                                      sc_ltl="F(p04p10p22)",
-                                      use_alias=False,
-                                      plot=self.plot_dfa)
-
-
 def infinite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
                                 mini_grid_instance: Optional[MinigridGraph] = None,
                                 epsilon: float = 0,
@@ -602,7 +526,6 @@ if __name__ == "__main__":
     five_state_ts = False
     variant_1_paper = False
     target_weighted_arena = True
-    franka_abs = False
 
     # solver to call
     finite_reg_synthesis = True
@@ -646,9 +569,6 @@ if __name__ == "__main__":
                                       _plot_prod=False)
         trans_sys = twa_graph.product_automaton
 
-    elif franka_abs:
-        franka_instance = FrankaAbstractionGraph(_finite=finite)
-        trans_sys = franka_instance.product_automaton
     else:
         warnings.warn("Please ensure at-least one of the flags is True")
         sys.exit(-1)

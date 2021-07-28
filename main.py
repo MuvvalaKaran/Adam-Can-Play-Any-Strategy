@@ -15,7 +15,6 @@ from wombats.automaton import MinigridTransitionSystem
 
 # import local packages
 from src.graph import graph_factory
-from src.payoff import payoff_factory
 from src.graph import MiniGrid
 from src.graph import FiniteTransSys
 from src.graph import DFAGraph
@@ -27,8 +26,6 @@ from src.strategy_synthesis import RegMinStrSyn
 from src.strategy_synthesis import ReachabilitySolver
 from src.strategy_synthesis import IrosStrSolver
 from src.strategy_synthesis import ValueIteration
-
-from src.mpg_tool import MpgToolBox
 
 # assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 

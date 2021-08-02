@@ -3,6 +3,7 @@ import warnings
 import math
 import copy
 import yaml
+import queue
 
 from typing import List, Tuple, Dict, Set, Optional, Union
 from collections import deque, defaultdict
@@ -19,6 +20,7 @@ from ..spot.Parser import parse as parse_guard
 
 PROD_ACCEPTING_STATE_NAME = 'Accepting'
 AUTO_ACCEPTING_STATE_NAME = 'qA'
+TS_INIT_STATE_NAME = 'Init'
 TS_EXTRA_STATE_NAME = 'tA'
 
 
@@ -73,7 +75,7 @@ class ProductAutomaton(TwoPlayerGraph):
         # if not self._check_ts_ltl_compatability():
         #     warnings.warn("Please make sure that the formula is composed of symbols that are part of the aps in the TS")
 
-        self._extend_graphs()
+        self._extend_trans_init()
 
         if self._absorbing:
 
@@ -81,7 +83,8 @@ class ProductAutomaton(TwoPlayerGraph):
                 self.construct_product_absorbing_from_iros_ts(finite=self._finite)
 
             else:
-                self.construct_product_absorbing()
+                # self.construct_product_absorbing()
+                self.construct_minimum_product()
 
             # all the edges from the sys node to the absorbing state should have weight zero.
             if not isinstance(self._auto_graph, PDFAGraph):
@@ -95,43 +98,22 @@ class ProductAutomaton(TwoPlayerGraph):
 
         self._sanity_check(debug=True)
 
-    def _extend_graphs(self):
+    def _extend_trans_init(self):
+        # Get the original initial state
+        _n = self._trans_sys.get_initial_states()[0][0]
+        # Set its init to False
+        self._trans_sys._graph.nodes[_n]['init'] = False
 
-        # First, Extend PDFA graph to a single accepting state
-        for _n in self._auto_graph.get_accepting_states():
-            self._auto_graph._graph.nodes[_n]['accepting'] = False
+        player = self._trans_sys._graph.nodes[_n]['player']
+        actions = f'{TS_INIT_STATE_NAME}_to_{_n}'
 
-            prob = self._auto_graph._graph.nodes[_n]['final_probability']
-            transition_formula = f'(true)'
-            transition_expr = parse_guard(transition_formula)
-            self._auto_graph.add_edge(
-                _n,
-                AUTO_ACCEPTING_STATE_NAME,
-                symbol='true',
-                prob=prob,
-                weight=float(-math.log(prob)),
-                guard=transition_expr,
-                guard_formula=transition_formula)
+        # Add an artificial initial state
+        self._trans_sys.add_state(TS_INIT_STATE_NAME, init=True, player=player, ap='')
 
-        self._auto_graph.add_state(AUTO_ACCEPTING_STATE_NAME,
-                                   accepting=True,
-                                   final_probability=1.0)
-
-        if self._plot_auto_graph:
-            orig_name = self._auto_graph._graph.name
-            self._auto_graph._graph.name = orig_name + '_extended'
-            self._auto_graph.plot_graph()
-
-        # Second, Extend every node in TS to a single absorbing state
-        # to align with the accepting state in PDFA
-        for (_n, attr) in self._trans_sys.get_states():
-            self._trans_sys.add_edge(_n, TS_EXTRA_STATE_NAME,
-                                     weight=0,
-                                     actions='NoAction',
-                                     player=attr['player'])
-
-        self._trans_sys.add_state(TS_EXTRA_STATE_NAME,
-                                  ap='', player='eve')
+        # Add an edge from this state to the original init state
+        self._trans_sys.add_edge(TS_INIT_STATE_NAME, _n,
+                                 weight=0,
+                                 actions=actions)
 
         if self._plot_trans_graph:
             orig_name = self._trans_sys._graph.name
@@ -139,8 +121,8 @@ class ProductAutomaton(TwoPlayerGraph):
             self._trans_sys.plot_graph()
 
     def _integrate_accepting_states(self):
-        if not isinstance(self._auto_graph, PDFAGraph):
-            return
+        # if not isinstance(self._auto_graph, PDFAGraph):
+        #     return
 
         for _n in self.get_accepting_states():
             # Check if absorbing, then delete
@@ -149,16 +131,21 @@ class ProductAutomaton(TwoPlayerGraph):
 
             self._graph.nodes[_n]['accepting'] = False
             self._graph.nodes[_n]['originalAccepting'] = True
+            prob = self._graph.nodes[_n].get('final_probability')
+            weight = 0.0 if prob in [1.0, None] else -math.log(prob)
 
+            player = self._trans_sys._graph.nodes[_n[0]].get('player')
             # Turn node's accepting to False
             # Add an edge between node to the accepting state
             self.add_edge(_n, PROD_ACCEPTING_STATE_NAME,
-                        weight=0,
-                        actions='NoAction',
-                        player='eve')
+                        weight=weight,
+                        actions=f'toAcceptingBy{player}',
+                        player=player,
+                        weights={'ts': weight,'pref': 0},
+                        pref=1)
 
         self.add_state(PROD_ACCEPTING_STATE_NAME,
-                       ts=None, dfa=None, player='eve', accepting=True, ap=None)
+                       ts=None, dfa=None, player='eve', accepting=True, ap='')
 
     def _check_ts_ltl_compatability(self) -> bool:
         """
@@ -180,20 +167,20 @@ class ProductAutomaton(TwoPlayerGraph):
 
     def construct_minimum_product(self):
         # Create an product initial state
-        t_init = self._trans_sys.get_initial_states()[0]
-        q_init = self._auto_graph.get_initial_states()[0]
-        _n_init = self.composition(t_init, q_init)
+        t_init = self._trans_sys.get_initial_states()[0][0]
+        q_init = self._auto_graph.get_initial_states()[0][0]
+        _n_init = self._composition(t_init, q_init)
 
         # Create Queues
-        queue = Queue()
+        searchQueue = queue.Queue()
         visited = defaultdict(lambda: False)
 
-        queue.push(_n_init)
+        searchQueue.put(_n_init)
         visited[_n_init] = True
 
         # Create transitions until there is no more
-        while queue.is_empty():
-            _u_prod_node = queue.pop()
+        while not searchQueue.empty():
+            _u_prod_node = searchQueue.get()
 
             _u_ts_node = _u_prod_node[0]
             _u_a_node = _u_prod_node[1]
@@ -201,61 +188,41 @@ class ProductAutomaton(TwoPlayerGraph):
             # Next we check for all transitions in TS
             for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
 
-                # Get all info, cuz it's 100% sure we transition to each node in TS
-
-                # Assumes only one ap exists in each node in TS
-                ap = self._trans_sys._graph.nodes[_v_ts_node].get('ap')
-                # Assumes only one edge exists betw. nodes in TS
-                ts_action = self._trans_sys.get_edge_attributes(_u_ts_node, _v_ts_node, 'actions')
-                _weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
-
-                added_trans = []
-                skipped_trans = []
+                # Get all info about the TS transition
+                ts_action, ap, weight = self._get_ts_transition_data(_u_ts_node, _v_ts_node)
 
                 # Check if the trans in TS satisfies any trans in the Automaton specification
                 for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
+                    _v_prod_node = (_v_ts_node, _v_a_node)
 
-                    _v_prod_node = self.composition(_v_ts_node, _v_a_node)
-
-                    # Assumes multiple symbols/actions exist in one transition
-                    # (== multiple edges)
-                    _, weights, auto_actions = self._get_edge_and_node_data(_u_ts_node,
-                                                                            _v_ts_node,
-                                                                            _u_a_node,
-                                                                            _v_a_node)
+                    # Assume multiple edges
+                    auto_weights, prefs, auto_actions = self._get_auto_transition_data(
+                        _u_a_node, _v_a_node)
 
                     # For each symbol, check if ap satisfies any of them
-                    for weight, auto_action in zip(weights, auto_actions):
+                    for auto_weight, pref, auto_action in zip(auto_weights, prefs, auto_actions):
                         # determine if a transition is possible or not, if yes then add that edge
-                        exists, _ = self._check_transition(_u_ts_node, _v_ts_node,
-                                                           _u_a_node, _v_a_node,
-                                                           _v_prod_node,
-                                                           action=auto_action,
-                                                           obs=ap)
+                        exists, _ = self._check_transition_absorbing(
+                            _u_ts_node, _v_ts_node,
+                            _u_a_node, _v_a_node,
+                            _v_prod_node, action=auto_action, obs=ap)
+
                         if exists:
+                            if not visited[_v_prod_node]:
+                                self._composition(_v_ts_node, _v_a_node)
+                                # check if it's already been visited
+                                searchQueue.put(_v_prod_node)
+                                visited[_v_prod_node] = True
+
                             self._add_transition_absorbing(_u_prod_node,
                                                             _v_prod_node,
                                                             weight=weight,
-                                                            action=ts_action)
-                            # check if it's already been visited
-                            if not visited[_v_prod_node]:
-                                queue.push(_v_prod_node)
-                                visited[_v_prod_node] == True
-                                added_trans.append((_u_prod_node, _v_prod_node))
-                        else:
-                            skipped_trans.append((_u_prod_node, _v_prod_node, ts_action))
+                                                            action=ts_action,
+                                                            weights={'ts': weight,'pref': auto_weight},
+                                                            pref=pref)
 
-                # Case: Automaton doesn't include AP from TS
-                # Keep adding transition, but with weight of inf (dead edge)
-                if self._complete_graph and len(added_trans) == 0:
-                    for skipped_tran in skipped_trans:
-                        _u_ts_node = skipped_tran[0][0]
-                        # Only create complete graph for adam nodes for cleanness
-                        if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'adam':
-                            self._add_transition_absorbing(skipped_tran[0],
-                                                        skipped_tran[1],
-                                                        weight=math.inf,
-                                                        action=skipped_tran[2])
+                        # TODO: If not, then add a transition to the absorbing state
+                        # Otherwise, Env player cannot win against Sys.
 
     def construct_product(self):
         """
@@ -271,18 +238,17 @@ class ProductAutomaton(TwoPlayerGraph):
                 _u_prod_node = self._composition(_u_ts_node, _u_a_node)
 
                 for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
+
+                    ts_action, ap, weight = self._get_ts_transition_data(_u_ts_node, _v_ts_node)
+
                     for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
                         _v_prod_node = self._composition(_v_ts_node, _v_a_node)
 
-                        # get relevant details that need to be added to the composed node and edge
-                        ap, weights, auto_actions = self._get_edge_and_node_data(_u_ts_node,
-                                                                               _v_ts_node,
-                                                                               _u_a_node,
-                                                                               _v_a_node)
+                        # Assume multiple edges
+                        auto_weights, prefs, auto_actions = self._get_auto_transition_data(
+                            _u_a_node, _v_a_node)
 
-                        ts_action = self.get_edge_attributes(_u_ts_node, _v_ts_node, 'actions')
-
-                        for weight, auto_action in zip(weights, auto_actions):
+                        for auto_weight, pref, auto_action in zip(auto_weights, prefs, auto_actions):
                             # determine if a transition is possible or not, if yes then add that edge
                             exists, _v_prod_node = self._check_transition(_u_ts_node,
                                                                         _v_ts_node,
@@ -290,13 +256,15 @@ class ProductAutomaton(TwoPlayerGraph):
                                                                         _v_a_node,
                                                                         _v_prod_node,
                                                                         action=auto_action,
-                                                                        obs=ap)
+                                                                        obs=ap,
+                                                                        pref=pref)
 
                             if exists:
                                 self._add_transition(_u_prod_node,
                                                     _v_prod_node,
                                                     weight=weight,
-                                                    action=ts_action)
+                                                    action=ts_action,
+                                                    weights={'ts': weight,'pref': auto_weight})
 
     def construct_product_absorbing(self):
         """
@@ -315,14 +283,12 @@ class ProductAutomaton(TwoPlayerGraph):
                 # if the current node an absorbing state, then we don't compose u_ts_node and u_a_node
                 if _u_a_node in self._auto_graph.get_absorbing_states():
                     _u_prod_node = self._add_prod_state(_u_a_node, _u_a_node)
-
                 else:
                     _u_prod_node = self._composition(_u_ts_node, _u_a_node)
 
                 for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
 
-                    added_transition_record = defaultdict(lambda: [])
-                    skipped_transition_record = defaultdict(lambda: [])
+                    ts_action, ap, weight = self._get_ts_transition_data(_u_ts_node, _v_ts_node)
 
                     for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
 
@@ -332,47 +298,25 @@ class ProductAutomaton(TwoPlayerGraph):
                         else:
                             _v_prod_node = self._composition(_v_ts_node, _v_a_node)
 
-                        # get relevant details that need to be added to the composed node and edge
-                        ap, weights, auto_actions = self._get_edge_and_node_data(_u_ts_node,
-                                                                               _v_ts_node,
-                                                                               _u_a_node,
-                                                                               _v_a_node)
+                        # Assume multiple edges
+                        auto_weights, prefs, auto_actions = self._get_auto_transition_data(
+                            _u_a_node, _v_a_node)
 
-                        ts_action = self._trans_sys.get_edge_attributes(_u_ts_node, _v_ts_node, 'actions')
-
-                        for weight, auto_action in zip(weights, auto_actions):
+                        for auto_weight, pref, auto_action in zip(auto_weights, prefs, auto_actions):
                             exists, _v_prod_node = self._check_transition_absorbing(_u_ts_node,
                                                                                     _v_ts_node,
                                                                                     _u_a_node,
                                                                                     _v_a_node,
                                                                                     _v_prod_node,
                                                                                     action=auto_action,
-                                                                                    obs=ap)
+                                                                                    obs=ap,
+                                                                                    pref=pref)
                             if exists:
                                 self._add_transition_absorbing(_u_prod_node,
                                                               _v_prod_node,
                                                               weight=weight,
-                                                              action=ts_action)
-                                added_transition_record[ap].append((_u_prod_node, _v_prod_node))
-                            else:
-                                skipped_transition_record[ap].append((_u_prod_node, _v_prod_node, ts_action))
-
-                    # Case: Automaton doesn't include AP from TS
-                    # Keep adding transition, but with weight of inf (dead edge)
-                    if len(self._complete_graph_players)>0:
-                        for ap, skipped_trans in skipped_transition_record.items():
-
-                            added_trans = added_transition_record[ap]
-
-                            if len(added_trans) == 0:
-                                for skipped_tran in skipped_trans:
-                                    _n = skipped_tran[0][0]
-                                    # Only create complete graph for adam nodes for cleanness
-                                    if self._trans_sys._graph.nodes[_n].get('player') in self._complete_graph_players:
-                                        self._add_transition_absorbing(skipped_tran[0],
-                                                                    skipped_tran[1],
-                                                                    weight=math.inf,
-                                                                    action=skipped_tran[2])
+                                                              action=ts_action,
+                                                              weights={'ts': weight,'pref': auto_weight})
 
     def construct_product_absorbing_from_iros_ts(self, finite: bool):
         """
@@ -443,7 +387,8 @@ class ProductAutomaton(TwoPlayerGraph):
                                                                            action=ts_action,
                                                                            edge_player=ts_player)
 
-    def _add_transition(self, _u_prod_node, _v_prod_node, weight: float, action: str):
+    def _add_transition(self, _u_prod_node, _v_prod_node, weight: float, action: str,
+                        **kwargs):
         """
         A helper method to add an edge if it already does not exists given the current product node
         (composition of current TS and current DFA node) and the next product node.
@@ -458,7 +403,8 @@ class ProductAutomaton(TwoPlayerGraph):
         if not self._graph.has_edge(_u_prod_node, _v_prod_node):
             self.add_edge(_u_prod_node, _v_prod_node,
                           weight=weight,
-                          actions=action)
+                          actions=action,
+                          **kwargs)
 
     def _add_transition_absorbing_finite_for_iros_ts(self,
                                                      _u_prod_node,
@@ -555,7 +501,8 @@ class ProductAutomaton(TwoPlayerGraph):
                                   _u_prod_node,
                                   _v_prod_node,
                                   weight: float,
-                                  action: str) -> None:
+                                  action: str,
+                                  **kwargs) -> None:
         """
         A helper method to add an edge if it already does not exists given the current product node
         (composition of current TS and current DFA node) and the next product node.
@@ -573,11 +520,13 @@ class ProductAutomaton(TwoPlayerGraph):
                 # absorbing state
                 self.add_edge(_u_prod_node, _v_prod_node,
                               weight=0,
-                              actions=action)
+                              actions=action,
+                              **kwargs)
             else:
                 self.add_edge(_u_prod_node, _v_prod_node,
                               weight=weight,
-                              actions=action)
+                              actions=action,
+                              **kwargs)
 
     def _add_sys_to_abs_states_w_zero_wgt(self):
         """
@@ -662,23 +611,71 @@ class ProductAutomaton(TwoPlayerGraph):
             # TODO: Do not carry eve's action to adam's node
             # _v_a_node = _u_a_node
 
-            # if the next node belongs to an absorbing state
-            if _v_a_node in self._auto_graph.get_absorbing_states():
-                _v_prod_node = self._add_prod_state(_v_a_node, _v_a_node)
+            # # if the next node belongs to an absorbing state
+            # if _v_a_node in self._auto_graph.get_absorbing_states():
+            #     _v_prod_node = self._add_prod_state(_v_a_node, _v_a_node)
 
-            else:
-                _v_prod_node = self._composition(_v_ts_node, _v_a_node)
+            # else:
+            #     _v_prod_node = self._composition(_v_ts_node, _v_a_node)
 
             # TODO: Ask Karan why this statement is always True.
             # return True, _v_prod_node
             if action.formula == "(true)" or action.formula == "1":
                 return True, _v_prod_node
             else:
-                return action.check(obs), _v_prod_node
+                 return action.check(obs), _v_prod_node
 
         else:
             warnings.warn(f"Looks like the node {_u_ts_node} in graph {self._trans_sys._graph_name} does"
                           f" not have a valid player assigned to it")
+
+    def _get_ts_transition_data(self, _u_ts_node, _v_ts_node) -> Tuple[str, str, float]:
+        # Assumes only one edge exists betw. nodes in TS
+        _ts_action = self._trans_sys.get_edge_attributes(_u_ts_node, _v_ts_node, 'actions')
+
+        if self._observe_next_on_trans:
+            _observation = self._trans_sys._graph.nodes[_v_ts_node].get('ap')
+        else:
+            _observation = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
+
+        try:
+            _weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
+        except:
+            warnings.warn(f"The edge from {_u_ts_node} to {_v_ts_node} does not contain the attribute 'weight'."
+                          f"Setting the edge weight to 0 while constructing the product")
+            _weight = 0
+
+        return _ts_action, _observation, _weight
+
+    def _get_auto_transition_data(self, _u_auto_node, _v_auto_node) -> Tuple[List, List]:
+        auto_edge_data = self._auto_graph._graph.get_edge_data(_u_auto_node, _v_auto_node)
+        num_auto_edges = len(auto_edge_data)
+
+        prefs = []
+        weights = []
+        automaton_labels = []
+
+        for i_edge in range(num_auto_edges):
+            if self._multiple_weights:
+                try:
+                    weight = auto_edge_data[i_edge].get('weight')
+                    pref = auto_edge_data[i_edge].get('prob')
+                except:
+                    msg = f"The weight from edge {_u_auto_node} to {_v_auto_node} does not exist"
+                    warnings.warn(msg)
+                    weight = 0
+                    pref = 1
+            else:
+                weight = 0
+                pref = 1
+
+            automaton_label = auto_edge_data[i_edge]['guard']
+
+            weights.append(weight)
+            prefs.append(pref)
+            automaton_labels.append(automaton_label)
+
+        return weights, prefs, automaton_labels
 
     def _get_edge_and_node_data(self, _u_ts_node, _v_ts_node, _u_auto_node, _v_auto_node) -> Tuple[str, float, str]:
         """
@@ -716,15 +713,15 @@ class ProductAutomaton(TwoPlayerGraph):
             if self._multiple_weights:
                 try:
                     _a_weight = auto_edge_data[i_edge].get('weight')
-                    _weight = self._weighting(_weight, _a_weight)
+                    weight = self._weighting(_weight, _a_weight)
                 except:
                     msg = f"The weight from edge {_u_auto_node} to {_v_auto_node} does not exist"
                     warnings.warn(msg)
-                    _weight = 0
+                    weight = 0
 
             _automaton_label = auto_edge_data[i_edge]['guard']
 
-            _weights.append(_weight)
+            _weights.append(weight)
             _automaton_labels.append(_automaton_label)
 
         return _observation, _weights, _automaton_labels
@@ -761,7 +758,9 @@ class ProductAutomaton(TwoPlayerGraph):
             if self._auto_graph._graph.nodes[auto_node].get('accepting'):
                 # if the dfa node belongs to the set of accepting states then set this product node as accepting too
                 self._graph.nodes[_p_node]['accepting'] = True
-                # self.add_accepting_state(_p_node)
+                prob = self._auto_graph._graph.nodes[auto_node].get('final_probability')
+                if prob:
+                    self._graph.nodes[_p_node]['final_probability'] = prob
 
             if self._trans_sys._graph.nodes[ts_node].get('player') == 'eve':
                 self._graph.nodes[_p_node]['player'] = 'eve'
@@ -824,19 +823,22 @@ class ProductAutomaton(TwoPlayerGraph):
         self._sanity_check(debug=debug)
 
     def _sanity_check(self, debug: bool = False):
-        # check is the graph is total or not by looping through every node and add a self-loop of weight max(W)
+        # check is the graph is total or not by looping through every nodE and add a self-loop of weight max(W)
         # to every node that does not  have a successor
         max_w: float = self._trans_sys.get_max_weight()
         for _n in self._graph.nodes():
             if len(list(self._graph.successors(_n))) == 0:
+                player = self.get_state_w_attribute(_n, 'player')
                 if debug:
                     print("=====================================")
                     print(f"Adding self loop of weight - {max_w} to the node {_n}")
                     print("=====================================")
-                self._graph.add_weighted_edges_from([(_n,
-                                                      _n, 0)])
-                                                      # math.inf)])
-                # -1 * max_w)])
+                # self._graph.add_weighted_edges_from([(_n, _n, 0)])
+                self.add_edge(_n, _n,
+                            weight=0,
+                            actions=f'loopBy{player}',
+                            weights={'ts': 0,'pref': 0},
+                            pref=1)
 
     def _prune_edges(self, debug):
         # A helper function to remove edges without the "prune" attribute
@@ -897,9 +899,9 @@ class ProductAutomaton(TwoPlayerGraph):
             if n[1].get('originalAccepting'):
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[3], "xlabel": xlabel})
             if n[1].get('player') == 'eve':
-                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
-            if n[1].get('player') == 'adam':
                 dot.node(str(n[0]), _attributes={"shape": "circle"})
+            if n[1].get('player') == 'adam':
+                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
 
         # add all the edges
         edges = self._graph_yaml["edges"]
@@ -910,7 +912,8 @@ class ProductAutomaton(TwoPlayerGraph):
 
             if self._show_weight:
                 weight = edge[2].get('weight')
-                label += f': {weight:.2f}'
+                weights = edge[2].get('weights')['pref']
+                label += f': G{weight:.2f}, A{weights:.2f}'
 
             if edge[2].get('strategy') is True:
                 # dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')), _attributes={'color': 'red'})

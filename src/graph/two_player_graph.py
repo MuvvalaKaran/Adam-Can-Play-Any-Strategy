@@ -1,13 +1,17 @@
 import networkx as nx
+import os
 import math
 import warnings
+from pathlib import Path
+from collections import defaultdict
+from typing import List, Tuple, Dict, Set, Optional, Union
 
 # local packages
 from .base import Graph
 from ..factory.builder import Builder
 
 from graphviz import Digraph
-
+from pyFAS.solvers import solver_factory
 
 class TwoPlayerGraph(Graph):
 
@@ -481,6 +485,235 @@ class TwoPlayerGraph(Graph):
 
         return _ewa_graph
 
+    @property
+    def players(self) -> List[str]:
+        return set(self._graph.nodes.data('player'))
+
+    @property
+    def weight_types(self) -> List[str]:
+        edges = self._graph.edges.data('weights')
+        if len(edges)<2:
+            return []
+
+        weight_types = set()
+        for edge in edges:
+            for weight_type in edge[2].keys():
+                weight_types.add(weight_type)
+        return list(weight_types)
+
+    def delete_cycles(self, winning_region: List):
+        """
+        Find cycles (FAS and self loops) and delete them from G
+
+        :args winning_region:   The winning region
+        """
+        self.add_state('Absorbing', player='eve')
+        # For each self loop
+        for node in self.identify_loops():
+            if node == 'Accepting':
+                continue
+            # check if the loop belongs to sys or env
+            player = self.get_state_w_attribute(node, 'player')
+            # If sys, delete the edge
+            if player == 'sys':
+                self._graph.remove_edge(node, node)
+            # If env, redirect the edge to an absorbing state
+            else:
+                edge_attributes = self._graph[node][node][0]
+                self.add_edge(node, 'Absorbing', **edge_attributes)
+                self._graph.remove_edge(node, node)
+
+        sccs = self.identify_sccs()
+        # For each sccss,
+        for scc in sccs:
+            # Check if all nodes in scc belong to env
+            all_env_node = all(['adam'==self.get_state_w_attribute(n, 'player') for n in scc])
+            # Redirect all nodes to absorbing state
+            if all_env_node:
+                for u_node in scc:
+                    for v_node in self._graph.successors(u_node):
+                        if v_node in scc:
+                            edge_attributes = self._graph[u_node][v_node][0]
+                            self.add_edge(u_node, 'Absorbing', **edge_attributes)
+                            self._graph.remove_edge(u_node, v_node)
+
+            # For sys node in scc
+            for u_node in scc:
+                player = self.get_state_w_attribute(u_node, 'player')
+                if player == 'eve':
+                    # check if it has an edge to one of the nodes in the scc, then delete it
+                    successors = list(self._graph.successors(u_node))
+                    for v_node in successors:
+                        if v_node in scc:
+                            self._graph.remove_edge(u_node, v_node)
+
+    def export_files_to_prism(self) -> str:
+        """
+        Export Model and Property files for using with PRISM
+        """
+        model_filename= self.export_prism_model()
+        props_filename = self.export_prism_property()
+
+        return [model_filename, props_filename]
+
+    def export_prism_model(self) -> str:
+        """
+        Export TwoPlayerGame as a PRISM model to a file
+        """
+        graph_name = self._graph_name_in_prism()
+
+        # If filepath not given, then use graph_name as a filename
+        directory = self._prism_directory()
+        filepath = os.path.join(directory, graph_name + '.prism')
+
+        # Create directory if not exists
+        file_dir, _ = os.path.split(filepath)
+        Path(file_dir).mkdir(parents=True, exist_ok=True)
+
+        # Info about the graph
+        players = self.players
+        num_weight = len(self.weight_types)
+
+        num_node = len(self._graph.nodes())
+        if num_node < 2:
+            warnings.warn('num_node should be greater or equal to 2')
+        # Mapping from node name to int val.
+        node_int_dict = {n: i for i, n in enumerate(self._graph.nodes())}
+
+        with open(filepath, 'w+') as f:
+            # Stochastic Multi-Player Game
+            f.write('smg\n\n')
+
+            # TODO: Retrieve actions per player
+            actions_per_player = defaultdict(lambda: set())
+            for u_node_data in self._graph.nodes.data():
+                u_node = u_node_data[0]
+                player = u_node_data[1]['player']
+                for v_node in self._graph.successors(u_node):
+                    action = self.get_edge_attributes(u_node, v_node, 'actions')
+                    actions_per_player[player].add(action)
+
+            for i, (player, actions) in enumerate(actions_per_player.items()):
+                add_bracket = lambda s: f'[{s}]'
+                action_list_str = ', '.join(map(add_bracket, actions))
+                f.write(f'player p{i+1}\n')
+                f.write(f'\t{action_list_str}\n')
+                f.write(f'endplayer\n\n')
+
+            # Game
+            f.write(f'module {graph_name}\n')
+            f.write(f'\tx : [0..{num_node-1}] init 0;\n') # TODO: What if num_node is 0 or 1?
+            for edge in self._graph.edges.data():
+                u_node_int = node_int_dict[edge[0]]
+                v_node_int = node_int_dict[edge[1]]
+                action = edge[2].get('actions')
+                # TODO: nondeterministic transitions
+                f.write(f"\t[{action}] x={u_node_int} -> 1 : (x'={v_node_int});\n")
+            f.write(f'endmodule\n\n')
+
+            # Weight Objective
+            for i_weight in range(num_weight):
+                weight_name = self.weight_types[i_weight]
+                f.write(f'rewards "{weight_name}"\n')
+                for edge in self._graph.edges.data():
+                    u_node_int = node_int_dict[edge[0]]
+                    action = edge[2].get('actions')
+                    weight = edge[2].get('weights')[weight_name]
+                    f.write(f'\t[{action}] x={u_node_int} : {weight};\n')
+                f.write(f'endrewards\n\n')
+
+            # Reachability Objective
+            # Set weight of 1 to edges that lead to the accepting state
+            # TODO: If there exists a few accepting states, then create a virtual node
+            f.write(f'rewards "reach"\n')
+            for v_node in self.get_accepting_states():
+                for u_node in self._graph.predecessors(v_node):
+                    action = self.get_edge_attributes(u_node, v_node, 'actions')
+                    u_node_int = node_int_dict[u_node]
+                f.write(f'\t[{action}] x={u_node_int} : 1;\n')
+            f.write(f'endrewards\n\n')
+
+        return os.path.abspath(filepath)
+
+    def export_prism_property(self) -> str:
+        """
+        Export Multi-Objective Optimization property to a file
+        """
+        graph_name = self._graph_name_in_prism()
+
+        # If filepath not given, then use graph_name as a filename
+        directory = self._prism_directory()
+        filepath = os.path.join(directory, graph_name + '.props')
+
+        # Create directory if not exists
+        file_dir, _ = os.path.split(filepath)
+        Path(file_dir).mkdir(parents=True, exist_ok=True)
+
+        # TODO: write property to a file
+
+        # Minimizes weights and maximize reachability
+        with open(filepath, 'w+') as f:
+            f.write(f'const double r = {0.98};\n')
+            for i, name in enumerate(self.weight_types):
+                max_weight_value = self._get_max_weight_value(name)
+                f.write(f'const double v{i} = {max_weight_value};\n')
+            f.write('\n')
+            weight_obj_str = [f'R{{"{name}"}}<=v{i}[C]' for i, name in enumerate(self.weight_types)]
+            obj_str = ' & '.join([f'R{{"reach"}}>=r[C]'] + weight_obj_str)
+            f.write(f'<<p1>> ({obj_str})\n\n')
+
+        return os.path.abspath(filepath)
+
+    def _get_max_weight_value(self, weight_name: str) -> float:
+        """
+        Compute the maximum possible value for the given weight
+        """
+        # TODO MAX_WEIGHT_VALUE = A_MAX_WEIGHT * MAX_DEPTH * MAX_WIDTH
+        weights = [e[2]['weights'].get(weight_name) for e in self._graph.edges.data()]
+        max_single_weight = max(weights)
+        max_depth = len(self._graph.nodes())
+        successors = [list(self._graph.successors(n)) for n in self._graph.nodes()]
+        max_width = max([len(s) for s in successors])
+
+        return max_single_weight * max_depth * max_width
+
+    def _graph_name_in_prism(self):
+        """
+        Transform graph_name into the prism form
+        """
+        return self._graph_name.replace(' ', '')
+
+    def _prism_directory(self):
+        """
+        Get prism's directory
+        """
+        return os.path.join(self._get_project_root_directory(), 'prism')
+
+    def identify_sccs(self) -> List:
+        """
+        Find a list of Strongly Connected Components in G
+
+        :return fas:
+        """
+        graph = self._graph
+        solver = solver_factory.get("array_fas", graph=graph)
+        solver.solve(debug=True)
+
+        return solver.get_fas_set()
+
+    def identify_loops(self) -> List:
+        """
+        Find self loops in G
+        """
+        graph = self._graph
+
+        loops = []
+        for u_node in graph.nodes():
+            for v_node in graph.successors(u_node):
+                if u_node == v_node:
+                    loops.append(u_node)
+
+        return loops
 
 class TwoPlayerGraphBuilder(Builder):
     """

@@ -35,9 +35,9 @@ class FiniteTransSys(TwoPlayerGraph):
             if n[1].get('accepting'):
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
             if n[1].get('player') == 'eve':
-                dot.node(str(n[0]), _attributes={"shape": "rectangle", "xlabel": ap})
+                dot.node(str(n[0]), _attributes={"shape": "", "xlabel": ap})
             if n[1].get('player') == 'adam':
-                dot.node(str(n[0]), _attributes={"shape": "circle", "xlabel": ap})
+                dot.node(str(n[0]), _attributes={"shape": "rectangle", "xlabel": ap})
 
         # add all the edges
         edges = self._graph_yaml["edges"]
@@ -48,7 +48,7 @@ class FiniteTransSys(TwoPlayerGraph):
                 dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')),
                          _attributes={'color': 'red'})
             else:
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')))
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')) + ': ' + str(edge[2].get('weight')))
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'

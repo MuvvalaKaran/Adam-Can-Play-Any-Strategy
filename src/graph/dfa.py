@@ -63,13 +63,10 @@ class DFAGraph(Graph):
         for (u, v) in edges.keys():
             transition_formula = edges[(u, v)]
             transition_expr = parse_guard(transition_formula)
-            print('transition_expr', transition_expr)
-            print('transition_formula', transition_formula)
             self.add_edge(u,
                           v,
                           guard=transition_expr,
                           guard_formula=transition_formula)
-        exit()
 
     def _construct_dfa_w_alias(self, states, edges):
         """

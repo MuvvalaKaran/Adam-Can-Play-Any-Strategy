@@ -97,17 +97,16 @@ class Graph(abc.ABC):
 
         # each node has an atomic proposition and a player associated with it. Some states also init and
         # accepting attributes associated with them
-        for _n in _nodes:
-            state_name = _n[0]
-            ap = _n[1].get('ap')
-            player = _n[1].get('player')
-            self.add_state(state_name, ap=ap, player=player)
+        for (node_name, attr) in _nodes:
+            self.add_state(node_name)
+            for attr_name, attr_val in attr.items():
+                self.add_state_attribute(node_name, attr_name, attr_val)
 
-            if _n[1].get('accepting'):
-                self.add_accepting_state(state_name)
+            if attr.get('accepting'):
+                self.add_accepting_state(node_name)
 
-            if _n[1].get('init'):
-                self.add_initial_state(state_name)
+            if attr.get('init'):
+                self.add_initial_state(node_name)
 
         _edges = self._graph_yaml['edges']
 

@@ -283,6 +283,21 @@ class RegretMinimizationStrategySynthesis:
             _comp_str_dict = comp_mcr_solver.str_dict
             _comp_val_dict = comp_mcr_solver.state_value_dict
 
+        if simulate_minigrid:
+            # get the regret value of the game
+            _init_state = self.graph.get_initial_states()[0][0]
+            _game_reg_value: float = _comp_val_dict.get(_init_state)
+
+            if minigrid_instance is None:
+                warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
+                sys.exit(-1)
+
+            _controls = self.get_controls_from_str_minigrid(str_dict=_comp_str_dict,
+                                                            epsilon=epsilon,
+                                                            max_human_interventions=max_human_interventions)
+
+            minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
+
     def add_common_accepting_state(self, plot: bool = False):
         """
         A helper method that adds a auxiliary accepting state from the current accepting state as well as the trap state
@@ -1497,6 +1512,9 @@ class RegretMinimizationStrategySynthesis:
             warnings.warn("Please make sure that the max human intervention bound should >= 0")
 
         _start_state = self.graph.get_initial_states()[0][0]
+        if _start_state[0] == 'Init':
+            _next_states = [_next_n for _next_n in self.graph._graph.successors(_start_state)]
+            _start_state = _next_states[0]
         _total_human_intervention = _start_state[0][1]
         _accepting_states = self.graph.get_accepting_states()
         _trap_states = self.graph.get_trap_states()
@@ -1598,7 +1616,6 @@ class RegretMinimizationStrategySynthesis:
 
         if plot:
             game_venue.plot_graph()
-
 
     def plot_str_from_mgp(self,
                           g_hat: TwoPlayerGraph,

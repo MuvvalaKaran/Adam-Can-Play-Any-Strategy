@@ -1,3 +1,4 @@
+import os
 import gym
 import enum
 import abc
@@ -28,13 +29,18 @@ from src.strategy_synthesis import RegMinStrSyn
 from src.strategy_synthesis import ReachabilitySolver
 from src.strategy_synthesis import IrosStrSolver
 from src.strategy_synthesis import ValueIteration
+from src.strategy_synthesis import MultiObjectiveSolver
+from src.prism import PrismInterfaceForTwoPlayerGame
+
 
 from src.mpg_tool import MpgToolBox
 
 # assert ('linux' in sys.platform), "This code has been successfully tested in Linux-18.04 & 16.04 LTS"
 
 # directory where we will be storing all the configuration files related to graphs
-DIR = "/home/karan-m/Documents/Research/variant_1/Adam-Can-Play-Any-Strategy/config/"
+DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_DIR = os.path.join(DIR, 'config')
+
 
 """
 Note: When you create a NxN world, two units of width and height are consumed for drawing the boundary.
@@ -148,9 +154,11 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-AlternateLavaComparison_AllCorridorsOpen-v0'
         # ENV_ID = 'MiniGrid-DistShift1-v0'
         # ENV_ID = 'MiniGrid-LavaGapS5-v0'
-        ENV_ID = 'MiniGrid-Empty-5x5-v0'
+        # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_6.value
         # ENV_ID = MiniGridLavaEnv.env_6.value
+        ENV_ID = 'MiniGrid-Lava_Multiple_Goals_SmallEntry-v0'
+        # ENV_ID = 'MiniGrid-MyDistShift-v0'
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -162,7 +170,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
 
         # file to dump the TS corresponding to the gym env
         file_name = ENV_ID + '_TS'
-        wombats_minigrid_TS.to_yaml_file(DIR + file_name + ".yaml")
+        abs_file_path = os.path.join(CONFIG_DIR, file_name + ".yaml")
+        wombats_minigrid_TS.to_yaml_file(abs_file_path)
 
         regret_minigrid_TS = graph_factory.get('MiniGrid',
                                                graph_name="minigrid_TS",
@@ -191,7 +200,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                             plot=self.plot_ts)
 
     def _build_dfa(self):
-        self._dfa = graph_factory.get('PDFA',
+        self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
                                       config_yaml="/config/automaton",
                                       save_flag=True,
@@ -199,6 +208,7 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       # sc_ltl="!(lava_red_open) U (water_blue_open)",
                                       # sc_ltl="!(lava_red_open) U (goal_green_open)",
                                       sc_ltl="F (goal_green_open)",
+                                    #   sc_ltl="F (floor_purple_open) & F (floor_green_open) & (!(lava_red_open) U (floor_green_open)) & (!(lava_red_open) U (floor_purple_open))",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -212,10 +222,10 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                                     save_flag=True,
                                                     prune=False,
                                                     debug=False,
-                                                    iros_ts=self.get_iros_ts,
                                                     absorbing=True,
                                                     finite=self.finite,
-                                                    plot=self.plot_product)
+                                                    plot=self.plot_product,
+                                                    integrate_accepting=True)
 
     @property
     def wombats_minigrid_TS(self):
@@ -357,7 +367,6 @@ class TwoGoalsExample(GraphInstanceConstructionBase):
                  weighting: str = 'automatonOnly',
                  complete_graph_players=['eve'],
                  integrate_accepting: bool = True,
-                 unknown_symbol: bool = False,
                  multiple_accepting: bool = False):
 
         self._plot_auto_graph = plot_auto_graph
@@ -368,10 +377,9 @@ class TwoGoalsExample(GraphInstanceConstructionBase):
         self._complete_graph_players = complete_graph_players
         self._integrate_accepting = integrate_accepting
 
-        if unknown_symbol:
-            self._ts_config = "/config/two_goals_with_unknown"
-        else:
-            self._ts_config = "/config/two_goals"
+        # self._ts_config = "/config/Game_two_goals"
+        self._ts_config = "/config/Game_simple_loop"
+        # self._ts_config = "/config/Game_two_goals_self_loop"
 
         if multiple_accepting:
             self._auto_config = "/config/PDFA_multiple_accepting"
@@ -695,22 +703,53 @@ def pure_game(
     max_human_interventions: int = 5,
     plot: bool = False,
     compute_reg_for_human: bool = False,
-    integrate_accepting: bool = False):
+    integrate_accepting: bool = False,
+    debug: bool = True,
+    save_before_deleting_loops: bool = True,
+    save_after_deleting_loops: bool = True):
 
-    payoff = payoff_factory.get("cumulative", graph=trans_sys)
+    reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
+    reachability_game_handle.reachability_solver()
 
-    # build an instance of strategy minimization class
-    reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
-    reg_syn_handle.pure_games_solver(minigrid_instance=mini_grid_instance,
-                                     cooperative=cooperative,
-                                     plot=plot,
-                                     plot_only_eve=False,
-                                    #  simulate_minigrid=bool(mini_grid_instance),
-                                     simulate_minigrid=False,
-                                     epsilon=epsilon,
-                                     max_human_interventions=max_human_interventions,
-                                     compute_reg_for_human=compute_reg_for_human,
-                                     integrate_accepting=integrate_accepting)
+    # Before Deleting Loops
+    if save_before_deleting_loops:
+        trans_sys.export_files_to_prism()
+
+    # payoff = payoff_factory.get("cumulative", graph=trans_sys)
+    #
+    # # build an instance of strategy minimization class
+    # reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
+    # reg_syn_handle.pure_games_solver(minigrid_instance=mini_grid_instance,
+    #                                  cooperative=cooperative,
+    #                                  plot=plot,
+    #                                  plot_only_eve=False,
+    #                                  simulate_minigrid=bool(mini_grid_instance),
+    #                                 #  simulate_minigrid=False,
+    #                                  epsilon=epsilon,
+    #                                  max_human_interventions=max_human_interventions,
+    #                                  compute_reg_for_human=compute_reg_for_human,
+    #                                  integrate_accepting=integrate_accepting)
+
+    # After Deleting Loops
+    if save_after_deleting_loops:
+        trans_sys_wo_loops = copy.deepcopy(trans_sys)
+        trans_sys_wo_loops.delete_cycles(reachability_game_handle.sys_winning_region)
+        trans_sys_wo_loops._graph_name = trans_sys._graph_name + '_wo_loops'
+        trans_sys_wo_loops._graph.name = trans_sys._graph.name + '_wo_loops'
+        trans_sys_wo_loops.plot_graph()
+
+        prism = PrismInterfaceForTwoPlayerGame(use_docker=True)
+        prism.run_prism(trans_sys_wo_loops, pareto=True, paretoepsilon=0.00001)
+
+        print('Strategy')
+        print(prism.strategy)
+        print(prism.strategy_plan)
+        print(prism.strategy_trajectory)
+        print(prism.optimal_weights)
+        print(prism.pareto_points)
+
+    solver = MultiObjectiveSolver(trans_sys)
+    solver.solve(plot=plot)
 
 
 def pure_adversarial_game(**kwargs):
@@ -757,8 +796,6 @@ def parse_arguments():
         help="")
     parser.add_argument("--prune", action="store_true", default=False,
         help="")
-    parser.add_argument("--unknown_symbol", action="store_true", default=False,
-        help="")
     parser.add_argument("--multiple_accepting", action="store_true", default=False,
         help="")
     parser.add_argument("--integrate_accepting", type=str, default='only_accepts',
@@ -804,7 +841,6 @@ if __name__ == "__main__":
                              weighting=args.weighting,
                              complete_graph_players=args.complete_graph_players,
                              integrate_accepting=integrate_only_accepts,
-                             unknown_symbol=args.unknown_symbol,
                              multiple_accepting=args.multiple_accepting,
                              **ts_kwargs)
     elif args.ts == 'variant_1_paper':

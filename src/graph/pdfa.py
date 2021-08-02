@@ -1,6 +1,7 @@
 import networkx as nx
 import re
 import yaml
+import warnings
 import numpy as np
 
 from typing import List, Tuple, Dict
@@ -12,8 +13,6 @@ from ..factory.builder import Builder
 from ..spot.promela import parse as parse_ltl, find_states, find_symbols
 from ..spot.spot import run_spot
 from ..spot.Parser import parse as parse_guard
-
-# ACCEPTING_STATE_NAME = 'qA'
 
 
 class PDFAGraph(Graph):
@@ -49,8 +48,6 @@ class PDFAGraph(Graph):
         :return: An instance of PDFAGraph with nodes, edges, and transition labels that enable those transitions
         """
 
-        # self.add_state(ACCEPTING_STATE_NAME, accepting=True)
-
         # add nodes
         for node_name, attr in graph_yaml['nodes'].items():
             self.add_state(node_name)
@@ -63,32 +60,19 @@ class PDFAGraph(Graph):
 
             if attr['final_probability'] > 0:
                 self.add_accepting_state(node_name)
-                # prob = attr['final_probability']
-                # transition_formula = f'(true)'
-                # transition_expr = parse_guard(transition_formula)
-                # self.add_edge(node_name,
-                #               ACCEPTING_STATE_NAME,
-                #               symbol='true',
-                #               prob=prob,
-                #               weight=float(-np.log(prob)),
-                #               guard=transition_expr,
-                #               guard_formula=transition_formula)
 
         # add edges
         for start_name, edge_dict in graph_yaml['edges'].items():
             for end_name, attr in edge_dict.items():
-                symbols = attr['symbols']
+                formulas = attr.get('formulas')
                 probs = attr['probabilities']
 
-                # transition_formula = ' && '.join([f'({s})' for s in symbols])
-                # transition_expr = parse_guard(transition_formula)
-                for symbol, prob in zip(symbols, probs):
-                    transition_formula = f'({symbol})'
+                for formula, prob in zip(formulas, probs):
+                    transition_formula = formula
                     transition_expr = parse_guard(transition_formula)
 
                     self.add_edge(start_name,
                                   end_name,
-                                  symbol=symbol,
                                   prob=prob,
                                   weight=float(-np.log(prob)),
                                   guard=transition_expr,

@@ -377,14 +377,26 @@ class TwoGoalsExample(GraphInstanceConstructionBase):
         self._complete_graph_players = complete_graph_players
         self._integrate_accepting = integrate_accepting
 
-        # self._ts_config = "/config/Game_two_goals"
-        self._ts_config = "/config/Game_simple_loop"
-        # self._ts_config = "/config/Game_two_goals_self_loop"
-
-        if multiple_accepting:
-            self._auto_config = "/config/PDFA_multiple_accepting"
+        all_problems = False
+        if all_problems:
+            self._use_trans_sys_weights = True
+            self._ts_config = "/config/Game_all_problems"
+            self._auto_config = "/config/PDFA_onegoal"
         else:
+            self._ts_config = "/config/Game_simple_loop"
+            self._use_trans_sys_weights = False
             self._auto_config = "/config/PDFA_twogoals"
+
+        # self._ts_config = "/config/Game_two_goals"
+        # self._ts_config = "/config/Game_simple_loop"
+        # self._ts_config = "/config/Game_two_goals_self_loop"
+        # self._ts_config = "/config/Game_all_problems"
+
+        # if multiple_accepting:
+        #     self._auto_config = "/config/PDFA_multiple_accepting"
+        # else:
+        #     # self._auto_config = "/config/PDFA_twogoals"
+        #     self._auto_config = "/config/PDFA_onegoal"
 
         super().__init__(_finite=_finite,
                          _plot_ts=_plot_ts,
@@ -432,7 +444,9 @@ class TwoGoalsExample(GraphInstanceConstructionBase):
             plot_trans_graph=self._plot_trans_graph,
             weighting=self._weighting,
             complete_graph_players=self._complete_graph_players,
-            integrate_accepting=self._integrate_accepting)
+            integrate_accepting=self._integrate_accepting,
+            use_trans_sys_weights = self._use_trans_sys_weights,
+            )
 
 
 class FiveStateExample(GraphInstanceConstructionBase):
@@ -711,42 +725,28 @@ def pure_game(
     reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
     reachability_game_handle.reachability_solver()
 
+    prism_interface = PrismInterfaceForTwoPlayerGame(use_docker=True)
+
     # Before Deleting Loops
     if save_before_deleting_loops:
-        trans_sys.export_files_to_prism()
-
-    # payoff = payoff_factory.get("cumulative", graph=trans_sys)
-    #
-    # # build an instance of strategy minimization class
-    # reg_syn_handle = RegMinStrSyn(trans_sys, payoff)
-    # reg_syn_handle.pure_games_solver(minigrid_instance=mini_grid_instance,
-    #                                  cooperative=cooperative,
-    #                                  plot=plot,
-    #                                  plot_only_eve=False,
-    #                                  simulate_minigrid=bool(mini_grid_instance),
-    #                                 #  simulate_minigrid=False,
-    #                                  epsilon=epsilon,
-    #                                  max_human_interventions=max_human_interventions,
-    #                                  compute_reg_for_human=compute_reg_for_human,
-    #                                  integrate_accepting=integrate_accepting)
+        prism_interface.export_files_to_prism(trans_sys)
 
     # After Deleting Loops
     if save_after_deleting_loops:
+        # TODO: Make an construction or copy function that outputs a new instanc w/o loops
         trans_sys_wo_loops = copy.deepcopy(trans_sys)
         trans_sys_wo_loops.delete_cycles(reachability_game_handle.sys_winning_region)
         trans_sys_wo_loops._graph_name = trans_sys._graph_name + '_wo_loops'
         trans_sys_wo_loops._graph.name = trans_sys._graph.name + '_wo_loops'
         trans_sys_wo_loops.plot_graph()
 
-        prism = PrismInterfaceForTwoPlayerGame(use_docker=True)
-        prism.run_prism(trans_sys_wo_loops, pareto=True, paretoepsilon=0.00001)
-
-        print('Strategy')
-        print(prism.strategy)
-        print(prism.strategy_plan)
-        print(prism.strategy_trajectory)
-        print(prism.optimal_weights)
-        print(prism.pareto_points)
+    prism_interface.run_prism(trans_sys_wo_loops, pareto=True, paretoepsilon=0.00001)
+    print('Strategy')
+    print(prism_interface.strategy)
+    print(prism_interface.strategy_plan)
+    print(prism_interface.strategy_trajectory)
+    print(prism_interface.optimal_weights)
+    print(prism_interface.pareto_points)
 
     solver = MultiObjectiveSolver(trans_sys)
     solver.solve(plot=plot)

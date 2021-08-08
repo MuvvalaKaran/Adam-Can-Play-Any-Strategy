@@ -111,13 +111,18 @@ class Graph(abc.ABC):
         _edges = self._graph_yaml['edges']
 
         for _e in _edges:
+            _action: str = _e[2].get('actions')
+
             _weight: str = _e[2].get('weight')
+            _weights: str = _e[2].get('weights')
 
             if isinstance(_weight, str):
                 _weight: float = float(_weight)
 
-            _action: str = _e[2].get('actions')
-            self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
+            if _weights:
+                self.add_edge(_e[0], _e[1], weight=_weight, weights=_weights, actions=_action)
+            else:
+                self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
 
     def dump_to_yaml(self) -> None:
         """

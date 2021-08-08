@@ -42,7 +42,8 @@ class ProductAutomaton(TwoPlayerGraph):
                  show_weight: bool = True,
                  observe_next_on_trans: bool = True,
                  complete_graph_players: List = ['adam', 'eve'],
-                 integrate_accepting: bool = False) -> 'ProductAutomaton()':
+                 integrate_accepting: bool = False,
+                 use_trans_sys_weights: bool = False) -> 'ProductAutomaton()':
         self._trans_sys: Optional[TwoPlayerGraph] = copy.deepcopy(trans_sys)
         self._auto_graph: Union[DFAGraph, PDFAGraph] = copy.deepcopy(automaton)
 
@@ -57,6 +58,7 @@ class ProductAutomaton(TwoPlayerGraph):
         self._observe_next_on_trans = observe_next_on_trans
         self._complete_graph_players = complete_graph_players
         self._integrate_accepting = integrate_accepting
+        self._use_trans_sys_weights = use_trans_sys_weights
 
         self._multiple_weights = False
 
@@ -190,6 +192,8 @@ class ProductAutomaton(TwoPlayerGraph):
 
                 # Get all info about the TS transition
                 ts_action, ap, weight = self._get_ts_transition_data(_u_ts_node, _v_ts_node)
+                ts_weights = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0]\
+                    .get('weights')
 
                 # Check if the trans in TS satisfies any trans in the Automaton specification
                 for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
@@ -214,15 +218,17 @@ class ProductAutomaton(TwoPlayerGraph):
                                 searchQueue.put(_v_prod_node)
                                 visited[_v_prod_node] = True
 
+                            if self._use_trans_sys_weights:
+                                weights = ts_weights if ts_weights else {'ts': weight,'pref': 0}
+                            else:
+                                weights = {'ts': weight,'pref': auto_weight}
+
                             self._add_transition_absorbing(_u_prod_node,
                                                             _v_prod_node,
                                                             weight=weight,
                                                             action=ts_action,
-                                                            weights={'ts': weight,'pref': auto_weight},
+                                                            weights=weights,
                                                             pref=pref)
-
-                        # TODO: If not, then add a transition to the absorbing state
-                        # Otherwise, Env player cannot win against Sys.
 
     def construct_product(self):
         """
@@ -911,7 +917,7 @@ class ProductAutomaton(TwoPlayerGraph):
             label = str(edge[2].get('actions'))
 
             if self._show_weight:
-                weight = edge[2].get('weight')
+                weight = edge[2].get('weights')['ts']
                 weights = edge[2].get('weights')['pref']
                 label += f': G{weight:.2f}, A{weights:.2f}'
 
@@ -928,8 +934,7 @@ class ProductAutomaton(TwoPlayerGraph):
         dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
 
         if self._save_flag:
-            graph_name = str(self._graph.__getattribute__('name'))
-            self.save_dot_graph(dot, graph_name, True)
+            self.save_dot_graph(dot, self._graph_name, True)
 
 
 class ProductBuilder(Builder):

@@ -243,6 +243,10 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
         props_filename = self._export_prism_property()
         self._initialized = True
 
+    def export_files_to_prism(self, game):
+        self._initialize_variables(game)
+        self._initialized = False
+
     def _export_prism_model(self) -> str:
         """
         Export TwoPlayerGame as a PRISM model to a file

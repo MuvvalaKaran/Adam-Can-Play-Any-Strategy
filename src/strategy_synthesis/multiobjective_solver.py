@@ -1,94 +1,414 @@
 import copy
+import _pickle as cPickle
 import queue
 import warnings
+from abc import ABCMeta, abstractmethod
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
 from typing import Dict, Set, List, Tuple, Union, Optional
+import ppl
+from ppl import Variable, Generator_System, C_Polyhedron, point, Constraint_System
 
 from ..graph import TwoPlayerGraph
 from .value_iteration import ValueIteration
 from .adversarial_game import ReachabilityGame
 
 
-class WeightArray:
-    def __init__(self, array):
-        self.array = np.array(array)
-
-    # def __eq__(self, other) -> bool:
-    #     return self.array == other.array
-
-    # def __ge__(self, other) -> bool:
-    #     # Check for all elements in the array
-    #     n_dim = len(self.array)
-    #     for i in range(n_dim):
-    #         if self.array[i] < other.array[i]:
-    #             return False
-
-    #     return True
-
-    # def __le__(self, other) -> bool:
-    #     # Check for all elements in the array
-    #     n_dim = len(self.array)
-    #     for i in range(n_dim):
-    #         if self.array[i] > other.array[i]:
-    #             return False
-
-    #     return True
+def _mpzs_to_list(mpzs):
+    """
+    Convert a list of mpzs to a list of floats
+    e.g.) [mpz(4), mpz(1)] to [4. 1.]
+    """
+    return list(map(float, mpzs))
 
 
-class MinimumElementSet:
+def get_point(generator: ppl.Generator):
+    return _mpzs_to_list(generator.coefficients())
 
-    _weight_dim = 0
+
+def get_points(generators: List[ppl.Generator]):
+    return [get_point(g) for g in generators]
+
+
+def get_minimized_generators(polyhedron: C_Polyhedron):
+    return [gen for gen in list(polyhedron.minimized_generators())]
+
+
+def get_minimized_points(polyhedron: C_Polyhedron):
+    generators = get_minimized_generators(polyhedron)
+    return get_points(generators)
+
+
+class ConvexHull(metaclass=ABCMeta):
+
+    """The size of each element in an array"""
+    _n_dim = None
+
+    """_n_dim of PPL Variables"""
+    _variables = None
+
+    """The polyhedra"""
+    _polyhedra = None
+
+    def __init__(self, array: Union[int, float, List, np.ndarray] = None):
+        """
+        :args array:        1D or 2D array
+        e.g.,
+            array = [[1], [2]]
+            array = [[1,2], [3,4]]
+            array = [[1,2,3], [4,5,6]]
+
+        If 1D array is given, it will be stored as 2D
+        e.g.,
+            array = [1, 2] -> [[1], [2]]
+        """
+        # Check the dimensions of the given array and turn it into a 2D array
+        array = self._check_valid_array(array)
+
+        # The array should always be either 2D array or None
+        if array is not None:
+            for arr in array:
+                self.add(arr)
+
+    def _check_valid_array(self, array: Union[int, float, List, np.ndarray]) \
+                          -> Union[List, np.ndarray]:
+        """
+        Check for the dimensions of an array and turn it into a 2D array.
+        It will raise an error if initialization fails.
+
+        :arg array:         Ideally a 2D array.
+                            It could be a singular value (int or float)
+                            or a 1D/2D array (list or np.ndarray)
+        :return:            A 2D array if initialized correctly, None otherwise
+        """
+        # 1. Check if valid array
+        if array is None:
+            return None
+
+        if isinstance(array, (int, float)):
+            array = [[array]]
+
+        if not isinstance(array, (List, np.ndarray)):
+            raise TypeError('An array has to be a list or np.array')
+
+        # 2. Check for the dimensions of the array
+        def dim(_array):
+            """"return shape of a multi-dimensional array (1st, 2nd, ...)"""
+            return [len(_array)]+dim(_array[0]) if(isinstance(_array, (List, np.ndarray))) else []
+        ndim = len(dim(array))
+
+        # Only accept 1D or 2D
+        if ndim >= 3:
+            raise ValueError('An array has to be 1D or 2D array')
+
+        # If 1D, make it 2D
+        if ndim == 1:
+            if isinstance(array, List):
+                array = [array]
+            else:
+                array = np.array([array])
+
+        return array
+
+    def _initialize(self, element: Union[List, np.ndarray]) -> None:
+            self._n_dim = len(element)
+            self._variables = [Variable(i) for i in range(self._n_dim)]
+            self._polyhedra = self._create_polyhedron([0]*self._n_dim)
+
+    def add(self, element: Union[int, float, List, np.ndarray]):
+        """
+        Add an element (point) to the convex hull
+        """
+        element = self._sanity_check(element)
+        self._add_point(element)
+
+    def take_union(self, element: Union[int, float, List, np.ndarray]) -> None:
+        """
+        Add an element (point) to the convex hull
+        """
+        element = self._sanity_check(element)
+        self._take_union(element)
+
+    def take_intersection(self, element: Union[int, float, List, np.ndarray]) -> None:
+        """
+        Add an element (point) to the convex hull
+        """
+        element = self._sanity_check(element)
+        self._take_intersection(element)
+
+    @abstractmethod
+    def _add_point(self, element: Union[int, float, List, np.ndarray]) -> None:
+        raise NotImplementedError('"_add_point" function is not implemented')
+
+    def _create_polyhedron(self, element: Union[List, np.ndarray]):
+        cs = Constraint_System()
+
+        for i in range(self._n_dim):
+            cs.insert(self._variables[i] >= element[i])
+
+        return C_Polyhedron(cs)
+
+    def _take_union(self, element: Union[int, float, List, np.ndarray]) -> None:
+        """
+        Add a point to the current convex hull
+        """
+        # Take the union with the existing convex hull
+        polyhedron = self._create_polyhedron(element)
+        self._polyhedra.poly_hull_assign(polyhedron)
+
+    def _take_intersection(self, element: Union[int, float, List, np.ndarray]) -> None:
+        """
+        Add a point to the current convex hull
+        """
+        # Take the intersection with the existing convex hull
+        polyhedron = self._create_polyhedron(element)
+        self._polyhedra.intersection_assign(polyhedron)
+
+    def _sanity_check(self, element: Union[int, float, List, np.ndarray]) \
+                      -> Union[List, np.ndarray]:
+        # Check if element is not None
+        if element is None:
+            raise ValueError('An element cannot be None')
+
+        # If a single value is given, make it a 1D array
+        if isinstance(element, (int, float)):
+            element = [element]
+
+        # The element type must be of a list or np.ndarray
+        if not isinstance(element, (List, np.ndarray)):
+            raise TypeError('An element has to be a list or np.array')
+
+        # 2. Check for the dimensions of the array
+        def dim(_array):
+            """"return shape of a multi-dimensional array (1st, 2nd, ...)"""
+            return [len(_array)]+dim(_array[0]) if(isinstance(_array, (List, np.ndarray))) else []
+        ndim = len(dim(element))
+
+        # Only accept a 1D array
+        if ndim != 1:
+            raise ValueError('An element must be a 1D array')
+
+        # Initialized the element size, if not yet initialized
+        if not self.initialized:
+            self._initialize(element)
+
+        # Check if the size of the element is same as the other elements
+        if len(element) != self._n_dim:
+            msg = f'An element of a set must be a size of {self._n_dim}'
+            raise ValueError(msg)
+
+        return element
+
+    @property
+    def initialized(self) -> bool:
+        return self._n_dim is not None
+
+    @property
+    def array(self):
+        # if not self.initialized:
+        #     return []
+        return np.array(get_minimized_points(self._polyhedra))
+
+    @property
+    def n_elem(self):
+        if not self.initialized:
+            return 0
+        return len(self.array)
+
+    # TODO: This does not suit well with convex hull. Better implement it for ElementSet.
+    def __iter__(self):
+        self._i = 0
+        return self
+
+    def __next__(self):
+        if self._i < self.n_elem:
+            result = self.array[self._i]
+            self._i += 1
+            return result
+        else:
+            raise StopIteration
+
+    def __eq__(self, others):
+        return np.array_equal(self.array, others.array)
+
+    def __str__(self):
+        return str(self.array)
+
+
+class UnionConvexHull(ConvexHull):
+
+    # def __init__(self, **kwargs):
+        # super().__init__(**kwargs)
+    def __init__(self, array: Union[int, float, List, np.ndarray] = None):
+        super().__init__(array)
+
+
+    def _add_point(self, point: List) -> None:
+        """
+        Add a point to the current convex hull
+        """
+        self._take_union(point)
+
+
+class IntersectionConvexHull(ConvexHull):
+    # def __init__(self, **kwargs):
+    #     super().__init__(**kwargs)
+    def __init__(self, array: Union[int, float, List, np.ndarray] = None):
+        super().__init__(array)
+
+    def _add_point(self, point: List) -> None:
+        """
+        Add a point to the current convex hull
+        """
+        self._take_intersection(point)
+
+
+class ElementSet(metaclass=ABCMeta):
+
+    """An array to store elements"""
     _array = None
 
-    def __init__(self, array: List):
-        """
-        :args array:        Multi dimensional array
-        """
-        # If 1D, simply make it 2D
-        array = np.array(array)
-        if array.ndim == 1:
-            array = np.array([array])
+    """The size of each element in an array"""
+    _elem_size = None
 
-        self._weight_dim = self._sanity_check(array)
+    def __init__(self, array: Union[int, float, List, np.ndarray] = None):
+        """
+        :args array:        1D or 2D array
+        e.g.,
+            array = [[1], [2]]
+            array = [[1,2], [3,4]]
+            array = [[1,2,3], [4,5,6]]
 
-        if self._weight_dim:
-            self._array = array
+        If 1D array is given, it will be stored as 2D
+        e.g.,
+            array = [1, 2] -> [[1], [2]]
+        """
+        # Check the dimensions of the given array and turn it into a 2D array
+        array = self._check_valid_array(array)
+
+        # The array should always be either 2D array or None
+        if array is not None:
+            for arr in array:
+                self.add(arr)
+
+    def _check_valid_array(self, array: Union[int, float, List, np.ndarray]) \
+                          -> Union[List, np.ndarray]:
+        """
+        Check for the dimensions of an array and turn it into a 2D array.
+        It will raise an error if initialization fails.
+
+        :arg array:         Ideally a 2D array.
+                            It could be a singular value (int or float)
+                            or a 1D/2D array (list or np.ndarray)
+        :return:            A 2D array if initialized correctly, None otherwise
+        """
+        # 1. Check if valid array
+        if array is None:
+            return None
+
+        if isinstance(array, (int, float)):
+            array = [[array]]
+
+        if not isinstance(array, (List, np.ndarray)):
+            raise TypeError('An array has to be a list or np.array')
+
+        # 2. Check for the dimensions of the array
+        def dim(_array):
+            """"return shape of a multi-dimensional array (1st, 2nd, ...)"""
+            return [len(_array)]+dim(_array[0]) if(isinstance(_array, (List, np.ndarray))) else []
+        ndim = len(dim(array))
+
+        # Only accept 1D or 2D
+        if ndim >= 3:
+            raise ValueError('An array has to be 1D or 2D array')
+
+        # If 1D, make it 2D
+        if ndim == 1:
+            if isinstance(array, List):
+                array = [array]
+            else:
+                array = np.array([array])
+
+        return array
+
+    def _sanity_check(self, element: Union[int, float, List, np.ndarray]) \
+                      -> Union[List, np.ndarray]:
+        # Check if element is not None
+        if element is None:
+            raise ValueError('An element cannot be None')
+
+        # If a single value is given, make it a 1D array
+        if isinstance(element, (int, float)):
+            element = [element]
+
+        # The element type must be of a list or np.ndarray
+        if not isinstance(element, (List, np.ndarray)):
+            raise TypeError('An element has to be a list or np.array')
+
+        # 2. Check for the dimensions of the array
+        def dim(_array):
+            """"return shape of a multi-dimensional array (1st, 2nd, ...)"""
+            return [len(_array)]+dim(_array[0]) if(isinstance(_array, (List, np.ndarray))) else []
+        ndim = len(dim(element))
+
+        # Only accept a 1D array
+        if ndim != 1:
+            raise ValueError('An element must be a 1D array')
+
+        # Initialized the element size, if not yet initialized
+        if self._elem_size is None:
+            self._elem_size = len(element)
+
+        # Check if the size of the element is same as the other elements
+        if len(element) != self._elem_size:
+            msg = f'An element of a set must be a size of {self._elem_size}'
+            raise ValueError(msg)
+
+        return element
+
+    @abstractmethod
+    def add(self, element):
+        raise NotImplementedError('"add" function is not implemented')
+
+    def __call__(self):
+        return self._array
+
+    def __iter__(self):
+        self._i = 0
+        return self
+
+    def __next__(self):
+        if self._i < self.n_elem:
+            result = self._array[self._i]
+            self._i += 1
+            return result
+        else:
+            raise StopIteration
+
+    def __eq__(self, others):
+        return np.array_equal(self._array, others._array)
+
+    def __str__(self):
+        return str(self._array)
 
     @property
     def array(self):
         return self._array
 
     @property
-    def max(self):
+    def n_elem(self):
         return len(self._array)
 
-    def _sanity_check(self, array: np.ndarray):
+
+class MinimumElementSet(ElementSet):
+
+    def __init__(self, array: Union[int, float, List, np.ndarray] = None):
+        super().__init__(array)
+
+    def add(self, element: Union[int, float, List, np.ndarray]):
         """
-        Checks if input array is a valid 2D array
-        with same dimension size
-
-        :args array:        Multi dimensional array
-        """
-        if array is None or len(array) == 0:
-            return 0
-
-        # If 3D, 4D or ND array, raise an error
-        if array.ndim > 2:
-            raise ValueError('An array has to be 1D or 2D array')
-
-        weight_dim = len(array[0])
-        for arr in array:
-            if len(arr) != weight_dim:
-                raise ValueError('All elements should have the same size of dimensions')
-
-        return weight_dim
-
-    def add(self, element_list: Union[int, float, List, np.ndarray]):
-        """
-        When we add an element (a list) to an array,
-        it has to be a minimum element.
+        Add an element to the existing minimum element set (_array)
 
         Definition of a Minimum Element
             At node s, let two multi-dimensional weights be e and e'.
@@ -97,215 +417,105 @@ class MinimumElementSet:
 
         In other word, weight e has to be less than or equal to e' for all dimensions.
         """
-        if isinstance(element_list, (int, float)):
-            element_list = np.array([element_list])
+        # Check if the element is a valid array
+        element = self._sanity_check(element)
 
-        if not isinstance(element_list, (List, np.ndarray)):
-            raise TypeError('Element has to be a list or np.array')
-
-        if isinstance(element_list, List):
-            element_list = np.array(element_list)
-
-        # If the current array is empty, initialize it with the element
-        if self._weight_dim == 0:
-            self._array = np.array([element_list])
-            return
-
-        # Checks if the new element has same dimension as others
-        if len(element_list) != self._weight_dim:
-            msg = f'An element of a set must be a size of {self._weight_dim}'
-            raise ValueError(msg)
+        if self._array is None:
+            self._array = np.array([[np.inf]*self._elem_size])
 
         # If an array already exists, check if it is a minimum element
-        if self._check_if_minimum(element_list):
+        if self._check_if_minimum(element):
             # Remove all elements that are larger than the minimum_element
             delete_indices = []
             for i, arr in enumerate(self._array):
-                if all(element_list <= arr):
+                if all(element <= arr):
                     # deletethe element
                     delete_indices.append(i)
 
-            self._array = np.append(self._array, [element_list], axis=0)
+            self._array = np.append(self._array, [element], axis=0)
             self._array = np.delete(self._array, delete_indices, axis=0)
 
-    def _check_if_minimum(self, element_list: np.ndarray):
+    def _check_if_minimum(self, element: np.ndarray):
         # TODO: Without using for loops
         for arr in self._array:
-            if all(element_list >= arr):
+            if all(element >= arr):
                 # Mark it as not minimum
                 return False
 
         return True
 
-    def _check_if_equal(self, element_list: np.ndarray):
+
+class MaximumElementSet(ElementSet):
+
+    def __init__(self, array: Union[int, float, List, np.ndarray] = None):
+        super().__init__(array)
+
+    def add(self, element: Union[int, float, List, np.ndarray]):
+        """
+        Add an element to the existing maximum element set (_array)
+
+        Definition of a Maximum Element
+            At node s, let two multi-dimensional weights be e and e'.
+            We define maximum element as
+                (s,e) >= (s', e') iff s=s' and e >= e'
+
+        In other word, weight e has to be greater than or equal to e' for all dimensions.
+        """
+        # Check if the element is a valid array
+        element = self._sanity_check(element)
+
+        if self._array is None:
+            self._array = np.array([[0]*self._elem_size])
+
+        # If an array already exists, check if it is a minimum element
+        if self._check_if_maximum(element):
+            # Remove all elements that are larger than the minimum_element
+            delete_indices = []
+            for i, arr in enumerate(self._array):
+                if all(element >= arr):
+                    # deletethe element
+                    delete_indices.append(i)
+
+            self._array = np.append(self._array, [element], axis=0)
+            self._array = np.delete(self._array, delete_indices, axis=0)
+
+    def _check_if_maximum(self, element: np.ndarray):
         # TODO: Without using for loops
         for arr in self._array:
-            if all(element_list == arr):
-                return True
-        return False
+            if all(element <= arr):
+                # Mark it as not minimum
+                return False
 
-    def __iter__(self):
-        self._i = 0
-        return self
-
-    def __next__(self):
-        if self._i < self.max:
-            result = self._array[self._i]
-            self._i += 1
-            return result
-        else:
-            raise StopIteration
-
-    def __eq__(self, others):
-        return np.array_equal(self._array, others._array)
-
-    def __str__(self):
-        return str(self._array)
+        return True
 
 
-class MaximumElementSet:
+class IntersectionConvexHullForDeterministicStrategy(IntersectionConvexHull):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    _weight_dim = 0
-    _array = None
+    def _initialize(self, element: Union[List, np.ndarray]) -> None:
+            self._n_dim = len(element)
+            self._variables = [Variable(i) for i in range(self._n_dim)]
+            self._polyhedra = [self._create_polyhedron([0]*self._n_dim)]
 
-    def __init__(self, array: List, index_to_maximize: int = None):
+    def _take_intersection(self, element: Union[int, float, List, np.ndarray]) -> None:
         """
-        :args array:        Multi dimensional array
+        Add a point to the current convex hull
         """
-        # If 1D, simply make it 2D
-        array = np.array(array)
-        if array.ndim == 1:
-            array = np.array([array])
+        # Prepare multiple polyhedra (each vertex & new element) -> Get a new vertex
+        polyhedra = []
+        new_polyhedron = self._create_polyhedron(element)
 
-        self._weight_dim = self._sanity_check(array)
+        for vertex in self.array:
+            polyhedron = self._create_polyhedron(vertex)
+            polyhedron.intersection_assign(new_polyhedron)
+            polyhedra.append(polyhedron)
 
-        if self._weight_dim:
-            self._array = array
-
-            if index_to_maximize:
-                if index_to_maximize < 0 or self._weight_dim <= index_to_maximize:
-                    msg = f'index must be between 0-{self._weight_dim-1}'
-                    raise ValueError(msg)
-
-        self._index = index_to_maximize
+        self._polyhedra = polyhedra
 
     @property
     def array(self):
-        return self._array
-
-    @property
-    def max(self):
-        return len(self._array)
-
-    def _sanity_check(self, array: np.ndarray):
-        """
-        Checks if input array is a valid 2D array
-        with same dimension size
-
-        :args array:        Multi dimensional array
-        """
-        if array is None or len(array) == 0:
-            return 0
-
-        # If 3D, 4D or ND array, raise an error
-        if array.ndim > 2:
-            raise ValueError('An array has to be 1D or 2D array')
-
-        weight_dim = len(array[0])
-        for arr in array:
-            if len(arr) != weight_dim:
-                raise ValueError('All elements should have the same size of dimensions')
-
-        return weight_dim
-
-    def add(self, element_list: Union[int, float, List, np.ndarray]):
-        """
-        When we add an element (a list) to an array,
-        it has to be a minimum element.
-
-        Definition of a Minimum Element
-            At node s, let two multi-dimensional weights be e and e'.
-            We define minimum element as
-                (s,e) <= (s', e') iff s=s' and e <= e'
-
-        In other word, weight e has to be less than or equal to e' for all dimensions.
-        """
-        if isinstance(element_list, (int, float)):
-            element_list = np.array([element_list])
-
-        if not isinstance(element_list, (List, np.ndarray)):
-            raise TypeError('Element has to be a list or np.array')
-
-        if isinstance(element_list, List):
-            element_list = np.array(element_list)
-
-        # If the current array is empty, initialize it with the element
-        if self._weight_dim == 0:
-            self._array = np.array([element_list])
-            return
-
-        # Checks if the new element has same dimension as others
-        if len(element_list) != self._weight_dim:
-            msg = f'An element of a set must be a size of {self._weight_dim}'
-            raise ValueError(msg)
-
-        # If an array already exists, check if it is a minimum element
-        if self._check_if_maximum(element_list):
-            # Remove all elements that are larger than the minimum_element
-            delete_indices = []
-            if self._index:
-                for i, arr in enumerate(self._array):
-                    if element_list[self._index] >= arr[self._index]:
-                        # deletethe element
-                        delete_indices.append(i)
-            else:
-                for i, arr in enumerate(self._array):
-                    if all(element_list >= arr):
-                        # deletethe element
-                        delete_indices.append(i)
-
-            self._array = np.append(self._array, [element_list], axis=0)
-            self._array = np.delete(self._array, delete_indices, axis=0)
-
-    def _check_if_maximum(self, element_list: np.ndarray):
-        if self._index is not None:
-            for arr in self._array:
-                if element_list[self._index] <= arr[self._index]:
-                    return False
-            return True
-
-        # TODO: Without using for loops
-        for arr in self._array:
-            if all(element_list <= arr):
-                # Mark it as not minimum
-                return False
-
-        return True
-
-    def _check_if_equal(self, element_list: np.ndarray):
-        # TODO: Without using for loops
-        for arr in self._array:
-            if all(element_list == arr):
-                return True
-        return False
-
-    def __iter__(self):
-        self._i = 0
-        return self
-
-    def __next__(self):
-        if self._i < self.max:
-            result = self._array[self._i]
-            self._i += 1
-            return result
-        else:
-            raise StopIteration
-
-    def __eq__(self, others):
-        return np.array_equal(self._array, others._array)
-
-    def __str__(self):
-        return str(self._array)
+        return np.array([get_minimized_points(p) for p in self._polyhedra])
 
 
 class MultiObjectiveSolver:
@@ -351,11 +561,10 @@ class MultiObjectiveSolver:
                     integrate_accepting: bool = False,
                     simulate_minigrid: bool = False,
                     plot: bool = False,
-                    debug: bool = False,
-                    index_to_maximize: int = None):
+                    debug: bool = False):
 
         # Pareto Computation
-        pareto_points = self._compute_pareto_points(debug, index_to_maximize)
+        pareto_points = self._compute_pareto_points(debug)
         print('Pareto Points\n', pareto_points)
 
         # Pareto Visualization
@@ -374,7 +583,7 @@ class MultiObjectiveSolver:
             for curr_node, actions in strategy.items():
                 print(f'{curr_node}: {actions}')
 
-    def _compute_pareto_points(self, debug: bool = True, index_to_maximize: int = None):
+    def _compute_pareto_points(self, debug: bool = True):
 
         #################### Winning Region Computation ####################
 
@@ -384,17 +593,17 @@ class MultiObjectiveSolver:
 
         weights = self._game.get_edge_attributes(accept_node, accept_node, 'weights')
         n_weight = len(weights)
-        # Inside set([]), it had to be unhashable object so I implemented WeightArray.
+
         weights_set = {}
         for node in self._reachability_solver.sys_winning_region:
             player = self._game.get_state_w_attribute(node, "player")
             if player == 'eve': # System / Robot
-                weights_set[node] = MinimumElementSet(np.inf*np.ones(n_weight))
+                # weights_set[node] = MinimumElementSet()
+                weights_set[node] = UnionConvexHull(np.zeros(n_weight))
             else:
-                # weights_set[node] = MaximumElementSet(np.zeros(n_weight))
-                weights_set[node] = MaximumElementSet(np.zeros(n_weight),
-                                                      index_to_maximize=index_to_maximize)
-        weights_set[accept_node] = MinimumElementSet(np.zeros(n_weight))
+                # weights_set[node] = MaximumElementSet()
+                weights_set[node] = IntersectionConvexHull(np.zeros(n_weight))
+        # weights_set[accept_node] = MinimumElementSet(np.zeros(n_weight))
         weights_set_prev = None
 
         strategies_at_node = defaultdict(lambda: defaultdict(lambda: set()))
@@ -407,6 +616,7 @@ class MultiObjectiveSolver:
                 print(f"{iter_var} Iterations")
 
             weights_set_prev = copy.deepcopy(weights_set)
+
             iter_var += 1
             search_queue = queue.Queue()
             visited = set()
@@ -447,7 +657,8 @@ class MultiObjectiveSolver:
 
         self._weights_set = weights_set
         n_init = self._game.get_initial_states()[0][0]
-        pareto_points = self._weights_set[n_init]._array
+        element_set = self._weights_set[n_init]
+        pareto_points = element_set.array
 
         return pareto_points
 
@@ -458,7 +669,8 @@ class MultiObjectiveSolver:
             raise Exception('Pareto Points are not computed')
 
         n_init = self._game.get_initial_states()[0][0]
-        pareto_points = self._weights_set[n_init]._array
+        element_set = self._weights_set[n_init]
+        pareto_points = element_set.array
 
         accept_node = self._game.get_accepting_states()[0]
         strategies = defaultdict(lambda: defaultdict(lambda: set()))
@@ -495,7 +707,6 @@ class MultiObjectiveSolver:
                     if debug:
                         print(f'[Curr={curr_node},action={action}->Next={next_node}], {current_remain_weights}-{weights}->{next_remain_weights}')
 
-                    a = self._weights_set[next_node].array
                     # Check if next_node has a strategy with the weight size of next_remain_weight
                     if self._in_pareto_front(next_remain_weights,
                                              self._weights_set[next_node].array):

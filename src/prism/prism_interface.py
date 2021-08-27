@@ -7,11 +7,13 @@ import paramiko
 from base64 import decodebytes
 import subprocess as sp
 from pathlib import Path
+from scipy.stats import rv_discrete
 from collections import defaultdict
 from typing import List, Tuple, Dict, Set, Optional, Union
-from pyFAS.solvers import solver_factory
 import matplotlib.pyplot as plt
+
 from ..graph import TwoPlayerGraph
+from .moore_machine import PrismMooreMachine
 
 from ..config import ROOT_PATH
 
@@ -175,14 +177,14 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
         self._game_to_prism_map: Dict = None
         self._prism_to_game_map: Dict = None
         self._sta_to_prism_state_map: Dict = None
-        self._prism_to_sta_state_map: Dict = None
-        self._prism_action_order_mapping: Dict = None
+        self._prism_action_idx_to_game_map: Dict = None
         self._game_str: Dict = None
         self._pareto_points = None
         self._initialized: bool = False
+        self._max_weight_values: Dict = None
 
     def run_prism(self, game: TwoPlayerGraph, filename: str = None,
-                  plot: bool = False, **kwargs) -> str:
+                  plot: bool = False, debug: bool = False, **kwargs) -> str:
         """
         Run prism games.
         Model and Property files are auto-generated from TwoPlayerGame
@@ -203,7 +205,7 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
 
         # Export adversary .adv file (strategy)
         if 'exportadv' not in kwargs:
-            kwargs['exportadv'] = fs['.adv']
+            kwargs['exportstrat'] = fs['.adv']
 
         # Export .sta file to use for reading strategy
         if 'exportstates' not in kwargs:
@@ -214,6 +216,10 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
             completed_process = super().run_prism(fs['.prism'], **kwargs)
         else:
             completed_process = super().run_prism(fs['.prism'], fs['.props'], **kwargs)
+
+        if debug:
+            for line in completed_process.split('\n'):
+                print(line)
 
         # Postprocess (Analyze pareto points and Extract strategy)
 
@@ -236,7 +242,7 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
         Set a game (Somehow construction method gives me an error)
         """
         self.game = game
-        self._game_to_prism_map = {n: str(i) for i, n in enumerate(game._graph.nodes())}
+        self._game_to_prism_map = {n: i for i, n in enumerate(game._graph.nodes())}
         self._prism_to_game_map = dict(zip(self._game_to_prism_map.values(),
                                            self._game_to_prism_map.keys()))
         model_filename = self._export_prism_model()
@@ -289,7 +295,7 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 f.write(f'endplayer\n\n')
 
             # Game
-            self._prism_action_order_mapping = defaultdict(lambda: [])
+            self._prism_action_idx_to_game_map = defaultdict(lambda: [])
             f.write(f'module {graph_name}\n')
             f.write(f'\tx : [0..{num_node-1}] init 0;\n') # TODO: What if num_node is 0 or 1?
             for edge in self.game._graph.edges.data():
@@ -298,7 +304,7 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 action = edge[2].get('actions')
                 # TODO: nondeterministic transitions
                 f.write(f"\t[{action}] x={u_node_int} -> 1 : (x'={v_node_int});\n")
-                self._prism_action_order_mapping[u_node_int].append(action)
+                self._prism_action_idx_to_game_map[u_node_int].append(action)
             f.write(f'endmodule\n\n')
 
             # Weight Objective
@@ -341,14 +347,26 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
         file_dir, _ = os.path.split(filepath)
         Path(file_dir).mkdir(parents=True, exist_ok=True)
 
-        # TODO: write property to a file
+        # TODO: Clean the following weight selection
 
         # Minimizes weights and maximize reachability
         with open(filepath, 'w+') as f:
-            f.write(f'const double r = {0.98};\n')
+
+            # if 'r' in list(self._max_weight_values.keys()):
+            if self._max_weight_values is not None and 'r' in self._max_weight_values:
+                max_weight_value = self._max_weight_values['r']
+            else:
+                max_weight_value = 0.98
+
+            f.write(f'const double r = {max_weight_value};\n')
+
             for i, name in enumerate(self.game.weight_types):
-                max_weight_value = self._get_max_weight_value(name)
+                if self._max_weight_values is not None and name in self._max_weight_values:
+                    max_weight_value = self._max_weight_values[name]
+                else:
+                    max_weight_value = self._get_max_weight_value(name)
                 f.write(f'const double v{i} = {max_weight_value};\n')
+
             f.write('\n')
             weight_obj_str = [f'R{{"{name}"}}<=v{i}[C]' for i, name in enumerate(self.game.weight_types)]
             obj_str = ' & '.join([f'R{{"reach"}}>=r[C]'] + weight_obj_str)
@@ -367,6 +385,17 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
         # max_width = max([len(s) for s in successors])
 
         return max_single_weight * max_depth
+
+    def set_max_weight_values(self, weights: Dict) -> None:
+        weight_names = list(weights.keys())
+        if weight_names != ['r']+self.weight_names:
+            raise ValueError(f'Invalid weight names. The keys should be {self.weight_names}')
+
+        for w in weights.values():
+            if not isinstance(w, (int, float)):
+                raise ValueError(f'Invalid weight values. The values should be int or float')
+
+        self._max_weight_values = weights
 
     def _create_prism_filenames(self, extensions: List, directory: str, filename: str) -> Dict:
         """
@@ -390,7 +419,8 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
             ax.set_zlabel('Reachability')
         plt.show()
 
-    def _find_pareto_points_from_stdout(self, completed_process: str) -> List:
+    def _find_pareto_points_from_stdout(self, completed_process: str,
+                                        only_reachable: bool = True) -> List:
         """
         Find pareto points from PRISM std output
         Example of an output:
@@ -417,6 +447,10 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
 
             if 'maxcorners' in line:
                found_maxcorners = True
+
+        if only_reachable:
+            reachability_index = 0
+            pareto_points = [p for p in pareto_points if p[reachability_index] > 0]
 
         return pareto_points
 
@@ -453,12 +487,10 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                     if m is None:
                         line = f.readline()
                         continue
-                    sta_state = m.group(1)
-                    prism_state = m.group(2)
+                    sta_state = int(m.group(1))
+                    prism_state = int(m.group(2))
                     self._sta_to_prism_state_map[sta_state] = prism_state
                     line = f.readline()
-            self._prism_to_sta_state_map = dict(zip(self._sta_to_prism_state_map.values(),
-                                                    self._sta_to_prism_state_map.keys()))
         except:
             raise Exception("Could not read .sta file. Each line of .sta file should be in the" + \
                             "form of '(STA_STATE): (MODEL_STATE) ...'")
@@ -472,8 +504,8 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 line = f.readline()
                 # Very Hacky Way to check whether it's simple/complicated
                 if '$' in line:
-                    prism_strategy = self._read_complicated_adv(f, line)
-                    game_strategy = self._convert_strategy(prism_strategy)
+                    game_strategy = self._read_complicated_adv(f, line)
+                    # game_strategy = self._convert_strategy(prism_strategy)
                 else:
                     # Simple one doesn't require .sta file
                     game_strategy = self._read_simple_adv(f, line)
@@ -497,34 +529,118 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
         :args   f:      File
         :args line:     Each line in file
         """
-        game_strategy = defaultdict()
-        # Each line should look like
-        # "(CURR_NODE) (ACTION_IDX) (CORNER?) (NEXT_NODE)"
-        template = r'(\d+)\s(\d+)\s(\d+)\s(\d+)\s'
-
-        while 'MemUpdMoves:' not in line:
+        while 'InitState:' not in line:
             line = f.readline()
-        line = f.readline()
-        while 'Info:' not in line:
-            m = re.match(template, line)
+
+        # Get the initial state
+        initial_state = None
+        while 'Init:' not in line:
+            m = re.match(r'(\d+)', line)
             if m is None:
                 line = f.readline()
                 continue
-            # (CURR_NODE) (ACTION_IDX) (CORNER?) (NEXT_NODE)
-            u_node_in_adv = m.group(1)
-            action_idx = int(m.group(2))
-            v_node_in_adv = m.group(4)
-
-            u_node_in_prism_model = self._sta_to_prism_state_map[u_node_in_adv]
-            v_node_in_prism_model = self._sta_to_prism_state_map[v_node_in_adv]
-            u_node_in_game = self._prism_to_game_map[u_node_in_prism_model]
-            v_node_in_game = self._prism_to_game_map[v_node_in_prism_model]
-            action = self._prism_action_order_mapping[u_node_in_prism_model][action_idx]
-
-            game_strategy[u_node_in_game] = {'next_node': v_node_in_game, 'action': action}
+            initial_state = int(m.group(1))
             line = f.readline()
 
-        return game_strategy
+        # Get the initial distribution
+        initial_distribution = None
+        while 'Next:' not in line:
+            states = re.findall(r'(\d+)\=', line)
+            dists = re.findall(r'\=(\d+\.\d+)', line)
+            if len(states) == len(dists) == 0:
+                line = f.readline()
+                continue
+            states = list(map(int, states))
+            dists = list(map(float, dists))
+            dists = [v / sum(dists) for v in dists]
+
+            initial_distribution = rv_discrete(values=(states, dists))
+            line = f.readline()
+
+        # Get the Next Function: S x M -> A
+        next_dict = defaultdict(lambda: defaultdict(lambda: None))
+        while 'MemUpdStates:' not in line:
+            m = re.match(r'(\d+)\s(\d+)\s', line)
+            if m is None:
+                line = f.readline()
+                continue
+
+            curr_state = int(m.group(1))
+            curr_corner = int(m.group(2))
+
+            action_idxs = re.findall(r'(\d+)\=', line)
+            dists = re.findall(r'\=(\d+\.\d+)', line)
+            action_idxs = list(map(int, action_idxs))
+            dists = list(map(float, dists))
+            dists = [v / sum(dists) for v in dists]
+
+            dist = rv_discrete(values=(action_idxs, dists))
+            next_dict[curr_state][curr_corner] = dist
+
+            line = f.readline()
+
+        # Get the Memory Update States Function: S x M x A -> D(M)
+        state_memory_action_to_onmove_memory = \
+            defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None)))
+        while 'MemUpdMoves:' not in line:
+            m = re.match(r'(\d+)\s(\d+)\s(\d+)\s', line)
+            if m is None:
+                line = f.readline()
+                continue
+
+            next_corners = re.findall(r'(\d+)\=', line)
+            dists = re.findall(r'\=(\d+\.\d+)', line)
+            next_corners = list(map(int, next_corners))
+            dists = list(map(float, dists))
+            dists = [v / sum(dists) for v in dists]
+
+            curr_state = int(m.group(1))
+            curr_corner = int(m.group(2))
+            action_idx = int(m.group(3))
+
+            dist = rv_discrete(values=(next_corners, dists))
+            state_memory_action_to_onmove_memory[curr_state][curr_corner][action_idx] = dist
+
+            line = f.readline()
+
+        # Get the Memory Update Moves Function: S x A x M -> S x D(M)
+        state_action_onmove_memory_to_next_memory = \
+            defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None))))
+        while 'Info:' not in line:
+            m = re.match(r'(\d+)\s(\d+)\s(\d+)\s(\d+)\s', line)
+            if m is None:
+                line = f.readline()
+                continue
+
+            states = re.findall(r'(\d+)\=', line)
+            dists = re.findall(r'\=(\d+\.\d+)', line)
+            states = list(map(int, states))
+            dists = list(map(float, dists))
+            dists = [v / sum(dists) for v in dists]
+
+            # (CURR_NODE) (ACTION_IDX) (CORNER?) (NEXT_NODE)
+            u_node_in_adv = int(m.group(1))
+            action_idx = int(m.group(2))
+            curr_corner = int(m.group(3))
+            v_node_in_adv = int(m.group(4))
+
+            dist = rv_discrete(values=(states, dists))
+            state_action_onmove_memory_to_next_memory[u_node_in_adv][action_idx][curr_corner][v_node_in_adv] = dist
+            line = f.readline()
+
+        # Construct a Moore Machine for PRISM.
+        # Internally, it converts prism indices to game states and actions
+        moore_machine = PrismMooreMachine(
+            self._sta_to_prism_state_map,
+            self._prism_to_game_map,
+            self._prism_action_idx_to_game_map,
+            initial_state,
+            initial_distribution,
+            next_dict,
+            state_memory_action_to_onmove_memory,
+            state_action_onmove_memory_to_next_memory)
+
+        return moore_machine.get_transitions()
 
     def _read_simple_adv(self, f, line) -> Dict:
         """
@@ -542,13 +658,13 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
             if line == '\n':
                 break
             m = re.match(template, line)
-            u_node_in_prism_model = m.group(1)
-            action = m.group(2)
+            u_node_in_prism_model = int(m.group(1))
+            action_name = m.group(2)
             u_node_in_game = self._prism_to_game_map[u_node_in_prism_model]
             for v_node_in_game in self.game._graph.successors(u_node_in_game):
                 a = self.game.get_edge_attributes(u_node_in_game, v_node_in_game, 'actions')
-                if a == action:
-                    game_strategy[u_node_in_game] = {'next_node': v_node_in_game, 'action': action}
+                if a == action_name:
+                    game_strategy[u_node_in_game] = [{'next_node': v_node_in_game, 'action': action_name}]
             line = f.readline()
         return game_strategy
 
@@ -565,39 +681,6 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
             warnings.warn('Please first run run_prism')
 
         return self._game_str
-
-    @property
-    def strategy_plan(self) -> List:
-        if self._game_str is None:
-            warnings.warn('Please first run run_prism')
-
-        path = []
-
-        curr_state = self.game.get_initial_states()[0][0]
-        accp_state = self.game.get_accepting_states()[0]
-        while curr_state is not accp_state:
-            action = self._game_str[curr_state]['action']
-            curr_state = self._game_str[curr_state]['next_node']
-            path.append(action)
-
-        return path
-
-    @property
-    def strategy_trajectory(self) -> List:
-        if self._game_str is None:
-            warnings.warn('Please first run run_prism')
-
-        curr_state = self.game.get_initial_states()[0][0]
-        accp_state = self.game.get_accepting_states()[0]
-
-        strategy_trajectory = [curr_state]
-
-        while curr_state is not accp_state:
-            action = self._game_str[curr_state]['action']
-            curr_state = self._game_str[curr_state]['next_node']
-            strategy_trajectory.append(curr_state)
-
-        return strategy_trajectory
 
     @property
     def weight_names(self) -> List:
@@ -623,48 +706,88 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
         return sum_weight
 
     @property
-    def optimal_weights(self) -> Dict:
-        if self._game_str is None:
-            warnings.warn('Please first run run_prism')
-
-        curr_state = self.game.get_initial_states()[0][0]
-        accp_state = self.game.get_accepting_states()[0]
-
-        sum_weights = defaultdict(lambda: 0.0)
-
-        while curr_state is not accp_state:
-            action = self._game_str[curr_state]['action']
-            next_state = self._game_str[curr_state]['next_node']
-            attr = self.game._graph[curr_state][next_state][0]
-            for weight_name in self.weight_names:
-                weight = attr.get('weights')[weight_name]
-                sum_weights[weight_name] += weight
-            curr_state = next_state
-
-        return sum_weights
-
-    @property
-    def optimal_weight(self, weight_name: str) -> float:
-        if self._game_str is None:
-            warnings.warn('Please first run run_prism')
-
-        curr_state = self.game.get_initial_states()[0][0]
-        accp_state = self.game.get_accepting_states()[0]
-
-        sum_weight = 0.0
-
-        while curr_state is not accp_state:
-            action = self._game_str[curr_state]['action']
-            next_state = self._game_str[curr_state]['next_node']
-            attr = self.game._graph[curr_state][next_state][2]
-            weight = attr.get('weights')[weight_name]
-            sum_weight += weight
-            curr_state = next_state
-
-        return sum_weight
-
-    @property
     def pareto_points(self):
         if self._pareto_points is None:
             warnings.warn('Run run_prism first')
         return self._pareto_points
+
+    # @property
+    # def strategy_plan(self) -> List:
+    #     if self._game_str is None:
+    #         warnings.warn('Please first run run_prism')
+
+    #     path = []
+
+    #     curr_state = self.game.get_initial_states()[0][0]
+    #     accp_state = self.game.get_accepting_states()[0]
+    #     while curr_state is not accp_state:
+    #         for transition in self._game_str[curr_state]:
+    #             action = transition['action']
+    #             curr_state = transition[curr_state]['next_node']
+    #             path.append(action)
+
+    #     return path
+
+    # @property
+    # def strategy_trajectory(self) -> List:
+    #     if self._game_str is None:
+    #         warnings.warn('Please first run run_prism')
+
+    #     curr_state = self.game.get_initial_states()[0][0]
+    #     accp_state = self.game.get_accepting_states()[0]
+
+    #     strategy_trajectory = [curr_state]
+
+    #     while curr_state is not accp_state:
+    #         for transition in self._game_str[curr_state]:
+    #             action = transition['action']
+    #             curr_state = transition[curr_state]['next_node']
+    #             strategy_trajectory.append(curr_state)
+
+    #     return strategy_trajectory
+
+    # @property
+    # def optimal_weights(self) -> Dict:
+    #     if self._game_str is None:
+    #         warnings.warn('Please first run run_prism')
+
+    #     curr_state = self.game.get_initial_states()[0][0]
+    #     accp_state = self.game.get_accepting_states()[0]
+
+    #     sum_weights = defaultdict(lambda: 0.0)
+
+    #     while curr_state is not accp_state:
+    #         for transition in self._game_str[curr_state]:
+    #             action = transition['action']
+    #             next_state = transition[curr_state]['next_node']
+
+    #             attr = self.game._graph[curr_state][next_state][0]
+    #             for weight_name in self.weight_names:
+    #                 weight = attr.get('weights')[weight_name]
+    #                 sum_weights[weight_name] += weight
+    #             curr_state = next_state
+
+    #     return sum_weights
+
+    # @property
+    # def optimal_weight(self, weight_name: str) -> float:
+    #     if self._game_str is None:
+    #         warnings.warn('Please first run run_prism')
+
+    #     curr_state = self.game.get_initial_states()[0][0]
+    #     accp_state = self.game.get_accepting_states()[0]
+
+    #     sum_weight = 0.0
+
+    #     while curr_state is not accp_state:
+    #         for transition in self._game_str[curr_state]:
+    #             action = transition['action']
+    #             next_state = transition[curr_state]['next_node']
+    #         action = self._game_str[curr_state]['action']
+    #         next_state = self._game_str[curr_state]['next_node']
+    #         attr = self.game._graph[curr_state][next_state][2]
+    #         weight = attr.get('weights')[weight_name]
+    #         sum_weight += weight
+    #         curr_state = next_state
+
+    #     return sum_weight

@@ -24,13 +24,7 @@ class TwoPlayerGraph(Graph):
         return self._graph_name
 
     @graph_name.setter
-    def graph_name(self, name, prefix: str = None, suffix: str = None):
-        if prefix:
-            graph_name = prefix + graph_name
-
-        if suffix:
-            graph_name = graph_name + suffix
-
+    def graph_name(self, graph_name: str):
         self._graph_name = graph_name
 
     @property

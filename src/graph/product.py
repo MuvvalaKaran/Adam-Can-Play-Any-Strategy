@@ -37,7 +37,7 @@ class ProductAutomaton(TwoPlayerGraph):
                  from_iros_ts: bool = False,
                  plot_auto_graph: bool = False,
                  plot_trans_graph: bool = False,
-                 weighting: str = 'weightinglinear',
+                 weighting: str = 'weightedlinear',
                  alpha: float = 1.0,
                  show_weight: bool = True,
                  observe_next_on_trans: bool = True,
@@ -99,6 +99,8 @@ class ProductAutomaton(TwoPlayerGraph):
             self._integrate_accepting_states()
 
         self._sanity_check(debug=True)
+
+        self._initialize_edge_labels_on_fancy_graph()
 
     def _extend_trans_init(self):
         # Get the original initial state
@@ -271,7 +273,6 @@ class ProductAutomaton(TwoPlayerGraph):
                                                     weight=weight,
                                                     action=ts_action,
                                                     weights={'ts': weight,'pref': auto_weight})
-
     def construct_product_absorbing(self):
         """
         A function that helps build the composition of TS and DFA where we compress the all
@@ -882,6 +883,49 @@ class ProductAutomaton(TwoPlayerGraph):
         else:
             raise ValueError(f'No such weighting as {weighting_name}')
 
+    def set_node_labels_on_fancy_graph(self, labels: Dict):
+        """
+        :arg labels:    A dict of nodes to labels
+        """
+        for node, label in labels.items():
+            self.add_state_attribute(node, 'label', label)
+
+    def set_edge_labels_on_fancy_graph(self, labels: Dict):
+        """
+        :arg labels:    A dict of edges to labels
+        """
+        for edge, label in labels.items():
+            u = edge[0]
+            v = edge[1]
+            self._graph[u][v][0]['label'] = label
+
+    def _initialize_edge_labels_on_fancy_graph(self, round_float_by: int = 2):
+
+        edge_labels = {}
+
+        for edge in self._graph.edges():
+            action = self.get_edge_attributes(edge[0], edge[1], 'actions')
+            weights = self.get_edge_attributes(edge[0], edge[1], 'weights')
+            weights = copy.deepcopy(weights)
+
+            label = str(action)
+
+            if self._show_weight:
+                for k, v in weights.items():
+                    weights[k] = round(v, round_float_by)
+
+                label += ': ' + str(weights)
+
+            edge_labels[edge] = label
+
+        self.set_edge_labels_on_fancy_graph(edge_labels)
+
+    def set_strategy(self, edges: List):
+        for edge in edges:
+            u = edge[0]
+            v = edge[1]
+            self._graph[u][v][0]['strategy'] = True
+
     def fancy_graph(self, color=("lightgrey", "red", "purple", "cyan")) -> None:
         """
         Method to create a illustration of the graph
@@ -890,10 +934,7 @@ class ProductAutomaton(TwoPlayerGraph):
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
         for n in nodes:
-            ap = n[1].get('ap')
-            val = n[1].get('val')
-            val = 'None' if val is None else f'{val:.2f}'
-            xlabel = f"ap:{ap}, val:{val}"
+            xlabel = n[1].get('label')
             dot.node(str(n[0]), _attributes={"style": "filled",
                                              "fillcolor": color[0],
                                              "xlabel": xlabel,
@@ -914,12 +955,7 @@ class ProductAutomaton(TwoPlayerGraph):
 
         # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
-            label = str(edge[2].get('actions'))
-
-            if self._show_weight:
-                weight = edge[2].get('weights')['ts']
-                weights = edge[2].get('weights')['pref']
-                label += f': G{weight:.2f}, A{weights:.2f}'
+            label = edge[2].get('label')
 
             if edge[2].get('strategy') is True:
                 # dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')), _attributes={'color': 'red'})

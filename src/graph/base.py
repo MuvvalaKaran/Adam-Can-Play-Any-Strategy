@@ -80,7 +80,7 @@ class Graph(abc.ABC):
         #     dot_object.view(cleanup=True)
 
         directory = os.path.join(Graph._get_project_root_directory(), 'plots')
-        dot_object.render(filename=graph_name, directory=directory, view=view, cleanup=True)
+        dot_object.render(format='png', filename=graph_name, directory=directory, view=view, cleanup=True)
 
     def build_graph_from_file(self):
         """

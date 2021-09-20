@@ -1,6 +1,7 @@
 import networkx as nx
 import os
 import math
+import queue
 import warnings
 from pathlib import Path
 from collections import defaultdict
@@ -12,6 +13,7 @@ from ..factory.builder import Builder
 
 from graphviz import Digraph
 from pyFAS.solvers import solver_factory
+
 
 class TwoPlayerGraph(Graph):
 
@@ -136,17 +138,19 @@ class TwoPlayerGraph(Graph):
         # TODO
         pass
 
-    def delete_cycles(self, winning_region: List):
+    def delete_selfloops(self):
         """
         Find cycles (FAS and self loops) and delete them from G
 
         :args winning_region:   The winning region
         """
-        self.add_state('Absorbing', player='eve')
+        redirected = False
+
         # For each self loop
-        for node in self.identify_loops():
+        for node in self.get_selfloops():
             if node == 'Accepting':
                 continue
+
             # check if the loop belongs to sys or env
             player = self.get_state_w_attribute(node, 'player')
             # If sys, delete the edge
@@ -157,44 +161,59 @@ class TwoPlayerGraph(Graph):
                 edge_attributes = self._graph[node][node][0]
                 self.add_edge(node, 'Absorbing', **edge_attributes)
                 self._graph.remove_edge(node, node)
+                redirected = True
 
-        sccs = self.identify_sccs()
+        if redirected:
+            self.add_state('Absorbing', player='eve')
+
+    def delete_cycles(self, winning_region: List):
+        """
+        Find cycles (FAS and self loops) and delete them from G
+
+        :args winning_region:   The winning region
+        """
+        cycles = self.get_cycles()
+
         # For each sccss,
-        for scc in sccs:
-            # Check if all nodes in scc belong to env
-            all_env_node = all(['adam'==self.get_state_w_attribute(n, 'player') for n in scc])
+        for cycle in cycles:
+            if 'Accepting' in cycle:
+                continue
+
+            # TODO: Check if it really is a cycle lol
+            if not self._identify_if_really_cycle(cycle):
+                continue
+
+            # Check if all nodes in cycle belong to env
+            all_env_node = all(['adam'==self.get_state_w_attribute(n, 'player') for n in cycle])
             # Redirect all nodes to absorbing state
             if all_env_node:
-                for u_node in scc:
+                for u_node in cycle:
                     for v_node in self._graph.successors(u_node):
-                        if v_node in scc:
+                        if v_node in cycle:
                             edge_attributes = self._graph[u_node][v_node][0]
                             self.add_edge(u_node, 'Absorbing', **edge_attributes)
                             self._graph.remove_edge(u_node, v_node)
+                            redirected = True
 
-            # For sys node in scc
-            for u_node in scc:
+            # For sys node in cycle
+            for u_node in cycle:
                 player = self.get_state_w_attribute(u_node, 'player')
                 if player == 'eve':
-                    # check if it has an edge to one of the nodes in the scc, then delete it
+                    # check if it has an edge to one of the nodes in the cycle, then delete it
                     successors = list(self._graph.successors(u_node))
                     for v_node in successors:
-                        if v_node in scc:
+                        if v_node in cycle:
                             self._graph.remove_edge(u_node, v_node)
 
-    def identify_sccs(self) -> List:
+    def get_cycles(self) -> List:
         """
         Find a list of Strongly Connected Components in G
 
         :return fas:
         """
-        graph = self._graph
-        solver = solver_factory.get("array_fas", graph=graph)
-        solver.solve(debug=True)
+        return nx.simple_cycles(self._graph)
 
-        return solver.get_fas_set()
-
-    def identify_loops(self) -> List:
+    def get_selfloops(self) -> List:
         """
         Find self loops in G
         """
@@ -207,6 +226,26 @@ class TwoPlayerGraph(Graph):
                     loops.append(u_node)
 
         return loops
+
+    def _identify_if_really_cycle(self, cycle):
+        u_node = cycle[0]
+
+        search_queue = queue.Queue()
+        search_queue.put(u_node)
+        visited = {node: False for node in cycle}
+
+        while not search_queue.empty(): # Or queue to be empty
+            u_node = search_queue.get()
+
+            for v_node in self._graph.successors(u_node):
+
+                #  At least one successor should be in cycle to make it a cycle
+                if v_node in cycle and not visited[v_node]:
+                    visited[v_node] = True
+                    search_queue.put(v_node)
+
+        return all(list(visited.values()))
+
 
 class TwoPlayerGraphBuilder(Builder):
     """
@@ -226,6 +265,8 @@ class TwoPlayerGraphBuilder(Builder):
     def __call__(self,
                  graph_name: str,
                  config_yaml: str,
+                 minigrid = None,
+                 start_agent: str = 'sys',
                  save_flag: bool = False,
                  from_file: bool = False,
                  pre_built: bool = False,
@@ -240,6 +281,9 @@ class TwoPlayerGraphBuilder(Builder):
 
         if from_file:
             self._instance._graph_yaml = self._from_yaml(config_yaml)
+
+        if minigrid is not None:
+            self._instance._graph_yaml = self._from_minigrid(minigrid, start_agent)
 
         if pre_built:
             if graph_name == "two_player_graph":
@@ -258,5 +302,11 @@ class TwoPlayerGraphBuilder(Builder):
 
     def _from_yaml(self, config_file_name: str) -> dict:
         config_data = self.load_YAML_config_data(config_file_name)
+
+        return config_data
+
+    def _from_minigrid(self, minigrid_environment, start_agent) -> dict:
+        config_data = minigrid_environment.extract_two_player_game(start_agent)
+        config_data['env'] = minigrid_environment
 
         return config_data

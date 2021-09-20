@@ -273,6 +273,7 @@ class ProductAutomaton(TwoPlayerGraph):
                                                     weight=weight,
                                                     action=ts_action,
                                                     weights={'ts': weight,'pref': auto_weight})
+
     def construct_product_absorbing(self):
         """
         A function that helps build the composition of TS and DFA where we compress the all

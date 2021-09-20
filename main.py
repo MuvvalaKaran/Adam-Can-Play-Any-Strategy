@@ -157,8 +157,9 @@ class MinigridGraph(GraphInstanceConstructionBase):
         # ENV_ID = 'MiniGrid-Empty-5x5-v0'
         # ENV_ID = MiniGridEmptyEnv.env_6.value
         # ENV_ID = MiniGridLavaEnv.env_6.value
-        ENV_ID = 'MiniGrid-Lava_Multiple_Goals_SmallEntry-v0'
+        # ENV_ID = 'MiniGrid-Lava_Multiple_Goals_SmallEntry-v0'
         # ENV_ID = 'MiniGrid-MyDistShift-v0'
+        ENV_ID = 'MiniGrid-TwoGrids-v0'
 
         env = gym.make(ENV_ID)
         env = StaticMinigridTSWrapper(env, actions_type='simple_static')
@@ -192,9 +193,6 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                             get_iros_ts=self.get_iros_ts,
                                             graph_name=raw_trans_sys._graph_name,
                                             config_yaml=raw_trans_sys._config_yaml,
-                                            human_interventions=self.human_intervention,
-                                            human_intervention_cost=self.human_intervention_cost,
-                                            human_non_intervention_cost=self.human_non_intervention_cost,
                                             save_flag=True,
                                             plot_raw_minigrid=self._plot_minigrid,
                                             plot=self.plot_ts)
@@ -207,7 +205,8 @@ class MinigridGraph(GraphInstanceConstructionBase):
                                       # sc_ltl="!(lava_red_open) U(carpet_yellow_open) &(!(lava_red_open) U (water_blue_open))",
                                       # sc_ltl="!(lava_red_open) U (water_blue_open)",
                                       # sc_ltl="!(lava_red_open) U (goal_green_open)",
-                                      sc_ltl="F (goal_green_open)",
+                                      sc_ltl="F (floor_green_open)",
+                                    #   sc_ltl="F (goal_green_open)",
                                     #   sc_ltl="F (floor_purple_open) & F (floor_green_open) & (!(lava_red_open) U (floor_green_open)) & (!(lava_red_open) U (floor_purple_open))",
                                       use_alias=False,
                                       plot=self.plot_dfa)
@@ -377,15 +376,25 @@ class TwoGoalsExample(GraphInstanceConstructionBase):
         self._complete_graph_players = complete_graph_players
         self._integrate_accepting = integrate_accepting
 
-        all_problems = False
+        all_problems = True
+        # all_problems = False
         if all_problems:
+            # Whether to use Weight or Weights
             self._use_trans_sys_weights = True
-            self._ts_config = "/config/Game_all_problems"
             self._auto_config = "/config/PDFA_onegoal"
+            # self._ts_config = "/config/Game_all_problems"
+            # self._ts_config = "/config/Game_one_in_three_pareto_points"
+            # self._ts_config = "/config/Game_three_pareto_points"
+            # self._ts_config = "/config/Game_env_loops"
+            self._ts_config = "/config/Game_sys_loops"
+
+            # self._use_trans_sys_weights = False
+            # self._ts_config = "/config/Game_elev_esc_stairs"
+            # self._auto_config = "/config/PDFA_threegoals"
         else:
-            self._ts_config = "/config/Game_simple_loop"
             self._use_trans_sys_weights = False
             self._auto_config = "/config/PDFA_twogoals"
+            self._ts_config = "/config/Game_simple_loop"
 
         # self._ts_config = "/config/Game_two_goals"
         # self._ts_config = "/config/Game_simple_loop"
@@ -430,7 +439,7 @@ class TwoGoalsExample(GraphInstanceConstructionBase):
     def _build_product(self):
         self._product_automaton = graph_factory.get(
             'ProductGraph',
-            graph_name='product_automaton',
+            graph_name='ProductAutomaton',
             config_yaml='/config/product_automaton',
             trans_sys=self._trans_sys,
             automaton=self._dfa,
@@ -719,38 +728,32 @@ def pure_game(
     compute_reg_for_human: bool = False,
     integrate_accepting: bool = False,
     debug: bool = True,
-    save_before_deleting_loops: bool = True,
-    save_after_deleting_loops: bool = True):
+    use_prism: bool = False):
 
     reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
     reachability_game_handle.reachability_solver()
 
-    prism_interface = PrismInterfaceForTwoPlayerGame(use_docker=True)
-
-    # Before Deleting Loops
-    if save_before_deleting_loops:
-        prism_interface.export_files_to_prism(trans_sys)
-
-    # After Deleting Loops
-    if save_after_deleting_loops:
-        # TODO: Make an construction or copy function that outputs a new instanc w/o loops
-        trans_sys_wo_loops = copy.deepcopy(trans_sys)
-        trans_sys_wo_loops.delete_cycles(reachability_game_handle.sys_winning_region)
-        trans_sys_wo_loops._graph_name = trans_sys._graph_name + '_wo_loops'
-        trans_sys_wo_loops._graph.name = trans_sys._graph.name + '_wo_loops'
-        trans_sys_wo_loops.plot_graph()
-
-    prism_interface.run_prism(trans_sys_wo_loops, pareto=True, paretoepsilon=0.00001)
-    print('Strategy')
-    print(prism_interface.strategy)
-    print(prism_interface.strategy_plan)
-    print(prism_interface.strategy_trajectory)
-    print(prism_interface.optimal_weights)
-    print(prism_interface.pareto_points)
-
     solver = MultiObjectiveSolver(trans_sys)
-    solver.solve(plot=plot)
+    # solver.solve(stochastic=True, adversarial=True, plot_strategies=True, bound=[5.6, 5.6])
+    solver.solve(stochastic=False, adversarial=True, plot_strategies=True)
 
+    if use_prism:
+
+        prism_interface = PrismInterfaceForTwoPlayerGame(use_docker=True)
+        trans_sys_wo_loops = prism_interface.delete_loops(solver)
+
+        prism_interface.run_prism(
+            trans_sys_wo_loops,
+            pareto=True,
+            paretoepsilon=0.00001,
+            plot=False,
+            # plot=plot,
+            explicit=True,
+            debug=True)
+
+        for pareto_point in prism_interface.pareto_points:
+            prism_interface.run_prism(
+                trans_sys_wo_loops, pareto_point=pareto_point, debug=debug, plot=plot)
 
 def pure_adversarial_game(**kwargs):
     pure_game(cooperative=False, **kwargs)
@@ -788,7 +791,7 @@ def parse_arguments():
         help="")
     parser.add_argument("--plot_prod", action="store_true", default=False,
         help="")
-    parser.add_argument("--plot", action="store_true", default=True,
+    parser.add_argument("--plot", action="store_true", default=False,
         help="")
     parser.add_argument("--plot_auto_graph", action="store_true", default=False,
         help="")

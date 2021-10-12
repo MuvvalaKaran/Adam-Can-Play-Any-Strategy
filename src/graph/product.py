@@ -1,6 +1,7 @@
 import networkx as nx
 import warnings
 import math
+import numpy as np
 import copy
 import yaml
 import queue
@@ -34,37 +35,32 @@ class ProductAutomaton(TwoPlayerGraph):
                  save_flag: bool = False,
                  absorbing: bool = False,
                  finite: bool = False,
-                 from_iros_ts: bool = False,
                  plot_auto_graph: bool = False,
                  plot_trans_graph: bool = False,
-                 weighting: str = 'weightedlinear',
                  alpha: float = 1.0,
                  show_weight: bool = True,
                  observe_next_on_trans: bool = True,
-                 complete_graph_players: List = ['adam', 'eve'],
                  integrate_accepting: bool = False,
                  use_trans_sys_weights: bool = False) -> 'ProductAutomaton()':
+
         self._trans_sys: Optional[TwoPlayerGraph] = copy.deepcopy(trans_sys)
         self._auto_graph: Union[DFAGraph, PDFAGraph] = copy.deepcopy(automaton)
 
         self._absorbing = absorbing
         self._finite = finite
-        self._from_iros_ts = from_iros_ts
 
         self._plot_auto_graph = plot_auto_graph
         self._plot_trans_graph = plot_trans_graph
 
         self._show_weight: bool = show_weight
         self._observe_next_on_trans = observe_next_on_trans
-        self._complete_graph_players = complete_graph_players
         self._integrate_accepting = integrate_accepting
         self._use_trans_sys_weights = use_trans_sys_weights
 
-        self._multiple_weights = False
-
         if isinstance(automaton, PDFAGraph):
             self._multiple_weights = True
-            self._weighting = self._choose_weighting(weighting, alpha)
+        else:
+            self._multiple_weights = False
 
         TwoPlayerGraph.__init__(self,
                                 graph_name=graph_name,
@@ -76,17 +72,14 @@ class ProductAutomaton(TwoPlayerGraph):
         # throw a warning if the DFA does NOT contain any symbol that appears in the set of observations in TS
         # if not self._check_ts_ltl_compatability():
         #     warnings.warn("Please make sure that the formula is composed of symbols that are part of the aps in the TS")
+        self._graph = nx.MultiDiGraph(name=self._graph_name)
 
         self._extend_trans_init()
 
         if self._absorbing:
 
-            if self._from_iros_ts:
-                self.construct_product_absorbing_from_iros_ts(finite=self._finite)
-
-            else:
-                # self.construct_product_absorbing()
-                self.construct_minimum_product()
+            # self.construct_product_absorbing()
+            self.construct_minimum_product()
 
             # all the edges from the sys node to the absorbing state should have weight zero.
             if not isinstance(self._auto_graph, PDFAGraph):
@@ -143,7 +136,7 @@ class ProductAutomaton(TwoPlayerGraph):
             # Add an edge between node to the accepting state
             self.add_edge(_n, PROD_ACCEPTING_STATE_NAME,
                         weight=weight,
-                        actions=f'toAcceptingBy{player}',
+                        actions=set([f'toAcceptingBy{player}']),
                         player=player,
                         weights={'ts': weight,'pref': 0},
                         pref=1)
@@ -325,75 +318,6 @@ class ProductAutomaton(TwoPlayerGraph):
                                                               weight=weight,
                                                               action=ts_action,
                                                               weights={'ts': weight,'pref': auto_weight})
-
-    def construct_product_absorbing_from_iros_ts(self, finite: bool):
-        """
-        A function that helps build the composition of TS and DFA where we compress the all
-        absorbing nodes (A node that only has a transition to itself) in product automation.
-
-        This method of building the product automaton aligns with the iros 17 abstraction in which we do not have
-        a set of player but in fact we have a set of human and system actions from each state. To identify each action
-        as human and system action, we add an attribute to that edge : player = "eve"\"adam".
-
-        This method add this extra edge attribute by calling the _add_transition...._for_iros_ts() methods both in
-        case finite or otherwise.
-
-        There are always two of these - one accepting state and the other one is the "trap" state
-        :return:
-        """
-        # get max weight from the transition system
-        max_w: float = self._trans_sys.get_max_weight()
-
-        for _u_ts_node in self._trans_sys._graph.nodes():
-            for _u_a_node in self._auto_graph._graph.nodes():
-
-                # if the current node an absorbing state, then we don't compose u_ts_node and u_a_node
-                if _u_a_node in self._auto_graph.get_absorbing_states():
-                    _u_prod_node = self._add_prod_state(_u_a_node, _u_a_node)
-
-                else:
-                    _u_prod_node = self._composition(_u_ts_node, _u_a_node)
-
-                for _v_ts_node in self._trans_sys._graph.successors(_u_ts_node):
-                    for _v_a_node in self._auto_graph._graph.successors(_u_a_node):
-
-                        # if the next node is an absorbing state, then we don't compose v_ts_node and v_a_node
-                        if _v_a_node in self._auto_graph.get_absorbing_states():
-                            _v_prod_node = self._add_prod_state(_v_a_node, _v_a_node)
-                        else:
-                            _v_prod_node = self._composition(_v_ts_node, _v_a_node)
-
-                        # get relevant details that need to be added to the composed node and edge
-                        ap, weight, auto_action = self._get_edge_and_node_data(_u_ts_node,
-                                                                               _v_ts_node,
-                                                                               _u_a_node,
-                                                                               _v_a_node)
-
-                        ts_player = self._trans_sys.get_edge_attributes(_u_ts_node, _v_ts_node, "player")
-                        ts_action = self._trans_sys.get_edge_attributes(_u_ts_node, _v_ts_node, 'actions')
-
-                        exists, _v_prod_node = self._check_transition_absorbing(_u_ts_node,
-                                                                                _v_ts_node,
-                                                                                _u_a_node,
-                                                                                _v_a_node,
-                                                                                _v_prod_node,
-                                                                                action=auto_action,
-                                                                                obs=ap)
-                        if exists:
-                            if finite:
-                                self._add_transition_absorbing_finite_for_iros_ts(_u_prod_node,
-                                                                                  _v_prod_node,
-                                                                                  weight=weight,
-                                                                                  max_weight=max_w,
-                                                                                  action=ts_action,
-                                                                                  edge_player=ts_player)
-                            else:
-                                self._add_transition_absorbing_for_iros_ts(_u_prod_node,
-                                                                           _v_prod_node,
-                                                                           weight=weight,
-                                                                           max_weight=max_w,
-                                                                           action=ts_action,
-                                                                           edge_player=ts_player)
 
     def _add_transition(self, _u_prod_node, _v_prod_node, weight: float, action: str,
                         **kwargs):
@@ -642,9 +566,13 @@ class ProductAutomaton(TwoPlayerGraph):
         _ts_action = self._trans_sys.get_edge_attributes(_u_ts_node, _v_ts_node, 'actions')
 
         if self._observe_next_on_trans:
-            _observation = self._trans_sys._graph.nodes[_v_ts_node].get('ap')
+            node = _v_ts_node
         else:
-            _observation = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
+            node = _u_ts_node
+
+        _observation = self._trans_sys._graph.nodes[node].get('ap')
+        if _observation is None:
+            _observation = self._trans_sys._graph.nodes[node].get('observation')
 
         try:
             _weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
@@ -684,55 +612,6 @@ class ProductAutomaton(TwoPlayerGraph):
             automaton_labels.append(automaton_label)
 
         return weights, prefs, automaton_labels
-
-    def _get_edge_and_node_data(self, _u_ts_node, _v_ts_node, _u_auto_node, _v_auto_node) -> Tuple[str, float, str]:
-        """
-        A helper method that returns
-
-            1. observation at the current node in TS (i.e at -observation at _u_ts_node)
-            2. weight : The edges weight from the TS between _u_ts_node and _v_ts_node
-            3. transition label : The transition label from the automation between _u_auto_node and _v_auto_node
-        :param _u_ts_node: The current node in TS
-        :param _v_ts_node:  Neighbour/successor of the current node in TS
-        :param _u_auto_node: The current node in Automation - DFA
-        :param _v_auto_node: Neighbour/successor of the current node in DFA
-        :return: A tuple of observation, weight, and transition label
-        """
-
-        if self._observe_next_on_trans:
-            _observation = self._trans_sys._graph.nodes[_v_ts_node].get('ap')
-        else:
-            _observation = self._trans_sys._graph.nodes[_u_ts_node].get('ap')
-
-        try:
-            _weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
-        except:
-            warnings.warn(f"The edge from {_u_ts_node} to {_v_ts_node} does not contain the attribute 'weight'."
-                          f"Setting the edge weight to 0 while constructing the product")
-            _weight = 0
-
-        auto_edge_data = self._auto_graph._graph.get_edge_data(_u_auto_node, _v_auto_node)
-        num_auto_edges = len(auto_edge_data)
-
-        _weights = []
-        _automaton_labels = []
-
-        for i_edge in range(num_auto_edges):
-            if self._multiple_weights:
-                try:
-                    _a_weight = auto_edge_data[i_edge].get('weight')
-                    weight = self._weighting(_weight, _a_weight)
-                except:
-                    msg = f"The weight from edge {_u_auto_node} to {_v_auto_node} does not exist"
-                    warnings.warn(msg)
-                    weight = 0
-
-            _automaton_label = auto_edge_data[i_edge]['guard']
-
-            _weights.append(weight)
-            _automaton_labels.append(_automaton_label)
-
-        return _observation, _weights, _automaton_labels
 
     def _add_prod_state(self, _p_node, auto_node) -> Tuple:
         """
@@ -831,6 +710,8 @@ class ProductAutomaton(TwoPlayerGraph):
         self._sanity_check(debug=debug)
 
     def _sanity_check(self, debug: bool = False):
+        if self._finite:
+            return
         # check is the graph is total or not by looping through every nodE and add a self-loop of weight max(W)
         # to every node that does not  have a successor
         max_w: float = self._trans_sys.get_max_weight()
@@ -866,23 +747,6 @@ class ProductAutomaton(TwoPlayerGraph):
                 print(f"Removing edge between {_e[0]}--->{_e[1]}")
                 print("=====================================")
             self._graph.remove_edge(_e[0], _e[1])
-
-    def _choose_weighting(self, weighting_name: str, alpha: float):
-        """
-        Choose weighting method
-
-        :param weighting_name:
-        :param alpha:
-        :return:    A function with two inputs w1, w2
-        """
-        if weighting_name == 'linear':
-            return lambda w1, w2: w1 + w2
-        elif weighting_name == 'weightedlinear':
-            return lambda w1, w2: w1 + alpha * w2
-        elif weighting_name == 'automatonOnly':
-            return lambda w1, w2: w2
-        else:
-            raise ValueError(f'No such weighting as {weighting_name}')
 
     def set_node_labels_on_fancy_graph(self, labels: Dict):
         """
@@ -927,7 +791,7 @@ class ProductAutomaton(TwoPlayerGraph):
             v = edge[1]
             self._graph[u][v][0]['strategy'] = True
 
-    def fancy_graph(self, color=("lightgrey", "red", "purple", "cyan")) -> None:
+    def fancy_graph(self, color=("lightgrey", "red", "purple", "cyan"), **kwargs) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
@@ -971,7 +835,7 @@ class ProductAutomaton(TwoPlayerGraph):
         dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
 
         if self._save_flag:
-            self.save_dot_graph(dot, self._graph_name, True)
+            self.save_dot_graph(dot, self._graph_name, **kwargs)
 
 
 class ProductBuilder(Builder):
@@ -989,6 +853,8 @@ class ProductBuilder(Builder):
                  prune: bool = False,
                  debug: bool = False,
                  plot: bool = False,
+                 view: bool = True,
+                 format: str = 'pdf',
                  **kwargs):
         """
         A function that takes as input a
@@ -1015,13 +881,12 @@ class ProductBuilder(Builder):
         automaton = kwargs['automaton'] if 'automaton' in kwargs else None
 
         if trans_sys is not None and automaton is not None:
-            self._instance.construct_graph()
             self._instance.compose_graph()
 
         if prune:
             self._instance.prune_graph(debug=debug)
 
         if plot:
-            self._instance.plot_graph()
+            self._instance.plot_graph(view=view, format=format)
 
         return self._instance

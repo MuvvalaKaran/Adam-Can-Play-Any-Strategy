@@ -18,4 +18,6 @@ graph_factory.register_builder('PDFA', PDFABuilder())
 graph_factory.register_builder('GMin', GMinBuilder())
 graph_factory.register_builder('GMax', GMaxBuilder())
 graph_factory.register_builder('TwoPlayerGraph', TwoPlayerGraphBuilder())
+
+
 graph_factory.register_builder('ProductGraph', ProductBuilder())

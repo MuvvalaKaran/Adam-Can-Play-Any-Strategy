@@ -318,6 +318,8 @@ class ReachabilityGame:
         :param debug:
         :return:
         """
+        if self.game._finite:
+            return
         for _n in self.game._graph.nodes():
             if len(list(self.game._graph.successors(_n))) == 0:
                 if debug:

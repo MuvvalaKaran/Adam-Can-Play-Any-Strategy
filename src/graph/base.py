@@ -3,6 +3,7 @@ import abc
 import networkx as nx
 import yaml
 import warnings
+import subprocess as sp
 
 from ..config import ROOT_PATH
 # from ..src.config import ROOT_PATH
@@ -27,6 +28,9 @@ class Graph(abc.ABC):
         - actions : a label (action) that enables the transition from one state to another
         - weight
     """
+
+    graph_dir = ROOT_PATH
+
     def __init__(self, config_yaml, graph=None, save_flag: bool = False):
         self._graph_yaml = None
         self._config_yaml: str = config_yaml
@@ -69,7 +73,8 @@ class Graph(abc.ABC):
 
             self._graph_yaml = graph_data
 
-    def save_dot_graph(self, dot_object: Digraph, graph_name: str, view: bool = False) -> None:
+    def save_dot_graph(self, dot_object: Digraph, graph_name: str, view: bool = False,
+                       format: str = 'pdf', speedup: bool = False) -> None:
         """
         A method to save the plotted graph in the respective folder
         :param dot_object: object of @Diagraph
@@ -78,9 +83,15 @@ class Graph(abc.ABC):
         """
         # if view:
         #     dot_object.view(cleanup=True)
-
         directory = os.path.join(Graph._get_project_root_directory(), 'plots')
-        dot_object.render(format='png', filename=graph_name, directory=directory, view=view, cleanup=True)
+
+        if speedup:
+            dot_object.save(graph_name + '.dot', directory)
+            # filepath = os.path.join(directory, graph_name)
+            # command_string = f'sfdp -x -Goverlap=scale -Tpng {filepath}.dot > {filepath}.png'
+            # completed_process = sp.run(command_string)
+        else:
+            dot_object.render(format=format, filename=graph_name, directory=directory, view=view, cleanup=True)
 
     def build_graph_from_file(self):
         """
@@ -159,7 +170,7 @@ class Graph(abc.ABC):
             print(f"The file {config_file_name} could not be found."
                   f" This could be because I could not find the folder to dump in")
 
-    def plot_graph(self, save_yaml: bool = False):
+    def plot_graph(self, save_yaml: bool = False, **kwargs):
         """
         A helper method to dump the graph data to a yaml file, read the yaml file and plotting the graph itself
         :return: None
@@ -173,7 +184,7 @@ class Graph(abc.ABC):
             self._update_graph_yaml()
 
         # plot it
-        self.fancy_graph()
+        self.fancy_graph(**kwargs)
 
     def _update_graph_yaml(self):
         """

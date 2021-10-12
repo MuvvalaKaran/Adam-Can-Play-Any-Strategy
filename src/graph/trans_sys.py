@@ -227,7 +227,8 @@ class FiniteTransSys(TwoPlayerGraph):
 
         raw_trans_name = "raw" + graph_name
         trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}", save_flag=save_flag)
-        trans_sys.construct_graph()
+        # trans_sys.construct_graph()
+        trans_sys._graph = nx.MultiDiGraph(name=graph_name)
 
         trans_sys.add_states_from(['s1', 's2', 's3'])
         trans_sys.add_state_attribute('s1', 'ap', 'b')
@@ -284,7 +285,8 @@ class FiniteTransSys(TwoPlayerGraph):
 
         raw_trans_name = "raw" + graph_name
         trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}", save_flag=save_flag)
-        trans_sys.construct_graph()
+        # trans_sys.construct_graph()
+        trans_sys._graph = nx.MultiDiGraph(name=graph_name)
 
         trans_sys.add_states_from(['s1', 's2', 's3', 's4', 's5'])
         trans_sys.add_state_attribute('s1', 'ap', 'b')
@@ -362,7 +364,7 @@ class TransitionSystemBuilder(Builder):
             raise TypeError("Using the built in transition system. enter a valid transition system name.")
 
         self._instance = FiniteTransSys(graph_name, config_yaml, save_flag=save_flag)
-        self._instance.construct_graph()
+        # self._instance.construct_graph()
 
         # load dict with function calls
         self._load_pre_built()

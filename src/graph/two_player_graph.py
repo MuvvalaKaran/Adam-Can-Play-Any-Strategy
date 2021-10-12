@@ -1,6 +1,7 @@
 import networkx as nx
 import os
 import math
+import time
 import queue
 import warnings
 from pathlib import Path
@@ -12,7 +13,6 @@ from .base import Graph
 from ..factory.builder import Builder
 
 from graphviz import Digraph
-from pyFAS.solvers import solver_factory
 
 
 class TwoPlayerGraph(Graph):
@@ -20,6 +20,7 @@ class TwoPlayerGraph(Graph):
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False) -> 'TwoPlayerGraph()':
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
         self._graph_name = graph_name
+        self._graph = nx.MultiDiGraph(name=graph_name)
 
     @property
     def graph_name(self):
@@ -41,16 +42,39 @@ class TwoPlayerGraph(Graph):
 
         weight_types = set()
         for edge in edges:
+            if edge[2] is None:
+                continue
             for weight_type in edge[2].keys():
                 weight_types.add(weight_type)
         return list(weight_types)
 
-    def construct_graph(self):
-        two_player_graph: nx.MultiDiGraph = nx.MultiDiGraph(name=self._graph_name)
-        # add this graph object of type of Networkx to our Graph class
-        self._graph = two_player_graph
+    def construct_graph(self, graph_yaml: Dict):
 
-    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+        self._graph_yaml = graph_yaml
+
+        # add nodes
+        for node_name, attr in graph_yaml['nodes'].items():
+
+            self.add_state(node_name)
+
+            for attr_name, attr_val in attr.items():
+
+                self.add_state_attribute(node_name, attr_name, attr_val)
+
+            # add init and accepting node attribute
+            if node_name == graph_yaml['start_state']:
+
+                self.add_initial_state(node_name)
+
+        # add edges
+        for start_name, edge_dict in graph_yaml['edges'].items():
+            for end_name, attr in edge_dict.items():
+
+                self.add_edge(start_name,
+                              end_name,
+                              **attr)
+
+    def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
@@ -58,20 +82,23 @@ class TwoPlayerGraph(Graph):
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
         for n in nodes:
-            ap = n[1].get('ap')
-            ap = "{" + str(ap) + "}"
+            obs = n[1].get('observation')
+            if len(obs) == 0:
+                obs = ''
+            else:
+                obs = str(obs) #"\n".join(obs)
             dot.node(str(n[0]), _attributes={"style": "filled",
                                              "fillcolor": color[0],
-                                             "xlabel": ap,
+                                             "xlabel": obs,
                                              "shape": "rectangle"})
             if n[1].get('init'):
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": ap})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": obs})
             if n[1].get('accepting'):
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": obs})
             if n[1].get('player') == 'eve':
-                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
-            if n[1].get('player') == 'adam':
                 dot.node(str(n[0]), _attributes={"shape": "circle"})
+            if n[1].get('player') == 'adam':
+                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
 
         # add all the edges
         edges = self._graph_yaml["edges"]
@@ -91,7 +118,7 @@ class TwoPlayerGraph(Graph):
         dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
 
         if self._save_flag:
-            self.save_dot_graph(dot, self._graph_name, True)
+            self.save_dot_graph(dot, self._graph_name, **kwargs)
 
     def print_edges(self):
         print("=====================================")
@@ -211,7 +238,14 @@ class TwoPlayerGraph(Graph):
 
         :return fas:
         """
-        return nx.simple_cycles(self._graph)
+        cycles_ = list(nx.find_cycle(self._graph))
+        return cycles_
+        cycles = []
+        for cycle in cycles_:
+            cycles.append([cycle[0], cycle[1]])
+        return cycles
+        # return list(nx.simple_cycles(self._graph))
+        # return list(nx.strongly_connected_components(self._graph))
 
     def get_selfloops(self) -> List:
         """
@@ -269,34 +303,27 @@ class TwoPlayerGraphBuilder(Builder):
                  start_agent: str = 'sys',
                  save_flag: bool = False,
                  from_file: bool = False,
-                 pre_built: bool = False,
-                 plot: bool = False) -> TwoPlayerGraph:
+                 pre_built: bool = False,   # TODO: Delete
+                 plot: bool = False,
+                 view: bool = True,
+                 format: str = 'pdf') -> TwoPlayerGraph:
         """
         Return an initialized TwoPlayerGraph instance given the configuration data
         :param graph_name : Name of the graph
         :return: A concrete/active instance of the TwoPlayerGraph
         """
         self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
-        self._instance.construct_graph()
 
         if from_file:
-            self._instance._graph_yaml = self._from_yaml(config_yaml)
+            graph_yaml = self._from_yaml(config_yaml)
 
         if minigrid is not None:
-            self._instance._graph_yaml = self._from_minigrid(minigrid, start_agent)
+            graph_yaml = self._from_minigrid(minigrid, start_agent)
 
-        if pre_built:
-            if graph_name == "two_player_graph":
-                self._instance = TwoPlayerGraph.build_running_ex(graph_name, config_yaml, save_flag)
-            elif graph_name == "target_weighted_arena":
-                self._instance = TwoPlayerGraph.build_twa_example(graph_name, config_yaml, save_flag)
-            elif graph_name == "edge_weighted_arena":
-                self._instance = TwoPlayerGraph.build_ewa_example(graph_name, config_yaml, save_flag)
-            else:
-                warnings.warn("Please enter a valid graph name to load a pre-built graph.")
+        self._instance.construct_graph(graph_yaml)
 
         if plot:
-            self._instance.plot_graph()
+            self._instance.plot_graph(view=view, format=format)
 
         return self._instance
 
@@ -307,6 +334,17 @@ class TwoPlayerGraphBuilder(Builder):
 
     def _from_minigrid(self, minigrid_environment, start_agent) -> dict:
         config_data = minigrid_environment.extract_two_player_game(start_agent)
-        config_data['env'] = minigrid_environment
+
+        # Translate minigrid player to this library's player names
+        node_names = list(config_data['nodes'].keys())
+        for node_name in node_names:
+            minigrid_player = config_data['nodes'][node_name]['player']
+
+            if minigrid_player == 'sys':
+                player = 'eve'
+            else:
+                player = 'adam'
+
+            config_data['nodes'][node_name]['player'] = player
 
         return config_data

@@ -1,7 +1,6 @@
 import os
 import re
 import copy
-import rpyc
 import docker
 import warnings
 import paramiko
@@ -16,6 +15,7 @@ import matplotlib.pyplot as plt
 from ..graph import TwoPlayerGraph
 # from ..strategy_synthesis import MultiObjectiveSolver
 from .strategy import PrismMealyMachine, StochasticStrategy
+from ..strategy_synthesis.adversarial_game import ReachabilityGame
 
 from ..config import ROOT_PATH
 
@@ -204,6 +204,8 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
 
         :args   filename:       Option to change default filename
         """
+        # game = self.delete_loops(game)
+
         if pareto_point is not None:
             game = self._set_pareto_point(game, pareto_point)
 
@@ -300,6 +302,8 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 player = u_node_data[1]['player']
                 for v_node in self.game._graph.successors(u_node):
                     action = self.game.get_edge_attributes(u_node, v_node, 'actions')
+                    if isinstance(action, set):
+                        action = list(action)[0]
                     actions_per_player[player].add(action)
 
             for i, (player, actions) in enumerate(actions_per_player.items()):
@@ -317,6 +321,8 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 u_node_int = self._game_to_prism_map[edge[0]]
                 v_node_int = self._game_to_prism_map[edge[1]]
                 action = edge[2].get('actions')
+                if isinstance(action, set):
+                    action = list(action)[0]
                 # TODO: nondeterministic transitions
                 f.write(f"\t[{action}] x={u_node_int} -> 1 : (x'={v_node_int});\n")
                 self._prism_action_idx_to_game_map[u_node_int].append(action)
@@ -329,6 +335,8 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 for edge in self.game._graph.edges.data():
                     u_node_int = self._game_to_prism_map[edge[0]]
                     action = edge[2].get('actions')
+                    if isinstance(action, set):
+                        action = list(action)[0]
                     weight = edge[2].get('weights')[weight_name]
                     f.write(f'\t[{action}] x={u_node_int} : {weight};\n')
                 f.write(f'endrewards\n\n')
@@ -342,6 +350,8 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                     if u_node == v_node:
                         continue
                     action = self.game.get_edge_attributes(u_node, v_node, 'actions')
+                    if isinstance(action, set):
+                        action = list(action)[0]
                     u_node_int = self._game_to_prism_map[u_node]
                     f.write(f'\t[{action}] x={u_node_int} : 1;\n')
             f.write(f'endrewards\n\n')
@@ -701,12 +711,9 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
             line = f.readline()
         return game_strategy
 
-    def delete_loops(self, solver):
-        if solver._game is None:
-            return
-
-        if solver._pareto_fronts is None:
-            return
+    def delete_loops(self, game):
+        if game is None:
+            return None
 
         game_wo_loops = copy.deepcopy(solver._game)
 

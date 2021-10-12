@@ -3,10 +3,11 @@ import queue
 import time
 import warnings
 import numpy as np
+from itertools import combinations
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 import matplotlib.pyplot as plt
-from typing import Dict, Set, List, Tuple, Union
+from typing import Dict, Set, List, Tuple, Union, Hashable
 from shapely.geometry import Polygon
 
 from ..graph import TwoPlayerGraph
@@ -19,6 +20,8 @@ class Strategy:
 
 
 INFINITY = 1e10
+Node = Hashable
+Nodes = List[Node]
 EdgeWeight = List[float]
 Point = List[float]
 ParetoPoint = List[float]
@@ -67,7 +70,9 @@ class ParetoFront(metaclass=ABCMeta):
                  use_polyhedron: bool = False,
                  convex: bool = False,
                  upperbound: float = INFINITY,
-                 node_name: str = None):
+                 node_name: str = None,
+                 rtol: float = 1e-05,
+                 atol: float = 1e-08):
         """
         Pareto Front Class at each node.
         It keeps either a list of pareto points or a polyhedron.
@@ -91,6 +96,8 @@ class ParetoFront(metaclass=ABCMeta):
         self._convex = convex
         self._use_polyhedron = use_polyhedron
         self._node_name = node_name
+        self._rtol = rtol
+        self._atol = atol
 
         if self._use_polyhedron:
             self._polyhedron = self.construct_polyhedron(points, self._upperbound, self._convex)
@@ -337,7 +344,10 @@ class ParetoFront(metaclass=ABCMeta):
         return self._first_elem_added
 
     def __eq__(self, others):
-        return np.array_equal(self.pareto_points, others.pareto_points)
+        if np.array(self.pareto_points).shape != np.array(others.pareto_points).shape:
+            return False
+        # return np.array_equal(self.pareto_points, others.pareto_points)
+        return np.allclose(self.pareto_points, others.pareto_points, self._rtol, self._atol)
 
     def plot(self, include_successors: bool = True):
         # Check if the polyhedron is initialized
@@ -516,6 +526,13 @@ class EnvParetoFront(ParetoFront):
             raise Exception('No. of successors should be same as the No. of edges')
 
         if self._use_polyhedron:
+
+            for front in successor_fronts:
+                if not front.is_initial_pareto_updated():
+                    self._first_elem_added = False
+                    self._polyhedron = None
+                    return
+
             successor_pareto_fronts = \
                 self._expand_successor_pareto_fronts(successor_fronts, edge_weights)
 
@@ -524,7 +541,11 @@ class EnvParetoFront(ParetoFront):
 
             # Take an intersection of the successor pareto fronts
             self._polyhedron = self.intersection_of_successor_fronts(successor_pareto_fronts)
-            pareto_points = self._get_polyhedron_vertices()
+            try:
+                pareto_points = self._get_polyhedron_vertices()
+            except:
+                print(self._polyhedron)
+                raise Exception(f'Polyhedron is not a Polyhedron! lol')
         else:
             successor_pareto_points = \
                 self._expand_successor_pareto_points(successor_fronts, edge_weights)
@@ -585,22 +606,51 @@ class MultiObjectiveSolver:
     :attribute _Wg_graph: Graph with Game Weights
     :attribute _Wa_graph: Graph with Automaton Weights
     """
-    def __init__(self, graph: TwoPlayerGraph, rtol=1e-05, atol=1e-08, equal_nan=False,
-                 remove_cycles: bool = True):
+    def __init__(self, game: TwoPlayerGraph = None,
+                 stochastic: bool = False,
+                 adversarial: bool = False,
+                 epsilon: float = 1e-8,
+                 round_decimals: int = 10,
+                 round_label_decimals: int = 2,
+                 max_iteration: int = 20):
         """
         """
-        self._game = copy.deepcopy(graph)
-        self._rtol = rtol
-        self._atol = atol
-        self._equal_nan = equal_nan
+        self._game = game
+
+        self._stochastic = stochastic
+        self._adversarial = adversarial
+
+        if -np.log10(epsilon) > round_decimals:
+            raise Exception('epsilon has to be larger than round_decimals')
+
+        self._epsilon = epsilon
+        self._round_decimals = round_decimals
+        self._round_label_decimals = round_label_decimals
+        self._max_iteration = max_iteration
+
+        self._initialize(game)
+
+    def _initialize(self, game: TwoPlayerGraph):
+        if game is None:
+            return
+
+        self._game = copy.deepcopy(game)
 
         self._reachability_solver = ReachabilityGame(game=self._game)
         self._reachability_solver.reachability_solver()
+
+        init_node = self._game.get_initial_states()[0][0]
+        if init_node not in self._reachability_solver.sys_winning_region:
+            raise Exception(f"{init_node} not in the system's winning region")
         self._game.delete_selfloops()
+
+        self._upperbounds = self._compute_upperbound_for_pareto_points()
 
         self._pareto_fronts = None
         self._strategies = None
-        self._upperbounds = self._compute_upperbound_for_pareto_points()
+
+    def is_initialized(self):
+        return self._game is not None
 
     def _compute_upperbound_for_pareto_points(self) -> List[float]:
         """
@@ -610,7 +660,7 @@ class MultiObjectiveSolver:
 
         max_weights = []
         for name in self._game.weight_types:
-            weights = [e[2]['weights'].get(name) for e in self._game._graph.edges.data()]
+            weights = [e[2]['weights'].get(name) for e in self._game._graph.edges.data() if 'weights' in e[2]]
             max_single_weight = max(weights)
             max_weights.append(max_depth * max_single_weight)
 
@@ -622,72 +672,115 @@ class MultiObjectiveSolver:
 
         return self._strategies
 
-    def get_a_strategy_for(self, pareto_point: Union[str, ParetoPoint]):
+    def get_a_strategy_for(self, pareto_point: ParetoPoint):
         strategies = self.get_strategies()
 
-        if not isinstance(pareto_point, str):
-            pareto_point = str(pareto_point)
+        if not isinstance(pareto_point, Tuple):
+            pareto_point = tuple(pareto_point)
+
+        pareto_point = self._get_closest_pareto_point(pareto_point)
+
+        if pareto_point is None:
+            raise Exception(f'Could not find {pareto_point} in the pareto points')
 
         if pareto_point not in strategies:
-            raise Exception(f'{pareto_point} is not in the comptued pareto points')
+            raise Exception(f'{pareto_point} is not in the computed pareto points')
 
         return strategies[pareto_point]
 
-    def get_pareto_points(self):
+    def _round_pareto_point(self, pareto_point: ParetoPoints) -> ParetoPoints:
+        return tuple(np.around(pareto_point, self._round_decimals))
+
+    def _round_pareto_points(self, pareto_points: ParetoPoints) -> ParetoPoints:
+        pareto_points = np.around(pareto_points, self._round_decimals)
+        return list(map(tuple, pareto_points))
+
+    def _get_closest_pareto_point(self, pareto_point: ParetoPoint) -> ParetoPoint:
+        pareto_points = np.array(self.get_pareto_points())
+        idx = np.linalg.norm(pareto_points - pareto_point, axis=1).argmin()
+
+        nearest_pareto_point = pareto_points[idx]
+        zeros = np.zeros(len(pareto_point))
+        rounded_pareto_point = self._round_pareto_point(nearest_pareto_point - pareto_point)
+
+        if any(rounded_pareto_point != zeros):
+            return None
+        else:
+            return tuple(nearest_pareto_point)
+
+    def get_pareto_points(self, round_value: bool = False):
         if self._pareto_fronts is None:
             raise Exception("No pareto points found. Please run 'solve' function first.")
 
         init_node = self._game.get_initial_states()[0][0]
-        return self._pareto_fronts[init_node].pareto_points
+        pareto_points = self._pareto_fronts[init_node].pareto_points
 
-    def get_pareto_point_at(self, node):
+        if round_value:
+            return self._round_pareto_points(pareto_points)
+
+        return pareto_points
+
+    def get_pareto_point_at(self, node, round_value: bool = False):
         if self._pareto_fronts is None:
             raise Exception("No pareto points found. Please run 'solve' function first.")
 
         if node not in self._game._graph.nodes():
             raise Exception(f'{node} is not in the game graph')
 
-        return self._pareto_fronts[node].pareto_points
+        pareto_points = self._pareto_fronts[node].pareto_points
 
-    def is_pareto_computed(self) -> bool:
-        return self._pareto_fronts is not None
+        if round_value:
+            return self._round_pareto_points(pareto_points)
 
-    def check_if_pareto_computed(self) -> None:
-        if not self.is_pareto_computed():
+        return pareto_points
+
+    def is_pareto_computed(self, pareto_fronts = None) -> bool:
+        if pareto_fronts is None:
+            pareto_fronts = self._pareto_fronts
+        return pareto_fronts is not None
+
+    def check_if_pareto_computed(self, pareto_fronts = None) -> None:
+        if not self.is_pareto_computed(pareto_fronts):
             msg = "No pareto fronts found. Please run 'solve' or 'solve_pareto_points' first."
             raise Exception(msg)
 
     def solve(self,
-              stochastic: bool=False,
-              adversarial: bool=False,
+              game: TwoPlayerGraph = None,
               bound: Point = None,
-              all_strategies: bool = True,
               plot_pareto: bool = False,
               plot_all_paretos: bool = False,
               plot_strategies: bool = False,
-              plot_graph_with_pareto: bool = True,
-              decimals: int = 2,
-              debug: bool = False) -> Tuple[ParetoPoints, Strategies]:
+              plot_graph_with_pareto: bool = False,
+              plot_graph_with_strategy: bool = False,
+              debug: bool = False,
+              view: bool = False,
+              format: str = 'svg') -> Tuple[ParetoPoints, Strategies]:
 
         pareto_points = self.solve_pareto_points(
-            stochastic, adversarial, plot_pareto, plot_all_paretos,
-            plot_graph_with_pareto, decimals, debug)
+            game, plot_pareto, plot_all_paretos, plot_graph_with_pareto, debug, view, format)
 
         strategies = self.solve_strategies(
-            bound, all_strategies, plot_strategies, debug)
+            bound, plot_strategies, plot_graph_with_strategy, debug)
 
         return pareto_points, strategies
 
-    def solve_pareto_points(self, stochastic: bool, adversarial: bool = True,
-        plot_pareto: bool = True, plot_all_paretos: bool = False,
-        plot_graph_with_pareto: bool = True, decimals: int = 2,
-        debug: bool = False) -> ParetoPoints:
+    def solve_pareto_points(self,
+        game: TwoPlayerGraph = None,
+        plot_pareto: bool = True,
+        plot_all_paretos: bool = False,
+        plot_graph_with_pareto: bool = False,
+        debug: bool = False,
+        view: bool = False,
+        format: str = 'svg') -> ParetoPoints:
 
-        self._stochastic = stochastic
+        if not self.is_initialized():
+            if game is None:
+                raise Exception('Initialize first by providing a "game" graph')
+            else:
+                self._initialize(game)
 
         # Pareto Computation
-        pareto_points = self._compute_pareto_points(stochastic, adversarial, debug)
-        self._label_pareto_on_graph()
+         self._pareto_fronts = self._compute_pareto_points(debug)
 
         # Pareto Visualization
         if plot_pareto:
@@ -696,19 +789,18 @@ class MultiObjectiveSolver:
         if plot_all_paretos:
             self._plot_pareto_fronts()
 
+        self._label_pareto_on_graph()
+
         if plot_graph_with_pareto:
-            self._game.plot_graph()
+            self._game.plot_graph(view=view, format=format)
 
-        return pareto_points
+        return self.get_pareto_points()
 
-    def solve_strategies(self, bound: Point = None, all_strategies: bool = False,
-        plot_strategies: bool = True, debug: bool = False) -> Strategies:
-
-        self.check_if_pareto_computed()
-
-        if bound is None and not all_strategies:
-            msg = 'Please either provide a constraint to compute a strategy for a specific point in the pareto front or choose "all_strategies" to compute strategies for all pareto points'
-            raise ValueError(msg)
+    def solve_strategies(self,
+        bound: Point = None,
+        plot_strategies: bool = False,
+        plot_graph_with_strategy: bool = False,
+        debug: bool = False) -> Strategies:
 
         pareto_points = self.get_pareto_points()
 
@@ -717,12 +809,18 @@ class MultiObjectiveSolver:
 
         strategies = {}
         for pareto_point in pareto_points:
-            strategy = self._compute_strategy(pareto_point, self._stochastic, debug)
+            strategy = self._compute_strategy(pareto_point, debug)
             strategies[tuple(pareto_point)] = strategy
+
+            if plot_strategies:
+                strategy.plot_graph(view=False, format='svg')
+
+            if plot_graph_with_strategy:
+                self._plot_graph_with_strategy(self._game, strategy)
 
         self._strategies = strategies
 
-        return strategies
+        return self.get_strategies()
 
     def _compute_points_in_pareto_front(self,
         bound: Point,
@@ -732,7 +830,8 @@ class MultiObjectiveSolver:
         Given a constraint and a pareto front at the initial state,
         compute a point in the pareto front
         """
-
+        # If the user chooses a point that is completely inside the pareto front
+        # Just return the pareto points
         points = []
         for pareto_point in pareto_points:
             if all(np.array(bound) >= np.array(pareto_point)):
@@ -741,6 +840,7 @@ class MultiObjectiveSolver:
         if len(points) != 0:
             return points
 
+        # Otherwise, find the intersection
         init_node = self._game.get_initial_states()[0][0]
         pareto_front = copy.deepcopy(self._pareto_fronts[init_node])
 
@@ -754,23 +854,24 @@ class MultiObjectiveSolver:
         return points
 
     # Pareto Points Computation
-    def _compute_pareto_points(self,
-        stochastic: bool, adversarial: bool = True, debug: bool = True):
+    def _compute_pareto_points(self, debug: bool = True):
 
-        #################### Winning Region Computation ####################
+        stochastic = self._stochastic
+        adversarial = self._adversarial
+        game = self._game
 
-        accept_node = self._game.get_accepting_states()[0]
+        init_node = game.get_initial_states()[0][0]
+        accept_node = game.get_accepting_states()[0]
+        next_node = list(game._graph.successors(init_node))[0]
 
-        #################### Pareto Points Computation ####################
-
-        weights = self._game.get_edge_attributes(accept_node, accept_node, 'weights')
+        weights = game.get_edge_attributes(init_node, next_node, 'weights')
         n_weight = len(weights)
 
         pareto_fronts = {}
 
-        for node in self._game._graph.nodes():
+        for node in game._graph.nodes():
 
-            player = self._game.get_state_w_attribute(node, "player")
+            player = game.get_state_w_attribute(node, "player")
 
             if player == 'eve': # System / Robot
                 pareto_fronts[node] = SysParetoFront(
@@ -788,13 +889,6 @@ class MultiObjectiveSolver:
 
         pareto_fronts_prev = None
 
-        # TODO: Identify Cycles with 0 weights
-        cycles = self._game.get_cycles()
-        node_to_cycles = defaultdict(lambda: [])
-        for i, cycle in enumerate(cycles):
-            for node in cycle:
-                node_to_cycles[node].append(i)
-
         visitation_order = self._decide_visitation_order()
         strategies_at_node = defaultdict(lambda: defaultdict(lambda: set()))
 
@@ -802,41 +896,68 @@ class MultiObjectiveSolver:
         while not self._converged(pareto_fronts, pareto_fronts_prev):
 
             if debug:
-                print(f"{iter_var} Iterations on a graph with {len(visitation_order)} nodes")
+                print(f"{iter_var} Iterations")
+
+            if iter_var > self._max_iteration:
+                self._print_diff(pareto_fronts, pareto_fronts_prev)
+                msg = 'Pareto Front Computation did not converge.'
+                msg += '\nTry setting epsilon 100 larger than round_decimals,'
+                msg += '\nOr increase max_iteration to allow more iterations.'
+                raise Exception(msg)
 
             pareto_fronts_prev = copy.deepcopy(pareto_fronts)
             iter_var += 1
-
             for u_node in visitation_order:
 
                 # Only allow transitions to the winning region
                 if u_node not in self._reachability_solver.sys_winning_region:
                     continue
 
-                player = self._game.get_state_w_attribute(u_node, "player")
+                player = game.get_state_w_attribute(u_node, "player")
                 fronts = []
                 edge_weights = []
 
-                for v_node in self._game._graph.successors(u_node):
+                for v_node in game._graph.successors(u_node):
 
                     # Avoid self loop
                     if u_node == v_node:
                         continue
 
                     # get u to v's edge weight
-                    edge_weight = self._game.get_edge_attributes(u_node, v_node, 'weights')
+                    edge_weight = game.get_edge_attributes(u_node, v_node, 'weights')
                     edge_weight = list(edge_weight.values())
 
-                    fronts.append(pareto_fronts[v_node])
+                    fronts.append(pareto_fronts_prev[v_node])
                     edge_weights.append(edge_weight)
 
                 pareto_fronts[u_node].update(fronts, edge_weights)
 
-        self._pareto_fronts = pareto_fronts
-        init_node = self._game.get_initial_states()[0][0]
-        pareto_points = self._pareto_fronts[init_node].pareto_points
+        return pareto_fronts
 
-        return pareto_points
+    def _get_zero_cycles(self, game) -> List[str]:
+        # Get all cycles in the graph
+        cycles = game.get_cycles()
+
+        # Compute for all the cycles with zero weights
+        all_zero_cycles = []
+        for cycle in cycles:
+            cycle = list(cycle)
+
+            if len(cycle) == 1:
+                continue
+            all_zeros = True
+            # Slide one to the right
+            slided_cycle = copy.deepcopy(cycle)
+            slided_cycle += [slided_cycle.pop(0)]
+            # For each edge, get weights and check if its zero
+            for u, v in zip(cycle, slided_cycle):
+                weights = game.get_edge_attributes(u, v, 'weights')
+                if np.sum(list(weights.values())) != 0:
+                    all_zeros = False
+            if all_zeros:
+                all_zero_cycles.append(cycle)
+
+        return all_zero_cycles
 
     def _decide_visitation_order(self):
         accept_node = self._game.get_accepting_states()[0]
@@ -877,16 +998,41 @@ class MultiObjectiveSolver:
                 return False
         return True
 
-    def _label_pareto_on_graph(self, decimals: int = 2) -> None:
+    def _print_diff(self, curr: Dict, prev: Dict) -> None:
+        if curr is None or prev is None:
+            return
+        curr_keys = list(curr.keys())
+        prev_keys = list(prev.keys())
+        if curr_keys != prev_keys:
+            print(curr_keys, prev_keys)
+        for key in curr_keys:
+            if curr[key] != prev[key]:
+                print(key, curr[key], prev[key])
 
-        self.check_if_pareto_computed()
+    def _label_pareto_on_graph(self, game: TwoPlayerGraph = None,
+        pareto_fronts = None, round_label_decimals: int = None) -> None:
+
+        if game is None:
+            game = self._game
+        else:
+            game = copy.deepcopy(game)
+
+        if pareto_fronts is None:
+            pareto_fronts = self._pareto_fronts
+
+        if round_label_decimals is None:
+            round_label_decimals = self._round_label_decimals
+
+        self.check_if_pareto_computed(pareto_fronts)
 
         node_labels = {}
-        for node in self._game._graph.nodes():
-            pareto_points = self._pareto_fronts[node].pareto_points
+        for node in game._graph.nodes():
+            pareto_points = pareto_fronts[node].pareto_points
 
-            node_labels[node] = np.array2string(np.array(pareto_points).round(decimals))
-        self._game.set_node_labels_on_fancy_graph(node_labels)
+            node_labels[node] = np.array2string(np.array(pareto_points).round(round_label_decimals))
+        game.set_node_labels_on_fancy_graph(node_labels)
+
+        return game
 
     def _plot_pareto_front(self) -> None:
 
@@ -914,21 +1060,30 @@ class MultiObjectiveSolver:
             plt.show()
 
     # Strategy Computation
-    def _compute_strategy(self, pareto_point: ParetoPoint, stochastic: bool,
+    def _compute_strategy(self,
+        init_pareto_point: ParetoPoint,
         debug: bool = False) -> Strategy:
+
         # Strategy Synthesis
-        if stochastic:
+        if self._stochastic:
             strategy = StochasticStrategy.from_pareto_fronts(
                 self._game,
                 self._pareto_fronts,
-                init_point=pareto_point)
+                epsilon=self._round_decimals,
+                init_pareto_point=init_pareto_point)
         else:
             strategy = DeterministicStrategy.from_pareto_fronts(
                 self._game,
                 self._pareto_fronts,
-                init_pareto_point=pareto_point)
-
-        strategy.plot_graph()
-        strategy.plot_original_graph()
+                epsilon=self._round_decimals,
+                init_pareto_point=init_pareto_point,
+                debug=debug)
 
         return strategy
+
+    def _plot_graph_with_strategy(self, game: TwoPlayerGraph, strategy: Strategy) -> None:
+        game = copy.deepcopy(game)
+        edges = strategy.get_edges_on_original_graph()
+        game.set_strategy(edges)
+        game.graph_name += 'With' + strategy._graph_name
+        game.plot_graph(view=False, format='svg')

@@ -13,6 +13,8 @@ from scipy.stats import rv_discrete, uniform
 from typing import Union, List, Dict, Tuple, Set, Any, Hashable
 
 from ..graph import Graph
+from ..graph import TwoPlayerGraph
+from src.strategy_synthesis import ReachabilitySolver
 
 Node = Hashable
 Nodes = List[Node]
@@ -125,6 +127,43 @@ class Strategy(Graph):
         raise NotImplementedError('Please implement the function')
 
 
+class RandomStrategy(Strategy):
+    def __init__(self, game, graph_name: str = 'random'):
+        super().__init__(game, graph_name)
+        self.reset()
+
+    def reset(self):
+        pass
+
+    def step(self, prev_state, prev_action, curr_state):
+        successors = list(self._game._graph.successors(curr_state))
+        next_state = random.choice(successors)
+        actions = list(self._game.get_edge_attributes(curr_state, next_state, 'actions'))
+        action = random.choice(actions)
+
+        return action, self._game.step(curr_state, action)[0]
+
+
+class ActionSequenceStrategy(Strategy):
+    def __init__(self, game, action_sequence, graph_name: str = 'actions'):
+        super().__init__(game, graph_name)
+        self._actions = action_sequence
+        self.reset()
+
+    def reset(self):
+        self.i = 0
+
+    def step(self, prev_state, prev_action, curr_state):
+
+        if self.i < len(self._actions):
+            action = self._actions[self.i]
+            self.i += 1
+
+            return action, self._game.step(curr_state, action)[0]
+        else:
+            raise Exception('No more actions to take')
+
+
 class DeterministicStrategy(Strategy):
 
     def __init__(self,
@@ -132,11 +171,12 @@ class DeterministicStrategy(Strategy):
         parent_to_children: Dict[Node, Nodes],
         init_pareto_point: ParetoPoint = None,
         graph_name: str = None,
-        debug: bool = False):
+        adversarial: bool = True):
         super().__init__(game, graph_name)
 
         self._parent_to_children = parent_to_children
         self._init_pareto_point = init_pareto_point
+        self._finite = game._finite
 
         if graph_name is None:
             graph_name = 'DeterministicStrategy'
@@ -150,9 +190,13 @@ class DeterministicStrategy(Strategy):
             self._graph_name = graph_name
 
         if self._is_initialized():
-            self.construct_graph(debug)
+            self.construct_graph(adversarial)
 
         self.reset()
+
+    @classmethod
+    def from_yaml(cls):
+        pass
 
     @classmethod
     def from_edges(cls, game, edges: List[Tuple[Node, Node]]):
@@ -172,21 +216,24 @@ class DeterministicStrategy(Strategy):
         **kwargs):
 
         parent_to_children = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None)))
-        branching_nodes = queue.Queue()
 
         for u_node, front in pareto_fronts.items():
+
             for pareto_point in front.pareto_points:
                 for v_node in game._graph.successors(u_node):
-                    weights = game.get_edge_attributes(u_node, v_node, 'weights')
-                    if weights is None:
-                        continue
-                    weights = np.array(list(weights.values()))
 
-                    p = np.array(pareto_point) - weights
-                    # TODO: Is there only one successor pareto that satisfies the parent's pareto?
-                    for v_pareto_point in pareto_fronts[v_node].pareto_points:
-                        if all(np.around(p, epsilon) >= np.around(v_pareto_point, epsilon)):
-                            parent_to_children[u_node][tuple(pareto_point)][v_node] = v_pareto_point
+                    for i, attr in game._graph[u_node][v_node].items():
+                        weights = attr['weights']
+                        # weights = game.get_edge_attributes(u_node, v_node, 'weights')
+
+                        if weights is None:
+                            continue
+                        weights = np.array(list(weights.values()))
+                        p = np.array(pareto_point) - weights
+
+                        for v_pareto_point in pareto_fronts[v_node].pareto_points:
+                            if all(np.around(p, epsilon) >= np.around(v_pareto_point, epsilon)):
+                                parent_to_children[u_node][tuple(pareto_point)][(i, v_node)] = v_pareto_point
 
         return cls(game, parent_to_children, **kwargs)
 
@@ -200,19 +247,20 @@ class DeterministicStrategy(Strategy):
     def set_initial_pareto_point(self, initial_pareto_point: ParetoPoint):
         self._init_pareto_point = init_pareto_point
 
-    def construct_graph(self, debug: bool = False):
+    def construct_graph(self, adversarial: bool = True):
         # add this graph object of type of Networkx to our Graph class
-        graph = nx.MultiDiGraph(name=self._graph_name)
+        self._graph = nx.MultiDiGraph(name=self._graph_name)
+        tpg = TwoPlayerGraph(self._graph_name, None, False)
+        tpg._finite = self._finite
 
         init_node = self._game.get_initial_states()[0][0]
         init_attr = self._game._graph.nodes[init_node]
-        graph.add_node(init_node, **init_attr)
+        tpg.add_state(init_node, **init_attr)
 
         accept_node = self._game.get_accepting_states()[0]
-        curr_node = init_node
 
         search_queue = queue.Queue()
-        search_queue.put((curr_node, self._init_pareto_point))
+        search_queue.put((init_node, self._init_pareto_point))
         visited = set()
         visited.add(init_node)
 
@@ -221,68 +269,60 @@ class DeterministicStrategy(Strategy):
         while not search_queue.empty():
             curr_node, pareto_point = search_queue.get()
 
-            for next_node, next_pareto_point in \
+            for (i, next_node), next_pareto_point in \
                 self._parent_to_children[curr_node][tuple(pareto_point)].items():
                 attr = self._game._graph.nodes[next_node]
-                edge_attr = self._game._graph[curr_node][next_node][0]
-                graph.add_node(next_node, **attr)
-                graph.add_edge(curr_node, next_node, **edge_attr)
+                edge_attr = self._game._graph[curr_node][next_node][i]
+
+                if not adversarial and 'player' in attr:
+                    attr = copy.deepcopy(attr)
+                    attr['player'] = 'eve'
+
+                tpg.add_state(next_node, **attr)
+                tpg.add_edge(curr_node, next_node, **edge_attr)
 
                 if next_node not in visited:
                     visited.add(next_node)
                     search_queue.put((next_node, next_pareto_point))
 
-        # Initialize each node's distance
-        min_distance = defaultdict(lambda: np.inf)
-        min_distance[accept_node] = 0
+        solver = ReachabilitySolver(tpg)
+        solver.reachability_solver()
 
-        min_distance_prev = None
-        visitation_order = self._decide_visitation_order(graph, accept_node)
-
-        # Backward value iteration to find shortest distance for all nodes
-        while min_distance != min_distance_prev:
-
-            min_distance_prev = copy.deepcopy(min_distance)
-
-            for curr_node in visitation_order:
-
-                player = graph.nodes[curr_node].get('player')
-                ss = list(graph.successors(curr_node))
-                successor_distances = [min_distance_prev[s] for s in ss]
-
-                if len(successor_distances) == 0:
-                    continue
-
-                if player == 'eve':
-                    min_distance[curr_node] = min(successor_distances) + 1
-                else:
-                    min_distance[curr_node] = max(successor_distances) + 1
-
-        # Forward search for finding a path that always has a successor with <= distance.
         self._graph = nx.MultiDiGraph(name=self._graph_name)
+
+        init_node = self._game.get_initial_states()[0][0]
+        init_attr = self._game._graph.nodes[init_node]
         self.add_state(init_node, **init_attr)
+
+        accept_node = self._game.get_accepting_states()[0]
 
         search_queue = queue.Queue()
         search_queue.put(init_node)
-        visited = set(init_node)
+        visited = set()
+        visited.add(init_node)
 
         while not search_queue.empty():
-
             curr_node = search_queue.get()
+            player = self._game.get_state_w_attribute(curr_node, 'player')
 
-            for next_node in graph.successors(curr_node):
+            if player == 'eve' or not adversarial:
+                next_nodes = [] if curr_node == accept_node else [solver.sys_str[curr_node]]
+            else:
+                next_nodes = list(self._game._graph.successors(curr_node))
 
-                if min_distance[curr_node] < min_distance[next_node]:
+            for next_node in next_nodes:
+                attr = self._game._graph.nodes[next_node]
+
+                if next_node not in tpg._graph[curr_node]:
                     continue
 
-                attr = self._game._graph.nodes[next_node]
-                edge_attr = self._game._graph[curr_node][next_node][0]
-                self.add_state(next_node, **attr)
-                self.add_edge(curr_node, next_node, **edge_attr)
+                for i, edge_attr in tpg._graph[curr_node][next_node].items():
+                    self.add_state(next_node, **attr)
+                    self.add_edge(curr_node, next_node, **edge_attr)
 
-                if next_node not in visited:
-                    visited.add(next_node)
-                    search_queue.put(next_node)
+                    if next_node not in visited:
+                        visited.add(next_node)
+                        search_queue.put(next_node)
 
     def _decide_visitation_order(self, graph, accept_node):
         search_queue = queue.Queue()
@@ -311,133 +351,6 @@ class DeterministicStrategy(Strategy):
 
         return visitation_order
 
-    def construct_graph_w(self, debug: bool = False):
-        # add this graph object of type of Networkx to our Graph class
-        self._graph = nx.MultiDiGraph(name=self._graph_name)
-
-        init_node = self._game.get_initial_states()[0][0]
-        attr = self._game._graph.nodes[init_node]
-        self.add_state(init_node, **attr)
-
-        accept_node = self._game.get_accepting_states()[0]
-        curr_node = init_node
-
-        search_queue = queue.Queue()
-        search_queue.put((curr_node, self._init_pareto_point))
-        nodes = [init_node]
-        edges = []
-        branches = []
-        edges_in_branch = defaultdict(lambda: [])
-
-        # Until we find all paths for the current pareto point
-        # while curr_node != accept_node and not search_queue.empty():
-        while not search_queue.empty():
-
-            curr_node, pareto_point = search_queue.get()
-
-            player = self._game.get_state_w_attribute(curr_node, 'player')
-            paretos = list(self._parent_to_children[curr_node][tuple(pareto_point)].values())
-            n_duplicate = paretos.count(pareto_point)
-            i_duplicate = 0
-
-            for next_node, next_pareto_point in \
-                self._parent_to_children[curr_node][tuple(pareto_point)].items():
-
-                # Check if there is a loop. If so, delete edges until the most recent branch
-                if next_node in nodes and len(branches) != 0 and \
-                    all(pareto_point == next_pareto_point):
-
-                    branch_node, other_next_node = branches.pop()
-                    # Search for other branch.
-                    # It must have the exact pareto point as curr_node if it's a loop
-                    edges.append((branch_node, other_next_node))
-                    search_queue.put((other_next_node, pareto_point))
-
-                    # Delete all nodes and edges
-                    nodes.remove(edges_in_branch[branch_node][0][0])
-                    for edge in edges_in_branch[branch_node]:
-                        edges.remove(edge)
-                        nodes.remove(edge[1])
-                    del edges_in_branch[branch_node]
-
-                    continue
-
-                # If sys has multiple outgoing edges with same pareto points,
-                # it is likely that it has a loop. Corner cases exist.
-                if player == 'eve' and n_duplicate > 1 and pareto_point == next_pareto_point:
-                    i_duplicate += 1
-                    if i_duplicate > 1:
-                        branches.append((curr_node, next_node))
-                        continue
-                    edges_in_branch[curr_node].append((curr_node, next_node))
-
-                edges.append((curr_node, next_node))
-                nodes.append(next_node)
-                search_queue.put((next_node, next_pareto_point))
-
-        # Construct a graph
-        init_node = self._game.get_initial_states()[0][0]
-        attr = self._game._graph.nodes[init_node]
-        self.add_state(init_node, **attr)
-
-        for u_node, v_node in edges:
-
-            attr = self._game._graph.nodes[v_node]
-            edge_attr = self._game._graph[u_node][v_node][0]
-
-            self.add_state(v_node, **attr)
-            self.add_edge(u_node, v_node, **edge_attr)
-
-    def construct_graph__(self, debug: bool = False):
-        # add this graph object of type of Networkx to our Graph class
-        self._graph = nx.MultiDiGraph(name=self._graph_name)
-
-        init_node = self._game.get_initial_states()[0][0]
-        attr = self._game._graph.nodes[init_node]
-        self.add_state(init_node, **attr)
-
-        accept_node = self._game.get_accepting_states()[0]
-        curr_node = init_node
-
-        search_queue = queue.Queue()
-        search_queue.put((curr_node, self._init_pareto_point))
-        visited = set()
-        visited.add(init_node)
-
-        # 1. Generate a strategy graph
-        while not search_queue.empty():
-            curr_node, pareto_point = search_queue.get()
-
-            for next_node, next_pareto_point in \
-                self._parent_to_children[curr_node][tuple(pareto_point)].items():
-                attr = self._game._graph.nodes[next_node]
-                edge_attr = self._game._graph[curr_node][next_node][0]
-                self.add_state(next_node, **attr)
-                self.add_edge(curr_node, next_node, **edge_attr)
-
-                if next_node not in visited:
-                    visited.add(next_node)
-                    search_queue.put((next_node, next_pareto_point))
-
-        # 2. Run a backward reachability analysis
-        search_queue = queue.Queue()
-        search_queue.put(accept_node)
-        visited = set()
-        visited.add(accept_node)
-        regions = defaultdict(lambda: -1)
-
-        while not search_queue.empty():
-            curr_node = search_queue.get()
-            for prev_node in self._graph.predecessors(curr_node):
-                if prev_node not in visited:
-                    visited.add(prev_node)
-                    search_queue.put(prev_node)
-
-        # 3. Delete loops
-        for node in self._graph.nodes():
-            if node not in visited:
-                print(node)
-
     def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
         """
         Method to create a illustration of the graph
@@ -446,8 +359,10 @@ class DeterministicStrategy(Strategy):
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
         for n in nodes:
+            xlabel = n[1].get('label')
             dot.node(str(n[0]), _attributes={"style": "filled",
                                              "fillcolor": color[0],
+                                             "xlabel": xlabel,
                                              "shape": "rectangle"})
             if n[1].get('init'):
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1]})
@@ -463,7 +378,7 @@ class DeterministicStrategy(Strategy):
 
         # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
-            label = f"a={edge[2].get('actions')}"
+            label = edge[2].get('label')
             dot.edge(str(edge[0]), str(edge[1]), label=label)
 
         # set graph attributes
@@ -479,31 +394,15 @@ class DeterministicStrategy(Strategy):
         self.curr_state = list(self._graph.successors(virtual_init_node))[0]
         return None
 
-    def step(self, env_action: str):
-        accepted = False
+    def step(self, env_state, env_action, sys_state):
 
-        if env_action is not None:
-            for next_state in self._graph.successors(self.curr_state):
-                actions = self.get_edge_attributes(self.curr_state, next_state, 'actions')
-                if env_action in actions:
-                    self.curr_state = next_state
-                    break
-        # Now we should be at the system's state
-        if self.curr_state is self.get_accepting_states()[0][0]:
-            accepted = True
+        successors = list(self._graph.successors(sys_state))
+        next_state = random.choice(successors)
+        actions = list(self.get_edge_attributes(sys_state, next_state, 'actions'))
 
-        successors = list(self._graph.successors(self.curr_state))
-        index = random.randint(0, len(successors)-1)
-        next_state = successors[index]
-        actions = self.get_edge_attributes(self.curr_state, next_state, 'actions')
         self.curr_state = next_state
-        # Now we should be at the environment's state
 
-        accepting_states = self.get_accepting_states()
-        if next_state in accepting_states:
-            accepted = True
-
-        return list(actions)[0], accepted
+        return random.choice(actions), next_state
 
 
 class StochasticStrategy(Strategy):

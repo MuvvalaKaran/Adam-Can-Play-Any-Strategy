@@ -4,6 +4,9 @@ import networkx as nx
 import yaml
 import warnings
 import subprocess as sp
+from collections import defaultdict
+from IPython.display import display, Image
+from IPython import get_ipython
 
 from ..config import ROOT_PATH
 # from ..src.config import ROOT_PATH
@@ -11,6 +14,19 @@ from graphviz import Digraph
 from typing import List, Tuple, Iterable, Union
 from ..helper_methods import deprecated
 # from src.helper_methods import deprecated
+
+
+def isnotebook():
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
 
 
 class Graph(abc.ABC):
@@ -52,7 +68,7 @@ class Graph(abc.ABC):
         :return: A path to the script we are running
         """
 
-        return ROOT_PATH
+        return Graph.graph_dir
 
     def read_yaml_file(self) -> None:
         """
@@ -62,7 +78,7 @@ class Graph(abc.ABC):
         """
         if self._config_yaml is not None:
             file_name: str = self._config_yaml + ".yaml"
-            file_add = Graph._get_project_root_directory() + file_name
+            file_add = os.path.join(Graph._get_project_root_directory(), file_name)
             try:
                 with open(file_add, 'r') as stream:
                     graph_data = yaml.load(stream, Loader=yaml.Loader)
@@ -74,24 +90,27 @@ class Graph(abc.ABC):
             self._graph_yaml = graph_data
 
     def save_dot_graph(self, dot_object: Digraph, graph_name: str, view: bool = False,
-                       format: str = 'pdf', speedup: bool = False) -> None:
+                       format: str = 'pdf') -> None:
         """
         A method to save the plotted graph in the respective folder
         :param dot_object: object of @Diagraph
         :param graph_name: String to identity the name by which the graph is saved as
         :param view: flag for viewing the object
         """
-        # if view:
-        #     dot_object.view(cleanup=True)
-        directory = os.path.join(Graph._get_project_root_directory(), 'plots')
-
-        if speedup:
-            dot_object.save(graph_name + '.dot', directory)
-            # filepath = os.path.join(directory, graph_name)
-            # command_string = f'sfdp -x -Goverlap=scale -Tpng {filepath}.dot > {filepath}.png'
-            # completed_process = sp.run(command_string)
+        if isnotebook():
+            view_on_jupyter = view
+            view = False
         else:
-            dot_object.render(format=format, filename=graph_name, directory=directory, view=view, cleanup=True)
+            view = view
+            view_on_jupyter = False
+
+        directory = os.path.join(Graph._get_project_root_directory(), 'plots')
+        filename = os.path.join(directory, graph_name)
+        path = dot_object.render(format=format, filename=filename, view=view)
+
+        if view_on_jupyter:
+            print(path)
+            display(Image(filename=path))
 
     def build_graph_from_file(self):
         """
@@ -122,18 +141,25 @@ class Graph(abc.ABC):
         _edges = self._graph_yaml['edges']
 
         for _e in _edges:
-            _action: str = _e[2].get('actions')
-
-            _weight: str = _e[2].get('weight')
-            _weights: str = _e[2].get('weights')
-
-            if isinstance(_weight, str):
-                _weight: float = float(_weight)
-
-            if _weights:
-                self.add_edge(_e[0], _e[1], weight=_weight, weights=_weights, actions=_action)
+            if 'actions' in _e[2] and 'weight' in _e[2]:
+                edge_attrs = {0: _e[2]}
             else:
-                self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
+                edge_attrs = _e[2]
+
+            for i, edge_attr in edge_attrs.items():
+
+                _action: str = edge_attr.get('actions')
+
+                _weight: str = edge_attr.get('weight')
+                _weights: str = edge_attr.get('weights')
+
+                if isinstance(_weight, str):
+                    _weight: float = float(_weight)
+
+                if _weights:
+                    self.add_edge(_e[0], _e[1], weight=_weight, weights=_weights, actions=_action)
+                else:
+                    self.add_edge(_e[0], _e[1], weight=_weight, actions=_action)
 
     def dump_to_yaml(self) -> None:
         """
@@ -150,7 +176,16 @@ class Graph(abc.ABC):
         >>>        parent_node, child_node, edge_weight
         """
         config_file_name: str = str(self._config_yaml + '.yaml')
-        config_file_add = Graph._get_project_root_directory() + config_file_name
+        config_file_add = os.path.join(Graph._get_project_root_directory(), config_file_name)
+        print(config_file_add)
+
+        # edges = {}
+        # for u, v, attr in self._graph.edges.data():
+        #     if u not in edges:
+        #         edges[u] = {}
+        #     if v not in edges[u]:
+        #         edges[u][v] = {}
+        #     edges[u][v] = attr
 
         data_dict = dict(
                 alphabet_size=len(self._graph.edges()),
@@ -158,8 +193,14 @@ class Graph(abc.ABC):
                 num_obs=3,
                 start_state=self.get_initial_states()[0][0],
                 nodes=[node for node in self._graph.nodes.data()],
-                edges=[edge for edge in self._graph.edges.data()]
+                edges=[edge for edge in self._graph.edges.data()],
+                # nodes={node: attr for node, attr in self._graph.nodes.data()},
+                # edges=edges
         )
+
+        directory = os.path.dirname(config_file_add)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
         try:
             with open(config_file_add, 'w') as outfile:

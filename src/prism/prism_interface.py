@@ -302,8 +302,12 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 player = u_node_data[1]['player']
                 for v_node in self.game._graph.successors(u_node):
                     action = self.game.get_edge_attributes(u_node, v_node, 'actions')
+                    if 'Init' in action:
+                        action = 'Init'
                     if isinstance(action, set):
                         action = list(action)[0]
+                        if isinstance(action, tuple):
+                            action = '_'.join(action)
                     actions_per_player[player].add(action)
 
             for i, (player, actions) in enumerate(actions_per_player.items()):
@@ -321,8 +325,12 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 u_node_int = self._game_to_prism_map[edge[0]]
                 v_node_int = self._game_to_prism_map[edge[1]]
                 action = edge[2].get('actions')
+                if 'Init' in action:
+                    action = 'Init'
                 if isinstance(action, set):
                     action = list(action)[0]
+                    if isinstance(action, tuple):
+                        action = '_'.join(action)
                 # TODO: nondeterministic transitions
                 f.write(f"\t[{action}] x={u_node_int} -> 1 : (x'={v_node_int});\n")
                 self._prism_action_idx_to_game_map[u_node_int].append(action)
@@ -335,8 +343,12 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                 for edge in self.game._graph.edges.data():
                     u_node_int = self._game_to_prism_map[edge[0]]
                     action = edge[2].get('actions')
+                    if 'Init' in action:
+                        action = 'Init'
                     if isinstance(action, set):
                         action = list(action)[0]
+                        if isinstance(action, tuple):
+                            action = '_'.join(action)
                     weight = edge[2].get('weights')[weight_name]
                     f.write(f'\t[{action}] x={u_node_int} : {weight};\n')
                 f.write(f'endrewards\n\n')
@@ -350,8 +362,12 @@ class PrismInterfaceForTwoPlayerGame(PrismInterface):
                     if u_node == v_node:
                         continue
                     action = self.game.get_edge_attributes(u_node, v_node, 'actions')
+                    if 'Init' in action:
+                        action = 'Init'
                     if isinstance(action, set):
                         action = list(action)[0]
+                        if isinstance(action, tuple):
+                            action = '_'.join(action)
                     u_node_int = self._game_to_prism_map[u_node]
                     f.write(f'\t[{action}] x={u_node_int} : 1;\n')
             f.write(f'endrewards\n\n')

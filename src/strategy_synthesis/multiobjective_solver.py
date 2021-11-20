@@ -3,22 +3,23 @@ import queue
 import time
 import warnings
 import numpy as np
+import multiprocessing
 from itertools import combinations
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 import matplotlib.pyplot as plt
-from typing import Dict, Set, List, Tuple, Union, Hashable
+from typing import Dict, Set, List, Tuple, Union, Hashable, Any
 from shapely.geometry import Polygon
+from shapely.ops import cascaded_union
+from joblib import Parallel, delayed
 
 from ..graph import TwoPlayerGraph
 from .value_iteration import ValueIteration
 from .adversarial_game import ReachabilityGame
 from ..prism import MealyMachine, StochasticStrategy, DeterministicStrategy
 
-class Strategy:
-    pass
 
-
+Strategy = Any
 INFINITY = 1e10
 Node = Hashable
 Nodes = List[Node]
@@ -28,9 +29,17 @@ ParetoPoint = List[float]
 ParetoPoints = List[ParetoPoint]
 Strategies = Dict[str, Strategy]
 
+NUM_CORES = multiprocessing.cpu_count()
+
 
 def get_vertices(polygon: Polygon) -> List:
-    # X, Y = polygon.exterior.coords.xy
+    if not isinstance(polygon, Polygon):
+        the_polygon = None
+        for p in polygon:
+            if isinstance(p, Polygon):
+                the_polygon = p
+        polygon = the_polygon
+
     X, Y = polygon.exterior.xy
 
     vertices = set()
@@ -41,36 +50,18 @@ def get_vertices(polygon: Polygon) -> List:
 
 class ParetoFront(metaclass=ABCMeta):
 
-    """An array to store elements"""
-    _pareto_points = None
-
-    """Whether a first element is added to the array or not"""
-    _first_elem_added = False
-
     """Polyhedron"""
     _polyhedron = None
 
-    """Convex Hull"""
-    _convex: bool = False
-
-    """Upper Bound of the convex hull"""
-    _upperbound: float = None
-
-    """Whether to keep a polyhedron"""
-    _use_polyhedron: bool = False
-
-    """Name of the node"""
-    _node_name: str = None
-
-    """Successor Node's front"""
-    _successor_fronts: List = None
-
     def __init__(self,
+                 player: str,
                  points: Union[int, float, List, np.ndarray] = None,
-                 use_polyhedron: bool = False,
+                 dim: int = None,
+                 distance: int = np.inf,
                  convex: bool = False,
                  upperbound: float = INFINITY,
-                 node_name: str = None,
+                 minimization: bool = True,
+                 name: str = None,
                  rtol: float = 1e-05,
                  atol: float = 1e-08):
         """
@@ -79,7 +70,6 @@ class ParetoFront(metaclass=ABCMeta):
         The polyhedron could be convex or non-convex.
 
         :args points:           1D or 2D array
-        :args use_polyhedron:   Whether to use a polyhedron
         :args convex:           Whether the polygon would be convex or not
         :args upperbound:       The upperbound of the polyhedron
 
@@ -92,98 +82,37 @@ class ParetoFront(metaclass=ABCMeta):
         e.g.,
             array = [1, 2] -> [[1], [2]]
         """
+        if player not in ['eve', 'adam']:
+            raise Exception('Select either player = eve / adam')
+
+        self._player = player
         self._upperbound = INFINITY if upperbound == 0 else upperbound
+        self._distance = distance
         self._convex = convex
-        self._use_polyhedron = use_polyhedron
-        self._node_name = node_name
+        self._minimization = minimization   # TODO: In the future, adapt the code to maximization
+        self._name = name
         self._rtol = rtol
         self._atol = atol
 
-        if self._use_polyhedron:
-            self._polyhedron = self.construct_polyhedron(points, self._upperbound, self._convex)
-            points = self._get_polyhedron_vertices()
-
-        self.set_pareto_points(points)
-
-    def construct_polyhedron(self,
-        points: Union[List, np.ndarray],
-        upperbound: float,
-        convex: bool):
-
-        if  points is None or not isinstance(points, (List, np.ndarray)) or len(points) == 0:
-            return None
-
         points = self._check_valid_points(points)
 
-        if convex:
-            return self.construct_convex_polyhedron(points, upperbound)
+        if points is not None:
+            self._dim = len(points[0])
+        elif dim is not None:
+            self._dim = dim
         else:
-            return self.construct_nonconvex_polyhedron(points, upperbound)
+            raise Exception('Provide either points or dimension of the polyhedron')
 
-    def construct_nonconvex_polyhedron(self, points: Union[List, np.ndarray], upperbound: float):
-        """
-        Construct a non-convex polygon from points of the polygon
-        TODO: Currently, limited to polygons (2D Polyhedron) and
-        dimensions other than 2D are not supported.
-        """
-        polygons = []
-        for p in points:
-            polygon = Polygon([p, (p[0], upperbound), (upperbound, upperbound), (upperbound, p[1])])
-            polygons.append(polygon)
-
-        if len(polygons) == 1:
-            return polygons[0]
-
-        polygon_union = polygons[0]
-        for polygon in polygons[1:]:
-            polygon_union = polygon_union.union(polygon)
-
-        return polygon_union
-
-    def construct_convex_polyhedron(self, points: Union[List, np.ndarray], upperbound: float):
-        """
-        Construct a convex polygon from points of the polygon
-        TODO: Currently, limited to polygons (2D Polyhedron) and
-        dimensions other than 2D are not supported.
-        """
-        # Sort by the first column
-        columnIndex = 0
-        points = np.array(points)
-        points = points[points[:,columnIndex].argsort()].tolist()
-
-        points = [[points[0][0], upperbound]] + points + [[upperbound, points[-1][1]], [upperbound, upperbound]]
-
-        return Polygon(points)
-
-    def _get_polyhedron_vertices(self, polyhedron = None, exclude_threshold: bool = True, epsilon: int = 5):
-        if polyhedron is None:
-            if not self.has_polyhedron():
-                return None
-            polyhedron = self._polyhedron
-
-        vertices =  get_vertices(polyhedron)
-
-        vertices_wo_threshold = []
-        for vertex in vertices:
-            vertex = list(vertex)
-            if self._upperbound not in vertex:
-            # if any(np.around(vertex, epsilon) == self._upperbound):
-                vertices_wo_threshold.append(vertex)
-
-        return self._get_minimum_element_set(vertices_wo_threshold)
-
-    def set_pareto_points(self, points: Union[List, np.ndarray]):
-        points = self._check_valid_points(points)
-
-        if points is None:
-            return
-
-        self._pareto_points = self._get_minimum_element_set(points)
-
-        if not self._first_elem_added:
-            self._first_elem_added = True
+        if points is not None:
+            self._polyhedron = self._construct_polyhedron(points, self._upperbound, self._convex)
 
     def _check_valid_points(self, points: Union[List, np.ndarray]):
+        """
+        Check if the given points have the correct type and dimension
+
+        :arg points:    A list of points. It must be either a 1D or 2D array
+        :return:        2D Array
+        """
         # 1. Check if valid array
         if points is None or len(points) == 0:
             return None
@@ -202,7 +131,7 @@ class ParetoFront(metaclass=ABCMeta):
 
         # Only accept 1D or 2D
         if ndim >= 3:
-            raise ValueError('points be 1D or 2D array')
+            raise ValueError('points must be 1D or 2D array')
 
         # If 1D, make it 2D
         if ndim == 1:
@@ -227,12 +156,67 @@ class ParetoFront(metaclass=ABCMeta):
 
         return points
 
-    def _initialize_pareto_points(self, point: Union[List, np.ndarray]) -> Union[List, np.ndarray]:
+    def _construct_polyhedron(self,
+        points: Union[List, np.ndarray],
+        upperbound: float,
+        convex: bool):
+
+        if convex:
+            return self._construct_convex_polyhedron(points, upperbound)
+        else:
+            return self._construct_nonconvex_polyhedron(points, upperbound)
+
+    def _construct_nonconvex_polyhedron(self, points: Union[List, np.ndarray], upperbound: float):
         """
-        :arg point:   A 1D array point
+        Construct a non-convex polygon from points of the polygon
+        TODO: Currently, limited to polygons (2D Polyhedron) and
+        dimensions other than 2D are not supported.
         """
-        elem_size = len(point)
-        return np.array([[np.inf] * elem_size])
+        polygons = []
+        for p in points:
+            polygon = Polygon([p, (p[0], upperbound), (upperbound, upperbound), (upperbound, p[1])])
+            polygons.append(polygon)
+
+        if len(polygons) == 1:
+            return polygons[0]
+
+        polygon_union = polygons[0]
+        for polygon in polygons[1:]:
+            polygon_union = polygon_union.union(polygon)
+
+        return polygon_union
+
+    def _construct_convex_polyhedron(self, points: Union[List, np.ndarray], upperbound: float):
+        """
+        Construct a convex polygon from points of the polygon
+        TODO: Currently, limited to polygons (2D Polyhedron) and
+        dimensions other than 2D are not supported.
+        """
+        # Sort by the first column
+        columnIndex = 0
+        points = np.array(points)
+        points = points[points[:,columnIndex].argsort()].tolist()
+
+        points = [[points[0][0], upperbound]] + points + [[upperbound, points[-1][1]], [upperbound, upperbound]]
+
+        return Polygon(points)
+
+    def get_polyhedron_vertices(self, polyhedron = None, exclude_threshold: bool = True, epsilon: int = 5):
+        if polyhedron is None:
+            if not self.is_initialized():
+                return None
+            polyhedron = self._polyhedron
+
+        vertices =  get_vertices(polyhedron)
+
+        vertices_wo_threshold = []
+        for vertex in vertices:
+            vertex = list(vertex)
+            if self._upperbound not in vertex:
+            # if any(np.around(vertex, epsilon) == self._upperbound):
+                vertices_wo_threshold.append(vertex)
+
+        return self._get_minimum_element_set(vertices_wo_threshold)
 
     def _get_minimum_element_set(self, points: Union[List, np.ndarray]):
         points = np.array(points)
@@ -252,269 +236,7 @@ class ParetoFront(metaclass=ABCMeta):
 
         return new_points
 
-    @abstractmethod
-    def update(self, successor_fronts: List,
-               edge_weights: List[EdgeWeight]):
-        raise NotImplementedError('"update" function is not implemented')
-
-    def expand_by(self, distance: List[float]) -> None:
-        if not self.use_polyhedron():
-            raise Exception('use_polyhedron is set to false')
-
-        if not self.has_polyhedron():
-            return
-        # TODO: Expand the current polyhedron by given distance
-
-        # 1. get the pareto points.
-        pareto_points = self._get_polyhedron_vertices()
-
-        # Get the dimension of the polyhedron
-        ndim = len(pareto_points[0])
-
-        # Check if the given distance matches with the dimension of the polyhedron
-        if len(distance) != ndim:
-            raise Exception(f'The dimension of {distance} must be {ndim}')
-
-        # 2. Expanded the pareto points by distance
-        pareto_points = [(np.array(pareto_point) + np.array(distance)).tolist() for pareto_point in pareto_points]
-
-        # 3. Construct the polyhedron from the expanded points
-        self._polyhedron = self.construct_polyhedron(pareto_points, self._upperbound, self._convex)
-
-    def _expand_successor_pareto_points(self,
-            successor_fronts: List,
-            edge_weights: List[EdgeWeight]) -> List[List[Tuple]]:
-        """
-        Compute for a list of successor's pareto points
-        """
-
-        successor_pareto_points = []
-        for front, weight in zip(successor_fronts, edge_weights):
-            if not front.is_initial_pareto_updated():
-                continue
-
-            pareto_points = []
-            for pareto_point in front.pareto_points:
-                curr_node_weight = pareto_point + weight
-                pareto_points.append(curr_node_weight.tolist())
-
-            successor_pareto_points.append(pareto_points)
-
-        return successor_pareto_points
-
-    def _expand_successor_pareto_fronts(self, successor_fronts: List,
-            edge_weights: List[EdgeWeight]) -> List[List[Tuple]]:
-        """
-        Compute for a list of successor's pareto points
-        """
-        successor_pareto_fronts = []
-        for front, weight in zip(successor_fronts, edge_weights):
-            if not front.is_initial_pareto_updated():
-                continue
-
-            front_ = copy.deepcopy(front)
-            front_.expand_by(weight)
-            successor_pareto_fronts.append(front_)
-
-        # self._successor_fronts = successor_pareto_fronts
-
-        return successor_pareto_fronts
-
-    def __str__(self):
-        return str(self.pareto_points)
-
-    def use_polyhedron(self):
-        return self._use_polyhedron
-
-    def has_polyhedron(self):
-        return self._polyhedron is not None
-
-    def has_successor_polyhedra(self):
-        if self._successor_fronts is None:
-            return False
-        return True
-
-    def is_initialized(self) -> bool:
-        return self._pareto_points is not None
-
-    def is_initial_pareto_updated(self) -> bool:
-        """
-        Checks whether the initial values were overwritten by incoming elements
-        """
-        return self._first_elem_added
-
-    def __eq__(self, others):
-        if np.array(self.pareto_points).shape != np.array(others.pareto_points).shape:
-            return False
-        # return np.array_equal(self.pareto_points, others.pareto_points)
-        return np.allclose(self.pareto_points, others.pareto_points, self._rtol, self._atol)
-
-    def plot(self, include_successors: bool = True):
-        # Check if the polyhedron is initialized
-        if not self.has_polyhedron():
-            return
-
-        # Check if the successor polyhedron is saved
-        if include_successors and not self.has_successor_polyhedra():
-            return
-
-        plot = self._plot_2d_polyhedron
-
-        if include_successors:
-            n_front = len(self._successor_fronts) + 1 # +1 for plotting its own polyhedron
-
-            vertices = self._get_polyhedron_vertices()
-            axislims = np.max(vertices, axis=0) + np.ones(len(vertices[0]))
-
-            fig = plt.figure(figsize=(4 * n_front, 4))
-            last_ax = fig.add_subplot(1, n_front, n_front)
-            colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-
-            # Plot sucessors
-            for i, front in enumerate(self._successor_fronts):
-                ax = fig.add_subplot(1, n_front, i+1)
-                plot(front.polyhedron, axislims,
-                    ax=ax, color=colors[i], title=front.node_name)
-                plot(front.polyhedron, axislims,
-                    ax=last_ax, color=colors[i], title=front.node_name, ls='--')
-
-            # Plot its own
-            plot(self.polyhedron, axislims,
-                ax=last_ax, color=colors[n_front-1], title=self.node_name)
-            return
-
-        plot(self.polyhedron, title=self.node_name)
-
-    def _plot_2d_polyhedron(self,
-            polyhedron, axislims: List[float]=None,
-            ax=None, ls='-', color='C0', title=None):
-        if polyhedron is None:
-            return
-
-        if ax is None:
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-
-        ax.axvline(x=0, ymin=0, color='k')
-        ax.axhline(y=0, xmin=0 ,color='k')
-
-        X, Y = polyhedron.exterior.xy
-        ax.plot(X, Y, color=color, ls=ls)
-        ax.set_aspect('equal')
-
-        # Set axis limits
-        vertices = self._get_polyhedron_vertices(polyhedron)
-        if axislims is None or len(axislims)!=len(vertices[0]) :
-            axislims = np.max(vertices, axis=0) + np.ones(len(vertices[0]))
-
-        ax.set_xlim([-1, axislims[0]])
-        ax.set_ylim([-1, axislims[1]])
-
-        if title is not None:
-            ax.set_title(title)
-
-    @property
-    def pareto_points(self) -> List[List[float]]:
-        if not self.is_initialized():
-            return []
-        return self._pareto_points
-
-    @property
-    def polyhedron(self):
-        if not self.has_polyhedron():
-            raise Exception('Please initialize the polyhedron first')
-        return self._polyhedron
-
-    @property
-    def node_name(self) -> str:
-        if self._node_name is None:
-            return ''
-        return self._node_name
-
-
-class SysParetoFront(ParetoFront):
-
-    def __init__(self,
-                 points: Union[int, float, List, np.ndarray] = None,
-                 use_polyhedron: bool = True,
-                 stochastic: bool = False,
-                 upperbound: float = INFINITY,
-                 node_name: str = None):
-        super().__init__(points,
-                         use_polyhedron,
-                         convex=stochastic,
-                         upperbound=upperbound,
-                         node_name=node_name)
-
-    def update(self, successor_fronts: List[ParetoFront],
-               edge_weights: List[EdgeWeight]):
-
-        if len(successor_fronts) != len(edge_weights):
-            raise Exception('No. of successors should be same as the No. of edges')
-
-        if self.use_polyhedron():
-            successor_pareto_fronts = \
-                self._expand_successor_pareto_fronts(successor_fronts, edge_weights)
-
-            if len(successor_pareto_fronts) == 0:
-                return
-
-            # Take an union of the successor pareto fronts
-            self._polyhedron = self.union_of_successor_fronts(successor_pareto_fronts)
-            pareto_points = self._get_polyhedron_vertices()
-        else:
-            successor_pareto_points = \
-                self._expand_successor_pareto_points(successor_fronts, edge_weights)
-
-            pareto_points = self.union_of_successor_pareto_points(
-                successor_pareto_points)
-
-        self.set_pareto_points(pareto_points)
-
-    def union_of_successor_pareto_points(self, successor_pareto_points: List[List[Tuple]]):
-        """From a list of successor's pareto points, compute the pareto points for the predecessor"""
-        # Upon initialization, compute for the upper bound
-        if len(successor_pareto_points) == 0:
-            return []
-
-        # Merge lists
-        new_pareto_points = []
-        for pareto_points in successor_pareto_points:
-            new_pareto_points += pareto_points
-
-        return new_pareto_points
-
-    def union_of_successor_fronts(self, successor_pareto_fronts: List):
-        if len(successor_pareto_fronts) == 0:
-            return None
-
-        if len(successor_pareto_fronts) == 1:
-            return successor_pareto_fronts[0].polyhedron
-
-        # Take intersections of all those polyhedra
-        polyhedron = successor_pareto_fronts[0].polyhedron
-        for front in successor_pareto_fronts[1:]:
-            polyhedron = polyhedron.union(front.polyhedron)
-
-        return polyhedron
-
-
-class EnvParetoFront(ParetoFront):
-
-    def __init__(self,
-                 points: Union[int, float, List, np.ndarray] = None,
-                 use_polyhedron: bool = True,
-                 stochastic: bool = False,
-                 upperbound: float = INFINITY,
-                 node_name: str = None):
-        super().__init__(points,
-                         use_polyhedron,
-                         convex=stochastic,
-                         upperbound=upperbound,
-                         node_name=node_name)
-
-    def update(self, successor_fronts: List[ParetoFront],
-               edge_weights: List[EdgeWeight]):
+    def update(self, successor_pareto_fronts: List):
         """
         In this function, our goal is to find the minimum maximum pareto points
         that the system player can guarantee to achieve.
@@ -522,80 +244,129 @@ class EnvParetoFront(ParetoFront):
         (maximum weights), the system player needs to find a value set that
         can be reached at any successor node.
         """
-        if len(successor_fronts) != len(edge_weights):
-            raise Exception('No. of successors should be same as the No. of edges')
-
-        if self._use_polyhedron:
-
-            for front in successor_fronts:
-                if not front.is_initial_pareto_updated():
-                    self._first_elem_added = False
-                    self._polyhedron = None
-                    return
-
-            successor_pareto_fronts = \
-                self._expand_successor_pareto_fronts(successor_fronts, edge_weights)
-
-            if len(successor_pareto_fronts) == 0:
-                return
-
-            # Take an intersection of the successor pareto fronts
-            self._polyhedron = self.intersection_of_successor_fronts(successor_pareto_fronts)
-            try:
-                pareto_points = self._get_polyhedron_vertices()
-            except:
-                print(self._polyhedron)
-                raise Exception(f'Polyhedron is not a Polyhedron! lol')
+        if self._player == 'eve':
+            self._polyhedron = self._union_of_successor_fronts(successor_pareto_fronts)
+            # self._polyhedron = self._union_of_successor_fronts(successor_pareto_fronts + [self])
+            self._distance = min([s._distance for s in successor_pareto_fronts]) + 1
         else:
-            successor_pareto_points = \
-                self._expand_successor_pareto_points(successor_fronts, edge_weights)
+            self._polyhedron = self._intersection_of_successor_fronts(successor_pareto_fronts)
+            self._distance = max([s._distance for s in successor_pareto_fronts]) + 1
 
-            pareto_points = self.intersection_of_successor_pareto_points(
-                successor_pareto_points)
+    def _union_of_successor_fronts(self, successor_pareto_fronts: List):
+        successor_pareto_fronts_ = []
+        for front in successor_pareto_fronts:
+            if front.is_initialized():
+                successor_pareto_fronts_.append(front)
 
-        self.set_pareto_points(pareto_points)
+        if len(successor_pareto_fronts_) == 0:
+            return None
 
-    def intersection_of_successor_pareto_points(self, successor_pareto_points: List[List[Tuple]]):
-        """
-        From a list of successor's pareto points, compute the pareto points for the predecessor
-        """
-        # Upon initialization, compute for the upper bound
-        if len(successor_pareto_points) == 0:
-            return []
+        if len(successor_pareto_fronts_) == 1:
+            return successor_pareto_fronts_[0]._polyhedron
 
-        # First construct a list of polyhedra at each node
-        # Each successor should be keeping its own polyhedron, so you could just access those polyhedra
-        polyhedrons = []
-        for pareto_points in successor_pareto_points:
-            # Either construct it from the pareto points
-            polyhedron = self.construct_polyhedron(pareto_points, self._upperbound, self._convex)
-            # Or Get the pareto points
-            # polyhedron = successor_node.get_polygon()
-            polyhedrons.append(polyhedron)
+        # # Take intersections of all those polyhedra
+        # polyhedron = successor_pareto_fronts_[0]._polyhedron
+        # for front in successor_pareto_fronts_[1:]:
+        #     if front.is_initialized():
+        #         polyhedron = polyhedron.union(front._polyhedron)
 
-        # Take intersections of all those polygons
-        P = polyhedrons[0]
-        for polyhedron in polyhedrons[1:]:
-            P = P.intersection(polyhedron)
-
-        # get the predecessor's pareto points
-        intersections = self._get_polyhedron_vertices(P)
-
-        return intersections
-
-    def intersection_of_successor_fronts(self, successor_pareto_fronts: List):
-        if len(successor_pareto_fronts) == 0:
-            return []
-
-        if len(successor_pareto_fronts) == 1:
-            return successor_pareto_fronts[0].polyhedron
-
-        # Take intersections of all those polyhedrons
-        polyhedron = successor_pareto_fronts[0].polyhedron
-        for front in successor_pareto_fronts[1:]:
-            polyhedron = polyhedron.intersection(front.polyhedron)
+        polyhedra = [f._polyhedron for f in successor_pareto_fronts_]
+        polyhedron = cascaded_union(polyhedra)
 
         return polyhedron
+
+    def _intersection_of_successor_fronts(self, successor_pareto_fronts: List):
+        if len(successor_pareto_fronts) == 0:
+            return None
+
+        for front in successor_pareto_fronts:
+            if not front.is_initialized():
+                return None
+
+        if len(successor_pareto_fronts) == 1:
+            return successor_pareto_fronts[0]._polyhedron
+
+        # Take intersections of all those polyhedrons
+        polyhedron = successor_pareto_fronts[0]._polyhedron
+        for front in successor_pareto_fronts[1:]:
+            polyhedron = polyhedron.intersection(front._polyhedron)
+
+        return polyhedron
+
+    def get_intersection_point_with(self, point):
+        if len(point) != 2:
+            raise Exception('We only allow a list of 2 elements')
+
+        polygon = Polygon([(0, 0), (point[0], 0), point, (0, point[1])])
+
+        # Intersection
+        polygon = polygon.intersection(self._polyhedron)
+        points = self.get_polyhedron_vertices(polygon)
+
+        return points
+
+    # TODO: Assume pareto points could be infinities
+    def expand_by(self, weights: List[float]) -> None:
+        if not self.is_initialized():
+            return
+
+        # 1. get the pareto points.
+        pareto_points = self.pareto_points
+
+        # Get the dimension of the polyhedron
+        ndim = len(pareto_points[0])
+
+        # Check if the given weights matches with the dimension of the polyhedron
+        if len(weights) != ndim:
+            raise Exception(f'The dimension of {weights} must be {ndim}')
+
+        # 2. Expanded the pareto points by weights
+        pareto_points = [(np.array(pareto_point) + np.array(weights)).tolist() for pareto_point in pareto_points]
+
+        # 3. Construct the polyhedron from the expanded points
+        self._polyhedron = self._construct_polyhedron(pareto_points, self._upperbound, self._convex)
+
+    def __add__(self, weights: Union[List, np.ndarray]) -> 'ParetoFront':
+        if not isinstance(weights, (List, np.ndarray)):
+            raise Exception('Must be in a form of "ParetoFront + List/np.ndarray"')
+
+        if isinstance(weights, np.ndarray):
+            weights = np.array(weights)
+
+        updated_pareto_front = copy.deepcopy(self)
+        updated_pareto_front.expand_by(weights)
+
+        return updated_pareto_front
+
+    def __str__(self):
+        return str(self.pareto_points)
+
+    def is_initialized(self):
+        return self._polyhedron is not None
+
+    def __eq__(self, others):
+        if np.array(self.pareto_points).shape != np.array(others.pareto_points).shape:
+            return False
+        # return np.array_equal(self.pareto_points, others.pareto_points)
+        return np.allclose(self.pareto_points, others.pareto_points, self._rtol, self._atol)
+
+    @property
+    def pareto_points(self) -> List[List[float]]:
+        if not self.is_initialized():
+            if self._minimization:
+                return np.inf * np.ones((1, self._dim))
+            else:
+                return np.zeros((1, self._dim))
+
+        try:
+            pareto_points = self.get_polyhedron_vertices()
+        except:
+            print(self._polyhedron)
+            msg = f'Polyhedron is not a Polyhedron!'
+            msg += f"I don't know why, but there is something wrong with Shapely"
+            raise Exception(msg)
+
+        return pareto_points
 
 
 class MultiObjectiveSolver:
@@ -627,6 +398,9 @@ class MultiObjectiveSolver:
         self._round_decimals = round_decimals
         self._round_label_decimals = round_label_decimals
         self._max_iteration = max_iteration
+        self._previously_seen = set()
+        self._notconverged_state = None
+        self._count = 1
 
         self._initialize(game)
 
@@ -752,15 +526,28 @@ class MultiObjectiveSolver:
               plot_strategies: bool = False,
               plot_graph_with_pareto: bool = False,
               plot_graph_with_strategy: bool = False,
+              speedup: bool = True,
               debug: bool = False,
               view: bool = False,
               format: str = 'svg') -> Tuple[ParetoPoints, Strategies]:
 
         pareto_points = self.solve_pareto_points(
-            game, plot_pareto, plot_all_paretos, plot_graph_with_pareto, debug, view, format)
+            game,
+            plot_pareto,
+            plot_all_paretos,
+            plot_graph_with_pareto,
+            speedup,
+            debug,
+            view,
+            format)
 
         strategies = self.solve_strategies(
-            bound, plot_strategies, plot_graph_with_strategy, debug)
+            bound,
+            plot_strategies,
+            plot_graph_with_strategy,
+            debug,
+            view,
+            format)
 
         return pareto_points, strategies
 
@@ -769,6 +556,7 @@ class MultiObjectiveSolver:
         plot_pareto: bool = True,
         plot_all_paretos: bool = False,
         plot_graph_with_pareto: bool = False,
+        speedup: bool = True,
         debug: bool = False,
         view: bool = False,
         format: str = 'svg') -> ParetoPoints:
@@ -780,19 +568,26 @@ class MultiObjectiveSolver:
                 self._initialize(game)
 
         # Pareto Computation
-         self._pareto_fronts = self._compute_pareto_points(debug)
+        start = time.time()
+        self._pareto_fronts = self._compute_pareto_points(speedup, debug)
+        end = time.time()
+        print(f'Pareto Points Computation took {end-start:.2f} seconds')
 
         # Pareto Visualization
         if plot_pareto:
-            self._plot_pareto_front()
+            self.plot_pareto_front()
 
         if plot_all_paretos:
-            self._plot_pareto_fronts()
+            self.plot_pareto_fronts()
 
         self._label_pareto_on_graph()
 
         if plot_graph_with_pareto:
-            self._game.plot_graph(view=view, format=format)
+            if self._notconverged_state is not None:
+                self.plot_partial_graph(self._notconverged_state,
+                    view=view, format=format)
+            else:
+                self.plot_game(view=view, format=format)
 
         return self.get_pareto_points()
 
@@ -800,7 +595,9 @@ class MultiObjectiveSolver:
         bound: Point = None,
         plot_strategies: bool = False,
         plot_graph_with_strategy: bool = False,
-        debug: bool = False) -> Strategies:
+        debug: bool = False,
+        view: bool = False,
+        format: str = 'svg') -> Strategies:
 
         pareto_points = self.get_pareto_points()
 
@@ -813,10 +610,10 @@ class MultiObjectiveSolver:
             strategies[tuple(pareto_point)] = strategy
 
             if plot_strategies:
-                strategy.plot_graph(view=False, format='svg')
+                self.plot_strategy(strategy, view, format)
 
             if plot_graph_with_strategy:
-                self._plot_graph_with_strategy(self._game, strategy)
+                self.plot_graph_with_strategy(self._game, strategy, view, format)
 
         self._strategies = strategies
 
@@ -842,19 +639,11 @@ class MultiObjectiveSolver:
 
         # Otherwise, find the intersection
         init_node = self._game.get_initial_states()[0][0]
-        pareto_front = copy.deepcopy(self._pareto_fronts[init_node])
 
-        p = bound
-        polygon = Polygon([(0, 0), (p[0], 0), p, (0, p[1])])
-
-        # Intersection
-        polygon = polygon.intersection(pareto_front._polyhedron)
-        points = pareto_front._get_polyhedron_vertices(polygon)
-
-        return points
+        return self._pareto_fronts[init_node].get_intersection_point_with(bound)
 
     # Pareto Points Computation
-    def _compute_pareto_points(self, debug: bool = True):
+    def _compute_pareto_points(self, speedup: bool = True, debug: bool = True):
 
         stochastic = self._stochastic
         adversarial = self._adversarial
@@ -868,35 +657,30 @@ class MultiObjectiveSolver:
         n_weight = len(weights)
 
         pareto_fronts = {}
-
         for node in game._graph.nodes():
 
             player = game.get_state_w_attribute(node, "player")
 
-            if player == 'eve': # System / Robot
-                pareto_fronts[node] = SysParetoFront(
-                    stochastic=stochastic, node_name=node)
+            if player == 'adam' and not adversarial: # System / Robot
+                pareto_fronts[node] = ParetoFront('eve', name=node, dim=n_weight, convex=stochastic)
             else:
-                if adversarial:
-                    pareto_fronts[node] = EnvParetoFront(
-                        upperbound=max(self._upperbounds), stochastic=stochastic, node_name=node)
-                else:
-                    pareto_fronts[node] = SysParetoFront(
-                        upperbound=max(self._upperbounds), stochastic=stochastic, node_name=node)
+                pareto_fronts[node] = ParetoFront(player, name=node, dim=n_weight, convex=stochastic)
 
-        pareto_fronts[accept_node] = SysParetoFront(
-            np.zeros(n_weight), upperbound=max(self._upperbounds), stochastic=stochastic, node_name=accept_node)
-
+        pareto_fronts[accept_node] = ParetoFront(
+            'eve', np.zeros(n_weight), name=accept_node, distance=0, convex=stochastic)
         pareto_fronts_prev = None
 
         visitation_order = self._decide_visitation_order()
-        strategies_at_node = defaultdict(lambda: defaultdict(lambda: set()))
-
         iter_var = 0
+
+        if debug:
+            print(f"{len(game._graph.nodes())} nodes and {len(game._graph.edges())} edges")
+
         while not self._converged(pareto_fronts, pareto_fronts_prev):
 
             if debug:
-                print(f"{iter_var} Iterations")
+                # print(f"{iter_var} Iterations")
+                start = time.time()
 
             if iter_var > self._max_iteration:
                 self._print_diff(pareto_fronts, pareto_fronts_prev)
@@ -907,57 +691,35 @@ class MultiObjectiveSolver:
 
             pareto_fronts_prev = copy.deepcopy(pareto_fronts)
             iter_var += 1
+
             for u_node in visitation_order:
 
                 # Only allow transitions to the winning region
+                # This prevents from pareto points monotonically increasing in the losing region.
+                # This is due to the fact that Shapely cannot handle infinity values.
                 if u_node not in self._reachability_solver.sys_winning_region:
                     continue
 
                 player = game.get_state_w_attribute(u_node, "player")
+
+                # Get Successors' Pareto Fronts + Edge Weights
                 fronts = []
-                edge_weights = []
-
                 for v_node in game._graph.successors(u_node):
+                    edge_weight = list(game.get_edge_attributes(u_node, v_node, 'weights').values())
 
-                    # Avoid self loop
-                    if u_node == v_node:
-                        continue
+                    if speedup:
+                        fronts.append(pareto_fronts[v_node] + edge_weight)
+                    else:
+                        fronts.append(pareto_fronts_prev[v_node] + edge_weight)
 
-                    # get u to v's edge weight
-                    edge_weight = game.get_edge_attributes(u_node, v_node, 'weights')
-                    edge_weight = list(edge_weight.values())
+                # Update u_node's Pareto Front by either taking the union / intersection
+                pareto_fronts[u_node].update(fronts)
 
-                    fronts.append(pareto_fronts_prev[v_node])
-                    edge_weights.append(edge_weight)
-
-                pareto_fronts[u_node].update(fronts, edge_weights)
+            if debug:
+                end = time.time()
+                print(f'{iter_var}th Iteration took {end-start:.2f} seconds')
 
         return pareto_fronts
-
-    def _get_zero_cycles(self, game) -> List[str]:
-        # Get all cycles in the graph
-        cycles = game.get_cycles()
-
-        # Compute for all the cycles with zero weights
-        all_zero_cycles = []
-        for cycle in cycles:
-            cycle = list(cycle)
-
-            if len(cycle) == 1:
-                continue
-            all_zeros = True
-            # Slide one to the right
-            slided_cycle = copy.deepcopy(cycle)
-            slided_cycle += [slided_cycle.pop(0)]
-            # For each edge, get weights and check if its zero
-            for u, v in zip(cycle, slided_cycle):
-                weights = game.get_edge_attributes(u, v, 'weights')
-                if np.sum(list(weights.values())) != 0:
-                    all_zeros = False
-            if all_zeros:
-                all_zero_cycles.append(cycle)
-
-        return all_zero_cycles
 
     def _decide_visitation_order(self):
         accept_node = self._game.get_accepting_states()[0]
@@ -984,18 +746,38 @@ class MultiObjectiveSolver:
                     visited.add(u_node)
                     search_queue.put(u_node)
 
+        visitation_order.remove(accept_node)
+
         return visitation_order
 
     def _converged(self, curr: Dict, prev: Dict) -> bool:
+
         if curr is None or prev is None:
             return False
+
         curr_keys = list(curr.keys())
         prev_keys = list(prev.keys())
+
         if curr_keys != prev_keys:
             return False
+
         for key in curr_keys:
             if curr[key] != prev[key]:
+
+                curr_pp = tuple(map(tuple, curr[key].pareto_points.tolist()))
+                prev_pp = tuple(map(tuple, prev[key].pareto_points.tolist()))
+
+                if (key, curr_pp) in self._previously_seen and \
+                   (key, prev_pp) in self._previously_seen:
+                    if self._count == 1:
+                        self._notconverged_state = key
+                        return True
+                    self._count += 1
+
+                self._previously_seen.add((key, curr_pp))
+
                 return False
+
         return True
 
     def _print_diff(self, curr: Dict, prev: Dict) -> None:
@@ -1009,6 +791,29 @@ class MultiObjectiveSolver:
             if curr[key] != prev[key]:
                 print(key, curr[key], prev[key])
 
+    # Strategy Computation
+    def _compute_strategy(self,
+        init_pareto_point: ParetoPoint,
+        debug: bool = False) -> Strategy:
+
+        # Strategy Synthesis
+        if self._stochastic:
+            strategy = StochasticStrategy.from_pareto_fronts(
+                self._game,
+                self._pareto_fronts,
+                epsilon=self._round_decimals,
+                init_pareto_point=init_pareto_point)
+        else:
+            strategy = DeterministicStrategy.from_pareto_fronts(
+                self._game,
+                self._pareto_fronts,
+                epsilon=self._round_decimals,
+                init_pareto_point=init_pareto_point,
+                adversarial=self._adversarial)
+
+        return strategy
+
+    # Plots
     def _label_pareto_on_graph(self, game: TwoPlayerGraph = None,
         pareto_fronts = None, round_label_decimals: int = None) -> None:
 
@@ -1034,56 +839,113 @@ class MultiObjectiveSolver:
 
         return game
 
-    def _plot_pareto_front(self) -> None:
+    def plot_game(self, view: bool = True, format: str = 'png', add_label: bool = False):
+        if add_label:
+            self._label_pareto_on_graph()
+        self._game.plot_graph(view=view, format=format)
+
+    def plot_partial_graph(self, start_state, view, format, n_immediate_children: int = 3):
+
+        init_node = self._game.get_initial_states()[0][0]
+        accept_node = self._game.get_accepting_states()[0]
+
+        search_queue = queue.Queue()
+        search_queue.put((0, start_state))
+        nodes_to_keep = [start_state, init_node, accept_node]
+        edges_to_keep = []
+
+        while not search_queue.empty():
+
+            ith, u_node = search_queue.get()
+
+            if ith == n_immediate_children:
+                continue
+
+            for v_node in self._game._graph.successors(u_node):
+
+                if v_node not in nodes_to_keep:
+                    nodes_to_keep.append(v_node)
+                    edges_to_keep.append((u_node, v_node))
+                    search_queue.put((ith+1, v_node))
+
+        # Construct a game graph with these nodes
+        game = copy.deepcopy(self._game)
+        edges = copy.deepcopy(list(game._graph.edges()))
+        for edge in edges:
+            if edge[0] not in nodes_to_keep and edge[0] not in nodes_to_keep:
+                game._graph.remove_edge(*edge)
+
+        nodes = copy.deepcopy(list(game._graph.nodes()))
+        for node in nodes:
+            if node not in nodes_to_keep:
+                game._graph.remove_node(node)
+
+        game.plot_graph(view=view, format=format)
+
+    def plot_pareto_front(self, ax = None) -> None:
 
         self.check_if_pareto_computed()
 
-        accept_node = self._game.get_accepting_states()[0]
-        weights = self._game.get_edge_attributes(accept_node, accept_node, 'weights')
+        init_node = self._game.get_initial_states()[0][0]
+        next_node = list(self._game._graph.successors(init_node))[0]
+
+        weights = self._game.get_edge_attributes(init_node, next_node, 'weights')
         weight_names = list(weights.keys())
 
-        init_node = self._game.get_initial_states()[0][0]
+        points = self._pareto_fronts[init_node].pareto_points
+        points = np.array(points)
+        points = points[points[:, 1].argsort()]
 
-        self._pareto_fronts[init_node].plot(include_successors=False)
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
 
-        plt.xlabel(weight_names[0])
-        plt.ylabel(weight_names[1])
+        ax.scatter(points[:, 0], points[:, 1], marker="o")
+
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+
+        # for x, y in zip(points[:, 0], points[:, 1]):
+        #     ax.vlines(x, ymin=y, ymax=ymax)
+        #     ax.hlines(y, xmin=x, xmax=xmax)
+
+        n_point = points.shape[0]
+        for i in range(n_point):
+            x = points[i, 0]
+            y = points[i, 1]
+            xmax_ = xmax if i == 0 else points[i-1, 0]
+            ymax_ = ymax if i == n_point-1 else points[i+1, 1]
+            ax.vlines(x, ymin=y, ymax=ymax_)
+            ax.hlines(y, xmin=x, xmax=xmax_)
+
+        ax.set_xlim([xmin, xmax])
+        ax.set_ylim([ymin, ymax])
+
+        ax.set_xlabel(weight_names[0])
+        ax.set_ylabel(weight_names[1])
 
         plt.show()
 
-    def _plot_pareto_fronts(self, include_successors: bool = True) -> None:
+    def plot_pareto_fronts(self, include_successors: bool = True) -> None:
 
         self.check_if_pareto_computed()
+        pass
 
-        for node in self._game._graph.nodes():
-            self._pareto_fronts[node].plot(include_successors)
-            plt.show()
-
-    # Strategy Computation
-    def _compute_strategy(self,
-        init_pareto_point: ParetoPoint,
-        debug: bool = False) -> Strategy:
-
-        # Strategy Synthesis
-        if self._stochastic:
-            strategy = StochasticStrategy.from_pareto_fronts(
-                self._game,
-                self._pareto_fronts,
-                epsilon=self._round_decimals,
-                init_pareto_point=init_pareto_point)
-        else:
-            strategy = DeterministicStrategy.from_pareto_fronts(
-                self._game,
-                self._pareto_fronts,
-                epsilon=self._round_decimals,
-                init_pareto_point=init_pareto_point,
-                debug=debug)
-
-        return strategy
-
-    def _plot_graph_with_strategy(self, game: TwoPlayerGraph, strategy: Strategy) -> None:
+    def plot_graph_with_strategy(self,
+                                  game: TwoPlayerGraph,
+                                  strategy: Strategy,
+                                  view: bool = False,
+                                  format: str = 'svg') -> None:
         game = copy.deepcopy(game)
         edges = strategy.get_edges_on_original_graph()
         game.set_strategy(edges)
         game.graph_name += 'With' + strategy._graph_name
-        game.plot_graph(view=False, format='svg')
+        game.plot_graph(view=view, format=format)
+
+    def plot_strategy(self, strategy: Strategy, view: bool = True, format: str = 'png'):
+        strategy.plot_graph(view=view, format=format)
+
+    def plot_strategies(self, view: bool = True, format: str = 'png'):
+        for pp in self.get_pareto_points():
+            strategy = self.get_a_strategy_for(pp)
+            self.plot_strategy(strategy, view, format)

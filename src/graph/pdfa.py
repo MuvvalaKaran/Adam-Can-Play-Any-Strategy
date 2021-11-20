@@ -25,7 +25,7 @@ class PDFAGraph(Graph):
         self._use_alias = use_alias
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
 
-    def construct_graph(self, plot: bool = False):
+    def construct_graph(self, plot: bool = False, **kwargs):
         buchi_automaton = nx.MultiDiGraph(name=self._graph_name)
         self._graph = buchi_automaton
 
@@ -35,7 +35,7 @@ class PDFAGraph(Graph):
         self._construct_pdfa(self._graph_yaml)
 
         if plot:
-            self.plot_graph()
+            self.plot_graph(**kwargs)
 
     def _construct_pdfa(self, graph_yaml):
         """
@@ -78,7 +78,7 @@ class PDFAGraph(Graph):
                                   guard=transition_expr,
                                   guard_formula=transition_formula)
 
-    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+    def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
 
@@ -107,7 +107,7 @@ class PDFAGraph(Graph):
 
         if self._save_flag:
             graph_name = str(self._graph.__getattribute__('name'))
-            self.save_dot_graph(dot, graph_name, True)
+            self.save_dot_graph(dot, graph_name, **kwargs)
 
     def _from_spot(self, sc_ltl: str) -> Tuple:
         """
@@ -164,7 +164,9 @@ class PDFABuilder(Builder):
                  save_flag: bool = False,
                  sc_ltl: str = "",
                  use_alias: bool = False,
-                 plot: bool = False) -> 'PDFAGraph':
+                 plot: bool = False,
+                 view: bool = True,
+                 format: str = 'png') -> 'PDFAGraph':
 
         if not (isinstance(sc_ltl, str) or sc_ltl == ""):
             raise TypeError(f"Please ensure that the ltl formula is of type string and is not empty. \n")
@@ -177,6 +179,6 @@ class PDFABuilder(Builder):
                                   save_flag=save_flag,
                                   use_alias=use_alias)
 
-        self._instance.construct_graph(plot=plot)
+        self._instance.construct_graph(plot=plot, view=view, format=format)
 
         return self._instance

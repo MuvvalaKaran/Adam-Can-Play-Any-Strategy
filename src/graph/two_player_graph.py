@@ -69,10 +69,19 @@ class TwoPlayerGraph(Graph):
         # add edges
         for start_name, edge_dict in graph_yaml['edges'].items():
             for end_name, attr in edge_dict.items():
+                # Identify if it has multiple edges betw. the start and end node
+                are_all_keys_integers = all([isinstance(a, int) for a in attr.keys()])
+                has_multiple_edges = are_all_keys_integers
 
-                self.add_edge(start_name,
-                              end_name,
-                              **attr)
+                if has_multiple_edges:
+                    self._graph.add_edges_from(
+                        [(start_name, end_name, a) for a in attr.values()])
+                else:
+                    self.add_edge(start_name,
+                                end_name,
+                                **attr)
+
+        self.dump_to_yaml()
 
     def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
         """
@@ -300,7 +309,6 @@ class TwoPlayerGraphBuilder(Builder):
                  graph_name: str,
                  config_yaml: str,
                  minigrid = None,
-                 start_agent: str = 'sys',
                  save_flag: bool = False,
                  from_file: bool = False,
                  pre_built: bool = False,   # TODO: Delete
@@ -314,11 +322,12 @@ class TwoPlayerGraphBuilder(Builder):
         """
         self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
 
+        graph_yaml = None
         if from_file:
             graph_yaml = self._from_yaml(config_yaml)
 
-        if minigrid is not None:
-            graph_yaml = self._from_minigrid(minigrid, start_agent)
+        if graph_yaml is None and minigrid is not None:
+            graph_yaml = self._from_minigrid(minigrid)
 
         self._instance.construct_graph(graph_yaml)
 
@@ -332,8 +341,8 @@ class TwoPlayerGraphBuilder(Builder):
 
         return config_data
 
-    def _from_minigrid(self, minigrid_environment, start_agent) -> dict:
-        config_data = minigrid_environment.extract_two_player_game(start_agent)
+    def _from_minigrid(self, minigrid_environment) -> dict:
+        config_data = minigrid_environment.extract_two_player_game()
 
         # Translate minigrid player to this library's player names
         node_names = list(config_data['nodes'].keys())
@@ -346,5 +355,8 @@ class TwoPlayerGraphBuilder(Builder):
                 player = 'adam'
 
             config_data['nodes'][node_name]['player'] = player
+            config_data['nodes'][node_name]['ap'] = \
+                config_data['nodes'][node_name]['observation']
+            del config_data['nodes'][node_name]['observation']
 
         return config_data

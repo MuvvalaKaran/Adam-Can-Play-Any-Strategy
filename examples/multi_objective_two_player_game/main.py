@@ -27,7 +27,8 @@ Strategy = Any # TODO: import
 # directory where we will be storing all the configuration files related to graphs
 # os.chdir(os.path.join('..', '..'))
 DIR = os.path.dirname(os.path.abspath(__file__))
-Graph.automata_data_dir = DIR
+print('Now at directory: ', DIR)
+Graph.graph_dir = DIR
 
 
 def build_game_from_minigrid(

@@ -25,51 +25,65 @@ smooth_transitions: False
 nodes:
 
   'q0':
-    final_probability: 0.0
+    final_probability: 0.00
     trans_distribution: null
     is_accepting: null
 
   'q1':
-    final_probability: 0.2
+    final_probability: 1.00
     trans_distribution: null
-    is_accepting: null
+    is_accepting: True
 
   'q2':
-    final_probability: 0.8
+    final_probability: 0.00
     trans_distribution: null
     is_accepting: null
 
 # define the edges of the graph
 edges:
 
+  # 'q0':
+  #   'q0':
+  #     formulas:
+  #       - '!floor_green_open && !lava_red_open'
+  #     probabilities:
+  #       - 0.1
+
+  #   'q1':
+  #     formulas:
+  #       - 'floor_green_open && !lava_red_open'
+  #     probabilities:
+  #       - 0.9
+
   'q0':
     'q0':
-      symbols:
-        - 'c'
-      probabilities:
-        - 0.1
-
-    'q1':
-      symbols:
-        - 'a'
-      probabilities:
-        - 0.3
-    'q2':
-      symbols:
-        - 'b'
-      probabilities:
-        - 0.6
-
-  'q1':
-    'q2':
-      symbols:
-        - 'b'
+      formulas:
+        - '!floor_green_open && !water_blue_open && !lava_red_open && !agent_blue_right'
       probabilities:
         - 0.8
 
-  'q2':
     'q1':
-      symbols:
-        - 'a'
+      formulas:
+        - 'floor_green_open && !lava_red_open && !agent_blue_right'
       probabilities:
-        - 0.2
+        - 0.15
+
+    'q2':
+      formulas:
+        - 'water_blue_open && !floor_green_open && !lava_red_open && !agent_blue_right'
+      probabilities:
+        - 0.05
+
+  'q2':
+
+    'q0':
+      formulas:
+        - 'carpet_yellow_open && !floor_green_open && !lava_red_open && !agent_blue_right'
+      probabilities:
+        - 0.4
+
+    'q2':
+      formulas:
+        - '(water_blue_open || !carpet_yellow_open) && !floor_green_open && !lava_red_open && !agent_blue_right'
+      probabilities:
+        - 0.6

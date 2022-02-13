@@ -48,14 +48,21 @@ nodes:
 edges:
 
   'q0':
+    'q0':
+      formulas:
+        # - '!a && !b'
+        - 'e'
+      probabilities:
+        - 0.1
+
     'q1':
-      symbols:
+      formulas:
         - 'a'
       probabilities:
-        - 0.9
+        - 0.8
 
     'q2':
-      symbols:
+      formulas:
         - 'b'
       probabilities:
         - 0.1
@@ -63,13 +70,13 @@ edges:
   'q1':
 
     'q1':
-      symbols:
-        - 'a'
+      formulas:
+        - 'a || e'
       probabilities:
         - 0.1
 
     'q3':
-      symbols:
+      formulas:
         - 'b'
       probabilities:
         - 0.9
@@ -77,13 +84,13 @@ edges:
   'q2':
 
     'q2':
-      symbols:
-        - 'b'
+      formulas:
+        - 'b || e'
       probabilities:
         - 0.9
 
     'q3':
-      symbols:
+      formulas:
         - 'a'
       probabilities:
         - 0.1

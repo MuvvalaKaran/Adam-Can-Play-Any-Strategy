@@ -7,11 +7,11 @@ nodes:
   - t1
   - init: true
     player: eve
-    ap: 'c'
+    ap: 'e'
 - !!python/tuple
   - t2
   - player: adam
-    ap: 'a'
+    ap: 'e'
 - !!python/tuple
   - t3
   - player: adam
@@ -19,53 +19,44 @@ nodes:
 - !!python/tuple
   - t4
   - player: eve
-    ap: 'b'
+    ap: 'e'
 - !!python/tuple
   - t5
   - player: eve
     ap: 'a'
 - !!python/tuple
   - t6
-  - player: eve
-    ap: 'c'
+  - player: adam
+    ap: 'b'
 edges:
-- !!python/tuple
-  - t1
-  - t1
-  - actions: 't1_to_t1'
-    weight: 0
 - !!python/tuple
   - t1
   - t2
   - actions: 't1_to_t2'
-    weight: 0
+    weight: 1
 - !!python/tuple
   - t1
   - t3
   - actions: 't1_to_t3'
-    weight: 0
-# - !!python/tuple
-#   - t2
-#   - t2
-#   - actions: 'loop'
-#     weight: 0
+    weight: 10
 - !!python/tuple
   - t2
   - t4
   - actions: 't2_to_t4'
-    weight: 0
+    weight: 3
 - !!python/tuple
   - t3
   - t5
   - actions: 't3_to_t5'
-    weight: 0
+    weight: 5
 - !!python/tuple
+  - t3
   - t2
-  - t6
-  - actions: 't2_to_t6'
-    weight: 0
+  - actions: 't3_to_t2'
+    weight: 7
 - !!python/tuple
+  - t3
   - t6
-  - t6
-  - actions: 't6_to_t6'
-    weight: 0
+  - actions: 't3_to_t6'
+    weight: 4
+

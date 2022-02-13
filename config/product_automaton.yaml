@@ -1,0 +1,152 @@
+alphabet_size: 9
+edges:
+  ? &id001 !!python/tuple
+  - Init
+  - q0
+  : ? !!python/tuple
+    - t0
+    - q0
+    : actions: Init_to_t0
+      ap: ''
+      label: '{''ts'': 0, ''pref'': 2.3025850929940455, ''actions'': ''Init_to_t0''}'
+      weight: 0
+      weights:
+        pref: 2.3025850929940455
+        ts: 0
+  ? &id002 !!python/tuple
+  - t0
+  - q0
+  : ? !!python/tuple
+    - t1
+    - q0
+    : actions: A
+      ap: ''
+      label: '{''ts'': 1, ''pref'': 2.3025850929940455, ''actions'': ''A''}'
+      weight: 1
+      weights:
+        pref: 2.3025850929940455
+        ts: 1
+    ? !!python/tuple
+    - t4
+    - q0
+    : actions: B
+      ap: ''
+      label: '{''ts'': 8, ''pref'': 2.3025850929940455, ''actions'': ''B''}'
+      weight: 8
+      weights:
+        pref: 2.3025850929940455
+        ts: 8
+  ? &id003 !!python/tuple
+  - t1
+  - q0
+  : ? !!python/tuple
+    - t2
+    - q0
+    : actions: env
+      ap: ''
+      label: '{''ts'': 0, ''pref'': 2.3025850929940455, ''actions'': ''env''}'
+      weight: 0
+      weights:
+        pref: 2.3025850929940455
+        ts: 0
+  ? &id005 !!python/tuple
+  - t2
+  - q0
+  : ? !!python/tuple
+    - t3
+    - q0
+    : actions: B
+      ap: ''
+      label: '{''ts'': 8, ''pref'': 2.3025850929940455, ''actions'': ''B''}'
+      weight: 8
+      weights:
+        pref: 2.3025850929940455
+        ts: 8
+  ? &id007 !!python/tuple
+  - t3
+  - q0
+  : ? !!python/tuple
+    - t5
+    - q1
+    : actions: env
+      ap: a
+      label: '{''ts'': 0, ''pref'': 0.10536051565782628, ''actions'': ''env''}'
+      weight: 0
+      weights:
+        pref: 0.10536051565782628
+        ts: 0
+  ? &id004 !!python/tuple
+  - t4
+  - q0
+  : ? !!python/tuple
+    - t5
+    - q1
+    : actions: env
+      ap: a
+      label: '{''ts'': 0, ''pref'': 0.10536051565782628, ''actions'': ''env''}'
+      weight: 0
+      weights:
+        pref: 0.10536051565782628
+        ts: 0
+  ? &id006 !!python/tuple
+  - t5
+  - q1
+  : Accepting:
+      actions: !!set
+        toAcceptingByeve: null
+      label: '{''ts'': 0.0, ''pref'': 0, ''actions'': {''toAcceptingByeve''}}'
+      player: eve
+      pref: 1
+      weight: 0.0
+      weights:
+        pref: 0
+        ts: 0.0
+nodes:
+  *id001:
+    ap: ''
+    dfa: q0
+    init: true
+    player: eve
+    ts: Init
+  *id002:
+    ap: ''
+    dfa: q0
+    player: eve
+    ts: t0
+  *id003:
+    ap: ''
+    dfa: q0
+    player: adam
+    ts: t1
+  *id004:
+    ap: ''
+    dfa: q0
+    player: adam
+    ts: t4
+  *id005:
+    ap: ''
+    dfa: q0
+    player: eve
+    ts: t2
+  *id006:
+    accepting: false
+    ap: a
+    dfa: q1
+    final_probability: 1.0
+    originalAccepting: true
+    player: eve
+    ts: t5
+  *id007:
+    ap: ''
+    dfa: q0
+    player: adam
+    ts: t3
+  Accepting:
+    accepting: true
+    ap: ''
+    dfa: null
+    player: eve
+    ts: null
+num_obs: 3
+num_states: 8
+start_state: *id001

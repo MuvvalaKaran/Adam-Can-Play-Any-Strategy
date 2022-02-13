@@ -1,0 +1,488 @@
+alphabet_size: 2
+num_states: 10
+num_obs: 2
+start_state: 't0'
+
+nodes:
+- !!python/tuple
+  - t0
+  - init: true
+    player: eve
+    ap: 'c'
+- !!python/tuple
+  - t1
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t2
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t3
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t4
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t5
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t6
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t7
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t8
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t9
+  - player: eve
+    ap: 'a'
+- !!python/tuple
+  - t10
+  - player: eve
+    ap: 'b'
+
+## First Layer (1st Floor)
+# To Elevator
+- !!python/tuple
+  - t0t1
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t1t0
+  - player: adam
+    ap: 'e'
+# To Stairs
+- !!python/tuple
+  - t0t2
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t2t0
+  - player: adam
+    ap: 'e'
+# To Escalator
+- !!python/tuple
+  - t0t3
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t3t0
+  - player: adam
+    ap: 'e'
+## Second Layer (Transport)
+# Elevator
+- !!python/tuple
+  - t1t6x
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t1t6y
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t1t6z
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t6t1x
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t6t1y
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t6t1z
+  - player: adam
+    ap: 'e'
+# Stairs
+- !!python/tuple
+  - t2t7
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t7t2
+  - player: adam
+    ap: 'e'
+# Escalator
+- !!python/tuple
+  - t3t4
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t4t8
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t4t3
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t8t4
+  - player: adam
+    ap: 'e'
+## Third Layer (2nd Floor)
+# From Elevator
+- !!python/tuple
+  - t6t9
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t9t6
+  - player: adam
+    ap: 'e'
+# From Stairs
+- !!python/tuple
+  - t7t9
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t9t7
+  - player: adam
+    ap: 'e'
+# From Escalator
+- !!python/tuple
+  - t8t10
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t10t8
+  - player: adam
+    ap: 'e'
+
+
+
+edges:
+## First Layer
+# To Elevator
+# forward
+- !!python/tuple
+  - t0
+  - t0t1
+  - actions: 't0_to_t0t1'
+    weight: 0
+- !!python/tuple
+  - t0t1
+  - t1
+  - actions: 't0t1_to_t1'
+    weight: 0
+# backward
+- !!python/tuple
+  - t1
+  - t1t0
+  - actions: 't1_to_t1t0'
+    weight: 0
+- !!python/tuple
+  - t1t0
+  - t0
+  - actions: 't1t0_to_t0'
+    weight: 0
+# To Stairs
+# forward
+- !!python/tuple
+  - t0
+  - t0t2
+  - actions: 't0_to_t0t2'
+    weight: 0
+- !!python/tuple
+  - t0t2
+  - t2
+  - actions: 't0t2_to_t2'
+    weight: 0
+# backward
+- !!python/tuple
+  - t2
+  - t2t0
+  - actions: 't2_to_t2t0'
+    weight: 0
+- !!python/tuple
+  - t2t0
+  - t0
+  - actions: 't2t0_to_t0'
+    weight: 0
+# To Escalator
+# forward
+- !!python/tuple
+  - t0
+  - t0t3
+  - actions: 't0_to_t0t3'
+    weight: 0
+- !!python/tuple
+  - t0t3
+  - t3
+  - actions: 't0t3_to_t3'
+    weight: 0
+# backward
+- !!python/tuple
+  - t3
+  - t3t0
+  - actions: 't3_to_t3t0'
+    weight: 0
+- !!python/tuple
+  - t3t0
+  - t0
+  - actions: 't3t0_to_t0'
+    weight: 0
+## Second Layer
+# Elevator
+# forward
+- !!python/tuple
+  - t1
+  - t1t6x
+  - actions: 't1_to_t1t6x'
+    weight: 0
+- !!python/tuple
+  - t1t6x
+  - t6
+  - actions: 't1t6x_to_t6'
+    weight: 20
+- !!python/tuple
+  - t1
+  - t1t6y
+  - actions: 't1_to_t1t6y'
+    weight: 0
+- !!python/tuple
+  - t1t6y
+  - t6
+  - actions: 't1t6y_to_t6'
+    weight: 10
+- !!python/tuple
+  - t1
+  - t1t6z
+  - actions: 't1_to_t1t6z'
+    weight: 0
+- !!python/tuple
+  - t1t6z
+  - t6
+  - actions: 't1t6z_to_t6'
+    weight: 0
+- !!python/tuple
+  - t1t6z
+  - t1t6z
+  - actions: 't1t6z_to_t1t6z'
+    weight: 0
+# backward
+- !!python/tuple
+  - t6
+  - t6t1x
+  - actions: 't6_to_t6t1x'
+    weight: 0
+- !!python/tuple
+  - t6t1x
+  - t1
+  - actions: 't6t1x_to_t1'
+    weight: 0
+- !!python/tuple
+  - t6
+  - t6t1y
+  - actions: 't6_to_t6t1y'
+    weight: 0
+- !!python/tuple
+  - t6t1y
+  - t1
+  - actions: 't6t1y_to_t1'
+    weight: 0
+- !!python/tuple
+  - t6
+  - t6t1z
+  - actions: 't6_to_t6t1z'
+    weight: 0
+- !!python/tuple
+  - t6t1z
+  - t1
+  - actions: 't6t1z_to_t1'
+    weight: 0
+- !!python/tuple
+  - t6t1z
+  - t6t1z
+  - actions: 't6t1z_to_t6t1z'
+    weight: 0
+# Stairs
+- !!python/tuple
+  - t2
+  - t2t7
+  - actions: 't2_to_t2t7'
+    weight: 0
+- !!python/tuple
+  - t2t7
+  - t7
+  - actions: 't2t7_to_t7'
+    weight: 5
+- !!python/tuple
+  - t7
+  - t7t2
+  - actions: 't7_to_t7t2'
+    weight: 0
+- !!python/tuple
+  - t7t2
+  - t2
+  - actions: 't7t2_to_t2'
+    weight: 0
+# Escalator
+- !!python/tuple
+  - t3
+  - t3t4
+  - actions: 't3_to_t3t4'
+    weight: 0
+- !!python/tuple
+  - t3t4
+  - t4
+  - actions: 't3t4_to_t4'
+    weight: 1
+- !!python/tuple
+  - t3t4
+  - t5
+  - actions: 't3t4_to_t5'
+    weight: 8
+- !!python/tuple
+  - t4
+  - t4t8
+  - actions: 't4_to_t4t8'
+    weight: 0
+- !!python/tuple
+  - t5
+  - t4t8
+  - actions: 't5_to_t4t8'
+    weight: 0
+- !!python/tuple
+  - t4t8
+  - t8
+  - actions: 't4t8_to_t8'
+    weight: 0
+# backward
+- !!python/tuple
+  - t8
+  - t8t4
+  - actions: 't8_to_t8t4'
+    weight: 0
+- !!python/tuple
+  - t8t4
+  - t4
+  - actions: 't8t4_to_t4'
+    weight: 0
+- !!python/tuple
+  - t8t4
+  - t5
+  - actions: 't8t4_to_t5'
+    weight: 0
+- !!python/tuple
+  - t4
+  - t4t3
+  - actions: 't4_to_t4t3'
+    weight: 0
+- !!python/tuple
+  - t5
+  - t4t3
+  - actions: 't5_to_t4t3'
+    weight: 0
+- !!python/tuple
+  - t4t3
+  - t3
+  - actions: 't4t3_to_t3'
+    weight: 0
+## Third Layer
+# From Elevator
+- !!python/tuple
+  - t6
+  - t6t9
+  - actions: 't6_to_t6t9'
+    weight: 0
+- !!python/tuple
+  - t6t9
+  - t9
+  - actions: 't6t9_to_t9'
+    weight: 0
+- !!python/tuple
+  - t6
+  - t7t9
+  - actions: 't6_to_t7t9'
+    weight: 0
+# backward
+- !!python/tuple
+  - t9
+  - t9t6
+  - actions: 't9_to_t9t6'
+    weight: 0
+- !!python/tuple
+  - t9t6
+  - t6
+  - actions: 't9t6_to_t6'
+    weight: 0
+# From Stairs
+- !!python/tuple
+  - t7
+  - t7t9
+  - actions: 't7_to_t7t9'
+    weight: 0
+- !!python/tuple
+  - t7t9
+  - t9
+  - actions: 't7t9_to_t9'
+    weight: 0
+- !!python/tuple
+  - t7
+  - t6t9
+  - actions: 't7_to_t6t9'
+    weight: 0
+- !!python/tuple
+  - t7
+  - t8t10
+  - actions: 't7_to_t8t10'
+    weight: 0
+- !!python/tuple
+  - t7t9
+  - t10
+  - actions: 't7t9_to_t10'
+    weight: 0
+# backward
+- !!python/tuple
+  - t10
+  - t9t7
+  - actions: 't10_to_t9t7'
+    weight: 0
+- !!python/tuple
+  - t9
+  - t9t7
+  - actions: 't9_to_t9t7'
+    weight: 0
+- !!python/tuple
+  - t9t7
+  - t7
+  - actions: 't9t7_to_t7'
+    weight: 0
+# From Escalator
+- !!python/tuple
+  - t8
+  - t8t10
+  - actions: 't8_to_t8t10'
+    weight: 0
+- !!python/tuple
+  - t8t10
+  - t10
+  - actions: 't8t10_to_t10'
+    weight: 0
+- !!python/tuple
+  - t8
+  - t7t9
+  - actions: 't8_to_t7t9'
+    weight: 0
+# backward
+- !!python/tuple
+  - t10
+  - t10t8
+  - actions: 't10_to_t10t8'
+    weight: 0
+- !!python/tuple
+  - t10t8
+  - t8
+  - actions: 't10t8_to_t8'
+    weight: 0

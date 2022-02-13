@@ -1,7 +1,37 @@
-name: regret_syn_env
+name: adam_can_play_any_strategy
 channels:
   - defaults
 dependencies:
+    - cloudpickle
+    - cycler
+    - future
+    - matplotlib
+    - mpmath
+    - networkx
+    - numpy
+    - pandas
+    - pybullet
+    - pydot
+    - pydot3
+    - pyglet
+    - pygraphviz
+    - pyperplan
+    - graphviz
+    - pytz
+    - pyyaml
+    - scipy
+    - gym
+    - gym_minigrid
+    - ply
+    - bidict
+    - joblib
+    - ipython
+    - tqdm
+    - shapely
+    - docker
+    - paramiko
+    - pydot
+
   - python=3.6.10
   - pyyaml
   - numpy
@@ -9,3 +39,4 @@ dependencies:
   - netowrkx
   - python-graphviz  # installs graphivz as well
   - ply
+  - pip:

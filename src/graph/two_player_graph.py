@@ -1,6 +1,12 @@
 import networkx as nx
+import os
 import math
+import time
+import queue
 import warnings
+from pathlib import Path
+from collections import defaultdict
+from typing import List, Tuple, Dict, Set, Optional, Union
 
 # local packages
 from .base import Graph
@@ -14,46 +20,134 @@ class TwoPlayerGraph(Graph):
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False) -> 'TwoPlayerGraph()':
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
         self._graph_name = graph_name
+        self._graph = nx.MultiDiGraph(name=graph_name)
 
-    def construct_graph(self):
-        two_player_graph: nx.MultiDiGraph = nx.MultiDiGraph(name=self._graph_name)
-        # add this graph object of type of Networkx to our Graph class
-        self._graph = two_player_graph
+    @property
+    def graph_name(self):
+        return self._graph_name
 
-    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+    @graph_name.setter
+    def graph_name(self, graph_name: str):
+        self._graph_name = graph_name
+
+    @property
+    def players(self) -> List[str]:
+        return set(self._graph.nodes.data('player'))
+
+    @property
+    def weight_types(self) -> List[str]:
+        edges = self._graph.edges.data('weights')
+        if len(edges)<2:
+            return []
+
+        weight_types = set()
+        for edge in edges:
+            if edge[2] is None:
+                continue
+            for weight_type in edge[2].keys():
+                weight_types.add(weight_type)
+        return list(weight_types)
+
+    def construct_graph(self, graph_yaml: Dict):
+
+        self._graph_yaml = graph_yaml
+
+        # add nodes
+        for node_name, attr in graph_yaml['nodes'].items():
+
+            self.add_state(node_name)
+
+            for attr_name, attr_val in attr.items():
+
+                self.add_state_attribute(node_name, attr_name, attr_val)
+
+            # add init and accepting node attribute
+            if node_name == graph_yaml['start_state']:
+
+                self.add_initial_state(node_name)
+
+        # add edges
+        for start_name, edge_dict in graph_yaml['edges'].items():
+            for end_name, attr in edge_dict.items():
+                # Identify if it has multiple edges betw. the start and end node
+                are_all_keys_integers = all([isinstance(a, int) for a in attr.keys()])
+                has_multiple_edges = are_all_keys_integers
+
+                if has_multiple_edges:
+                    self._graph.add_edges_from(
+                        [(start_name, end_name, a) for a in attr.values()])
+                else:
+                    self.add_edge(start_name,
+                                end_name,
+                                **attr)
+
+    def fancy_graph(self, color=("lightgrey", "red", "purple"),
+        start_node: str=None, n_neighbor: int=3,**kwargs) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
         """
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
+        node_names = [n[0] for n in nodes]
+
+        # If start_node is given, plot a partial graph
+        nodes_to_plot = None
+        edges_to_plot = None
+        if start_node is not None and start_node not in node_names:
+            search_queue = queue.Queue()
+            search_queue.put((0, start_node))
+            nodes_to_plot = []
+            edges_to_plot = []
+            while not search_queue.empty():
+                ith, u_node = search_queue.get()
+                if ith == n_neighbor:
+                    continue
+                for v_node in self._game._graph.successors(u_node):
+                    if v_node not in nodes_to_plot:
+                        nodes_to_plot.append(v_node)
+                        edges_to_plot.append((u_node, v_node))
+                        search_queue.put((ith+1, v_node))
+
         for n in nodes:
-            ap = n[1].get('ap')
-            ap = "{" + str(ap) + "}"
+            if nodes_to_plot is not None and n[0] not in nodes_to_plot:
+                continue
+
+            obs = n[1].get('ap')
+            if len(obs) == 0:
+                obs = ''
+            else:
+                obs = str(obs) #"\n".join(obs)
             dot.node(str(n[0]), _attributes={"style": "filled",
                                              "fillcolor": color[0],
-                                             "xlabel": ap,
+                                             "xlabel": obs,
                                              "shape": "rectangle"})
             if n[1].get('init'):
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": ap})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": obs})
             if n[1].get('accepting'):
-                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
+                dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": obs})
             if n[1].get('player') == 'eve':
-                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
-            if n[1].get('player') == 'adam':
                 dot.node(str(n[0]), _attributes={"shape": "circle"})
+            if n[1].get('player') == 'adam':
+                dot.node(str(n[0]), _attributes={"shape": "rectangle"})
 
         # add all the edges
         edges = self._graph_yaml["edges"]
 
         # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
+            if edges_to_plot is not None and (edge[0], edge[1]) not in edges_to_plot:
+                continue
+
+            weight = edge[2].get('weight')
+            weight_label = '' if weight is None else str(weight)
+            label = str(edge[2].get('actions')) + weight_label
             if edge[2].get('strategy') is True:
                 # dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')), _attributes={'color': 'red'})
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')), _attributes={'color': 'red'})
+                dot.edge(str(edge[0]), str(edge[1]), label=label, _attributes={'color': 'red'})
             else:
                 # dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')))
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')))
+                dot.edge(str(edge[0]), str(edge[1]), label=label)
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
@@ -61,8 +155,7 @@ class TwoPlayerGraph(Graph):
         dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
 
         if self._save_flag:
-            graph_name = str(self._graph.__getattribute__('name'))
-            self.save_dot_graph(dot, graph_name, True)
+            self.save_dot_graph(dot, self._graph_name, **kwargs)
 
     def print_edges(self):
         print("=====================================")
@@ -97,389 +190,132 @@ class TwoPlayerGraph(Graph):
 
         return atomic_propositions
 
-    @classmethod
-    def build_running_ex(cls: 'TwoPlayerGraph',
-                         graph_name: str,
-                         config_yaml: str,
-                         save_flag: bool = False) -> 'TwoPlayerGraph()':
+    def _get_next_node(self, curr_node, symbol) -> Tuple:
+        # TODO
+        pass
+
+    def trace_cumulative_cost(self, actions: List):
+        # TODO
+        pass
+
+    def strategy_cumulative_cost(self, strategy: Dict):
+        # TODO
+        pass
+
+    def delete_selfloops(self):
         """
-        A class method that constructs the sample three state graph for you
-        :param graph_name:
-        :param config_yaml:
-        :param save_flag:
-        :return: An concrete instance of the built three state graph as described in the configuration above
+        Find cycles (FAS and self loops) and delete them from G
+
+        :args winning_region:   The winning region
         """
+        redirected = False
 
-        # define constant weights
-        lambda_const = +0
-        const_a = 20
+        # For each self loop
+        for node in self.get_selfloops():
+            if node == 'Accepting':
+                continue
 
-        nstate_graph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
-        nstate_graph.construct_graph()
+            # check if the loop belongs to sys or env
+            player = self.get_state_w_attribute(node, 'player')
+            # If sys, delete the edge
+            if player == 'sys':
+                self._graph.remove_edge(node, node)
+            # If env, redirect the edge to an absorbing state
+            else:
+                edge_attributes = self._graph[node][node][0]
+                self.add_edge(node, 'Absorbing', **edge_attributes)
+                self._graph.remove_edge(node, node)
+                redirected = True
 
-        # nstate_graph.add_weighted_edges_from([('(v1, 1)', '(v2, 1)', -2),
-        #                                       ('(v2, 1)', '(v4, 1)', 0),
-        #                                       ('(v1, 1)', '(v3, 1)', -1),
-        #                                       ('(v3, 1)', '(v5, 1)', 0),
-        #                                       # ('(v5, 1)', '(v3, 1)', -1),
-        #                                       ('(v5, 1)', 'trap', 0),
-        #                                       # ('(v5, 1)', '(v2, 1)', -2),
-        #                                       ('(v1, 0)', '(v2, 0)', -2),
-        #                                       ('(v1, 0)', '(v3, 0)', -1),
-        #                                       ('(v2, 0)', '(v4, 0)', 0),
-        #                                       ('(v3, 0)', '(v5, 0)', 0),
-        #                                       # ('(v5, 0)', '(v2, 0)', -2),
-        #                                       # ('(v5, 0)', '(v3, 0)', -1)]),
-        #                                       ('(v5, 0)', 'trap', 0)])
-        #
-        # # add human interventions
-        # nstate_graph.add_weighted_edges_from([('(v2, 1)', '(v1, 0)', 0),
-        #                                       ('(v2, 1)', '(v4, 0)', 0),
-        #                                       ('(v2, 1)', '(v5, 0)', 0),
-        #                                       ('(v3, 1)', '(v1, 0)', 0),
-        #                                       ('(v3, 1)', '(v4, 0)', 0),
-        #                                       ('(v3, 1)', '(v5, 0)', 0)])
+        if redirected:
+            self.add_state('Absorbing', player='eve')
 
-        # nstate_graph.add_weighted_edges_from([('(v1, 1)', '(v2, 1)', const_a),
-        #                                       ('(v2, 1)', '(v9, 1)', lambda_const),
-        #                                       ('(v1, 1)', '(v3, 1)', 1),
-        #                                       ('(v3, 1)', '(v6, 1)', lambda_const),
-        #                                       ('(v6, 1)', '(v5, 1)', 1),
-        #                                       ('(v6, 1)', '(v7, 1)', 1),
-        #                                       ('(v7, 1)', '(v8, 1)', lambda_const),
-        #                                       ('(v5, 1)', '(v4, 1)', lambda_const),
-        #                                       ('(v4, 1)', '(v2, 1)', 1),  # adding auxiliary human intervention edges
-        #                                       ('(v2, 1)', '(v1, 0)', 0),
-        #                                       ('(v2, 1)', '(v9, 0)', 0),
-        #                                       ('(v2, 1)', '(v4, 0)', 0),
-        #                                       ('(v2, 1)', '(v6, 0)', 0),
-        #                                       ('(v2, 1)', '(v8, 0)', 0),
-        #                                       ('(v3, 1)', '(v1, 0)', 0),
-        #                                       ('(v3, 1)', '(v9, 0)', 0),
-        #                                       ('(v3, 1)', '(v4, 0)', 0),
-        #                                       ('(v3, 1)', '(v6, 0)', 0),
-        #                                       ('(v3, 1)', '(v8, 0)', 0),
-        #                                       ('(v7, 1)', '(v1, 0)', 0),
-        #                                       ('(v7, 1)', '(v9, 0)', 0),
-        #                                       ('(v7, 1)', '(v4, 0)', 0),
-        #                                       ('(v7, 1)', '(v6, 0)', 0),
-        #                                       ('(v7, 1)', '(v8, 0)', 0),
-        #                                       ('(v5, 1)', '(v1, 0)', 0),
-        #                                       ('(v5, 1)', '(v9, 0)', 0),
-        #                                       ('(v5, 1)', '(v4, 0)', 0),
-        #                                       ('(v5, 1)', '(v6, 0)', 0),
-        #                                       ('(v5, 1)', '(v8, 0)', 0),  # add edges after human has intervened once
-        #                                       ('(v1, 0)', '(v2, 0)', const_a),
-        #                                       ('(v2, 0)', '(v9, 0)', 0),
-        #                                       ('(v1, 0)', '(v3, 0)', 1),
-        #                                       ('(v3, 0)', '(v6, 0)', 0),
-        #                                       ('(v6, 0)', '(v5, 0)', 1),
-        #                                       ('(v6, 0)', '(v7, 0)', 1),
-        #                                       ('(v7, 0)', '(v8, 0)', 0),
-        #                                       ('(v5, 0)', '(v4, 0)', 0),
-        #                                       ('(v4, 0)', '(v2, 0)', 1)])
-
-        # lets add a transition to accepting state form v4 and a transition to trap state from v5
-        # nstate_graph.add_edge('(v9, 0)', 'accept_all', weight=0)
-        # nstate_graph.add_edge('(v9, 1)', 'accept_all', weight=0)
-        # nstate_graph.add_edge('accept_all', 'accept_all', weight=0)
-        # nstate_graph.add_state_attribute('accept_all', 'player', 'eve')
-        # nstate_graph.add_accepting_state('accept_all')
-
-        # adding trap state
-        # nstate_graph.add_edge('trap', 'trap', weight=-1*math.inf)
-        # nstate_graph.add_edge('trap', 'trap', weight=-3)
-        # nstate_graph.add_state_attribute('trap', 'player', 'adam')
-
-        # nstate_graph.add_edge('v5', 'trap', weight=0)
-        # nstate_graph.add_edge('(v8, 1)', 'trap', weight=0)
-        # nstate_graph.add_edge('(v8, 0)', 'trap', weight=0)
-        # nstate_graph.add_edge('trap', 'trap', weight=0)
-        # nstate_graph.add_state_attribute('trap', 'player', 'eve')
-
-        # nstate_graph.add_state_attribute('(v1, 1)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v2, 1)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v3, 1)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v4, 1)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v5, 1)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v1, 0)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v2, 0)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v3, 0)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v4, 0)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v5, 0)', 'player', 'eve')
-
-        # nstate_graph.add_state_attribute('(v1, 1)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v2, 1)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v3, 1)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v4, 1)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v5, 1)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v6, 1)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v7, 1)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v8, 1)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v9, 1)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v1, 0)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v2, 0)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v3, 0)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v4, 0)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v5, 0)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v6, 0)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v7, 0)', 'player', 'adam')
-        # nstate_graph.add_state_attribute('(v8, 0)', 'player', 'eve')
-        # nstate_graph.add_state_attribute('(v9, 0)', 'player', 'eve')
-        #
-        # nstate_graph.add_initial_state('(v1, 1)')
-
-        ###############################################################
-
-        nstate_graph.add_weighted_edges_from([('v1', 'v2', 1),
-                                              ('v2', 'v4', 0),
-                                              ('v2', 'v3', 0),
-                                              ('v3', 'v4', 1),
-                                              ('v3', 'v6', 1),
-                                              ('v4', 'v7', 0),
-                                              ('v4', 'v5', 0),
-                                              ('v5', 'accept_all', 0),
-                                              ('v6', 'v7', 0),
-                                              ('v6', 'v5', 0),
-                                              ('v7', 'trap', 0),
-                                              ('trap', 'trap', 0),
-                                              ('accept_all', 'accept_all', 0)])
-
-        nstate_graph.add_state_attribute('v1', 'player', 'eve')
-        nstate_graph.add_state_attribute('v2', 'player', 'adam')
-        nstate_graph.add_state_attribute('v3', 'player', 'eve')
-        nstate_graph.add_state_attribute('v4', 'player', 'adam')
-        nstate_graph.add_state_attribute('v5', 'player', 'eve')
-        nstate_graph.add_state_attribute('v6', 'player', 'adam')
-        nstate_graph.add_state_attribute('v7', 'player', 'eve')
-        nstate_graph.add_state_attribute('accept_all', 'player', 'eve')
-        nstate_graph.add_state_attribute('trap', 'player', 'eve')
-
-        nstate_graph.add_initial_state('v1')
-        nstate_graph.add_accepting_state('accept_all')
-
-        # # for add the constant to each edge
-        # for _e in nstate_graph._graph.edges():
-        #     _u = _e[0]
-        #     _v = _e[1]
-        #
-        #     _w = nstate_graph.get_edge_weight(_u, _v)
-        #     _new_w = _w + lambda_const
-        #
-        #     nstate_graph._graph[_u][_v][0]['weight'] = _new_w
-
-        # nstate_graph.add_weighted_edges_from([('v1', 'v2', -2),
-        #                                       ('v2', 'v1', 0),
-        #                                       ('v2', 'v4', 0),
-        #                                       ('v4', 'v2', -2),
-        #                                       ('v1', 'v3', -1),
-        #                                       ('v3', 'v5', 0),
-        #                                       ('v5', 'v3', -1)])
-        #
-        # nstate_graph.add_state_attribute('v1', 'player', 'eve')
-        # nstate_graph.add_state_attribute('v2', 'player', 'adam')
-        # nstate_graph.add_state_attribute('v3', 'player', 'adam')
-        # nstate_graph.add_state_attribute('v4', 'player', 'eve')
-        # nstate_graph.add_state_attribute('v5', 'player', 'eve')
-        #
-        # # adding edges to the accepting state
-        # nstate_graph.add_edge('v4', 'accept_all', weight=0)
-        # nstate_graph.add_edge('accept_all', 'accept_all', weight=0)
-        # nstate_graph.add_state_attribute('accept_all', 'player', 'eve')
-
-        # add the trap state
-        # nstate_graph.add_edge('v5', 'trap', weight=0)
-        # nstate_graph.add_edge('trap', 'trap', weight=-math.inf)
-        # nstate_graph.add_state_attribute('trap', 'player', 'adam')
-        #
-        # nstate_graph.add_initial_state('v1')
-        # nstate_graph.add_accepting_state('accept_all')
-
-        return nstate_graph
-
-    @classmethod
-    def build_twa_example(cls: 'TwoPlayerGraph',
-                          graph_name: str,
-                          config_yaml: str,
-                          save_flag: bool = False) -> 'TwoPlayerGraph()':
-
+    def delete_cycles(self, winning_region: List):
         """
-        A class method to construct a sample Two player target weighted arena (TWA)
+        Find cycles (FAS and self loops) and delete them from G
 
-        :param graph_name:
-        :param config_yaml:
-        :param save_flag:
-        :return: An concrete instance of the built Target weighted graph
+        :args winning_region:   The winning region
         """
+        cycles = self.get_cycles()
 
-        _twa_graph: TwoPlayerGraph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
-        _twa_graph.construct_graph()
+        # For each sccss,
+        for cycle in cycles:
+            if 'Accepting' in cycle:
+                continue
 
-        _twa_graph.add_state('A', player="adam")
-        _twa_graph.add_state('C', player="eve")
-        _twa_graph.add_state('B', player="eve")
-        _twa_graph.add_state('D', player="adam")
-        _twa_graph.add_state('E', player="eve")
-        _twa_graph.add_state('F', player="adam")
-        _twa_graph.add_state('G', player="eve")
-        _twa_graph.add_state('H', player="eve")
-        _twa_graph.add_state('I', player="eve")
-        _twa_graph.add_state('J', player="eve")
+            # TODO: Check if it really is a cycle lol
+            if not self._identify_if_really_cycle(cycle):
+                continue
 
-        _twa_graph.add_weighted_edges_from([('A', 'B', 0),
-                                            ('A', 'C', 0),
-                                            ('B', 'C', 0),
-                                            ('B', 'D', 0),
-                                            ('C', 'F', 0),
-                                            ('C', 'E', 3),
-                                            ('D', 'G', 3),
-                                            ('D', 'H', 0),
-                                            ('F', 'I', 4),
-                                            ('F', 'J', 0),
-                                            ('F', 'B', 0)])
-        _twa_graph.add_initial_state('A')
-        _twa_graph.add_accepting_states_from(['E', 'G', 'H', 'I', 'J'])
+            # Check if all nodes in cycle belong to env
+            all_env_node = all(['adam'==self.get_state_w_attribute(n, 'player') for n in cycle])
+            # Redirect all nodes to absorbing state
+            if all_env_node:
+                for u_node in cycle:
+                    for v_node in self._graph.successors(u_node):
+                        if v_node in cycle:
+                            edge_attributes = self._graph[u_node][v_node][0]
+                            self.add_edge(u_node, 'Absorbing', **edge_attributes)
+                            self._graph.remove_edge(u_node, v_node)
+                            redirected = True
 
-        # for leaf nodes let's add a self-loop (for the construction to be in consistent with infinite play game)
-        for _s in _twa_graph._graph.nodes():
-            if len(list(_twa_graph._graph.successors(_s))) == 0:
-                _twa_graph.add_weighted_edges_from([(_s, _s, 0)])
+            # For sys node in cycle
+            for u_node in cycle:
+                player = self.get_state_w_attribute(u_node, 'player')
+                if player == 'eve':
+                    # check if it has an edge to one of the nodes in the cycle, then delete it
+                    successors = list(self._graph.successors(u_node))
+                    for v_node in successors:
+                        if v_node in cycle:
+                            self._graph.remove_edge(u_node, v_node)
 
-        return _twa_graph
-
-    @classmethod
-    def build_ewa_example(cls: 'TwoPlayerGraph',
-                          graph_name: str,
-                          config_yaml: str,
-                          save_flag: bool = False) -> 'TwoPlayerGraph()':
-
+    def get_cycles(self) -> List:
         """
-        A class method to construct a sample Two player Edge weighted arena (WWA)
+        Find a list of Strongly Connected Components in G
 
-        :param graph_name:
-        :param config_yaml:
-        :param save_flag:
-        :return: An concrete instance of the built Earget weighted graph
+        :return fas:
         """
+        cycles_ = list(nx.find_cycle(self._graph))
+        return cycles_
+        cycles = []
+        for cycle in cycles_:
+            cycles.append([cycle[0], cycle[1]])
+        return cycles
+        # return list(nx.simple_cycles(self._graph))
+        # return list(nx.strongly_connected_components(self._graph))
 
-        _ewa_graph: TwoPlayerGraph = TwoPlayerGraph(graph_name=graph_name, config_yaml=config_yaml, save_flag=save_flag)
-        _ewa_graph.construct_graph()
+    def get_selfloops(self) -> List:
+        """
+        Find self loops in G
+        """
+        graph = self._graph
 
-        # example from the paper
-        # _ewa_graph.add_state('A', player="adam")
-        # _ewa_graph.add_state('C', player="eve")
-        # _ewa_graph.add_state('B', player="eve")
-        # _ewa_graph.add_state('D', player="adam")
-        # _ewa_graph.add_state('E', player="eve")
-        # _ewa_graph.add_state('F', player="adam")
-        # _ewa_graph.add_state('G', player="eve")
-        # _ewa_graph.add_state('H', player="eve")
-        # _ewa_graph.add_state('I', player="eve")
-        # _ewa_graph.add_state('J', player="eve")
-        #
-        # _ewa_graph.add_weighted_edges_from([('A', 'B', 0),
-        #                                     ('A', 'C', 0),
-        #                                     ('B', 'C', 1),
-        #                                     # ('B', 'D', 1),
-        #                                     ('C', 'F', 0),
-        #                                     ('C', 'E', 2),
-        #                                     ('D', 'G', 2),
-        #                                     ('D', 'H', 0),
-        #                                     ('F', 'B', 0),
-        #                                     ('F', 'I', 2),
-        #                                     ('F', 'J', 0)])
-        # _ewa_graph.add_initial_state('A')
-        # _ewa_graph.add_accepting_states_from(['E', 'G', 'H', 'I', 'J'])
+        loops = []
+        for u_node in graph.nodes():
+            for v_node in graph.successors(u_node):
+                if u_node == v_node:
+                    loops.append(u_node)
 
-        # simple example
-        # _ewa_graph.add_state('A', player="adam")
-        # _ewa_graph.add_state('B', player="eve")
-        # _ewa_graph.add_state('C', player="eve")
-        # _ewa_graph.add_state('D', player="adam")
-        # _ewa_graph.add_state('E', player="eve")
-        # _ewa_graph.add_state('F', player="eve")
-        # _ewa_graph.add_state('G', player="eve")
-        # _ewa_graph.add_state('H', player="eve")
-        #
-        # _ewa_graph.add_weighted_edges_from([('A', 'C', 0),
-        #                                     ('A', 'B', 0),
-        #                                     ('B', 'C', 1),
-        #                                     ('B', 'D', 0),
-        #                                     ('C', 'E', 2),
-        #                                     ('C', 'F', 1),
-        #                                     ('F', 'B', 0),
-        #                                     ('D', 'G', 2),
-        #                                     ('D', 'H', 0)])
-        # _ewa_graph.add_initial_state('A')
-        # _ewa_graph.add_accepting_states_from(['E', 'F', 'G'])
+        return loops
 
-        # simple example where init state belongs to Sys player's winning region
-        _ewa_graph.add_state('v1', player="eve")
-        _ewa_graph.add_state('v2', player="adam")
-        _ewa_graph.add_state('v3', player="eve")
-        _ewa_graph.add_state('v4', player="adam")
-        _ewa_graph.add_state('v5', player="eve")
-        _ewa_graph.add_state('v6', player="adam")
-        # _ewa_graph.add_state('v7', player="adam")
-        # _ewa_graph.add_state('v8', player="eve")
-        _ewa_graph.add_state('v9', player="eve")
-        # _ewa_graph.add_state('v10', player="eve")
-        # _ewa_graph.add_state('v11', player="eve")
-        _ewa_graph.add_state('v12', player="eve")
+    def _identify_if_really_cycle(self, cycle):
+        u_node = cycle[0]
 
-        _ewa_graph.add_weighted_edges_from([('v1', 'v2', 1),
-                                            # ('v1', 'v4', 1),
-                                            ('v4', 'v5', 0),
-                                            ('v2', 'v3', 0),
-                                            ('v2', 'v9', 0),
-                                            ('v3', 'v4', 1),
-                                            ('v3', 'v2', 1),
-                                            # ('v5', 'v4', 1),
-                                            ('v3', 'v6', 6),
-                                            # ('v3', 'v7', 1),
-                                            # ('v7', 'v8', 0),
-                                            ('v6', 'v9', 0),
-                                            # ('v6', 'v4', 5),
-                                            ('v5', 'v6', 3),
-                                            # ('v8', 'v12', 5),
-                                            # ('v10', 'v12', 5),
-                                            ('v9', 'v12', 0),
-                                            # ('v11', 'v12', 0),
-                                            ('v4', 'v9', 0), ('v5', 'v4', 1)])
+        search_queue = queue.Queue()
+        search_queue.put(u_node)
+        visited = {node: False for node in cycle}
 
-        _ewa_graph.add_initial_state('v1')
-        _ewa_graph.add_accepting_states_from(['v12'])
+        while not search_queue.empty(): # Or queue to be empty
+            u_node = search_queue.get()
 
-        # game in Env's winning region
-        # _ewa_graph.add_state('v1', player="adam")
-        # _ewa_graph.add_state('v2', player="eve")
-        # _ewa_graph.add_state('v3', player="adam")
-        # _ewa_graph.add_state('v4', player="eve")
-        # _ewa_graph.add_state('v5', player="adam")
-        # _ewa_graph.add_state('v6', player="adam")
-        # _ewa_graph.add_state('v7', player="eve")
-        # _ewa_graph.add_state('v8', player="adam")
-        # _ewa_graph.add_state('v12', player="adam")
-        #
-        # _ewa_graph.add_weighted_edges_from([('v1', 'v2', 1),
-        #                                     ('v2', 'v3', 0),
-        #                                     # ('v2', 'v6', 0),
-        #                                     ('v3', 'v4', 1),
-        #                                     ('v4', 'v5', 0),
-        #                                     ('v3', 'v7', 1),
-        #                                     ('v7', 'v8', 0),
-        #                                     ('v5', 'v2', 1),
-        #                                     ('v8', 'v12', 0), ('v2', 'v6', 2)])#, ('v6', 'v5', 10)])
-        #
-        # _ewa_graph.add_initial_state('v1')
-        # _ewa_graph.add_accepting_states_from(['v12', 'v6'])
+            for v_node in self._graph.successors(u_node):
 
-        # for leaf nodes let's add a self-loop (for the construction to be in consistent with infinite play game)
-        for _s in _ewa_graph._graph.nodes():
-            if len(list(_ewa_graph._graph.successors(_s))) == 0:
-                _ewa_graph.add_weighted_edges_from([(_s, _s, 0)])
+                #  At least one successor should be in cycle to make it a cycle
+                if v_node in cycle and not visited[v_node]:
+                    visited[v_node] = True
+                    search_queue.put(v_node)
 
-        return _ewa_graph
+        return all(list(visited.values()))
 
 
 class TwoPlayerGraphBuilder(Builder):
@@ -500,37 +336,56 @@ class TwoPlayerGraphBuilder(Builder):
     def __call__(self,
                  graph_name: str,
                  config_yaml: str,
+                 minigrid = None,
+                 n_step: int = None,
                  save_flag: bool = False,
                  from_file: bool = False,
-                 pre_built: bool = False,
-                 plot: bool = False) -> TwoPlayerGraph:
+                 pre_built: bool = False,   # TODO: Delete
+                 plot: bool = False,
+                 view: bool = True,
+                 format: str = 'pdf') -> TwoPlayerGraph:
         """
         Return an initialized TwoPlayerGraph instance given the configuration data
         :param graph_name : Name of the graph
         :return: A concrete/active instance of the TwoPlayerGraph
         """
         self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
-        self._instance.construct_graph()
 
+        graph_yaml = None
         if from_file:
-            self._instance._graph_yaml = self._from_yaml(config_yaml)
+            graph_yaml = self._from_yaml(config_yaml)
 
-        if pre_built:
-            if graph_name == "two_player_graph":
-                self._instance = TwoPlayerGraph.build_running_ex(graph_name, config_yaml, save_flag)
-            elif graph_name == "target_weighted_arena":
-                self._instance = TwoPlayerGraph.build_twa_example(graph_name, config_yaml, save_flag)
-            elif graph_name == "edge_weighted_arena":
-                self._instance = TwoPlayerGraph.build_ewa_example(graph_name, config_yaml, save_flag)
-            else:
-                warnings.warn("Please enter a valid graph name to load a pre-built graph.")
+        if graph_yaml is None and minigrid is not None:
+            graph_yaml = self._from_minigrid(minigrid, n_step)
+
+        self._instance.construct_graph(graph_yaml)
 
         if plot:
-            self._instance.plot_graph()
+            self._instance.plot_graph(view=view, format=format)
 
         return self._instance
 
     def _from_yaml(self, config_file_name: str) -> dict:
         config_data = self.load_YAML_config_data(config_file_name)
+
+        return config_data
+
+    def _from_minigrid(self, minigrid_environment, n_step) -> dict:
+        config_data = minigrid_environment.extract_two_player_game(n_step)
+
+        # Translate minigrid player to this library's player names
+        node_names = list(config_data['nodes'].keys())
+        for node_name in node_names:
+            minigrid_player = config_data['nodes'][node_name]['player']
+
+            if minigrid_player == 'sys':
+                player = 'eve'
+            else:
+                player = 'adam'
+
+            config_data['nodes'][node_name]['player'] = player
+            config_data['nodes'][node_name]['ap'] = \
+                config_data['nodes'][node_name]['observation']
+            del config_data['nodes'][node_name]['observation']
 
         return config_data

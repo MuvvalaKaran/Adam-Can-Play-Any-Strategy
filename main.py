@@ -29,14 +29,20 @@ class GraphInstanceConstructionBase(abc.ABC):
     human_intervention_cost: int = 0
     human_non_intervention_cost: int = 0
 
-    def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
+    def __init__(self,
+                 _finite: bool,
+                 _plot_ts: bool,
+                 _plot_dfa: bool,
+                 _plot_prod: bool):
         self.finite = _finite
         self.plot_ts = _plot_ts
         self.plot_dfa = _plot_dfa
         self.plot_product = _plot_prod
+
         self._trans_sys: Optional[FiniteTransSys] = None
         self._dfa: Optional[DFAGraph] = None
         self._product_automaton: Optional[ProductAutomaton] = None
+
         self._build_ts()
         self._build_dfa()
         self._build_product()
@@ -54,10 +60,10 @@ class GraphInstanceConstructionBase(abc.ABC):
                                                     graph_name='product_automaton',
                                                     config_yaml='/config/product_automaton',
                                                     trans_sys=self._trans_sys,
-                                                    dfa=self._dfa,
+                                                    automaton=self._dfa,
                                                     save_flag=True,
-                                                    prune=False,
-                                                    debug=False,
+                                                    prune=True,
+                                                    debug=True,
                                                     absorbing=True,
                                                     finite=self.finite,
                                                     plot=self.plot_product)
@@ -172,13 +178,126 @@ class ThreeStateExample(GraphInstanceConstructionBase):
                                             plot_raw_ts=False)
 
     def _build_dfa(self):
-        self._dfa = graph_factory.get('DFA',
-                                      graph_name="automaton",
-                                      config_yaml="/config/automaton",
+        # self._dfa = graph_factory.get('DFA',
+        #                               graph_name="automaton",
+        #                               config_yaml="/config/automaton",
+        #                               save_flag=True,
+        #                               sc_ltl="F c",
+        #                               use_alias=False,
+        #                               plot=self.plot_dfa)
+        self._dfa = graph_factory.get('PDFA',
+                                      graph_name="pdfa",
+                                      config_yaml="/config/PDFA_three_states_twogoals",
                                       save_flag=True,
-                                      sc_ltl="F c",
                                       use_alias=False,
                                       plot=self.plot_dfa)
+
+
+class TwoGoalsExample(GraphInstanceConstructionBase):
+    """
+    A class that implements the two goals transition system in the FiniteTransitionSystem class.
+    """
+    def __init__(self,
+                 _finite: bool = False,
+                 _plot_ts: bool = False,
+                 _plot_dfa: bool = False,
+                 _plot_prod: bool = False,
+                 prune: bool = False,
+                 plot_auto_graph: bool = False,
+                 plot_trans_graph: bool = False,
+                 weighting: str = 'automatonOnly',
+                 complete_graph_players=['eve'],
+                 integrate_accepting: bool = True,
+                 multiple_accepting: bool = False):
+
+        self._plot_auto_graph = plot_auto_graph
+        self._plot_trans_graph = plot_trans_graph
+
+        self._prune = prune
+        self._weighting = weighting
+        self._complete_graph_players = complete_graph_players
+        self._integrate_accepting = integrate_accepting
+
+        all_problems = True
+        # all_problems = False
+        if all_problems:
+            # Whether to use Weight or Weights
+            self._use_trans_sys_weights = True
+            self._auto_config = "/config/PDFA_onegoal"
+            # self._ts_config = "/config/Game_all_problems"
+            # self._ts_config = "/config/Game_one_in_three_pareto_points"
+            # self._ts_config = "/config/Game_three_pareto_points"
+            # self._ts_config = "/config/Game_env_loops"
+            self._ts_config = "/config/Game_sys_loops"
+
+            # self._use_trans_sys_weights = False
+            # self._ts_config = "/config/Game_elev_esc_stairs"
+            # self._auto_config = "/config/PDFA_threegoals"
+        else:
+            self._use_trans_sys_weights = False
+            self._auto_config = "/config/PDFA_twogoals"
+            self._ts_config = "/config/Game_simple_loop"
+
+        # self._ts_config = "/config/Game_two_goals"
+        # self._ts_config = "/config/Game_simple_loop"
+        # self._ts_config = "/config/Game_two_goals_self_loop"
+        # self._ts_config = "/config/Game_all_problems"
+
+        # if multiple_accepting:
+        #     self._auto_config = "/config/PDFA_multiple_accepting"
+        # else:
+        #     # self._auto_config = "/config/PDFA_twogoals"
+        #     self._auto_config = "/config/PDFA_onegoal"
+
+        super().__init__(_finite=_finite,
+                         _plot_ts=_plot_ts,
+                         _plot_dfa=_plot_dfa,
+                         _plot_prod=_plot_prod)
+
+    def _build_ts(self):
+        self._trans_sys = graph_factory.get(
+            'TS',
+            raw_trans_sys=None,
+            graph_name="trans_sys",
+            config_yaml=self._ts_config,
+            pre_built=False,
+            from_file=True,
+            save_flag=True,
+            debug=False,
+            plot=self.plot_ts,
+            human_intervention=0,
+            finite=self.finite,
+            plot_raw_ts=False)
+
+    def _build_dfa(self):
+        self._dfa = graph_factory.get(
+            'PDFA',
+            graph_name="pdfa",
+            config_yaml=self._auto_config,
+            save_flag=True,
+            use_alias=False,
+            plot=self.plot_dfa)
+
+    def _build_product(self):
+        self._product_automaton = graph_factory.get(
+            'ProductGraph',
+            graph_name='ProductAutomaton',
+            config_yaml='/config/product_automaton',
+            trans_sys=self._trans_sys,
+            automaton=self._dfa,
+            save_flag=True,
+            prune=self._prune,
+            debug=True,
+            absorbing=True,
+            finite=self.finite,
+            plot=self.plot_product,
+            plot_auto_graph=self._plot_auto_graph,
+            plot_trans_graph=self._plot_trans_graph,
+            weighting=self._weighting,
+            complete_graph_players=self._complete_graph_players,
+            integrate_accepting=self._integrate_accepting,
+            use_trans_sys_weights = self._use_trans_sys_weights,
+            )
 
 
 class FiveStateExample(GraphInstanceConstructionBase):
@@ -210,11 +329,17 @@ class FiveStateExample(GraphInstanceConstructionBase):
                                             plot_raw_ts=False)
 
     def _build_dfa(self):
-        self._dfa = graph_factory.get('DFA',
-                                      graph_name="automaton",
-                                      config_yaml="/config/automaton",
+        # self._dfa = graph_factory.get('DFA',
+        #                               graph_name="automaton",
+        #                               config_yaml="/config/automaton",
+        #                               save_flag=True,
+        #                               sc_ltl="!d U g",
+        #                               use_alias=False,
+        #                               plot=self.plot_dfa)
+        self._dfa = graph_factory.get('PDFA',
+                                      graph_name="pdfa",
+                                      config_yaml="/config/PDFA_five_states_twogoals",
                                       save_flag=True,
-                                      sc_ltl="!d U g",
                                       use_alias=False,
                                       plot=self.plot_dfa)
 
@@ -317,17 +442,24 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     #                                    compute_reg_for_human=compute_reg_for_human)
 
 
-if __name__ == "__main__":
+def pure_game(
+    trans_sys: Union[FiniteTransSys, TwoPlayerGraph, MiniGrid],
+    cooperative: bool,
+    mini_grid_instance: Optional[MinigridGraph] = None,
+    epsilon: float = 0,
+    max_human_interventions: int = 5,
+    plot: bool = False,
+    compute_reg_for_human: bool = False,
+    integrate_accepting: bool = False,
+    debug: bool = True,
+    use_prism: bool = False):
 
-    # define some constants
-    EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
-    IROS_FLAG = False
-    ENERGY_BOUND = 30
-    ALLOWED_HUMAN_INTERVENTIONS = 2
+    reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
+    reachability_game_handle.reachability_solver()
 
-    # some constants related to computation
-    finite = True
-    go_fast = True
+    solver = MultiObjectiveSolver(trans_sys)
+    # solver.solve(stochastic=True, adversarial=True, plot_strategies=True, bound=[5.6, 5.6])
+    solver.solve(stochastic=False, adversarial=True, plot_strategies=True)
 
     # some constants that allow for appr _instance creations
     three_state_ts = False
@@ -349,26 +481,18 @@ if __name__ == "__main__":
                                                     _plot_prod=False)
         trans_sys = three_state_ts_instance.product_automaton
 
-    elif five_state_ts:
-        five_state_ts = FiveStateExample(_finite=finite,
-                                         _plot_ts=False,
-                                         _plot_dfa=False,
-                                         _plot_prod=False)
-        trans_sys = five_state_ts.product_automaton
+def pure_adversarial_game(**kwargs):
+    pure_game(cooperative=False, **kwargs)
 
-    elif variant_1_paper:
-        variant_1_instance = VariantOneGraph(_finite=finite,
-                                             _plot_prod=False)
-        trans_sys = variant_1_instance.product_automaton
 
-    elif target_weighted_arena:
-        twa_graph = EdgeWeightedArena(_graph_type="ewa",
-                                      _plot_prod=False)
-        trans_sys = twa_graph.product_automaton
+def pure_cooperative_game(**kwargs):
+    pure_game(cooperative=True, **kwargs)
 
     else:
         warnings.warn("Please ensure at-least one of the flags is True")
         sys.exit(-1)
+
+    trans_sys = ts.product_automaton
 
     print(f"No. of nodes in the product graph is :{len(trans_sys._graph.nodes())}")
     print(f"No. of edges in the product graph is :{len(trans_sys._graph.edges())}")

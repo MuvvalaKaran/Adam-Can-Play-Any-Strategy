@@ -1,3 +1,4 @@
+import os
 import yaml
 
 from ..config import ROOT_PATH
@@ -34,7 +35,10 @@ class Builder(ABC):
         """
 
         DIR = ROOT_PATH
-        config_file_name = DIR + config_file_name + ".yaml"
+        config_file_name = os.path.join(ROOT_PATH, config_file_name + ".yaml")
+        if not os.path.exists(config_file_name):
+            return None
+
         with open(config_file_name, 'r') as stream:
             config_data = yaml.load(stream, Loader=yaml.Loader)
 

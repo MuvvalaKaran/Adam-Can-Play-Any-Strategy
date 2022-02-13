@@ -1,5 +1,7 @@
-import networkx as nx
+import os
 import re
+import yaml
+import networkx as nx
 
 from typing import List, Tuple, Dict
 from graphviz import Digraph
@@ -24,41 +26,41 @@ class DFAGraph(Graph):
         self._use_alias = use_alias
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
 
-    def construct_graph(self, plot: bool = False):
+    def construct_graph(self, plot: bool = False, **kwargs):
         buchi_automaton = nx.MultiDiGraph(name=self._graph_name)
         self._graph = buchi_automaton
 
         states, edges, initial, accepts = self._from_spot(self._formula)
-        
+
         if self._use_alias:
             self._construct_dfa_w_alias(states, edges)
         else:
             self._construct_dfa(states, edges)
 
         if plot:
-            self.plot_graph()
-    
+            self.plot_graph(**kwargs)
+
     def _construct_dfa(self, states, edges):
         """
-        A method that construct a DFA keeping the original naming convention intact. 
+        A method that construct a DFA keeping the original naming convention intact.
         It does not change the name of the nodes we get originally from SPOT
-        :param states: 
-        :param edges: 
-        # :param initial_states: 
-        # :param accepting_states: 
+        :param states:
+        :param edges:
+        # :param initial_states:
+        # :param accepting_states:
         :return: An instance of DFAGraph with nodes, edges, and transition labels that enable those transitions
         """
         # add nodes
         for _s in states:
             self.add_state(_s)
-            
-            # add init and accepting node attribute 
+
+            # add init and accepting node attribute
             if _s == "T0_init":
                 self.add_initial_state(_s)
-            
+
             if _s == "accept_all":
                 self.add_accepting_state(_s)
-        
+
         # add edges
         for (u, v) in edges.keys():
             transition_formula = edges[(u, v)]
@@ -67,7 +69,7 @@ class DFAGraph(Graph):
                           v,
                           guard=transition_expr,
                           guard_formula=transition_formula)
-    
+
     def _construct_dfa_w_alias(self, states, edges):
         """
         A method that construct a DFA but changes the original node names
@@ -97,7 +99,7 @@ class DFAGraph(Graph):
                           guard=transition_expr,
                           guard_formula=transition_formula)
 
-    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+    def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
 
@@ -125,7 +127,7 @@ class DFAGraph(Graph):
 
         if self._save_flag:
             graph_name = str(self._graph.__getattribute__('name'))
-            self.save_dot_graph(dot, graph_name, True)
+            self.save_dot_graph(dot, graph_name, **kwargs)
 
     def _convert_std_state_names(self, states: List[str]) -> Dict[str, str]:
         """
@@ -157,9 +159,9 @@ class DFAGraph(Graph):
 
         states = A list of states in the automaton
         edges = A list of edges in the automaton
-        accepts = A list of accepting states in the automaton 
-        :param sc_ltl: 
-        :return: A tuple of states, edges and accepting states 
+        accepts = A list of accepting states in the automaton
+        :param sc_ltl:
+        :return: A tuple of states, edges and accepting states
         """
 
         spot_output = run_spot(formula=sc_ltl)
@@ -189,6 +191,74 @@ class DFAGraph(Graph):
 
         return abs_states
 
+    def dump_to_yaml(self, export_to_pdfa: bool = False) -> None:
+        """
+        A method to dump the contents of the @self._graph in to @self._file_name yaml document which the Graph()
+        class @read_yaml_file() reads to visualize it. By convention we dump files into config/file_name.yaml file.
+
+        A sample dump should looks like this :
+
+        >>> graph :
+        >>>    vertices:
+        >>>             tuple
+        >>>             {'player' : 'eve'/'adam'}
+        >>>    edges:
+        >>>        parent_node, child_node, edge_weight
+        """
+        config_file_name: str = str(self._config_yaml + '.yaml')
+        config_file_add = os.path.join(Graph._get_project_root_directory(), config_file_name)
+        print(config_file_add)
+
+        if export_to_pdfa:
+            # nodes = {node: attr for node, attr in self._graph.nodes.data()}
+            nodes = {}
+            num_successors = {}
+            for node, attr in self._graph.nodes.data():
+                if attr.get('accepting'):
+                    attr['final_probability'] = 1
+                else:
+                    attr['final_probability'] = 0
+
+                nodes[node] = attr
+                num_successors[node] = len(list(self._graph.successors(node)))
+
+            edges = {}
+            for u, v, attr in self._graph.edges.data():
+                if u not in edges:
+                    edges[u] = {}
+                if v not in edges[u]:
+                    edges[u][v] = {}
+                attr['formulas'] = [attr['guard_formula']]
+                attr['probabilities'] = [1/num_successors[u]]
+                del attr['guard']
+                del attr['guard_formula']
+                edges[u][v] = attr
+        else:
+            nodes = [node for node in self._graph.nodes.data()]
+            edges = [edge for edge in self._graph.edges.data()]
+
+        data_dict = dict(
+                alphabet_size=len(self._graph.edges()),
+                num_states=len(self._graph.nodes),
+                num_obs=3,
+                start_state=self.get_initial_states()[0][0],
+                nodes=nodes,
+                edges=edges,
+        )
+
+        directory = os.path.dirname(config_file_add)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        try:
+            with open(config_file_add, 'w') as outfile:
+                yaml.dump(data_dict, outfile, default_flow_style=False)
+
+        except FileNotFoundError:
+            print(FileNotFoundError)
+            print(f"The file {config_file_name} could not be found."
+                  f" This could be because I could not find the folder to dump in")
+
 
 class DFABuilder(Builder):
     """
@@ -205,7 +275,10 @@ class DFABuilder(Builder):
                  save_flag: bool = False,
                  sc_ltl: str = "",
                  use_alias: bool = False,
-                 plot: bool = False) -> 'DFAGraph':
+                 plot: bool = False,
+                 view: bool = True,
+                 format: str = 'png',
+                 ) -> 'DFAGraph':
 
         if not (isinstance(sc_ltl, str) or sc_ltl == ""):
             raise TypeError(f"Please ensure that the ltl formula is of type string and is not empty. \n")
@@ -219,6 +292,6 @@ class DFABuilder(Builder):
                                   save_flag=save_flag,
                                   use_alias=use_alias)
 
-        self._instance.construct_graph(plot=plot)
+        self._instance.construct_graph(plot=plot, view=view, format=format)
 
         return self._instance

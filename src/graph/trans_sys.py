@@ -1,8 +1,8 @@
 import warnings
+import queue
 import math
 
 from graphviz import Digraph
-from typing import List, Tuple, Dict, Optional
 
 # local packages
 from .two_player_graph import TwoPlayerGraph
@@ -21,6 +21,7 @@ class FiniteTransSys(TwoPlayerGraph):
         """
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
+
         for n in nodes:
             # default color for all the nodes is grey
             ap = n[1].get('ap')

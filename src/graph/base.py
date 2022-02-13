@@ -82,12 +82,11 @@ class Graph(abc.ABC):
             try:
                 with open(file_add, 'r') as stream:
                     graph_data = yaml.load(stream, Loader=yaml.Loader)
+                    self._graph_yaml = graph_data
 
             except FileNotFoundError as error:
                 print(error)
                 print(f"The file {file_name} does not exist")
-
-            self._graph_yaml = graph_data
 
     def save_dot_graph(self, dot_object: Digraph, graph_name: str, view: bool = False,
                        format: str = 'pdf') -> None:

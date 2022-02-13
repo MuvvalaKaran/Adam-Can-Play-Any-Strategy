@@ -12,9 +12,9 @@ from abc import ABCMeta, abstractmethod
 from scipy.stats import rv_discrete, uniform
 from typing import Union, List, Dict, Tuple, Set, Any, Hashable
 
-from ..graph import Graph
-from ..graph import TwoPlayerGraph
-from src.strategy_synthesis import ReachabilitySolver
+from src.graph import Graph
+from src.graph import TwoPlayerGraph
+from src.strategy_synthesis.adversarial_game import ReachabilityGame as ReachabilitySolver
 
 Node = Hashable
 Nodes = List[Node]
@@ -144,6 +144,37 @@ class RandomStrategy(Strategy):
         return action, self._game.step(curr_state, action)[0]
 
 
+class InteractiveStrategy(Strategy):
+    def __init__(self, game, graph_name: str = 'random'):
+        super().__init__(game, graph_name)
+        self.reset()
+
+    def reset(self):
+        pass
+
+    def step(self, prev_state, prev_action, curr_state):
+        successors = list(self._game._graph.successors(curr_state))
+
+        label = self._game.get_state_w_attribute(curr_state, 'label').replace('\n', '')
+        print('-'*100)
+        print(f'{prev_state}\t--> {prev_action} : {label}')
+
+        action_list = []
+        next_states = []
+        for i, next_state in enumerate(successors):
+            actions = list(self._game.get_edge_attributes(curr_state, next_state, 'actions'))
+            weights = list(self._game.get_edge_attributes(curr_state, next_state, 'weights'))
+            label = self._game.get_state_w_attribute(next_state, 'label').replace('\n', '')
+            print(f'[{i}]: {actions} : {weights} => {label}')
+            action_list.append(actions)
+            next_states.append(next_state)
+
+        i = int(input('Please pick a transition'))
+        action = random.choice(action_list[i])
+
+        return action, self._game.step(curr_state, action)[0]
+
+
 class ActionSequenceStrategy(Strategy):
     def __init__(self, game, action_sequence, graph_name: str = 'actions'):
         super().__init__(game, graph_name)
@@ -249,13 +280,12 @@ class DeterministicStrategy(Strategy):
 
     def construct_graph(self, adversarial: bool = True):
         # add this graph object of type of Networkx to our Graph class
-        self._graph = nx.MultiDiGraph(name=self._graph_name)
         tpg = TwoPlayerGraph(self._graph_name, None, False)
         tpg._finite = self._finite
 
         init_node = self._game.get_initial_states()[0][0]
         init_attr = self._game._graph.nodes[init_node]
-        tpg.add_state(init_node, **init_attr)
+        tpg.add_state(init_node, pareto=self._init_pareto_point, **init_attr)
 
         accept_node = self._game.get_accepting_states()[0]
 
@@ -278,7 +308,7 @@ class DeterministicStrategy(Strategy):
                     attr = copy.deepcopy(attr)
                     attr['player'] = 'eve'
 
-                tpg.add_state(next_node, **attr)
+                tpg.add_state(next_node, pareto=next_pareto_point, **attr)
                 tpg.add_edge(curr_node, next_node, **edge_attr)
 
                 if next_node not in visited:
@@ -292,7 +322,7 @@ class DeterministicStrategy(Strategy):
 
         init_node = self._game.get_initial_states()[0][0]
         init_attr = self._game._graph.nodes[init_node]
-        self.add_state(init_node, **init_attr)
+        self.add_state(init_node, pareto=self._init_pareto_point, **init_attr)
 
         accept_node = self._game.get_accepting_states()[0]
 
@@ -311,8 +341,7 @@ class DeterministicStrategy(Strategy):
                 next_nodes = list(self._game._graph.successors(curr_node))
 
             for next_node in next_nodes:
-                attr = self._game._graph.nodes[next_node]
-
+                attr = tpg._graph.nodes[next_node]
                 if next_node not in tpg._graph[curr_node]:
                     continue
 
@@ -403,6 +432,79 @@ class DeterministicStrategy(Strategy):
         self.curr_state = next_state
 
         return random.choice(actions), next_state
+
+    def get_max_cost_runs(self, epsilon: int = 5):
+        """
+        """
+        if not hasattr(self, '_graph'):
+            raise Exception('Please construct a strategy graph first')
+
+        init_node = self.get_initial_states()[0][0]
+        max_elems = list(range(len(self._init_pareto_point)))
+
+        run = []
+        play = []
+        payoff = []
+        observation = []
+
+        visited = []
+        visited.append(init_node)
+        search_queue = queue.Queue()
+        search_queue.put((init_node, max_elems, run, play, payoff, observation))
+
+        runs = defaultdict(lambda: [])
+        plays = defaultdict(lambda: [])
+        payoffs = defaultdict(lambda: [])
+        observations = defaultdict(lambda: [])
+
+        while not search_queue.empty():
+            curr_node, max_elems, run, play, payoff, observation = search_queue.get()
+            curr_pareto = self._graph.nodes[curr_node].get('pareto')
+            curr_player = self._graph.nodes[curr_node].get('player')
+
+            curr_accepting = self._graph.nodes[curr_node].get('originalAccepting')
+
+            for next_node in self._graph.successors(curr_node):
+
+                if len(list(self._graph[curr_node][next_node].keys())) != 1:
+                    print(self._graph[curr_node][next_node])
+
+                edge_attr = self._graph[curr_node][next_node][0]
+                weights = np.array(list(edge_attr.get('weights').values()))
+                actions = edge_attr.get('actions')
+                obs = self._graph.nodes[next_node].get('ap')
+
+                if next_node == self.get_accepting_states()[0]:
+                    for e in max_elems:
+                        runs[self._init_pareto_point[e]].append(run)
+                        plays[self._init_pareto_point[e]].append(play)
+                        payoffs[self._init_pareto_point[e]].append(payoff)
+                        observations[self._init_pareto_point[e]].append(observation)
+                        continue
+
+                if curr_player == 'eve':
+                    visited.append(next_node)
+                    search_queue.put((next_node, max_elems, run + [next_node], play + [actions], payoff + [weights], observation + [obs]))
+                    continue
+
+                # The last transition does not contain any edge weights,
+                # so just check whether the next node is accepting.
+
+                next_pareto = self._graph.nodes[next_node].get('pareto')
+
+                next_max_elems = []
+                curr_trans_pareto = curr_pareto-weights
+                for i, (curr_p, next_p) in enumerate(zip(curr_trans_pareto, next_pareto)):
+                    if i not in max_elems:
+                        continue
+                    if np.around(curr_p, epsilon) == np.around(next_p, epsilon):
+                        next_max_elems.append(i)
+
+                if len(next_max_elems) != 0:
+                    visited.append(next_node)
+                    search_queue.put((next_node, next_max_elems, run + [next_node], play + [actions], payoff + [weights], observation + [obs]))
+
+        return runs, plays, payoffs, observations
 
 
 class StochasticStrategy(Strategy):

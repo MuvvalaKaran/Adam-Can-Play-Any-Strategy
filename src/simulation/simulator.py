@@ -1,12 +1,11 @@
 import numpy as np
 from collections import defaultdict
-from typing import Type, List, Tuple, Any, Dict, Union, Set
+from typing import List, Any, Union
 import matplotlib.pyplot as plt
 
 from .logger import Logger
-from ..prism.strategy import Strategy, ActionSequenceStrategy, RandomStrategy
-from ..graph.two_player_graph import TwoPlayerGraph
-from ..graph.product import ProductAutomaton
+from src.prism.strategy import Strategy, ActionSequenceStrategy, RandomStrategy, InteractiveStrategy
+from src.graph.product import ProductAutomaton
 from wombats.systems.minigrid import MultiAgentMiniGridEnv
 
 Result = Any
@@ -38,7 +37,7 @@ class Simulator:
         self._sys_actions = []
         self._env_actions = []
         self._sys_grid = np.zeros((self._env_width, self._env_height))
-        self._env_grid = np.zeros((self._env_width, self._env_height))
+        # self._env_grid = np.zeros((self._env_width, self._env_height))
 
     def run(self, iterations: int = 1, plot: bool = True, debug: bool = False,
         **kwargs) -> List[Result]:
@@ -90,7 +89,7 @@ class Simulator:
         raise NotImplementedError('Not yet!')
 
     def run_turn_based_game(self, sys_strategy: Strategy = None, sys_actions: Actions = None,
-                             env_strategy: Strategy = None, env_actions: Actions = None,
+                             env_strategy: Union[Strategy, str] = None, env_actions: Actions = None,
                              render: bool = True, record_video: bool = True, adversarial: bool = True):
 
         self.reset_episode()
@@ -105,8 +104,8 @@ class Simulator:
         env_state, env_action, sys_state, cost = self._game.reset() # None, None, Init
 
         self._costs.append(cost)
-        pos = sys_state[0][1][0]
-        self._sys_grid[pos[0], pos[1]] += 1
+        # pos = sys_state[0][1][0]
+        # self._sys_grid[pos[0], pos[1]] += 1
 
         done = False
         steps = 0
@@ -164,10 +163,14 @@ class Simulator:
         elif sys_actions is not None:
             sys_strategy = ActionSequenceStrategy(self._game, sys_actions)
 
-        if env_strategy is None and env_actions is None:
-            env_strategy = RandomStrategy(self._game)
-        elif env_actions is not None:
+        if env_actions is not None:
             env_strategy = ActionSequenceStrategy(self._game, env_actions)
+        elif env_strategy == 'random':
+            env_strategy = RandomStrategy(self._game)
+        elif env_strategy == 'interactive':
+            env_strategy = InteractiveStrategy(self._game)
+        else:
+            raise Exception('Please provide either "env_strategy" or "env_actions".')
 
         return sys_strategy, env_strategy
 
@@ -191,7 +194,7 @@ class Simulator:
         if curr_player == 'sys':
             self._sys_actions.append(action)
             pos = state[0][1][0]
-            self._sys_grid[pos[0], pos[1]] += 1
+            # self._sys_grid[pos[0], pos[1]] += 1
         else:
             self._env_actions.append(action)
             # pos = state[0][1][0]

@@ -81,17 +81,39 @@ class TwoPlayerGraph(Graph):
                                 end_name,
                                 **attr)
 
-        self.dump_to_yaml()
-
-    def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
+    def fancy_graph(self, color=("lightgrey", "red", "purple"),
+        start_node: str=None, n_neighbor: int=3,**kwargs) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
         """
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
+        node_names = [n[0] for n in nodes]
+
+        # If start_node is given, plot a partial graph
+        nodes_to_plot = None
+        edges_to_plot = None
+        if start_node is not None and start_node not in node_names:
+            search_queue = queue.Queue()
+            search_queue.put((0, start_node))
+            nodes_to_plot = []
+            edges_to_plot = []
+            while not search_queue.empty():
+                ith, u_node = search_queue.get()
+                if ith == n_neighbor:
+                    continue
+                for v_node in self._game._graph.successors(u_node):
+                    if v_node not in nodes_to_plot:
+                        nodes_to_plot.append(v_node)
+                        edges_to_plot.append((u_node, v_node))
+                        search_queue.put((ith+1, v_node))
+
         for n in nodes:
-            obs = n[1].get('observation')
+            if nodes_to_plot is not None and n[0] not in nodes_to_plot:
+                continue
+
+            obs = n[1].get('ap')
             if len(obs) == 0:
                 obs = ''
             else:
@@ -114,12 +136,18 @@ class TwoPlayerGraph(Graph):
 
         # load the weights to illustrate on the graph
         for counter, edge in enumerate(edges):
+            if edges_to_plot is not None and (edge[0], edge[1]) not in edges_to_plot:
+                continue
+
+            weight = edge[2].get('weight')
+            weight_label = '' if weight is None else str(weight)
+            label = str(edge[2].get('actions')) + weight_label
             if edge[2].get('strategy') is True:
                 # dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')), _attributes={'color': 'red'})
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')), _attributes={'color': 'red'})
+                dot.edge(str(edge[0]), str(edge[1]), label=label, _attributes={'color': 'red'})
             else:
                 # dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')))
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')))
+                dot.edge(str(edge[0]), str(edge[1]), label=label)
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
@@ -309,6 +337,7 @@ class TwoPlayerGraphBuilder(Builder):
                  graph_name: str,
                  config_yaml: str,
                  minigrid = None,
+                 n_step: int = None,
                  save_flag: bool = False,
                  from_file: bool = False,
                  pre_built: bool = False,   # TODO: Delete
@@ -327,7 +356,7 @@ class TwoPlayerGraphBuilder(Builder):
             graph_yaml = self._from_yaml(config_yaml)
 
         if graph_yaml is None and minigrid is not None:
-            graph_yaml = self._from_minigrid(minigrid)
+            graph_yaml = self._from_minigrid(minigrid, n_step)
 
         self._instance.construct_graph(graph_yaml)
 
@@ -341,8 +370,8 @@ class TwoPlayerGraphBuilder(Builder):
 
         return config_data
 
-    def _from_minigrid(self, minigrid_environment) -> dict:
-        config_data = minigrid_environment.extract_two_player_game()
+    def _from_minigrid(self, minigrid_environment, n_step) -> dict:
+        config_data = minigrid_environment.extract_two_player_game(n_step)
 
         # Translate minigrid player to this library's player names
         node_names = list(config_data['nodes'].keys())

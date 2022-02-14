@@ -48,7 +48,6 @@ class ProductAutomaton(TwoPlayerGraph):
         self._transitions = defaultdict(lambda: defaultdict(lambda: None))
 
         self._absorbing = absorbing
-        self._finite = finite
 
         self._plot_auto_graph = plot_auto_graph
         self._plot_trans_graph = plot_trans_graph
@@ -79,7 +78,8 @@ class ProductAutomaton(TwoPlayerGraph):
         TwoPlayerGraph.__init__(self,
                                 graph_name=graph_name,
                                 config_yaml=config_yaml,
-                                save_flag=save_flag)
+                                save_flag=save_flag,
+                                finite=finite)
 
     def get_attr(self, key: str, attr_name: str, attr_dict: Dict):
         if key not in self._default_attr:

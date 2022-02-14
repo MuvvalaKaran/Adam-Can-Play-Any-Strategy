@@ -17,10 +17,12 @@ from graphviz import Digraph
 
 class TwoPlayerGraph(Graph):
 
-    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False) -> 'TwoPlayerGraph()':
+    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False,
+                 finite: bool = True) -> 'TwoPlayerGraph()':
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
         self._graph_name = graph_name
         self._graph = nx.MultiDiGraph(name=graph_name)
+        self._finite = finite
 
     @property
     def graph_name(self):
@@ -52,8 +54,15 @@ class TwoPlayerGraph(Graph):
 
         self._graph_yaml = graph_yaml
 
+        if isinstance(graph_yaml['nodes'], list):
+            nodes = defaultdict(lambda: {})
+            for (node_name, attr) in graph_yaml['nodes']:
+                nodes[node_name] = attr
+        else:
+            nodes = graph_yaml['nodes']
+
         # add nodes
-        for node_name, attr in graph_yaml['nodes'].items():
+        for node_name, attr in nodes.items():
 
             self.add_state(node_name)
 
@@ -66,8 +75,16 @@ class TwoPlayerGraph(Graph):
 
                 self.add_initial_state(node_name)
 
+        if isinstance(graph_yaml['edges'], list):
+            edges = defaultdict(lambda: {})
+            for u, v, attr in graph_yaml['edges']:
+                edges[u][v] = attr
+        else:
+            edges = graph_yaml['edges']
+
+
         # add edges
-        for start_name, edge_dict in graph_yaml['edges'].items():
+        for start_name, edge_dict in edges.items():
             for end_name, attr in edge_dict.items():
                 # Identify if it has multiple edges betw. the start and end node
                 are_all_keys_integers = all([isinstance(a, int) for a in attr.keys()])
@@ -281,8 +298,6 @@ class TwoPlayerGraph(Graph):
         for cycle in cycles_:
             cycles.append([cycle[0], cycle[1]])
         return cycles
-        # return list(nx.simple_cycles(self._graph))
-        # return list(nx.strongly_connected_components(self._graph))
 
     def get_selfloops(self) -> List:
         """
@@ -371,7 +386,7 @@ class TwoPlayerGraphBuilder(Builder):
         return config_data
 
     def _from_minigrid(self, minigrid_environment, n_step) -> dict:
-        config_data = minigrid_environment.extract_two_player_game(n_step)
+        config_data = minigrid_environment.extract_transition_system(n_step)
 
         # Translate minigrid player to this library's player names
         node_names = list(config_data['nodes'].keys())

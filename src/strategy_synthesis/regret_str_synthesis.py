@@ -6,6 +6,7 @@ import random
 import sys
 import operator
 
+import networkx as nx
 import numpy as np
 from numpy import ndarray
 from collections import defaultdict, deque
@@ -329,7 +330,7 @@ class RegretMinimizationStrategySynthesis:
 
         # init state value
         _init_state = self.graph.get_initial_states()[0][0]
-        min_max_value = comp_mcr_solver.state_value_dict[_init_state].item() * 1.2
+        min_max_value = comp_mcr_solver.state_value_dict[_init_state] * 1.2
         # min_max_value = comp_mcr_solver.state_value_dict[_init_state].item()
         min_max_value = math.ceil(min_max_value)
         # min_max_value = 6
@@ -442,13 +443,7 @@ class RegretMinimizationStrategySynthesis:
 
         _max_bounded_str_value = min_max_val
 
-        _graph_of_utls = graph_factory.get("TwoPlayerGraph",
-                                           graph_name="graph_of_utls_TWA",
-                                           config_yaml="/config/graph_of_ults_TWA",
-                                           save_flag=True,
-                                           pre_built=False,
-                                           from_file=False,
-                                           plot=False)
+        _graph_of_utls = TwoPlayerGraph("graph_of_utls_TWA", "config/graph_of_ults_TWA", True)
 
         # get initial states
         _init_state = self.graph.get_initial_states()[0][0]
@@ -544,13 +539,8 @@ class RegretMinimizationStrategySynthesis:
     def _new_construct_graph_of_best_alternatives(self,
                                                  twa_game: TwoPlayerGraph,
                                                  best_alt_values_dict: Dict) -> TwoPlayerGraph:
-        _graph_of_alts = graph_factory.get("TwoPlayerGraph",
-                                           graph_name="graph_of_alts_TWA",
-                                           config_yaml="/config/graph_of_alts_TWA",
-                                           save_flag=True,
-                                           pre_built=False,
-                                           from_file=False,
-                                           plot=False)
+
+        _graph_of_alts = TwoPlayerGraph("graph_of_alts_TWA", "config/graph_of_alts_TWA", True)
 
         # get the set of best alternatives - will already include inf
         _best_alt_set = set(best_alt_values_dict.values())

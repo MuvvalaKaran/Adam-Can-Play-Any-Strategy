@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from .logger import Logger
 from src.prism.strategy import Strategy, ActionSequenceStrategy, RandomStrategy, InteractiveStrategy
 from src.graph.product import ProductAutomaton
-from wombats.systems.minigrid import MultiAgentMiniGridEnv
 
 Result = Any
 Actions = None
@@ -18,7 +17,7 @@ class Simulator:
 
     _results = []
 
-    def __init__(self, env: MultiAgentMiniGridEnv, game: ProductAutomaton):
+    def __init__(self, env, game: ProductAutomaton):
         self._env = env
         self._env_width = self._env.unwrapped.width
         self._env_height = self._env.unwrapped.height

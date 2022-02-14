@@ -1,7 +1,7 @@
 import warnings
 import queue
 import math
-
+import networkx as nx
 from graphviz import Digraph
 
 # local packages
@@ -11,8 +11,9 @@ from ..factory.builder import Builder
 
 class FiniteTransSys(TwoPlayerGraph):
 
-    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
-        TwoPlayerGraph.__init__(self, graph_name, config_yaml, save_flag)
+    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False,
+                 finite: bool = True):
+        TwoPlayerGraph.__init__(self, graph_name, config_yaml, save_flag, finite)
 
     def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
         """
@@ -68,7 +69,7 @@ class FiniteTransSys(TwoPlayerGraph):
         eve_node_lst = []
         adam_node_lst = []
         two_player_graph_ts = FiniteTransSys(self._graph_name, self._config_yaml, self._save_flag)
-        two_player_graph_ts.construct_graph()
+        two_player_graph_ts._graph = nx.MultiDiGraph(name=self._graph_name)
 
         # lets create k copies of the states
         for _n in self._graph.nodes():
@@ -183,7 +184,8 @@ class FiniteTransSys(TwoPlayerGraph):
         :return: An instance of the FiniteTransSys that contains both the env(adam) and sys(eve) nodes
         """
         raw_trans_name = "raw" + graph_name
-        trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}", save_flag=save_flag)
+        trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}",
+                                   save_flag=save_flag, finite=finite)
         trans_sys._graph = raw_ts._graph
         if finite:
             trans_sys._sanity_check_finite(debug=debug)
@@ -364,10 +366,23 @@ class TransitionSystemBuilder(Builder):
         if pre_built and built_in_ts_name == "":
             raise TypeError("Using the built in transition system. enter a valid transition system name.")
 
-        self._instance = FiniteTransSys(graph_name, config_yaml, save_flag=save_flag)
-        # self._instance.construct_graph()
+        self._instance = FiniteTransSys(graph_name, config_yaml, save_flag=save_flag, finite=finite)
+        self._instance._graph = nx.MultiDiGraph(name=graph_name)
 
-        if raw_trans_sys:
+        # load dict with function calls
+        self._load_pre_built()
+
+        if pre_built:
+            self._instance = self._from_built_in_ts(built_in_ts_name,
+                                                    graph_name,
+                                                    config_yaml,
+                                                    save_flag,
+                                                    debug,
+                                                    plot,
+                                                    human_intervention,
+                                                    plot_raw_ts)
+
+        elif raw_trans_sys:
             if not isinstance(raw_trans_sys, FiniteTransSys):
                 raise TypeError(f"Please ensure that the raw transition system is of type {FiniteTransSys.__name__}. \n"
                                 f"If you are trying to constructing a two player graph with sys(eve) and env(adam) nodes"
@@ -420,6 +435,16 @@ class TransitionSystemBuilder(Builder):
                                           plot_raw_ts=plot_raw_ts,
                                           finite=finite,
                                           debug=debug)
+
+    def _load_pre_built(self):
+        """
+        A method to load the _pre_built dict with function calls to built in functions that create an
+         concrete instance of FiniteTransitionSystem
+
+        effect: Updates the built-in _pre_built dict with their respective keys and function calls as values
+        """
+        self._pre_built.update({"three_state_ts": self._instance.get_three_state_ts})
+        self._pre_built.update({"five_state_ts": self._instance.get_five_state_ts})
 
     def _from_built_in_ts(self,
                           ts_name: str,

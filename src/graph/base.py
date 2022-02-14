@@ -176,14 +176,6 @@ class Graph(abc.ABC):
         config_file_add = os.path.join(Graph._get_project_root_directory(), config_file_name)
         print(config_file_add)
 
-        # edges = {}
-        # for u, v, attr in self._graph.edges.data():
-        #     if u not in edges:
-        #         edges[u] = {}
-        #     if v not in edges[u]:
-        #         edges[u][v] = {}
-        #     edges[u][v] = attr
-
         data_dict = dict(
                 alphabet_size=len(self._graph.edges()),
                 num_states=len(self._graph.nodes),
@@ -191,8 +183,6 @@ class Graph(abc.ABC):
                 start_state=self.get_initial_states()[0][0],
                 nodes=[node for node in self._graph.nodes.data()],
                 edges=[edge for edge in self._graph.edges.data()],
-                # nodes={node: attr for node, attr in self._graph.nodes.data()},
-                # edges=edges
         )
 
         directory = os.path.dirname(config_file_add)

@@ -32,4 +32,4 @@ envname.yml
 
 **/.DS_Store
 **/*.png
-examples/**/config
+# examples/**/config

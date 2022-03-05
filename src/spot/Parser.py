@@ -1,5 +1,6 @@
 from ..spot.lexer import get_lexer
 import itertools
+import warnings
 
 
 class Expression(object):
@@ -10,6 +11,12 @@ class Expression(object):
 
     def check(self, label):
         raise NotImplementedError()
+
+    def _check_none(self, label):
+        if label is None:
+            warnings.warn("Convert NoneType to an empty string")
+            return ''
+        return label
 
     def distance(self, label):
         raise NotImplementedError()
@@ -34,6 +41,7 @@ class SymbolExpression(Expression):
         return []
 
     def check(self, label):
+        label = self._check_none(label)
         return self.symbol in label
 
     def distance(self, label):
@@ -59,6 +67,7 @@ class NotSymbolExpression(Expression):
         return []
 
     def check(self, label):
+        label = self._check_none(label)
         return self.symbol not in label
 
     def distance(self, label):
@@ -108,6 +117,7 @@ class NotExpression(Expression):
         return [self.inner]
 
     def check(self, label):
+        label = self._check_none(label)
         return not self.inner.check(label)
 
     def nnf(self):
@@ -152,6 +162,7 @@ class ORExpression(BinExpression):
         return "ORExpression(%s, %s)" % (str(self.left), str(self.right))
 
     def check(self, label):
+        label = self._check_none(label)
         return self.left.check(label) or self.right.check(label)
 
     def distance(self, label):
@@ -167,6 +178,7 @@ class ANDExpression(BinExpression):
         return "ANDExpression(%s, %s)" % (str(self.left), str(self.right))
 
     def check(self, label):
+        label = self._check_none(label)
         return self.left.check(label) and self.right.check(label)
 
     def distance(self, label):

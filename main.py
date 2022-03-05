@@ -12,9 +12,10 @@ from src.graph import ProductAutomaton
 from src.graph import TwoPlayerGraph
 
 # import available str synthesis methods
-from src.strategy_synthesis import RegMinStrSyn
-from src.strategy_synthesis import ReachabilitySolver
-from src.strategy_synthesis import IrosStrSolver
+from src.strategy_synthesis.regret_str_synthesis \
+    import RegretMinimizationStrategySynthesis as RegMinStrSyn
+from src.strategy_synthesis.adversarial_game import ReachabilityGame as ReachabilitySolver
+from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -29,14 +30,20 @@ class GraphInstanceConstructionBase(abc.ABC):
     human_intervention_cost: int = 0
     human_non_intervention_cost: int = 0
 
-    def __init__(self, _finite: bool, _plot_ts: bool, _plot_dfa: bool, _plot_prod: bool):
+    def __init__(self,
+                 _finite: bool,
+                 _plot_ts: bool,
+                 _plot_dfa: bool,
+                 _plot_prod: bool):
         self.finite = _finite
         self.plot_ts = _plot_ts
         self.plot_dfa = _plot_dfa
         self.plot_product = _plot_prod
+
         self._trans_sys: Optional[FiniteTransSys] = None
         self._dfa: Optional[DFAGraph] = None
         self._product_automaton: Optional[ProductAutomaton] = None
+
         self._build_ts()
         self._build_dfa()
         self._build_product()
@@ -52,9 +59,9 @@ class GraphInstanceConstructionBase(abc.ABC):
     def _build_product(self):
         self._product_automaton = graph_factory.get('ProductGraph',
                                                     graph_name='product_automaton',
-                                                    config_yaml='/config/product_automaton',
+                                                    config_yaml='config/product_automaton',
                                                     trans_sys=self._trans_sys,
-                                                    dfa=self._dfa,
+                                                    automaton=self._dfa,
                                                     save_flag=True,
                                                     prune=False,
                                                     debug=False,
@@ -99,14 +106,16 @@ class EdgeWeightedArena(GraphInstanceConstructionBase):
         if self.graph_type == "twa":
             self._product_automaton = graph_factory.get("TwoPlayerGraph",
                                                         graph_name="target_weighted_arena",
-                                                        config_yaml="/config/target_weighted_arena",
+                                                        config_yaml="config/target_weighted_arena",
+                                                        from_file=True,
                                                         save_flag=True,
                                                         pre_built=True,
                                                         plot=self.plot_product)
         elif self.graph_type == "ewa":
             self._product_automaton = graph_factory.get("TwoPlayerGraph",
                                                         graph_name="edge_weighted_arena",
-                                                        config_yaml="/config/edge_weighted_arena",
+                                                        config_yaml="config/edge_weighted_arena",
+                                                        from_file=True,
                                                         save_flag=True,
                                                         pre_built=True,
                                                         plot=self.plot_product)
@@ -137,7 +146,8 @@ class VariantOneGraph(GraphInstanceConstructionBase):
     def _build_product(self):
         self._product_automaton = graph_factory.get("TwoPlayerGraph",
                                                     graph_name="two_player_graph",
-                                                    config_yaml="/config/two_player_graph",
+                                                    config_yaml="config/two_player_graph",
+                                                    from_file=True,
                                                     save_flag=True,
                                                     pre_built=True,
                                                     plot=self.plot_product)
@@ -161,7 +171,7 @@ class ThreeStateExample(GraphInstanceConstructionBase):
         self._trans_sys = graph_factory.get('TS',
                                             raw_trans_sys=None,
                                             graph_name="trans_sys",
-                                            config_yaml="/config/trans_sys",
+                                            config_yaml="config/trans_sys",
                                             pre_built=True,
                                             built_in_ts_name="three_state_ts",
                                             save_flag=True,
@@ -174,7 +184,7 @@ class ThreeStateExample(GraphInstanceConstructionBase):
     def _build_dfa(self):
         self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
-                                      config_yaml="/config/automaton",
+                                      config_yaml="config/automaton",
                                       save_flag=True,
                                       sc_ltl="F c",
                                       use_alias=False,
@@ -199,7 +209,7 @@ class FiveStateExample(GraphInstanceConstructionBase):
         self._trans_sys = graph_factory.get('TS',
                                             raw_trans_sys=None,
                                             graph_name="trans_sys",
-                                            config_yaml="/config/trans_sys",
+                                            config_yaml="config/trans_sys",
                                             pre_built=True,
                                             built_in_ts_name="five_state_ts",
                                             save_flag=True,
@@ -212,7 +222,7 @@ class FiveStateExample(GraphInstanceConstructionBase):
     def _build_dfa(self):
         self._dfa = graph_factory.get('DFA',
                                       graph_name="automaton",
-                                      config_yaml="/config/automaton",
+                                      config_yaml="config/automaton",
                                       save_flag=True,
                                       sc_ltl="!d U g",
                                       use_alias=False,
@@ -332,8 +342,8 @@ if __name__ == "__main__":
     # some constants that allow for appr _instance creations
     three_state_ts = False
     five_state_ts = False
-    variant_1_paper = False
-    target_weighted_arena = True
+    variant_1_paper = True
+    target_weighted_arena = False
 
     # solver to call
     finite_reg_synthesis = True

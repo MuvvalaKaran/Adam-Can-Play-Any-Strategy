@@ -1,0 +1,62 @@
+alphabet_size: 5
+num_states: 5
+num_obs: 3
+start_state: 't1'
+nodes:
+- !!python/tuple
+  - t1
+  - init: true
+    player: eve
+    ap: 'e'
+- !!python/tuple
+  - t2
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t3
+  - player: adam
+    ap: 'b'
+- !!python/tuple
+  - t4
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t5
+  - player: eve
+    ap: 'a'
+- !!python/tuple
+  - t6
+  - player: adam
+    ap: 'b'
+edges:
+- !!python/tuple
+  - t1
+  - t2
+  - actions: 't1_to_t2'
+    weight: 1
+- !!python/tuple
+  - t1
+  - t3
+  - actions: 't1_to_t3'
+    weight: 10
+- !!python/tuple
+  - t2
+  - t4
+  - actions: 't2_to_t4'
+    weight: 3
+- !!python/tuple
+  - t3
+  - t5
+  - actions: 't3_to_t5'
+    weight: 5
+- !!python/tuple
+  - t3
+  - t2
+  - actions: 't3_to_t2'
+    weight: 7
+- !!python/tuple
+  - t3
+  - t6
+  - actions: 't3_to_t6'
+    weight: 4
+

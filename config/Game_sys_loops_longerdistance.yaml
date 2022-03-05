@@ -1,0 +1,151 @@
+alphabet_size: 5
+num_states: 5
+num_obs: 3
+start_state: 't0'
+
+
+nodes:
+- !!python/tuple
+  - t0
+  - init: true
+    player: eve
+    ap: 'e'
+- !!python/tuple
+  - t1
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t2
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t3
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t4
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t5
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t6
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t7
+  - player: adam
+    ap: 'e'
+- !!python/tuple
+  - t8
+  - player: eve
+    ap: 'a'
+- !!python/tuple
+  - t9
+  - player: eve
+    ap: 'e'
+- !!python/tuple
+  - t10
+  - player: adam
+    ap: 'e'
+
+
+edges:
+- !!python/tuple
+  - t0
+  - t1
+  - actions: 't0_to_t1'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t1
+  - t2
+  - actions: 't1_to_t2'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t2
+  - t3
+  - actions: 't2_to_t3'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t2
+  - t6
+  - actions: 't2_to_t6'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t3
+  - t5
+  - actions: 't3_to_t5'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t5
+  - t4
+  - actions: 't5_to_t4'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t4
+  - t2
+  - actions: 't4_to_t2'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t5
+  - t7
+  - actions: 't5_to_t7'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t6
+  - t9
+  - actions: 't6_to_t9'
+    weight: 0
+    weights:
+      ts: 3
+      pref: 2
+- !!python/tuple
+  - t9
+  - t10
+  - actions: 't9_to_t10'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t10
+  - t8
+  - actions: 't10_to_t8'
+    weight: 0
+    weights:
+      ts: 0
+      pref: 0
+- !!python/tuple
+  - t7
+  - t8
+  - actions: 't7_to_t8'
+    weight: 0
+    weights:
+      ts: 2
+      pref: 3

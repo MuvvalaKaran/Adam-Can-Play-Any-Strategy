@@ -25,9 +25,10 @@ INT_MAX_VAL = 2147483647
 
 class ValueIteration:
 
-    def __init__(self, game: TwoPlayerGraph, competitive: bool = False):
+    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
         self.org_graph: Optional[TwoPlayerGraph] = copy.deepcopy(game)
         self.competitive = competitive
+        self._int_val = int_val
         self._local_graph: Optional[DiGraph] = None
         self._val_vector: Optional[ndarray] = None
         self._node_int_map: Optional[bidict] = None
@@ -235,7 +236,10 @@ class ValueIteration:
             self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
 
         # safely convert values in the last col of val vector to ints
-        _int_val_vector = self.val_vector[:, -1].astype(int)
+        if self._int_val:
+            _int_val_vector = self.val_vector[:, -1].astype(int)
+        else:
+            _int_val_vector = self.val_vector[:, -1]
 
         # update the state value dict
         for i in range(self.num_of_nodes):
@@ -248,6 +252,7 @@ class ValueIteration:
         self._str_dict = _str_dict
 
         if plot:
+            self._change_orig_graph_name(prefix='coop_str_on_')
             self._add_state_costs_to_graph()
             self.add_str_flag()
             self.org_graph.plot_graph()
@@ -256,6 +261,25 @@ class ValueIteration:
             print(f"Number of iteration to converge: {iter_var}")
             print(f"Init state value: {self.state_value_dict[_init_node]}")
             self._sanity_check()
+
+    def _change_orig_graph_name(self, prefix: str = None,
+                                      suffix: str = None,
+                                      name: str = None):
+        if all(arg is None for arg in [prefix, suffix, name]):
+            raise ValueError('Please provide at least one argument')
+
+        if name:
+            graph_name = name
+
+        graph_name = self.__org_graph._graph.name
+
+        if prefix:
+            graph_name = prefix + graph_name
+
+        if suffix:
+            graph_name = graph_name + suffix
+
+        self.__org_graph._graph.name = graph_name
 
     def solve(self, debug: bool = False, plot: bool = False):
         """
@@ -320,7 +344,10 @@ class ValueIteration:
             self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
 
         # safely convert values in the last col of val vector to ints
-        _int_val_vector = self.val_vector[:, -1].astype(int)
+        if self._int_val:
+            _int_val_vector = self.val_vector[:, -1].astype(int)
+        else:
+            _int_val_vector = self.val_vector[:, -1]
 
         # update the state value dict
         for i in range(self.num_of_nodes):
@@ -345,6 +372,7 @@ class ValueIteration:
         self._str_dict = {**_max_str_dict, **_min_str_dict}
 
         if plot:
+            self._change_orig_graph_name(prefix='adv_str_on_')
             self._add_state_costs_to_graph()
             self.add_str_flag()
             self.org_graph.plot_graph()
@@ -455,7 +483,7 @@ class ValueIteration:
         """
 
         for _n in self.org_graph._graph.nodes():
-            self.org_graph.add_state_attribute(_n, "ap", self.state_value_dict[_n])
+            self.org_graph.add_state_attribute(_n, "val", self.state_value_dict[_n])
 
     def add_str_flag(self):
         """

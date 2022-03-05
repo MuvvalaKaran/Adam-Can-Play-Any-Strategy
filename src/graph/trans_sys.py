@@ -1,8 +1,8 @@
 import warnings
+import queue
 import math
-
+import networkx as nx
 from graphviz import Digraph
-from typing import List, Tuple, Dict, Optional
 
 # local packages
 from .two_player_graph import TwoPlayerGraph
@@ -11,16 +11,18 @@ from ..factory.builder import Builder
 
 class FiniteTransSys(TwoPlayerGraph):
 
-    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False):
-        TwoPlayerGraph.__init__(self, graph_name, config_yaml, save_flag)
+    def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False,
+                 finite: bool = True):
+        TwoPlayerGraph.__init__(self, graph_name, config_yaml, save_flag, finite)
 
-    def fancy_graph(self, color=("lightgrey", "red", "purple")) -> None:
+    def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
         """
         Method to create a illustration of the graph
         :return: Diagram of the graph
         """
         dot: Digraph = Digraph(name="graph")
         nodes = self._graph_yaml["nodes"]
+
         for n in nodes:
             # default color for all the nodes is grey
             ap = n[1].get('ap')
@@ -35,9 +37,9 @@ class FiniteTransSys(TwoPlayerGraph):
             if n[1].get('accepting'):
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[2], "xlabel": ap})
             if n[1].get('player') == 'eve':
-                dot.node(str(n[0]), _attributes={"shape": "rectangle", "xlabel": ap})
+                dot.node(str(n[0]), _attributes={"shape": "", "xlabel": ap})
             if n[1].get('player') == 'adam':
-                dot.node(str(n[0]), _attributes={"shape": "circle", "xlabel": ap})
+                dot.node(str(n[0]), _attributes={"shape": "rectangle", "xlabel": ap})
 
         # add all the edges
         edges = self._graph_yaml["edges"]
@@ -48,7 +50,7 @@ class FiniteTransSys(TwoPlayerGraph):
                 dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')),
                          _attributes={'color': 'red'})
             else:
-                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')))
+                dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('actions')) + ': ' + str(edge[2].get('weight')))
 
         # set graph attributes
         # dot.graph_attr['rankdir'] = 'LR'
@@ -57,7 +59,7 @@ class FiniteTransSys(TwoPlayerGraph):
 
         if self._save_flag:
             graph_name = str(self._graph.__getattribute__('name'))
-            self.save_dot_graph(dot, graph_name, True)
+            self.save_dot_graph(dot, graph_name, **kwargs)
 
     # a function to construct the two game automatically in code. K = # of times the human can intervene
     def automate_construction(self, k: int):
@@ -67,7 +69,7 @@ class FiniteTransSys(TwoPlayerGraph):
         eve_node_lst = []
         adam_node_lst = []
         two_player_graph_ts = FiniteTransSys(self._graph_name, self._config_yaml, self._save_flag)
-        two_player_graph_ts.construct_graph()
+        two_player_graph_ts._graph = nx.MultiDiGraph(name=self._graph_name)
 
         # lets create k copies of the states
         for _n in self._graph.nodes():
@@ -182,7 +184,8 @@ class FiniteTransSys(TwoPlayerGraph):
         :return: An instance of the FiniteTransSys that contains both the env(adam) and sys(eve) nodes
         """
         raw_trans_name = "raw" + graph_name
-        trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}", save_flag=save_flag)
+        trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}",
+                                   save_flag=save_flag, finite=finite)
         trans_sys._graph = raw_ts._graph
         if finite:
             trans_sys._sanity_check_finite(debug=debug)
@@ -227,7 +230,8 @@ class FiniteTransSys(TwoPlayerGraph):
 
         raw_trans_name = "raw" + graph_name
         trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}", save_flag=save_flag)
-        trans_sys.construct_graph()
+        # trans_sys.construct_graph()
+        trans_sys._graph = nx.MultiDiGraph(name=graph_name)
 
         trans_sys.add_states_from(['s1', 's2', 's3'])
         trans_sys.add_state_attribute('s1', 'ap', 'b')
@@ -284,7 +288,8 @@ class FiniteTransSys(TwoPlayerGraph):
 
         raw_trans_name = "raw" + graph_name
         trans_sys = FiniteTransSys(raw_trans_name, f"config/{raw_trans_name}", save_flag=save_flag)
-        trans_sys.construct_graph()
+        # trans_sys.construct_graph()
+        trans_sys._graph = nx.MultiDiGraph(name=graph_name)
 
         trans_sys.add_states_from(['s1', 's2', 's3', 's4', 's5'])
         trans_sys.add_state_attribute('s1', 'ap', 'b')
@@ -361,8 +366,8 @@ class TransitionSystemBuilder(Builder):
         if pre_built and built_in_ts_name == "":
             raise TypeError("Using the built in transition system. enter a valid transition system name.")
 
-        self._instance = FiniteTransSys(graph_name, config_yaml, save_flag=save_flag)
-        self._instance.construct_graph()
+        self._instance = FiniteTransSys(graph_name, config_yaml, save_flag=save_flag, finite=finite)
+        self._instance._graph = nx.MultiDiGraph(name=graph_name)
 
         # load dict with function calls
         self._load_pre_built()
@@ -393,6 +398,10 @@ class TransitionSystemBuilder(Builder):
                                            debug)
         elif from_file:
             self._instance._graph_yaml = self._from_yaml(config_yaml)
+            self._instance.build_graph_from_file()
+
+        if plot:
+            self._instance.plot_graph()
 
         return self._instance
 

@@ -1,0 +1,151 @@
+alphabet_size: 7
+edges:
+- !!python/tuple
+  - &id007 !!python/tuple
+    - Init
+    - T0_init
+  - &id001 !!python/tuple
+    - ('s0', 's0', 's0')
+    - T0_init
+  - actions: Init_to_('s0', 's0', 's0')
+    ap: ''
+    label: '{''ts'': 0, ''pref'': 0, ''actions'': "Init_to_(''s0'', ''s0'', ''s0'')"}'
+    weight: 0
+    weights:
+      pref: 0
+      ts: 0
+- !!python/tuple
+  - *id001
+  - &id002 !!python/tuple
+    - ('s1', 's0', 's0')
+    - T0_S4
+  - actions: move_o1_o1_box
+    ap: &id008 !!set
+      o1: null
+    label: '{''ts'': 1, ''pref'': 0, ''actions'': ''move_o1_o1_box''}'
+    weight: 1
+    weights:
+      pref: 0
+      ts: 1
+- !!python/tuple
+  - *id002
+  - &id003 !!python/tuple
+    - ('s1', 's1', 's0')
+    - T0_S1
+  - actions: move_o2_o2_box
+    ap: &id009 !!set
+      o1: null
+      o2: null
+    label: '{''ts'': 1, ''pref'': 0, ''actions'': ''move_o2_o2_box''}'
+    weight: 1
+    weights:
+      pref: 0
+      ts: 1
+- !!python/tuple
+  - *id002
+  - &id004 !!python/tuple
+    - ('s1', 's0', 's1')
+    - T0_S2
+  - actions: move_o3_o3_box
+    ap: &id010 !!set
+      o1: null
+      o3: null
+    label: '{''ts'': 1, ''pref'': 0, ''actions'': ''move_o3_o3_box''}'
+    weight: 1
+    weights:
+      pref: 0
+      ts: 1
+- !!python/tuple
+  - *id003
+  - &id005 !!python/tuple
+    - ('s1', 's1', 's1')
+    - accept_all
+  - actions: move_o3_o3_box
+    ap: &id006 !!set
+      o1: null
+      o2: null
+      o3: null
+    label: '{''ts'': 1, ''pref'': 0, ''actions'': ''move_o3_o3_box''}'
+    weight: 0
+    weights:
+      pref: 0
+      ts: 1
+- !!python/tuple
+  - *id004
+  - *id005
+  - actions: move_o2_o2_box
+    ap: *id006
+    label: '{''ts'': 1, ''pref'': 0, ''actions'': ''move_o2_o2_box''}'
+    weight: 0
+    weights:
+      pref: 0
+      ts: 1
+- !!python/tuple
+  - *id005
+  - Accepting
+  - actions: !!set
+      toAcceptingByadam: null
+    label: '{''ts'': 0.0, ''pref'': 0, ''actions'': {''toAcceptingByadam''}}'
+    player: adam
+    pref: 1
+    weight: 0.0
+    weights:
+      pref: 0
+      ts: 0.0
+nodes:
+- !!python/tuple
+  - *id007
+  - ap: ''
+    dfa: T0_init
+    init: true
+    label: '[[3. 0.]]'
+    player: eve
+    ts: Init
+- !!python/tuple
+  - *id001
+  - ap: ''
+    dfa: T0_init
+    label: '[[3. 0.]]'
+    player: eve
+    ts: ('s0', 's0', 's0')
+- !!python/tuple
+  - *id002
+  - ap: *id008
+    dfa: T0_S4
+    label: '[[2. 0.]]'
+    player: adam
+    ts: ('s1', 's0', 's0')
+- !!python/tuple
+  - *id003
+  - ap: *id009
+    dfa: T0_S1
+    label: '[[1. 0.]]'
+    player: eve
+    ts: ('s1', 's1', 's0')
+- !!python/tuple
+  - *id004
+  - ap: *id010
+    dfa: T0_S2
+    label: '[[1. 0.]]'
+    player: eve
+    ts: ('s1', 's0', 's1')
+- !!python/tuple
+  - *id005
+  - accepting: false
+    ap: *id006
+    dfa: accept_all
+    label: '[[0. 0.]]'
+    originalAccepting: true
+    player: adam
+    ts: ('s1', 's1', 's1')
+- !!python/tuple
+  - Accepting
+  - accepting: true
+    ap: ''
+    dfa: null
+    label: '[[0. 0.]]'
+    player: eve
+    ts: null
+num_obs: 3
+num_states: 7
+start_state: *id007

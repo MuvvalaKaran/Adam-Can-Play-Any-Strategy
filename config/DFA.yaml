@@ -1,0 +1,60 @@
+alphabet_size: 8
+edges:
+  T0_S1:
+    T0_S1:
+      formulas:
+      - (!(o1))
+      probabilities:
+      - 0.5
+    accept_all:
+      formulas:
+      - (o1)
+      probabilities:
+      - 0.5
+  T0_S3:
+    T0_S3:
+      formulas:
+      - (!(o0))
+      probabilities:
+      - 0.5
+    accept_all:
+      formulas:
+      - (o0)
+      probabilities:
+      - 0.5
+  T0_init:
+    T0_S1:
+      formulas:
+      - ((o0) && (!(o1)))
+      probabilities:
+      - 0.3333333333333333
+    T0_S3:
+      formulas:
+      - ((!(o0)) && (o1))
+      probabilities:
+      - 0.3333333333333333
+    T0_init:
+      formulas:
+      - ((!(o0)) && (!(o1)))
+      probabilities:
+      - 0.3333333333333333
+  accept_all:
+    accept_all:
+      formulas:
+      - '1'
+      probabilities:
+      - 1.0
+nodes:
+  T0_S1:
+    final_probability: 0
+  T0_S3:
+    final_probability: 0
+  T0_init:
+    final_probability: 0
+    init: true
+  accept_all:
+    accepting: true
+    final_probability: 1
+num_obs: 3
+num_states: 4
+start_state: T0_init

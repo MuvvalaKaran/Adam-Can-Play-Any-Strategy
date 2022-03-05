@@ -7,6 +7,38 @@ edges:
       formula: '1'
     guard_formula: '1'
 - !!python/tuple
+  - T0_init
+  - accept_all
+  - guard: !!python/object:src.spot.Parser.SymbolExpression
+      formula: (g)
+      name: g
+      symbol: g
+    guard_formula: (g)
+- !!python/tuple
+  - T0_init
+  - T0_init
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((!(d)) && (!(g)))
+      left: !!python/object:src.spot.Parser.NotSymbolExpression
+        name: '!d'
+        symbol: d
+      right: !!python/object:src.spot.Parser.NotSymbolExpression
+        name: '!g'
+        symbol: g
+    guard_formula: ((!(d)) && (!(g)))
+- !!python/tuple
+  - T0_init
+  - T0_S2
+  - guard: !!python/object:src.spot.Parser.ANDExpression
+      formula: ((d) && (!(g)))
+      left: !!python/object:src.spot.Parser.SymbolExpression
+        name: d
+        symbol: d
+      right: !!python/object:src.spot.Parser.NotSymbolExpression
+        name: '!g'
+        symbol: g
+    guard_formula: ((d) && (!(g)))
+- !!python/tuple
   - T0_S2
   - T0_S2
   - guard: !!python/object:src.spot.Parser.SymbolExpression
@@ -14,48 +46,16 @@ edges:
       name: 'true'
       symbol: 'true'
     guard_formula: (true)
-- !!python/tuple
-  - T0_init
-  - accept_all
-  - guard: !!python/object:src.spot.Parser.SymbolExpression
-      formula: (water_blue_open)
-      name: water_blue_open
-      symbol: water_blue_open
-    guard_formula: (water_blue_open)
-- !!python/tuple
-  - T0_init
-  - T0_init
-  - guard: !!python/object:src.spot.Parser.ANDExpression
-      formula: ((!(lava_red_open)) && (!(water_blue_open)))
-      left: !!python/object:src.spot.Parser.NotSymbolExpression
-        name: '!lava_red_open'
-        symbol: lava_red_open
-      right: !!python/object:src.spot.Parser.NotSymbolExpression
-        name: '!water_blue_open'
-        symbol: water_blue_open
-    guard_formula: ((!(lava_red_open)) && (!(water_blue_open)))
-- !!python/tuple
-  - T0_init
-  - T0_S2
-  - guard: !!python/object:src.spot.Parser.ANDExpression
-      formula: ((lava_red_open) && (!(water_blue_open)))
-      left: !!python/object:src.spot.Parser.SymbolExpression
-        name: lava_red_open
-        symbol: lava_red_open
-      right: !!python/object:src.spot.Parser.NotSymbolExpression
-        name: '!water_blue_open'
-        symbol: water_blue_open
-    guard_formula: ((lava_red_open) && (!(water_blue_open)))
 nodes:
 - !!python/tuple
   - accept_all
   - accepting: true
 - !!python/tuple
-  - T0_S2
-  - {}
-- !!python/tuple
   - T0_init
   - init: true
+- !!python/tuple
+  - T0_S2
+  - {}
 num_obs: 3
 num_states: 3
 start_state: T0_init

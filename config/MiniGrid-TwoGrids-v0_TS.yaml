@@ -1,0 +1,229 @@
+alphabet_size: 4
+edges:
+- !!python/tuple
+  - (1, 1), right
+  - (1, 1), right
+  - fontcolor: blue
+    label: north
+    probability: 0.25
+    symbol: north
+- !!python/tuple
+  - (1, 1), right
+  - (1, 1), right
+  - fontcolor: blue
+    label: south
+    probability: 0.25
+    symbol: south
+- !!python/tuple
+  - (1, 1), right
+  - (1, 1), right
+  - fontcolor: blue
+    label: west
+    probability: 0.25
+    symbol: west
+- !!python/tuple
+  - (1, 1), right
+  - (2, 1), right
+  - fontcolor: blue
+    label: east
+    probability: 0.25
+    symbol: east
+- !!python/tuple
+  - (2, 1), right
+  - (2, 1), right
+  - fontcolor: blue
+    label: north
+    probability: 0.25
+    symbol: north
+- !!python/tuple
+  - (2, 1), right
+  - (2, 1), right
+  - fontcolor: blue
+    label: south
+    probability: 0.25
+    symbol: south
+- !!python/tuple
+  - (2, 1), right
+  - (2, 1), right
+  - fontcolor: blue
+    label: east
+    probability: 0.25
+    symbol: east
+- !!python/tuple
+  - (2, 1), right
+  - (1, 1), right
+  - fontcolor: blue
+    label: west
+    probability: 0.25
+    symbol: west
+nodes:
+- !!python/tuple
+  - (1, 1), right
+  - color: gray
+    fillcolor: royalblue1
+    is_accepting: false
+    label: (1, 1), right
+    observation: empty_red_open
+    shape: box
+    style: filled
+    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
+      state: !!python/tuple
+      - a: !!python/object/apply:numpy.core.multiarray.scalar
+        - &id001 !!python/object/apply:numpy.dtype
+          args:
+          - i8
+          - 0
+          - 1
+          state: !!python/tuple
+          - 3
+          - <
+          - null
+          - null
+          - null
+          - -1
+          - -1
+          - 0
+        - !!binary |
+          AAAAAAAAAAA=
+        b: !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          AwAAAAAAAAA=
+        badvalue: .nan
+        extradoc: null
+        inc: 1
+        longname: null
+        moment_tol: 1.0e-08
+        name: transition
+        seed: null
+        shapes: null
+        values: !!python/tuple
+        - - 3
+          - 2
+          - 1
+          - 0
+        - - 0.25
+          - 0.25
+          - 0.25
+          - 0.25
+      - &id002 !!python/object/apply:numpy.random._pickle.__randomstate_ctor
+        args:
+        - MT19937
+        state:
+          bit_generator: MT19937
+          gauss: 0.0
+          has_gauss: 0
+          state:
+            key: !!python/object/apply:numpy.core.multiarray._reconstruct
+              args:
+              - !!python/name:numpy.ndarray ''
+              - !!python/tuple
+                - 0
+              - !!binary |
+                Yg==
+              state: !!python/tuple
+              - 1
+              - !!python/tuple
+                - 624
+              - !!python/object/apply:numpy.dtype
+                args:
+                - u4
+                - 0
+                - 1
+                state: !!python/tuple
+                - 3
+                - <
+                - null
+                - null
+                - null
+                - -1
+                - -1
+                - 0
+              - false
+              - !!binary |
+                AAAAgB0R9UVNqq1bs88tVRc2agnCMxpGtZwFNXs/1bqWi+toFmaesg/1D+hvPpHEicE0iW65liE8
+                kexSsSi/0G8z0uDAJmgzpTcFNeHsv0GJinQ1k9wLtmRCFFM1PVthXZOgkamW4TvLfgt4la0rSNGA
+                7LwxVoms+4trP9rqFIwCDT8t/nqWkS9kT7rOANDKiN/1qnQDLMfAwfCbNwUZGLfrylwRVBnP2xJb
+                CWoMFFY1FYhZwia6UbRK5A5xX/9g8qhPp9qH8kvVnfVWSdKXRJ7rYyLcbMS1cXuBhLX/WzJQr61z
+                MJ/4zOKxoi6k8ZpOJggbMvL8yrke9w4uS9MFWx3iIDatbEXtGyP7p/Gwb+Phk5wSFlbOiHEDwaso
+                JYYL6F+V6ngS8DPy9vJmCj307mMR3mfpFRE0KBP4uUjFRgRpFNSdmM8wzQUdpczAJp7AVNWpmEl6
+                0SmE5fS1ZXALtf/mAha4hPC+ateq4nUZy2eM1LGqVf/tPKgHOJD4JzYIXV5gTAi7YD//MZ9c7NPy
+                EIOD/sgbvUNQUkpiV/pc1BrIobUoc917iSNTo93GZLjXIymei29XF5fOgp5lIuWsbSxKkbey/prb
+                hlCmzhJrzCTBkzyYm32Df39Bj4fuOgCMaqqXlCIE6kjqjKpeU8xtFKM6ntKAXri887XjzUU9C+wy
+                RA8CjBtkgXOnk7wTOI30QWs8RBeOz9U71Iu/j4chUPIIj7t/ePciv+6/6TvAxWw4oYWZhqt+lV3R
+                jRxAv051cJfN/GRCzJnxelFeTN8SwJcvaqDIZVA1/OKMsTV4W1bMyjEYPwp3uczaDLLO0HCHArg/
+                7HE3yRd/qO+WmGVWnZpnp3djqwua5IGEAfFt79EtUVBcETJJGF+9b6HoqcbGfuUDOqcZrzg537mi
+                ppLY3t8SYuZv4Bf9jiveZTVKu1vHGnrFBHos6Mgt6EBlu7uzAM/9VkSVXKpboatoIy7NcY86cvaL
+                BENdOdd5Vi3OEz8STy9l/i/GpB/aDwHnjamXfeVAma7aRh3a7DpCwYFfxOtdlqwQcsg25wNXcecO
+                SU52nQs4Ytnqfo5BjrvIQTbEGV2k0+q2EnFwEqA+cDd+5AJSvyvuN0b/Ux7zZTAubraNO3A+ANuY
+                4sfXt80EMmqlhWN4y9jDkIPmcibtRg34/UTqecwWla58aPP40pRWWpfF1vg0rmfGrYvB61bNE9Om
+                fMQB/0qUEsfepO57zX7j5hj4Zbm6cbKrgwEDcXVqC8+SAC8Syziz3sLcki2/FDGOuioHn+WRzXrL
+                DOtM08wNzcQPOdQIZxAvxVk1UX/fkZcRP+yRX7aX5Ieix5aSZ6wttwiKiEz8dJQwLCAuH8NRoIlA
+                tJ7vSAeoBujmVfQuatC2isvNGp3CXHUhxZQnMInZhdP4iKtHI6elOaXQ18MpXbYZC/nHfj8ad8Kn
+                jab3qCvx8Uyq7RdFtrqPGkE9CGPZJmHbVj6CpjRQoiA/xrKoso6bc2FRrBkVM+/zvfZ7SPJ2hUtB
+                6Q1Ry+/Jf4nIJQZvqxSWLKtTwyRqOgqQd7BpXlD2LQs3qW+5sFiAPlaKeAtbHCaziOSAQ8z4TJ/S
+                nqxgw7t+/+Xsna/gWbCJWNTW9yqZl57Sg/rbPS0dOu86MYCFtHjlGKwAabP1Q/6tzUP8ILPd13IK
+                ulVcuxxQ6nbUFeNJ3hteBma31BzEefjjto/9fcARfMCUzSDIwJig5j6RNlJLy9vPA+UjkZOlEDy+
+                rpyD4b7JQEFtieWJOX35g47cNGFKrZNVfp9LT33IGsb/4+xe/TFLmcV3iNcVWQ4HBCcy2ufAi1gU
+                tUPFH0/mIc/b4iaa3NaUkHxxvHAII7ZBYp1f6ylCkc0o4rjB4kwsX7jGhVwMu2TL9fWVTFFUT7PC
+                i79YIhN6Kk4ofgGUd7rdSCM1MuZh7gGiQiKY6wyVm9A5bYOm195b0PaABd1bUzcy7o9rwqDq8Rjq
+                OIA0jer+60kWyqjPsOE81swEggdsHUeOulhw6LiwsfLx7Lr1hIl3PUpNpJ6ckKl6uX6O2sBvBU84
+                gWNVi5Nz55MAvisg24yK8T3PBxegA7Szw3Bc3meXHOpXhLQM0pJjkjBPUrECBaC4kBeL74EAn9DG
+                Ma8/AXUAyAMQ+Li/DM6sPmBiPiHvoRIGWxrDhs5Avp/T3L1OOYXEbw/bR2RcwZx1xfx7BxqRJ/0Q
+                u6hXfvruMJ6MUFA2owurvdjVRYmh6e3OM9DTCsV3YOMYu253z0fnHmcwtHvHBiBGYE5NcoTyTe+9
+                kU2oBBV4WYohYwrgWroX2pkvt9YKobjdkGP4R9h+MpLs/pZEa2UQ8AjbAAzw2Rc++f3fPyJrdau9
+                zo16zTfcQOLVLNcR9SjwEKfhUvE1m+XVG0dEekChJEnXh6pn0ChOtif4LoVHzAoUmivam6Qni4kv
+                avYX2xtOk/276rssZFOaes1bcP3EQzywzhoeovFn/9BI3/Ve495Lai0JjU4AbF7QCzX2SM9LV87g
+                D5ApKYZHfb11QFXEc4w/kH1Qlmsg1bRSkW8/EtaqY+9Af+3W5hhDI5Me+eoBgrfIOqhZGuwE9eTR
+                mRJHGR8mgnWynv8O0fJ8CQEwJc0tK8iCSD5CKzxixOJ5aKIP2r3sIrzfmjcUSS5ek3P+etZtZ+RH
+                6GT9utj4KwXYoRW5geh+GGoq/cRR6ZQUMpUWXegzaXPptCOKze9M0lTKqfKdia2ZI8yygvWq/5cJ
+                L77Hsq/0T/3YOkYYB096EPtTI17jZlOnJWmLJN6Eo2e4ODDUf5R/oa6LUMkuT5Mnwno6qmHOsRUj
+                KS3pdpPLQFHX+dr841x5gInefD5Ow/GKKBIqU2ojw2cyCVaKRHfGWnkSHLvCe9wXx6nqYxZeKgHm
+                uXTWq0ZnUX2fE+IA30DtuoVZ0zazQA0SEwAZeWSM3RSFKDJ9Ag+E96rSH7ZiAd/e120Pzo99kHHu
+                09QOacJg2BjXJDt058foSe8Mz7HAfllW3XAOUO3Riw9VPwfCzgaSHoNilpKBqL1GKLpdR6EtR+VM
+                5VelYNWz67QYviXkiCuwVp0UjeVAVg4GRMN5N8+5J4DXHzcDQ8zdV0wnMQY3Je9TbwPfQ1SG+nAm
+                uVtsUuva0k1STXoFAPsbiZY04Jp8YuVFgZVDzWPDqkyi8Qv+0FaqlIM0am1FM2vkXRmwxyhfwzSg
+                RMituMM1SyO2M8BRiKNQHpBTpRAbFqPinhwdVaUO+8Brb38Zse6wMo0g1Bm85R6dfhhjO30wir33
+                1qcV/zBvel/PgAWuC4WC+KuBcokecEXwY2UiGxm0SQkLpendsVkfCWArLKW8
+            pos: 623
+    xlabel: '{empty_red_open}'
+- !!python/tuple
+  - (2, 1), right
+  - color: darkseagreen1
+    fillcolor: darkseagreen1
+    is_accepting: false
+    label: (2, 1), right
+    observation: floor_green_open
+    style: filled
+    trans_distribution: !!python/object/new:scipy.stats._distn_infrastructure.rv_sample
+      state: !!python/tuple
+      - a: !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          AAAAAAAAAAA=
+        b: !!python/object/apply:numpy.core.multiarray.scalar
+        - *id001
+        - !!binary |
+          AwAAAAAAAAA=
+        badvalue: .nan
+        extradoc: null
+        inc: 1
+        longname: null
+        moment_tol: 1.0e-08
+        name: transition
+        seed: null
+        shapes: null
+        values: !!python/tuple
+        - - 3
+          - 2
+          - 0
+          - 1
+        - - 0.25
+          - 0.25
+          - 0.25
+          - 0.25
+      - *id002
+    xlabel: '{floor_green_open}'
+num_obs: 2
+num_states: 2
+start_state: (1, 1), right

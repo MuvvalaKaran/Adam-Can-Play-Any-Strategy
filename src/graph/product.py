@@ -41,6 +41,7 @@ class ProductAutomaton(TwoPlayerGraph):
                  observe_next_on_trans: bool = True,
                  integrate_accepting: bool = False,
                  use_trans_sys_weights: bool = False,
+                 pdfa_compose: bool = False,
                  skip_empty: bool = True) -> 'ProductAutomaton()':
 
         self._trans_sys: Optional[TwoPlayerGraph] = copy.deepcopy(trans_sys)
@@ -55,6 +56,8 @@ class ProductAutomaton(TwoPlayerGraph):
         self._observe_next_on_trans = observe_next_on_trans
         self._integrate_accepting = integrate_accepting
         self._use_trans_sys_weights = use_trans_sys_weights
+
+        self._pdfa_compose: bool = pdfa_compose
 
         ts_node_default_attr = {'ap': set()}
         ts_edge_default_attr = {'actions': '', 'weight': 0, 'weights': None}
@@ -103,28 +106,34 @@ class ProductAutomaton(TwoPlayerGraph):
         #     warnings.warn("Please make sure that the formula is composed of symbols that are part of the aps in the TS")
         self._graph = nx.MultiDiGraph(name=self._graph_name)
 
-        self._extend_trans_init()
+        # This is the product construction method used by Kandai in fpr his PDFA product construction
+        if self._pdfa_compose:
+            self._extend_trans_init()
 
-        if self._absorbing:
+            if self._absorbing:
 
-            # self.construct_product_absorbing()
-            self.construct_minimum_product()
+                # if you want to construct pdfa product automaton
+                self.construct_minimum_product()
 
-            # all the edges from the sys node to the absorbing state should have weight zero.
-            if not isinstance(self._auto_graph, PDFAGraph):
-                self._add_sys_to_abs_states_w_zero_wgt()
+                # all the edges from the sys node to the absorbing state should have weight zero.
+                if not isinstance(self._auto_graph, PDFAGraph):
+                    self._add_sys_to_abs_states_w_zero_wgt()
 
+            else:
+                self.construct_product()
+
+            if self._integrate_accepting:
+                self._integrate_accepting_states()
+
+            self._sanity_check(debug=True)
+
+            self._initialize_edge_labels_on_fancy_graph()
+            if self._config_yaml is not None:
+                self.dump_to_yaml()
         else:
-            self.construct_product()
-
-        if self._integrate_accepting:
-            self._integrate_accepting_states()
-
-        self._sanity_check(debug=True)
-
-        self._initialize_edge_labels_on_fancy_graph()
-        if self._config_yaml is not None:
-            self.dump_to_yaml()
+            self.construct_product_absorbing()
+            
+            self._sanity_check(debug=False)
 
     def _extend_trans_init(self):
         # Get the original initial state
@@ -311,8 +320,8 @@ class ProductAutomaton(TwoPlayerGraph):
                                                                         _v_a_node,
                                                                         _v_prod_node,
                                                                         action=auto_action,
-                                                                        obs=ap,
-                                                                        pref=pref)
+                                                                        obs=ap,)
+                                                                        # pref=pref)
 
                             if exists:
                                 self._add_transition(_u_prod_node,
@@ -364,8 +373,8 @@ class ProductAutomaton(TwoPlayerGraph):
                                                                                     _v_a_node,
                                                                                     _v_prod_node,
                                                                                     action=auto_action,
-                                                                                    obs=ap,
-                                                                                    pref=pref)
+                                                                                    obs=ap,)
+                                                                                    # pref=pref)
                             if exists:
                                 self._add_transition_absorbing(_u_prod_node,
                                                               _v_prod_node,
@@ -534,7 +543,7 @@ class ProductAutomaton(TwoPlayerGraph):
         _ts_action = self._trans_sys.get_edge_attributes(_u_ts_node, _v_ts_node, 'actions')
 
         node = _v_ts_node if self._observe_next_on_trans else _u_ts_node
-        obs = node_attr = self._trans_sys._graph.nodes[node].get('ap')
+        obs = self._trans_sys._graph.nodes[node].get('ap')
 
         try:
             _weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')

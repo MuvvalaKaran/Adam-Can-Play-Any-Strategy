@@ -365,6 +365,7 @@ class TwoPlayerGraphBuilder(Builder):
         :return: A concrete/active instance of the TwoPlayerGraph
         """
         self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
+        self._instance._graph = nx.MultiDiGraph(name=graph_name)
 
         graph_yaml = None
         if from_file:
@@ -373,7 +374,8 @@ class TwoPlayerGraphBuilder(Builder):
         if graph_yaml is None and minigrid is not None:
             graph_yaml = self._from_minigrid(minigrid, n_step)
 
-        self._instance.construct_graph(graph_yaml)
+        if graph_yaml:
+            self._instance.construct_graph(graph_yaml)
 
         if plot:
             self._instance.plot_graph(view=view, format=format)

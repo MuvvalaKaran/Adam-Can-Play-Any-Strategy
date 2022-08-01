@@ -164,7 +164,7 @@ class DFAGraph(Graph):
         :return: A tuple of states, edges and accepting states
         """
 
-        spot_output = run_spot(formula=sc_ltl, debug=True)
+        spot_output = run_spot(formula=sc_ltl, verbose=False)
         edges = parse_ltl(spot_output)
         (states, initial, accepts) = find_states(edges)
 

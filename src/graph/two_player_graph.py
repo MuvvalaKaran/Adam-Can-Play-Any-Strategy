@@ -365,7 +365,6 @@ class TwoPlayerGraphBuilder(Builder):
         :return: A concrete/active instance of the TwoPlayerGraph
         """
         self._instance = TwoPlayerGraph(graph_name, config_yaml, save_flag)
-        self._instance._graph = nx.MultiDiGraph(name=graph_name)
 
         graph_yaml = None
         if from_file:

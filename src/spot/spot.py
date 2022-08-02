@@ -4,7 +4,7 @@ from codecs import getdecoder
 from ..spot.promela import Parser
 
 
-def run_spot(formula: str, debug=False):
+def run_spot(formula: str, verbose: bool = False):
     """
     A function to call the spot toolbox and run interpet the output which is in NeverClaim format
     For our prupose these are the relevant flags:
@@ -197,7 +197,7 @@ def run_spot(formula: str, debug=False):
 
     ascii_decoder = getdecoder("ascii")
     (processed_output, _) = ascii_decoder(raw_output)
-    if debug:
+    if verbose:
         print(f"Output of Spot for the formula : {formula}")
         print(f"==========================================")
         print(processed_output)
@@ -206,11 +206,11 @@ def run_spot(formula: str, debug=False):
     return processed_output
 
 
-def parse_ltl(formula: str, debug=False):
-    spot_output = run_spot(formula, debug)
+def parse_ltl(formula: str, verbose=False):
+    spot_output = run_spot(formula, verbose)
     parser = Parser(spot_output)
     edges = parser.parse()
-    if debug:
+    if verbose:
         print(edges)
 
 

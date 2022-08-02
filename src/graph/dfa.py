@@ -55,10 +55,10 @@ class DFAGraph(Graph):
             self.add_state(_s)
 
             # add init and accepting node attribute
-            if _s == "T0_init":
+            if _s.endswith("init"):
                 self.add_initial_state(_s)
 
-            if _s == "accept_all":
+            if _s.startswith("accept"):
                 self.add_accepting_state(_s)
 
         # add edges
@@ -164,7 +164,7 @@ class DFAGraph(Graph):
         :return: A tuple of states, edges and accepting states
         """
 
-        spot_output = run_spot(formula=sc_ltl)
+        spot_output = run_spot(formula=sc_ltl, verbose=False)
         edges = parse_ltl(spot_output)
         (states, initial, accepts) = find_states(edges)
 

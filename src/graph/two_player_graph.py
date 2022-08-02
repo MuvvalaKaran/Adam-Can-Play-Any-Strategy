@@ -373,7 +373,8 @@ class TwoPlayerGraphBuilder(Builder):
         if graph_yaml is None and minigrid is not None:
             graph_yaml = self._from_minigrid(minigrid, n_step)
 
-        self._instance.construct_graph(graph_yaml)
+        if graph_yaml:
+            self._instance.construct_graph(graph_yaml)
 
         if plot:
             self._instance.plot_graph(view=view, format=format)

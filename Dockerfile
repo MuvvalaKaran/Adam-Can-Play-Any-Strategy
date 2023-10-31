@@ -27,8 +27,8 @@ RUN apt-get -y update && apt -y install spot \
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-ADD ./ /root/regret_planning/
+ADD ./ /root/regret_planning
 
-WORKDIR /root/regret_planning/
+WORKDIR /root/regret_planning
 
 ENTRYPOINT "/bin/bash"

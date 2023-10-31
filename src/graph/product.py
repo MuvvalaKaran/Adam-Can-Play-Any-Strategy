@@ -418,23 +418,23 @@ class ProductAutomaton(TwoPlayerGraph):
         :param _v_prod_node:
         :return: Updated graph with the edge
         """
-        # if not self._graph.has_edge(_u_prod_node, _v_prod_node):
-        if _u_prod_node in self._auto_graph.get_absorbing_states():
-            # absorbing state
-            self.add_edge(_u_prod_node, _v_prod_node,
-                            weight=0,
-                            actions=action,
-                            **kwargs)
-        else:
-            self.add_edge(_u_prod_node, _v_prod_node,
-                            weight=weight,
-                            actions=action,
-                            **kwargs)
-        if isinstance(action, str):
-            self._transitions[_u_prod_node][action] = _v_prod_node
-        else:
-            for a in action:
-                self._transitions[_u_prod_node][a] = _v_prod_node
+        if not self._graph.has_edge(_u_prod_node, _v_prod_node):
+            if _u_prod_node in self._auto_graph.get_absorbing_states():
+                # absorbing state
+                self.add_edge(_u_prod_node, _v_prod_node,
+                                weight=0,
+                                actions=action,
+                                **kwargs)
+            else:
+                self.add_edge(_u_prod_node, _v_prod_node,
+                                weight=weight,
+                                actions=action,
+                                **kwargs)
+            if isinstance(action, str):
+                self._transitions[_u_prod_node][action] = _v_prod_node
+            else:
+                for a in action:
+                    self._transitions[_u_prod_node][a] = _v_prod_node
 
     def _add_sys_to_abs_states_w_zero_wgt(self):
         """

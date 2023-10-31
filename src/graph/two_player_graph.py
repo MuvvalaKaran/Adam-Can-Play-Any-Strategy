@@ -130,7 +130,7 @@ class TwoPlayerGraph(Graph):
             if nodes_to_plot is not None and n[0] not in nodes_to_plot:
                 continue
 
-            obs = n[1].get('ap')
+            obs = n[1].get('ap', [])
             if len(obs) == 0:
                 obs = ''
             else:
@@ -158,7 +158,7 @@ class TwoPlayerGraph(Graph):
 
             weight = edge[2].get('weight')
             weight_label = '' if weight is None else str(weight)
-            label = str(edge[2].get('actions')) + weight_label
+            label = str(edge[2].get('actions', '')) + weight_label
             if edge[2].get('strategy') is True:
                 # dot.edge(str(edge[0]), str(edge[1]), label=str(edge[2].get('weight')), _attributes={'color': 'red'})
                 dot.edge(str(edge[0]), str(edge[1]), label=label, _attributes={'color': 'red'})

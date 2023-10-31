@@ -66,6 +66,7 @@ class GraphInstanceConstructionBase(abc.ABC):
                                                     prune=False,
                                                     debug=False,
                                                     absorbing=True,
+                                                    view=False,
                                                     finite=self.finite,
                                                     plot=self.plot_product)
 
@@ -188,6 +189,7 @@ class ThreeStateExample(GraphInstanceConstructionBase):
                                       save_flag=True,
                                       sc_ltl="F c",
                                       use_alias=False,
+                                      view=False,
                                       plot=self.plot_dfa)
 
 

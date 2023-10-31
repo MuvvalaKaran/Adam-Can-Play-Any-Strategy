@@ -173,6 +173,32 @@ class ReachabilityGame:
         print("printing Env player strategy")
         for _u, _v in self.env_str.items():
             print(f"{_u} ------> {_v}")
+    
+    def plot_graph(self, with_strategy: bool = False):
+        """
+        A hleper function to plot the graph with or without the strategy 
+        
+        :param with_strategy: Flag to set printing to True
+        """
+        if not with_strategy:
+            self.game.plot_graph()
+
+        else:
+            assert len(self.sys_str.keys()) != 0, "A winning strategy does not exists. Did you run the solver?"
+
+            self.game.set_edge_attribute('strategy', False)
+
+            # adding attribute to winning strategy so that they are colored when plotting.
+            for curr_node, next_node in self.sys_str.items():
+                if self.game._graph.nodes[curr_node].get("player") == "eve":
+                    if isinstance(next_node, list):
+                        for n_node in next_node:
+                            self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
+                    else:
+                        self.game._graph.edges[curr_node, next_node, 0]['strategy'] = True
+
+            self.game.plot_graph()
+
 
     def is_winning(self) -> bool:
         """
@@ -215,6 +241,7 @@ class ReachabilityGame:
 if __name__ == "__main__":
 
     debug = True
+    plot_str = False
 
     # build a graph
     two_player_graph = graph_factory.get("TwoPlayerGraph",
@@ -259,5 +286,9 @@ if __name__ == "__main__":
 
     reachability_game_handle = ReachabilityGame(game=two_player_graph, debug=debug)
     reachability_game_handle.reachability_solver()
+    
     reachability_game_handle.print_winning_region()
     reachability_game_handle.print_winning_strategies()
+
+    if plot_str:
+        reachability_game_handle.plot_graph(with_strategy=True)

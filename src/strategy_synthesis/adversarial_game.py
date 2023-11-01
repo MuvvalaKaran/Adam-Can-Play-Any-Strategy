@@ -113,11 +113,6 @@ class ReachabilityGame:
             _regions[_s] = "eve"
             sys_winning_region.append(_s)
 
-            if self.game._graph.nodes[_s].get("player") == "eve":
-                for _succ_s in self.game._graph.successors(_s):
-                    sys_str[_s] = _succ_s
-                    break
-
         while queue:
             _s = queue.popleft()
 
@@ -139,7 +134,7 @@ class ReachabilityGame:
 
                     else:
                         warnings.warn(f"Please make sure that every node in the game is assigned a player."
-                                      f"Currently node {_pre_s} does not have a player assigned to it")
+                                        f"Currently node {_pre_s} does not have a player assigned to it")
 
         for _s in self.game._graph.nodes():
             if _regions[_s] != "eve":
@@ -151,8 +146,92 @@ class ReachabilityGame:
                     for _successor in self.game._graph.successors(_s):
                         if _regions[_successor] != "eve":
                             env_str[_s] = _successor
+        
+        for _s in accepting_states:
+            if self.game._graph.nodes[_s].get("player") == "eve":
+                for _succ_s in self.game._graph.successors(_s):
+                    if _regions[_succ_s] == "eve":
+                        sys_str[_s] = _succ_s
+                        break
 
         self._sys_str = sys_str
+        self._env_str = env_str
+        self._sys_winning_region = sys_winning_region
+        self._env_winning_region = env_winning_region
+    
+
+    def maximally_permissive_reachability_solver(self):
+        """
+        Implements the reachability solver by creating sub games
+
+        If a env node i.e a node that has player == "adam" attribute and if that node belong's to the system's winning
+        region, we do not add a strategy to it.
+        :return:
+        """
+
+        num_out_edges = self._compute_no_of_node_successors()
+
+        queue = deque()
+
+        _regions = defaultdict(lambda: -1)
+        sys_winning_region = set({})
+        env_winning_region = []
+        sys_str = defaultdict(lambda: set({}))
+        env_str = defaultdict(lambda: -1)
+
+        accepting_states = self.game.get_accepting_states()
+
+        for _s in accepting_states:
+            queue.append(_s)
+            _regions[_s] = "eve"
+            sys_winning_region.add(_s)
+
+        while queue:
+            _s = queue.popleft()
+
+            for _pre_s in self.game._graph.predecessors(_s):
+                if self.game._graph.nodes[_pre_s].get("player") == "eve":
+                    if _regions[_pre_s] == -1:
+                        queue.append(_pre_s)
+                    _regions[_pre_s] = "eve"
+                    sys_winning_region.add(_pre_s)
+                    sys_str[_pre_s].add(_s)
+
+                elif self.game._graph.nodes[_pre_s].get("player") == "adam" and _regions[_pre_s] == -1:
+                    num_out_edges[_pre_s] -= 1
+
+                    if num_out_edges[_pre_s] == 0:
+                        queue.append(_pre_s)
+                        _regions[_pre_s] = "eve"
+                        sys_winning_region.add(_pre_s)
+
+                else:
+                    warnings.warn(f"Please make sure that every node in the game is assigned a player."
+                                    f"Currently node {_pre_s} does not have a player assigned to it")
+
+        for _s in self.game._graph.nodes():
+            if _regions[_s] != "eve":
+                _regions[_s] = "adam"
+                env_winning_region.append(_s)
+
+                if self.game._graph.nodes[_s]["player"] == "adam":
+
+                    for _successor in self.game._graph.successors(_s):
+                        if _regions[_successor] != "eve":
+                            env_str[_s] = _successor
+        
+        for _s in accepting_states:
+            if self.game._graph.nodes[_s].get("player") == "eve":
+                for _succ_s in self.game._graph.successors(_s):
+                    if _regions[_succ_s] == "eve":
+                        sys_str[_s].add(_succ_s)
+        
+        
+        _processed_sys_str = {}
+        for states, winning_str in sys_str.items(): 
+            _processed_sys_str[states] = list(winning_str) 
+
+        self._sys_str = _processed_sys_str
         self._env_str = env_str
         self._sys_winning_region = sys_winning_region
         self._env_winning_region = env_winning_region
@@ -196,7 +275,6 @@ class ReachabilityGame:
                             self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
                     else:
                         self.game._graph.edges[curr_node, next_node, 0]['strategy'] = True
-
             self.game.plot_graph()
 
 

@@ -185,10 +185,10 @@ class ValueIteration:
 
     def cooperative_solver(self, debug: bool = False, plot: bool = False):
         """
-        A Method to compute the cooperative value form each state when both players are playing minimally.
+        A Method to compute the cooperative value from each state when both players are playing minimally.
 
-        All states are initialized to at infinity. We start from the accepting state and propagate back our costs.
-        While doing so, we both players are acting the same, minimally, essentially turning this game into a single
+        All states except for the target states (accepting states) are initialized to at infinity. We start from the accepting state and propagate back our costs.
+        While doing so, both players are acting the same, minimally, essentially turning this game into a single
         player game. The algorithm terminates when we reach a fixed point.
 
         THe initial state will have finite state value.
@@ -285,10 +285,10 @@ class ValueIteration:
         """
         A method that implements Algorithm 1 from the paper. The operation performed at each step can be represented by
         an operator say F.  F here is the _get_max_env_val() and _get_min_sys_val() methods. F is a monotonic operator
-        and is monotonically decreasing - meaning the function should not increase (it must not increase)! and converges
+        and is monotonically decreasing - meaning the function should not increase (it must not increase!) and converges
         to the greatest fixed point of F.
 
-        But as all the weight are positive in our case, the weight monotonically increase and converge to the greatest
+        As all the weights are positive in our case, the state values monotonically decrease and converge to the greatest
         fixed point.
 
         The Val of the game is infact the Greatest Fixed Point.  The upper bound on the # of iterations to converge is

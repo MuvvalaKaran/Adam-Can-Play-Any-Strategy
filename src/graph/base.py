@@ -223,7 +223,7 @@ class Graph(abc.ABC):
                 alphabet_size=len(self._graph.edges()),
                 num_states=len(self._graph.nodes),
                 num_obs=3,
-                start_state=self.get_initial_states()[0][0],
+                start_state=self.get_initial_states()[0][0] if len(self.get_initial_states()) > 0 else '',
                 nodes=[node for node in self._graph.nodes.data()],
                 edges=[edge for edge in self._graph.edges.data()]
         )

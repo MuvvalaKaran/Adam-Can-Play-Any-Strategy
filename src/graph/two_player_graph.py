@@ -130,7 +130,8 @@ class TwoPlayerGraph(Graph):
             if nodes_to_plot is not None and n[0] not in nodes_to_plot:
                 continue
 
-            obs = n[1].get('ap', [])
+            # obs = n[1].get('ap', [])
+            obs = n[1].get('val', [])
             if len(obs) == 0:
                 obs = ''
             else:

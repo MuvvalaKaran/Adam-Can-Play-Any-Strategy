@@ -14,7 +14,7 @@ from bidict import bidict
 from typing import Optional, Union, Dict, List, Tuple
 
 # import local packages
-from ..graph import graph_factory
+from ..graph import TwoPlayerGraph, graph_factory
 from ..graph import TwoPlayerGraph
 from .adversarial_game import ReachabilityGame as ReachabilitySolver
 
@@ -528,3 +528,185 @@ class ValueIteration:
         # _val = pre_vec[_curr_node_int][0]
         #
         # return _val, _next_node_int
+
+
+class PermissiveValueIteration(ValueIteration):
+    """
+    Inherit Value Iteration class and override the max, min function to return a set of strategies.
+
+    The solve() function is modified to store set of optimal strategies. 
+    """
+
+    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
+        super().__init__(game, competitive, int_val)
+    
+
+    def _get_opt_val(self, node: Union[str, tuple], pre_vec: ndarray):
+        """
+        This method only return the max (adverasrial)/min (cooperative) value
+        """
+        _succ_vals = set({})
+        for _next_n in self.org_graph._graph.successors(node):
+            _node_int = self.node_int_map[_next_n]
+            _val = (self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0])
+            _succ_vals.add(_val)
+        
+        if self.org_graph.get_state_w_attribute(node, "player") == "eve":
+            _val = min(_succ_vals)
+        else:
+            assert self.org_graph.get_state_w_attribute(node, "player") == "adam", "Error. Encountered a state that is supposed to belong to the env player."
+            if self.competitive:
+                _val = max(_succ_vals)
+            else:
+                _val = min(_succ_vals)
+
+        return _val
+
+    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray,)\
+            -> Tuple[Union[int, float], List[int]]:
+        """
+        A method that returns the min value of the current node that belongs to the sys
+        :param node:
+        :param node_int:
+        :param pre_vec:
+        :return:
+        """
+        _succ_vals: List = []
+        for _next_n in self.org_graph._graph.successors(node):
+            _node_int = self.node_int_map[_next_n]
+            _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
+            _succ_vals.append((_next_n, _val))
+
+        _, min_val = min(_succ_vals, key=operator.itemgetter(1))
+
+        
+        return min_val, [_node for _node, _node_val in _succ_vals if min_val == _node_val]
+
+    
+    def _get_max_env_val(self, node: Union[str, tuple], pre_vec: ndarray) -> Tuple[Union[int, float], List[int]]:
+        """
+        A method that returns the max value for the current node that belongs to the env.
+        :param node: The current node in
+        :param node_int: The mapped value of this node
+        :param pre_vec: The previous value vector
+        :return:
+        """
+
+        _succ_vals: List = []
+        for _next_n in self.org_graph._graph.successors(node):
+            _node_int = self.node_int_map[_next_n]
+            _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
+            _succ_vals.append((_next_n, _val))
+
+        # get org node int value
+        if self.competitive:
+            _, _val = max(_succ_vals, key=operator.itemgetter(1))
+        else:
+            _, _val = min(_succ_vals, key=operator.itemgetter(1))
+
+        return _val, [_node for _node, _node_val in _succ_vals if _val == _node_val]
+
+    
+    def solve(self, debug: bool = False, plot: bool = False):
+        """
+        A method that implements Algorithm 1 from the paper. The operation performed at each step can be represented by
+        an operator say F.  F here is the _get_max_env_val() and _get_min_sys_val() methods. F is a monotonic operator
+        and is monotonically decreasing - meaning the function should not increase (it must not increase!) and converges
+        to the greatest fixed point of F.
+
+        As all the weights are positive in our case, the state values monotonically decrease and converge to the greatest
+        fixed point.
+
+        The Val of the game is infact the Greatest Fixed Point.  The upper bound on the # of iterations to converge is
+        (2|V| -1)W|V| + |V|.
+        :param debug:
+        :param plot:
+        :return:
+        """
+        # initially in the org val_vector the target node(s) will value 0
+        _accp_state = set(self.org_graph.get_accepting_states())
+        _init_node = self.org_graph.get_initial_states()[0][0]
+
+        _val_vector = copy.deepcopy(self.val_vector)
+        # _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
+        _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
+
+        iter_var = 0
+        _max_str_dict = defaultdict(lambda: [])
+        _min_str_dict = defaultdict(lambda: [])
+        _min_reach_str_dict = defaultdict(lambda: [])
+
+        while not self._is_same(_val_pre, _val_vector):
+            if debug:
+                # if iter_var % 1000 == 0:
+                print(f"{iter_var} Iterations")
+
+            _val_pre = copy.copy(_val_vector)
+            iter_var += 1
+
+            for _n in self.org_graph._graph.nodes():
+                _int_node = self.node_int_map[_n]
+
+                if _n in _accp_state:
+                    continue
+                
+                _val_vector[_int_node][0] = self._get_opt_val(_n, _val_pre)
+
+            self._val_vector = np.append(self.val_vector, _val_vector, axis=1)
+
+        # safely convert values in the last col of val vector to ints
+        if self._int_val:
+            _int_val_vector = self.val_vector[:, -1].astype(int)
+        else:
+            _int_val_vector = self.val_vector[:, -1]
+
+        # update the state value dict
+        for i in range(self.num_of_nodes):
+            _s = self.node_int_map.inverse[i]
+            self.state_value_dict.update({_s: _int_val_vector[i]})
+
+        # extract sys and env strategy after converging.
+        for _n in self.org_graph._graph.nodes():
+            _int_node = self.node_int_map[_n]
+            # if _n in _accp_state:
+            #     continue
+            
+            # get the max value
+            if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
+                _, _next_max_nodes = self._get_max_env_val(_n, _val_pre)
+                # _max_str_dict[_n].add(set([self.node_int_map.inverse[_n] for _n in _next_max_nodes]))
+                _max_str_dict[_n] = _next_max_nodes
+            
+            # get the min value
+            elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                _, _next_min_nodes = self._get_min_sys_val(_n, _val_pre)
+                _min_str_dict[_n] = _next_min_nodes
+
+
+        self._sys_str_dict = _min_str_dict
+        self._env_str_dict = _max_str_dict
+        self._str_dict = {**_max_str_dict, **_min_str_dict}
+
+        if plot:
+            self._change_orig_graph_name(prefix='adv_str_on_')
+            self._add_state_costs_to_graph()
+            self.add_str_flag()
+            self.org_graph.plot_graph()
+
+        if debug:
+            print(f"Number of iteration to converge: {iter_var}")
+            print(f"Init state value: {self.state_value_dict[_init_node]}")
+            self._sanity_check()
+            # self.print_state_values()
+    
+
+    def _add_state_costs_to_graph(self):
+        """
+        A helper method that computes the costs associated with each state to reach the accepting state and add it to
+        the nodes.
+        :return:
+        """
+
+        for _n in self.org_graph._graph.nodes():
+            sval = self.state_value_dict[_n]
+            self.org_graph.add_state_attribute(_n, "val", [sval if INT_MIN_VAL < sval < INT_MAX_VAL else 'inf'])

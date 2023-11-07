@@ -16,7 +16,7 @@ from src.strategy_synthesis.regret_str_synthesis \
     import RegretMinimizationStrategySynthesis as RegMinStrSyn
 from src.strategy_synthesis.adversarial_game import ReachabilityGame as ReachabilitySolver
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
-from src.strategy_synthesis.value_iteration import ValueIteration
+from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -275,9 +275,14 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
 
 def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                       debug: bool = False,
-                      plot: bool = False):
+                      plot: bool = False,
+                      permissive_strategies: bool = False):
     
-    vi_handle = ValueIteration(game=trans_sys, competitive=True)
+    if permissive_strategies:
+        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=True)
+    else:
+        vi_handle = ValueIteration(game=trans_sys, competitive=True)
+    
     vi_handle.solve(debug=debug, plot=plot)
 
 
@@ -416,14 +421,14 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
 
     two_player_graph.add_edge("s0", "s1")
     two_player_graph.add_edge("s0", "s2")
-    two_player_graph.add_edge("s1", "s0")
+    # two_player_graph.add_edge("s1", "s0")
     two_player_graph.add_edge("s1", "s4")
-    two_player_graph.add_edge("s2", "s3")
+    # two_player_graph.add_edge("s2", "s3")
     two_player_graph.add_edge("s3", "s3")
     two_player_graph.add_edge("s2", "s7")
     two_player_graph.add_edge("s4", "s5")
-    two_player_graph.add_edge("s5", "s4")
-    two_player_graph.add_edge("s5", "s6")
+    # two_player_graph.add_edge("s5", "s4")
+    # two_player_graph.add_edge("s5", "s6")
     two_player_graph.add_edge("s5", "s7")
     two_player_graph.add_edge("s6", "s6")
     two_player_graph.add_edge("s7", "s7")
@@ -439,6 +444,10 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
             for _e in two_player_graph._graph.out_edges(_s):
                 two_player_graph._graph[_e[0]][_e[1]][0]["weight"] = 1 if two_player_graph._graph.nodes(data='player')[_s] == 'eve' else 0
     
+    ## Testing -manually changing the edge wegit s0 -> s2
+    # two_player_graph.add_weighted_edges_from(["s0", "s2", 2])
+    two_player_graph._graph["s0"]["s2"][0]["weight"] =  2
+
     return two_player_graph
 
 
@@ -575,7 +584,7 @@ if __name__ == "__main__":
                                     debug=False,
                                     print_str=False)
     elif min_max_game:
-        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True)
+        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True)
 
     elif BE_synthesis:
         assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."

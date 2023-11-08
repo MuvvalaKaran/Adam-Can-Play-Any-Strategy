@@ -15,6 +15,7 @@ from src.graph import TwoPlayerGraph
 from src.strategy_synthesis.regret_str_synthesis \
     import RegretMinimizationStrategySynthesis as RegMinStrSyn
 from src.strategy_synthesis.adversarial_game import ReachabilityGame as ReachabilitySolver
+from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
 
@@ -287,6 +288,16 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
     vi_handle.solve(debug=debug, plot=plot)
 
 
+def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
+                          debug: bool = False,
+                          plot: bool = False):
+    coop_handle = CooperativeGame(game=trans_sys, debug=False, extract_strategy=True)
+    coop_handle.reachability_solver()
+    coop_handle.print_winning_region()
+    coop_handle.print_winning_strategies()
+
+    coop_handle.plot_graph(with_strategy=True)
+
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     """
@@ -405,10 +416,10 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_states_from(["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"])
 
     # temp add a cycle at the init state
-    # two_player_graph.add_states_from(["s8"])
-    # two_player_graph.add_state_attribute("s8", "player", "adam")
-    # two_player_graph.add_edge("s0", "s8")
-    # two_player_graph.add_edge("s8", "s0")
+    two_player_graph.add_states_from(["s8"])
+    two_player_graph.add_state_attribute("s8", "player", "adam")
+    two_player_graph.add_edge("s0", "s8")
+    two_player_graph.add_edge("s8", "s0")
 
     two_player_graph.add_initial_state('s0')
     two_player_graph.add_state_attribute("s0", "player", "eve")
@@ -424,12 +435,12 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_edge("s0", "s2")
     two_player_graph.add_edge("s1", "s0")
     two_player_graph.add_edge("s1", "s4")
-    # two_player_graph.add_edge("s2", "s3")
+    two_player_graph.add_edge("s2", "s3")
     two_player_graph.add_edge("s3", "s3")
     two_player_graph.add_edge("s2", "s7")
     two_player_graph.add_edge("s4", "s5")
-    # two_player_graph.add_edge("s5", "s4")
-    # two_player_graph.add_edge("s5", "s6")
+    two_player_graph.add_edge("s5", "s4")
+    two_player_graph.add_edge("s5", "s6")
     two_player_graph.add_edge("s5", "s7")
     two_player_graph.add_edge("s6", "s6")
     two_player_graph.add_edge("s7", "s7")
@@ -526,7 +537,8 @@ if __name__ == "__main__":
     infinte_reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
-    min_max_game = True
+    min_max_game = False
+    compute_win_lose_regions = True
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:
@@ -586,6 +598,9 @@ if __name__ == "__main__":
                                     print_str=False)
     elif min_max_game:
         play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=False)
+    
+    elif compute_win_lose_regions:
+        play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
 
     elif BE_synthesis:
         assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."

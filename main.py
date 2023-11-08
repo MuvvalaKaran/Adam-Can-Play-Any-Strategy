@@ -276,10 +276,11 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
 def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                       debug: bool = False,
                       plot: bool = False,
+                      competitive: bool = True,
                       permissive_strategies: bool = False):
     
     if permissive_strategies:
-        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=True)
+        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=competitive)
     else:
         vi_handle = ValueIteration(game=trans_sys, competitive=True)
     
@@ -421,7 +422,7 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
 
     two_player_graph.add_edge("s0", "s1")
     two_player_graph.add_edge("s0", "s2")
-    # two_player_graph.add_edge("s1", "s0")
+    two_player_graph.add_edge("s1", "s0")
     two_player_graph.add_edge("s1", "s4")
     # two_player_graph.add_edge("s2", "s3")
     two_player_graph.add_edge("s3", "s3")
@@ -584,7 +585,7 @@ if __name__ == "__main__":
                                     debug=False,
                                     print_str=False)
     elif min_max_game:
-        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True)
+        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=False)
 
     elif BE_synthesis:
         assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."

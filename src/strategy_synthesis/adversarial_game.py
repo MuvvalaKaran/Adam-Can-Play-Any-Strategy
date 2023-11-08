@@ -8,7 +8,7 @@ from collections import defaultdict
 from collections import deque
 
 # import local packages
-from ..graph import graph_factory
+from ..graph import TwoPlayerGraph, graph_factory
 from ..graph import TwoPlayerGraph
 
 
@@ -162,8 +162,6 @@ class ReachabilityGame:
 
     def maximally_permissive_reachability_solver(self):
         """
-        Implements the reachability solver by creating sub games
-
         If a env node i.e a node that has player == "adam" attribute and if that node belong's to the system's winning
         region, we do not add a strategy to it.
         :return:

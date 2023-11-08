@@ -14,7 +14,6 @@ from bidict import bidict
 from typing import Optional, Union, Dict, List, Tuple
 
 # import local packages
-from ..graph import TwoPlayerGraph, graph_factory
 from ..graph import TwoPlayerGraph
 from .adversarial_game import ReachabilityGame as ReachabilitySolver
 
@@ -112,6 +111,8 @@ class ValueIteration:
         :return:
         """
         _accp_state = self.org_graph.get_accepting_states()
+
+        assert len(_accp_state) != 0, "For Value Iteration algorithm, you need atleast one accepting state. FIX THIS!!!"
 
         for _s in _accp_state:
             _node_int = self.node_int_map[_s]
@@ -281,7 +282,7 @@ class ValueIteration:
 
         self.__org_graph._graph.name = graph_name
 
-    def solve(self, debug: bool = False, plot: bool = False):
+    def solve(self, debug: bool = False, plot: bool = False, **kwargs):
         """
         A method that implements Algorithm 1 from the paper. The operation performed at each step can be represented by
         an operator say F.  F here is the _get_max_env_val() and _get_min_sys_val() methods. F is a monotonic operator
@@ -606,8 +607,17 @@ class PermissiveValueIteration(ValueIteration):
 
         return _val, [_node for _node, _node_val in _succ_vals if _val == _node_val]
 
+    def plot_graph(self):
+        """
+         A helper function that changes the originla name of the graph, add state cost as attribute, adds strategy
+           flags to strategies and
+        """
+        self._change_orig_graph_name(prefix='adv_str_on_')
+        self._add_state_costs_to_graph()
+        self.add_str_flag()
+        self.org_graph.plot_graph()
     
-    def solve(self, debug: bool = False, plot: bool = False):
+    def solve(self, debug: bool = False, plot: bool = False, extract_strategy: bool = True):
         """
         A method that implements Algorithm 1 from the paper. The operation performed at each step can be represented by
         an operator say F.  F here is the _get_max_env_val() and _get_min_sys_val() methods. F is a monotonic operator
@@ -665,22 +675,23 @@ class PermissiveValueIteration(ValueIteration):
             _s = self.node_int_map.inverse[i]
             self.state_value_dict.update({_s: _int_val_vector[i]})
 
-        # extract sys and env strategy after converging.
-        for _n in self.org_graph._graph.nodes():
-            _int_node = self.node_int_map[_n]
-            # if _n in _accp_state:
-            #     continue
-            
-            # get the max value
-            if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
-                _, _next_max_nodes = self._get_max_env_val(_n, _val_pre)
-                # _max_str_dict[_n].add(set([self.node_int_map.inverse[_n] for _n in _next_max_nodes]))
-                _max_str_dict[_n] = _next_max_nodes
-            
-            # get the min value
-            elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-                _, _next_min_nodes = self._get_min_sys_val(_n, _val_pre)
-                _min_str_dict[_n] = _next_min_nodes
+        if extract_strategy:
+            # extract sys and env strategy after converging.
+            for _n in self.org_graph._graph.nodes():
+                _int_node = self.node_int_map[_n]
+                # if _n in _accp_state:
+                #     continue
+                
+                # get the max value
+                if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
+                    _, _next_max_nodes = self._get_max_env_val(_n, _val_pre)
+                    # _max_str_dict[_n].add(set([self.node_int_map.inverse[_n] for _n in _next_max_nodes]))
+                    _max_str_dict[_n] = _next_max_nodes
+                
+                # get the min value
+                elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                    _, _next_min_nodes = self._get_min_sys_val(_n, _val_pre)
+                    _min_str_dict[_n] = _next_min_nodes
 
 
         self._sys_str_dict = _min_str_dict
@@ -688,10 +699,7 @@ class PermissiveValueIteration(ValueIteration):
         self._str_dict = {**_max_str_dict, **_min_str_dict}
 
         if plot:
-            self._change_orig_graph_name(prefix='adv_str_on_')
-            self._add_state_costs_to_graph()
-            self.add_str_flag()
-            self.org_graph.plot_graph()
+            self.plot_graph()
 
         if debug:
             print(f"Number of iteration to converge: {iter_var}")

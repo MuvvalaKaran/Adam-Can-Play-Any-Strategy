@@ -14,11 +14,27 @@ This repository contains code for the paper "Let's Collaborate: Regret-based Rea
 
 * clone this repo with:
  ```bash
-git clone --recurse-submodules git@github.com:aria-systems-group/PDDLtoSim.git .
+git clone --recurse-submodules git@github.com:aria-systems-group/regret_synthesis_toolbox.git .
  ```
 
-Note: The `--recurse-submodule` will automatically initialize and update each submodule in the repository.
+Note: The `--recurse-submodule` will automatically initialize and update each submodule in the repository. This repository contains following synthesis algorithms.
 
+### Supported:
+
+Qualitative Algorithms
+
+- [x] `Adversarial Game (w Permissive strategy synthesis)`
+- [x] `Cooperative Game (w Permissive strategy synthesis)`
+- [ ]  `Best-Effort Synthesis`([Link](https://www.ijcai.org/proceedings/2021/243))
+
+Quantitative Algorithms
+
+- [x] `Value Iteration (Min-Max and Min-Min) w total Payoff function`([Link](https://link.springer.com/article/10.1007/s00236-016-0276-z))
+- [x] `Finite Trace Regret Synthesis`([Link](https://muvvalakaran.github.io/publication/icra_22_regret/))
+- [x] `Bounded Human Adversarial Game`([Link](https://ieeexplore.ieee.org/abstract/document/8206426))
+- [ ] `Best-Effort Synthesis`
+
+For regret-synthesis abstraction and synthesis see the [PDDLtoSim](https://github.com/aria-systems-group/PDDLtoSim) repository.
 
 ## Docker Installation - Creating an Image and Spinning a Container
 
@@ -34,7 +50,7 @@ Make sure you have Docker installed. If not, follow the instructions [here](http
 docker build -t <image_name> .
 ```
 
-Note: the dot looks for a Dockerfile in the current repository.Then spin an instance of the container by using the following command
+Note: the dot looks for a Dockerfile in the current repository. Then spin an instance of the container by using the following command
 
 ```bash
 docker run -it --name <docker_container_name> <docker image name>

@@ -303,7 +303,7 @@ class Graph(abc.ABC):
         [1, 2, 4]
         :return: A list of nodes corresponding to @self._graph
         """
-        return list(self._graph.nodes.data())
+        return self._graph.nodes.data()
 
     def get_states_w_attributes(self) -> List:
         """
@@ -584,7 +584,7 @@ class Graph(abc.ABC):
     def __str__(self):
         g = ('Graph : ' + self._graph.__getattribute__("name") + '\n' +
              'Players : ' + self.player + '\n' +
-             'states : ' + self.get_states() + '\n' +
+             'states : ' + list(self.get_states()) + '\n' +
              'initial state : ' + self.get_initial_states() + '\n' +
              'accepting state : ' + self.get_accepting_states() + '\n' +
              'Transitions : ' + self.get_transitions() + '\n')

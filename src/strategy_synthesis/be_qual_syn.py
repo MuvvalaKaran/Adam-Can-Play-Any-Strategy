@@ -25,16 +25,17 @@ class QualBestEffortReachabilitySynthesis():
 
     def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> None:
         self._game = game
-        self.debug: bool = debug
-        self._sys_winning_region: Union[List, set] = None
-        self._sys_coop_winning_region: Union[List, set] = None
-        self._sys_losing_region: Union[List, set] = None
-        self._sys_pending_region: Union[List, set] = None
-        self._env_winning_region: Union[List, set] = None
+        self._winning_region: Union[List, set] = None
+        self._coop_winning_region: Union[List, set] = None
+        self._losing_region: Union[List, set] = None
+        self._pending_region: Union[List, set] = None
         self._sys_winning_str: Optional[dict] = None
         self._env_winning_str: Optional[dict] = None
         self._sys_coop_winning_str: Optional[dict] = None
         self._sys_best_effort_str: Optional[dict] = None
+
+        self.game_states = set(self.game.get_states()._nodes.keys())
+        self.debug: bool = debug
     
 
     @property
@@ -42,24 +43,27 @@ class QualBestEffortReachabilitySynthesis():
         return self._game
 
     @property
-    def sys_winning_region(self):
-        return self._sys_winning_region
+    def winning_region(self):
+        if not bool(self._winning_region):
+            self.get_winning_region()
+        return self._winning_region
 
     @property
-    def env_winning_region(self):
-        return self._env_winning_region
+    def losing_region(self):
+        if not bool(self._losing_region):
+            self.get_losing_region()
+        
+        return self._losing_region
 
     @property
-    def sys_losing_region(self):
-        return self._sys_losing_region
-
-    @property
-    def sys_pending_region(self):
-        return self._sys_pending_region
+    def pending_region(self):
+        if not bool(self._pending_region):
+            self.get_pending_region()
+        return self._pending_region
     
     @property
-    def sys_coop_winning_region(self):
-        return self._sys_coop_winning_region
+    def coop_winning_region(self):
+        return self._coop_winning_region
 
     @property
     def sys_winning_str(self):
@@ -80,10 +84,45 @@ class QualBestEffortReachabilitySynthesis():
     @game.setter
     def game(self, game: TwoPlayerGraph):
 
-        if not isinstance(game, TwoPlayerGraph):
-            warnings.warn("Please enter a graph which is of type TwoPlayerGraph")
+        assert isinstance(game, TwoPlayerGraph), "Please enter a graph which is of type TwoPlayerGraph"
 
         self._game = game
+        self.game_states = set(game.get_states()._nodes.keys())
+    
+
+    def get_losing_region(self, print_states: bool = False):
+        """
+            A Method that compute the set of states from which there does not exist a path to the target state(s). 
+        """
+        assert bool(self._coop_winning_region) is True, "Please Run the solver before accessing the Losing region."
+        self._losing_region = self.game_states.difference(self._coop_winning_region)
+
+        if print_states:
+            print("Losing Region: \n", self._losing_region)
+    
+
+    def get_pending_region(self, print_states: bool = False):
+        """
+            A Method that compute the set of states from which there does exists a path to the target state(s). 
+        """
+        assert bool(self._winning_region) is True, "Please Run the solver before accessing the Pending region."
+        if not bool(self._losing_region):
+            self._losing_region = self.game_states.difference(self._coop_winning_region)
+        
+        tmp_states = self._losing_region.union(self.winning_region)
+        self._pending_region =  self.game_states.difference(tmp_states)
+
+        if print_states:
+            print("Pending Region: \n", self._pending_region)
+
+    def get_winning_region(self, print_states: bool = False):
+        """
+            A Method that compute the set of states from which the sys player can enforce a visit to the target state(s). 
+        """
+        assert bool(self._winning_region) is True, "Please Run the solver before accessing the Winning region."
+        
+        if print_states:
+            print("Winning Region: \n", self._winning_region)
 
 
     def compute_cooperative_winning_strategy(self):
@@ -93,7 +132,7 @@ class QualBestEffortReachabilitySynthesis():
         coop_handle = CooperativeGame(game=self.game, debug=self.debug, extract_strategy=True)
         coop_handle.reachability_solver()
         self._sys_coop_winning_str = coop_handle.sys_str
-        self._sys_coop_winning_region = coop_handle.sys_winning_region
+        self._coop_winning_region = coop_handle.sys_winning_region
         
         if self.debug and coop_handle.is_winning:
             print("There exists a path from the Initial State")
@@ -107,13 +146,13 @@ class QualBestEffortReachabilitySynthesis():
         reachability_game_handle.maximally_permissive_reachability_solver()
         self._sys_winning_str = reachability_game_handle.sys_str
         self._env_winning_str = reachability_game_handle.env_str
-        self._sys_winning_region = reachability_game_handle.sys_winning_region
+        self._winning_region = reachability_game_handle.sys_winning_region
         
         if self.debug and reachability_game_handle.is_winning:
             print("There exists a Winning strategy from the Initial State")
 
 
-    def compute_best_effort_strategies(self):
+    def compute_best_effort_strategies(self, plot: bool = False):
         """
             This method calls compute_winning_strategies() and compute_cooperative_winning_strategy() methods and stitches them together. 
         """
@@ -123,36 +162,23 @@ class QualBestEffortReachabilitySynthesis():
         # get cooperative winning strategies
         self.compute_cooperative_winning_strategy()
 
-        # get states in winning region and remove those element from cooperative winning region
-        _sys_coop_win_sys: dict = self.sys_coop_winning_str
+        # get sys states in winning region and remove those element from cooperative winning region
+        _sys_coop_win_sys: dict = {s: strat for s, strat in self._sys_coop_winning_str.items() if self.game.get_state_w_attribute(s, 'player') is 'eve'}
 
-        for winning_state in self.sys_winning_region:
-            if winning_state in _sys_coop_win_sys: 
+        for winning_state in self.winning_region:
+            try:
                 del _sys_coop_win_sys[winning_state]
-            else:
+            except:
                 print("[ERROR]: Encountered a state that exists in Winnig region but does not exists in Cooperative Winning region. This is wrong")
                 sys.exit(-1)
         
 
         # merge the dictionaries
         self._sys_best_effort_str = {**self.sys_winning_str, **_sys_coop_win_sys}
-        tmp_sys_best_effort_str = {}
 
-        
-        # loop over every state and merge strategies
-        for state, state_attr in self.game.get_states():
-            # if state_attr['player'] == 'eve':
-            if state in self.sys_winning_region:
-                # print(f"{state} in Winning Region")
-                tmp_sys_best_effort_str[state] = self.sys_winning_str[state]
-            elif state in self.sys_coop_winning_region:
-                # print(f"{state} in Cooperative Winning Region")
-                tmp_sys_best_effort_str[state] = self.sys_coop_winning_str[state]
-                # else:
-                #     # print(f"{state} in Losing Region")
-        
-        # sanity checking
-        print(f"Sanity Check Passed? {tmp_sys_best_effort_str == self.sys_best_effort_str}")
+        if plot:
+            self.add_str_flag()
+            self.game.plot_graph()
 
 
 
@@ -167,14 +193,6 @@ class QualBestEffortReachabilitySynthesis():
         for curr_node, next_node in self._sys_best_effort_str.items():
             if isinstance(next_node, list):
                 for n_node in next_node:
-                    self.org_graph._graph.edges[curr_node, n_node, 0]['strategy'] = True
+                    self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
             else:
-                self.org_graph._graph.edges[curr_node, next_node, 0]['strategy'] = True
-
-
-    def plot_graph(self):
-        """
-         A helper function that changes the original name of the graph, add state cost as attribute, adds strategy
-           flags to strategies and
-        """
-        self.game.plot_graph()
+                self.game._graph.edges[curr_node, next_node, 0]['strategy'] = True

@@ -18,6 +18,7 @@ from src.strategy_synthesis.adversarial_game import ReachabilityGame as Reachabi
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
+from src.strategy_synthesis.be_qual_syn import QualBestEffortReachabilitySynthesis
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -532,13 +533,13 @@ if __name__ == "__main__":
     two_player_arena = True
 
     # solver to call
-    BE_synthesis = False
+    BE_synthesis = True
     finite_reg_synthesis = False
     infinte_reg_synthesis = False
     adversarial_game = False
     iros_str_synthesis = False
     min_max_game = False
-    compute_win_lose_regions = True
+    compute_win_lose_regions = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:
@@ -604,12 +605,11 @@ if __name__ == "__main__":
 
     elif BE_synthesis:
         assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-        reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=True)
-        reachability_game_handle.reachability_solver()
-        # reachability_game_handle.maximally_permissive_reachability_solver()
-        reachability_game_handle.plot_graph(with_strategy=True)
-        reachability_game_handle.print_winning_region()
-        reachability_game_handle.print_winning_strategies()
+        be_handle = QualBestEffortReachabilitySynthesis(game=trans_sys, debug=True)
+        be_handle.compute_best_effort_strategies(plot=True)
+        be_handle.get_losing_region(print_states=True)
+        be_handle.get_pending_region(print_states=True)
+        be_handle.get_winning_region(print_states=True)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

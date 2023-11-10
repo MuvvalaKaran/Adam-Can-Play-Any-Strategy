@@ -90,6 +90,19 @@ class QualBestEffortReachabilitySynthesis():
         self.game_states = set(game.get_states()._nodes.keys())
     
 
+    def is_winning(self) -> bool:
+        """
+        A helper method that return True if the initial state(s) belongs to the list of system player' winning region
+        :return: boolean value indicating if system player can force a visit to the accepting states or not
+        """
+        _init_states = self.game.get_initial_states()
+
+        for _i in _init_states:
+            if _i[0] in self.winning_region:
+                return True
+        return False
+    
+
     def get_losing_region(self, print_states: bool = False):
         """
             A Method that compute the set of states from which there does not exist a path to the target state(s). 
@@ -166,11 +179,12 @@ class QualBestEffortReachabilitySynthesis():
         _sys_coop_win_sys: dict = {s: strat for s, strat in self._sys_coop_winning_str.items() if self.game.get_state_w_attribute(s, 'player') is 'eve'}
 
         for winning_state in self.winning_region:
-            try:
-                del _sys_coop_win_sys[winning_state]
-            except:
-                print("[ERROR]: Encountered a state that exists in Winnig region but does not exists in Cooperative Winning region. This is wrong")
-                sys.exit(-1)
+            if self.game.get_state_w_attribute(winning_state, 'player') is 'eve':
+                try:
+                    del _sys_coop_win_sys[winning_state]
+                except:
+                    print("[ERROR]: Encountered a state that exists in Winning region but does not exists in Cooperative Winning region. This is wrong")
+                    sys.exit(-1)
         
 
         # merge the dictionaries
@@ -181,12 +195,10 @@ class QualBestEffortReachabilitySynthesis():
             self.game.plot_graph()
 
 
-
     def add_str_flag(self):
         """
-
-        :param str_dict:
-        :return:
+        A helper function used to add the 'strategy' attribute to edges that belong to the winning strategy. 
+        This function is called before plotting the winning strategy.
         """
         self.game.set_edge_attribute('strategy', False)
 

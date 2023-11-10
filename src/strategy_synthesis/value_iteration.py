@@ -103,6 +103,18 @@ class ValueIteration:
     @W.setter
     def W(self, value: int):
         self._W = value
+    
+    def is_winning(self) -> bool:
+        """
+        A helper method that return True if the initial state(s) belongs to the list of system player' winning region
+        :return: boolean value indicating if system player can force a visit to the accepting states or not
+        """
+        _init_states = self.org_graph.get_initial_states()
+
+        for state,_ in _init_states:
+            if INT_MIN_VAL < self.state_value_dict.get(state) < INT_MAX_VAL:
+                return True
+        return False
 
     def _initialize_target_state_costs(self):
         """
@@ -484,7 +496,7 @@ class ValueIteration:
         """
 
         for _n in self.org_graph._graph.nodes():
-            self.org_graph.add_state_attribute(_n, "val", self.state_value_dict[_n])
+            self.org_graph.add_state_attribute(_n, "val", [self.state_value_dict[_n]])
 
     def add_str_flag(self):
         """
@@ -676,6 +688,7 @@ class PermissiveValueIteration(ValueIteration):
             self.state_value_dict.update({_s: _int_val_vector[i]})
 
         if extract_strategy:
+            raise NotImplementedError
             # extract sys and env strategy after converging.
             for _n in self.org_graph._graph.nodes():
                 _int_node = self.node_int_map[_n]

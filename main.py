@@ -287,6 +287,9 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
         vi_handle = ValueIteration(game=trans_sys, competitive=True)
     
     vi_handle.solve(debug=debug, plot=plot)
+    print("******************************************************************************************************")
+    print("Winning strategy exists") if vi_handle.is_winning() else print("No Winning strategy exists")
+    print("******************************************************************************************************")
 
 
 def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],

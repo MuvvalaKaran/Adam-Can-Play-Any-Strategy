@@ -587,13 +587,15 @@ class PermissiveValueIteration(ValueIteration):
         _succ_vals: List = []
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
-            _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
-            _succ_vals.append((_next_n, _val))
+            _val = pre_vec[_node_int][0] + self.org_graph.get_edge_weight(node, _next_n)
+            if _val != math.inf:
+                _succ_vals.append((_next_n, _val))
 
-        _, min_val = min(_succ_vals, key=operator.itemgetter(1))
-
-        
-        return min_val, [_node for _node, _node_val in _succ_vals if min_val == _node_val]
+        try:
+            _, min_val = min(_succ_vals, key=operator.itemgetter(1))
+            return [_node for _node, _node_val in _succ_vals if min_val == _node_val]
+        except:
+            return []
 
     
     def _get_max_env_val(self, node: Union[str, tuple], pre_vec: ndarray) -> Tuple[Union[int, float], List[int]]:
@@ -608,7 +610,7 @@ class PermissiveValueIteration(ValueIteration):
         _succ_vals: List = []
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
-            _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0]
+            _val = pre_vec[_node_int][0] + self.org_graph.get_edge_weight(node, _next_n)
             _succ_vals.append((_next_n, _val))
 
         # get org node int value
@@ -617,7 +619,7 @@ class PermissiveValueIteration(ValueIteration):
         else:
             _, _val = min(_succ_vals, key=operator.itemgetter(1))
 
-        return _val, [_node for _node, _node_val in _succ_vals if _val == _node_val]
+        return [_node for _node, _node_val in _succ_vals if _val == _node_val]
 
     def plot_graph(self):
         """
@@ -688,23 +690,20 @@ class PermissiveValueIteration(ValueIteration):
             self.state_value_dict.update({_s: _int_val_vector[i]})
 
         if extract_strategy:
-            raise NotImplementedError
             # extract sys and env strategy after converging.
             for _n in self.org_graph._graph.nodes():
                 _int_node = self.node_int_map[_n]
-                # if _n in _accp_state:
-                #     continue
-                
                 # get the max value
                 if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
-                    _, _next_max_nodes = self._get_max_env_val(_n, _val_pre)
-                    # _max_str_dict[_n].add(set([self.node_int_map.inverse[_n] for _n in _next_max_nodes]))
-                    _max_str_dict[_n] = _next_max_nodes
+                    _next_max_nodes = self._get_max_env_val(_n, _val_pre)
+                    if len(_next_max_nodes) > 0:
+                        _max_str_dict[_n] = _next_max_nodes
                 
                 # get the min value
                 elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-                    _, _next_min_nodes = self._get_min_sys_val(_n, _val_pre)
-                    _min_str_dict[_n] = _next_min_nodes
+                    _next_min_nodes = self._get_min_sys_val(_n, _val_pre)
+                    if len(_next_min_nodes) > 0:
+                        _min_str_dict[_n] = _next_min_nodes
 
 
         self._sys_str_dict = _min_str_dict
@@ -717,9 +716,7 @@ class PermissiveValueIteration(ValueIteration):
         if debug:
             print(f"Number of iteration to converge: {iter_var}")
             print(f"Init state value: {self.state_value_dict[_init_node]}")
-            self._sanity_check()
-            # self.print_state_values()
-    
+            self._sanity_check()    
 
     def _add_state_costs_to_graph(self):
         """

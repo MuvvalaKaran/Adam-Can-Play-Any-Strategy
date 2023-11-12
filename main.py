@@ -19,6 +19,7 @@ from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
 from src.strategy_synthesis.be_qual_syn import QualBestEffortReachabilitySynthesis
+from src.strategy_synthesis.be_quant_syn import QuantBestEffortReachabilitySynthesis
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -282,10 +283,9 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                       permissive_strategies: bool = False):
     
     if permissive_strategies:
-        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=competitive)
+        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=True)
     else:
-        vi_handle = ValueIteration(game=trans_sys, competitive=True)
-    
+        vi_handle = ValueIteration(game=trans_sys, competitive=False)
     vi_handle.solve(debug=debug, plot=plot)
     print("******************************************************************************************************")
     print("Winning strategy exists") if vi_handle.is_winning() else print("No Winning strategy exists")
@@ -301,6 +301,30 @@ def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
     coop_handle.print_winning_strategies()
 
     coop_handle.plot_graph(with_strategy=True)
+
+
+def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
+    """
+     A method to compute Qualitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QualBestEffortReachabilitySynthesis(game=trans_sys, debug=debug)
+    be_handle.compute_best_effort_strategies(plot=plot)
+    be_handle.get_losing_region(print_states=print_states)
+    be_handle.get_pending_region(print_states=print_states)
+    be_handle.get_winning_region(print_states=print_states)
+
+
+def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
+    """
+     A method to compute Quantitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QuantBestEffortReachabilitySynthesis(game=trans_sys, debug=debug)
+    be_handle.compute_best_effort_strategies(plot=plot)
+    be_handle.get_losing_region(print_states=print_states)
+    be_handle.get_pending_region(print_states=print_states)
+    be_handle.get_winning_region(print_states=print_states)
 
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
@@ -536,7 +560,8 @@ if __name__ == "__main__":
     two_player_arena = True
 
     # solver to call
-    BE_synthesis = True
+    qual_BE_synthesis = False
+    quant_BE_synthesis = True
     finite_reg_synthesis = False
     infinte_reg_synthesis = False
     adversarial_game = False
@@ -601,19 +626,16 @@ if __name__ == "__main__":
                                     debug=False,
                                     print_str=False)
     elif min_max_game:
-        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=False)
+        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=False, competitive=False)
     
     elif compute_win_lose_regions:
         play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
 
-    elif BE_synthesis:
-        assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-        be_handle = QualBestEffortReachabilitySynthesis(game=trans_sys, debug=True)
-        be_handle.compute_best_effort_strategies(plot=True)
-        be_handle.get_losing_region(print_states=True)
-        be_handle.get_pending_region(print_states=True)
-        be_handle.get_winning_region(print_states=True)
+    elif qual_BE_synthesis:
+        play_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
 
+    elif quant_BE_synthesis:
+        play_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

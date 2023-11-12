@@ -38,6 +38,8 @@ class ValueIteration:
         self._str_dict: Dict = defaultdict(lambda: -1)
         self._sys_str_dict: Dict = defaultdict(lambda: -1)
         self._env_str_dict: Dict = defaultdict(lambda: -1)
+        self._sys_winning_region = None
+        self._accp_states: set = set(self.org_graph.get_accepting_states())
         self._initialize_val_vector()
 
     @property
@@ -83,6 +85,10 @@ class ValueIteration:
     @property
     def node_int_map(self):
         return self._node_int_map
+    
+    @property
+    def sys_winning_region(self):
+        return self._sys_winning_region
 
     @org_graph.setter
     def org_graph(self, org_graph):
@@ -383,6 +389,7 @@ class ValueIteration:
         self._sys_str_dict = _min_str_dict
         self._env_str_dict = _max_str_dict
         self._str_dict = {**_max_str_dict, **_min_str_dict}
+        self._sys_winning_region = set(_min_str_dict.keys()).union(self._accp_states)
 
         if plot:
             self._change_orig_graph_name(prefix='adv_str_on_')

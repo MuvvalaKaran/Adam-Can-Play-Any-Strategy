@@ -1,13 +1,12 @@
 import sys
-import warnings
 
 from typing import Optional, Union, List
 
 
 from ..graph import TwoPlayerGraph
-
 from .adversarial_game import ReachabilityGame
 from .cooperative_game import CooperativeGame
+
 
 class QualBestEffortReachabilitySynthesis():
     """
@@ -156,7 +155,8 @@ class QualBestEffortReachabilitySynthesis():
             A Method that computes the Winning strategies and corresponding winning region. 
         """
         reachability_game_handle = ReachabilityGame(game=self.game, debug=self.debug)
-        reachability_game_handle.maximally_permissive_reachability_solver()
+        # reachability_game_handle.maximally_permissive_reachability_solver()
+        reachability_game_handle.reachability_solver()
         self._sys_winning_str = reachability_game_handle.sys_str
         self._env_winning_str = reachability_game_handle.env_str
         self._winning_region = reachability_game_handle.sys_winning_region

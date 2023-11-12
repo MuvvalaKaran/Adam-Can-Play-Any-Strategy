@@ -216,14 +216,9 @@ class ValueIteration:
         """
 
         # initially in the org val_vector the target node(s) will value 0
-        # _accp_state = set(self.org_graph.get_accepting_states())
         _init_node = self.org_graph.get_initial_states()[0][0]
-        _init_int_node = self.node_int_map[_init_node]
-
-        # self._add_trap_state_player()
 
         _val_vector = copy.deepcopy(self.val_vector)
-        # _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
         iter_var = 0
@@ -698,6 +693,7 @@ class PermissiveValueIteration(ValueIteration):
             self._sys_str_dict, self._env_str_dict = self.extract_strategy()
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
+        self._sys_winning_region = set(self._sys_str_dict.keys()).union(self._accp_states)
 
         if plot:
             self.plot_graph()

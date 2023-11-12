@@ -18,8 +18,7 @@ from src.strategy_synthesis.adversarial_game import ReachabilityGame as Reachabi
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
-from src.strategy_synthesis.be_qual_syn import QualBestEffortReachabilitySynthesis
-from src.strategy_synthesis.be_quant_syn import QuantBestEffortReachabilitySynthesis
+from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -308,7 +307,7 @@ def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, 
      A method to compute Qualitative Best effort strategies for the system player
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    be_handle = QualBestEffortReachabilitySynthesis(game=trans_sys, debug=debug)
+    be_handle = QualitativeBestEffortReachSyn(game=trans_sys, debug=debug)
     be_handle.compute_best_effort_strategies(plot=plot)
     be_handle.get_losing_region(print_states=print_states)
     be_handle.get_pending_region(print_states=print_states)
@@ -320,7 +319,7 @@ def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False,
      A method to compute Quantitative Best effort strategies for the system player
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    be_handle = QuantBestEffortReachabilitySynthesis(game=trans_sys, debug=debug)
+    be_handle = QuantitativeBestEffortReachSyn(game=trans_sys, debug=debug)
     be_handle.compute_best_effort_strategies(plot=plot)
     be_handle.get_losing_region(print_states=print_states)
     be_handle.get_pending_region(print_states=print_states)

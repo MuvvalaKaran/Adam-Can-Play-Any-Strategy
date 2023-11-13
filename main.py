@@ -1,6 +1,7 @@
 import abc
 import warnings
 import sys
+import copy
 
 from typing import Tuple, Optional, Dict, Union
 
@@ -18,7 +19,7 @@ from src.strategy_synthesis.adversarial_game import ReachabilityGame as Reachabi
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
-from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn
+from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, QualitativeBestEffortSafetySyn
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -282,7 +283,7 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                       permissive_strategies: bool = False):
     
     if permissive_strategies:
-        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=True)
+        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=False)
     else:
         vi_handle = ValueIteration(game=trans_sys, competitive=False)
     vi_handle.solve(debug=debug, plot=plot)
@@ -312,6 +313,55 @@ def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, 
     be_handle.get_losing_region(print_states=print_states)
     be_handle.get_pending_region(print_states=print_states)
     be_handle.get_winning_region(print_states=print_states)
+
+
+def ijcai24_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+    """
+     This methods implements my proposed algorithm for IJCAI 24. The algorithm is as follows:
+
+     1. Compute Losing, Pending and Winning region.
+     2. In Winning region compute Winning strategy - BE reachability
+     3. In Winning + Pending region compute BE Safety
+     4. In Pending region compute BE Reachability game with objective of reaching the Winning region
+     5. Merge strategies
+    """
+
+    sys_be_str = {}
+    sys_be_pending_str = {}
+
+    # compute winning region and winning strategies
+    reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
+    reachability_game_handle.reachability_solver()
+    reachability_game_handle.get_winning_region(print_states=True)
+
+    # compute the Winning + Pending region
+    coop_handle = CooperativeGame(game=trans_sys, debug=False, extract_strategy=False)
+    coop_handle.reachability_solver()
+    coop_handle.print_winning_region()
+
+    # remove env states from the cooperative winning region. 
+    sys_states_coop_winning_region = [cs for cs in coop_handle.sys_winning_region if trans_sys.get_state_w_attribute(cs, 'player') == 'eve']
+
+    # now compute BE Safety strategies
+    safety_be_handle = QualitativeBestEffortSafetySyn(game=trans_sys, target_states=sys_states_coop_winning_region, debug=True)
+    safety_be_handle.compute_best_effort_safety_strategies(plot=True)
+
+    be_reach_win_trans_sys = copy.deepcopy(trans_sys)
+    be_reach_win_trans_sys.add_accepting_states_from(reachability_game_handle.sys_winning_region)
+
+    # Finally, compute reachability strategies from the pending region with Winning region as reacability objective
+    be_handle = QualitativeBestEffortReachSyn(game=be_reach_win_trans_sys, debug=debug)
+    be_handle.compute_best_effort_strategies(plot=plot)
+
+    # TODO: finally merge the strategies
+    # for ps in sys_states_coop_winning_region:
+    #     try:
+    #         set(be_handle.sys_best_effort_str[ps]).intersection(safety_be_handle.sys_)
+    #     except:
+    #         pass
+
+
+    
 
 
 def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
@@ -543,30 +593,31 @@ if __name__ == "__main__":
 
     # define some constants
     EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
-    IROS_FLAG = False
+    IROS_FLAG: bool = False
     ENERGY_BOUND = 30
     ALLOWED_HUMAN_INTERVENTIONS = 2
 
     # some constants related to computation
-    finite = True
-    go_fast = True
+    finite: bool = True
+    go_fast: bool = True
 
     # some constants that allow for appr _instance creations
-    three_state_ts = False
-    five_state_ts = False
-    variant_1_paper = False
-    target_weighted_arena = False
-    two_player_arena = True
+    three_state_ts: bool = False
+    five_state_ts: bool = False
+    variant_1_paper: bool = False
+    target_weighted_arena: bool = False
+    two_player_arena: bool = True
 
     # solver to call
-    qual_BE_synthesis = False
-    quant_BE_synthesis = True
-    finite_reg_synthesis = False
-    infinte_reg_synthesis = False
-    adversarial_game = False
-    iros_str_synthesis = False
-    min_max_game = False
-    compute_win_lose_regions = False
+    qual_BE_synthesis: bool = False
+    quant_BE_synthesis: bool = False
+    ijcai_qual_BE_synthesis: bool = True
+    finite_reg_synthesis: bool = False
+    infinte_reg_synthesis: bool = False
+    adversarial_game: bool = False
+    iros_str_synthesis: bool = False
+    min_max_game: bool = False
+    compute_win_lose_regions: bool = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:
@@ -625,7 +676,7 @@ if __name__ == "__main__":
                                     debug=False,
                                     print_str=False)
     elif min_max_game:
-        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=False, competitive=False)
+        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=False)
     
     elif compute_win_lose_regions:
         play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
@@ -635,6 +686,10 @@ if __name__ == "__main__":
 
     elif quant_BE_synthesis:
         play_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
+    
+    elif ijcai_qual_BE_synthesis:
+        ijcai24_qual_be_synthesis_game(trans_sys=trans_sys, debug=False, plot=False)
+
     else:
         warnings.warn("Please make sure that you select at-least one solver.")
         sys.exit(-1)

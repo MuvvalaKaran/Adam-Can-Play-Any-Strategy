@@ -7,7 +7,7 @@ import copy
 import operator
 import random
 
-from collections import defaultdict, deque
+from collections import defaultdict
 from networkx import DiGraph
 from numpy import ndarray
 from bidict import bidict
@@ -587,7 +587,7 @@ class PermissiveValueIteration(ValueIteration):
         super().__init__(game, competitive, int_val)
     
 
-    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> List[str]:
+    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Union[List[str], None]:
         """
         A method that returns the min value of the current node that belongs to the sys
         :param node: The current node in in the graph
@@ -605,7 +605,7 @@ class PermissiveValueIteration(ValueIteration):
             _, min_val = min(_succ_vals, key=operator.itemgetter(1))
             return [_node for _node, _node_val in _succ_vals if min_val == _node_val]
         except ValueError:
-            return []
+            return None
 
     
     def _get_max_env_val(self, node: Union[str, tuple], pre_vec: ndarray) -> List[str]:
@@ -657,11 +657,9 @@ class PermissiveValueIteration(ValueIteration):
         :return:
         """
         # initially in the org val_vector the target node(s) will value 0
-        _accp_state = set(self.org_graph.get_accepting_states())
         _init_node = self.org_graph.get_initial_states()[0][0]
 
         _val_vector = copy.deepcopy(self.val_vector)
-        # _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
         iter_var = 0

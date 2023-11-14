@@ -1,6 +1,7 @@
 import sys
 import copy
 
+from collections import defaultdict
 from typing import Optional, Union, List, Iterable
 
 from ..graph import TwoPlayerGraph
@@ -223,7 +224,7 @@ class QualitativeBestEffortReachSyn():
         self.game.set_edge_attribute('strategy', False)
 
         for curr_node, next_node in self._sys_best_effort_str.items():
-            if isinstance(next_node, list):
+            if isinstance(next_node, set) or isinstance(next_node, list):
                 for n_node in next_node:
                     self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
             else:

@@ -20,8 +20,8 @@ from src.strategy_synthesis.adversarial_game import ReachabilityGame as Reachabi
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
-from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, \
-      QualitativeBestEffortSafetySyn, QuantitativeBestEffortSafetySyn
+from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn
+from src.strategy_synthesis.best_effort_safe_reach import QualitativeSafeReachBestEffort, QuantitativeSafeReachBestEffort
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -327,61 +327,8 @@ def ijcai24_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = Fals
      4. In Pending region compute BE Reachability game with objective of reaching the Winning region
      5. Merge strategies
     """
-
-    sys_best_effort_str: Dict[str, Set[str]] = {}
-    sys_best_effort_pending_str: Dict[str, Set[str]] = defaultdict(lambda: set({}))
-
-    # compute winning region and winning strategies
-    reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=False)
-    reachability_game_handle.reachability_solver()
-    winning_region = reachability_game_handle.get_winning_region(print_states=False)
-
-    # compute the Winning + Pending region
-    coop_handle = CooperativeGame(game=trans_sys, debug=False, extract_strategy=False)
-    coop_handle.reachability_solver()
-
-    # remove env states from the winning region and cooperative winning region. 
-    winning_region = [ws for ws in winning_region if trans_sys.get_state_w_attribute(ws, 'player') == 'eve']
-    sys_states_coop_winning_region = [cs for cs in coop_handle.sys_winning_region if trans_sys.get_state_w_attribute(cs, 'player') == 'eve']
-    pending_region = set(sys_states_coop_winning_region).difference(set(winning_region))
-
-    # now compute BE Safety strategies
-    safety_be_handle = QualitativeBestEffortSafetySyn(game=trans_sys, target_states=sys_states_coop_winning_region, debug=True)
-    safety_be_handle.compute_best_effort_safety_strategies(plot=True)
-
-    print("BE Safe Str in Pending + Winning Region: ", safety_be_handle.sys_best_effort_str)
-
-    be_reach_win_trans_sys = copy.deepcopy(trans_sys)
-    be_reach_win_trans_sys.add_accepting_states_from(reachability_game_handle.sys_winning_region)
-
-    # Finally, compute reachability strategies from the pending region with Winning region as reacability objective
-    be_handle = QualitativeBestEffortReachSyn(game=be_reach_win_trans_sys, debug=False)
-    be_handle.compute_best_effort_strategies(plot=True)
-    print("BE Reach Str to winning region: ", be_handle.sys_best_effort_str)
-
-    # for pending states (ps)
-    for ps in pending_region:
-        try:
-            safereach_str = set(be_handle.sys_best_effort_str[ps]).intersection(safety_be_handle.sys_best_effort_str[ps])
-            if safereach_str:
-                sys_best_effort_pending_str[ps].update(safereach_str)
-            else:
-                sys_best_effort_pending_str[ps].update(set(be_handle.sys_best_effort_str[ps]))
-
-        except KeyError:
-            warnings.warn(f"SOmething went wrog during Best Effort Synthesis in Pending Region! \
-                           state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
-
-    
-    sys_best_effort_str: Dict[str, str] = {**reachability_game_handle.sys_str, **sys_best_effort_pending_str}
-
-    if debug:
-        print("Printing Safe Reach Best Effort strategy")
-        for game_state, game_str in sys_best_effort_str.items():
-            print(f"{game_state}   --->    {game_str}")
-    
-    print("Done Computing Strategies.")
-
+    safe_reach_be_handle = QualitativeSafeReachBestEffort(game=trans_sys, debug=False)
+    safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
 
 
 def ijcai24_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
@@ -396,75 +343,8 @@ def ijcai24_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = Fal
     
      The algorithm is same as the Qualitative one.
     """
-    sys_best_effort_str: Dict[str, Set[str]] = {}
-    sys_best_effort_pending_str: Dict[str, Set[str]] = defaultdict(lambda: set({}))
-
-    # compute winning region and winning strategies
-    vi_reachability_game_handle = ValueIteration(game=trans_sys, competitive=True)
-    vi_reachability_game_handle.solve(debug=False, plot=False, extract_strategy=True)
-
-    # compute the Winning + Pending region
-    vi_coop_handle = ValueIteration(game=trans_sys, competitive=False)
-    vi_coop_handle.solve(debug=False, plot=False, extract_strategy=True)
-
-    # remove env states from the winning region and cooperative winning region. 
-    winning_region = [ws for ws in vi_reachability_game_handle.sys_winning_region if trans_sys.get_state_w_attribute(ws, 'player') == 'eve']
-    sys_states_coop_winning_region = [cs for cs in vi_coop_handle.sys_winning_region if trans_sys.get_state_w_attribute(cs, 'player') == 'eve']
-    pending_region = set(sys_states_coop_winning_region).difference(set(winning_region))
-    
-    if debug:
-        print("Winning Region: ", winning_region)
-        print("Pending Region: ", pending_region)
-
-    # now compute BE Safety strategies
-    safety_be_handle = QuantitativeBestEffortSafetySyn(game=trans_sys, target_states=sys_states_coop_winning_region, debug=True)
-    safety_be_handle.compute_best_effort_safety_strategies(plot=False)
-
-    print("BE Safe Str in Pending + Winning Region: ", safety_be_handle.sys_best_effort_str)
-
-    be_reach_win_trans_sys = copy.deepcopy(trans_sys)
-    be_reach_win_trans_sys.add_accepting_states_from(vi_reachability_game_handle.sys_winning_region)
-
-    # Finally, compute reachability strategies from the pending region with Winning region as reacability objective
-    be_handle = QuantitativeBestEffortReachSyn(game=be_reach_win_trans_sys, debug=False)
-    be_handle.compute_best_effort_strategies(plot=False)
-    print("BE Reach Str to winning region: ", be_handle.sys_best_effort_str)
-
-    # for pending states (ps)
-    for ps in pending_region:
-        try:
-            safereach_str = set(be_handle.sys_best_effort_str[ps]).intersection(safety_be_handle.sys_best_effort_str[ps])
-            if safereach_str:
-                sys_best_effort_pending_str[ps].update(safereach_str)
-            else:
-                sys_best_effort_pending_str[ps].update(set(be_handle.sys_best_effort_str[ps]))
-
-        except KeyError:
-            warnings.warn(f"SOmething went wrog during Best Effort Synthesis in Pending Region! \
-                           state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
-
-    
-    sys_best_effort_str: Dict[str, Set[str]] = {**vi_reachability_game_handle.sys_str_dict, **sys_best_effort_pending_str}
-
-    if plot:
-        trans_sys.set_edge_attribute('strategy', False)
-
-        for curr_node, next_node in sys_best_effort_str.items():
-            if isinstance(next_node, set):
-                for n_node in next_node:
-                    trans_sys._graph.edges[curr_node, n_node, 0]['strategy'] = True
-            else:
-                trans_sys._graph.edges[curr_node, next_node, 0]['strategy'] = True
-        
-        trans_sys.plot_graph()
-
-    if debug:
-        print("Printing Safe Reach Best Effort strategy")
-        for game_state, game_str in sys_best_effort_str.items():
-            print(f"{game_state}   --->    {game_str}")
-    
-    print("Done Computing Strategies.")
-
+    safe_reach_be_handle = QuantitativeSafeReachBestEffort(game=trans_sys, debug=False)
+    safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
 
 
 def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
@@ -792,7 +672,7 @@ if __name__ == "__main__":
         play_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
     
     elif ijcai_qual_BE_synthesis:
-        ijcai24_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=False)
+        ijcai24_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True)
     
     elif ijcai_quant_BE_synthesis:
         ijcai24_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True)

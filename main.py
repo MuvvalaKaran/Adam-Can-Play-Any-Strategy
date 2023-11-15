@@ -321,8 +321,6 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     :return:
     """
 
-    # payoff = payoff_factory.get("cumulative", graph=trans_sys)
-
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys)
 

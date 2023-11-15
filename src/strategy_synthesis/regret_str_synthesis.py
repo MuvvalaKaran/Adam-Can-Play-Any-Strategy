@@ -1,33 +1,21 @@
 import math
-import copy
-import multiprocessing
 import warnings
-import random
-import sys
-import operator
 
-import networkx as nx
-import numpy as np
-from numpy import ndarray
 from collections import defaultdict, deque
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, Tuple, Union, Optional
 
 # import local packages
-from ..graph import Graph, graph_factory
+from ..graph import Graph
 from ..graph import TwoPlayerGraph
 from ..graph import ProductAutomaton
-from ..helper_methods import deprecated
 
 # import local value iteration solver
 from .value_iteration import ValueIteration
 
-# needed for multi-threading w' computation
-NUM_CORES = multiprocessing.cpu_count()
-
 
 class RegretMinimizationStrategySynthesis:
     """
-    This class implements Algo 1, 2, 3, and 4 as sepcified the pseudocode pdf file
+    This class implements the Algo as sepcified the ICRA 22 paper.
 
     :param      graph:          A concrete instance of class TwoPlayerGraph or ProductAutomation
                                 (depending on how you construct the Graph) on which we will be performing the
@@ -39,53 +27,6 @@ class RegretMinimizationStrategySynthesis:
         self.graph_of_alternatives = None
         self.graph_of_utility = None
 
-
-    def pure_games_solver(self,
-                          minigrid_instance,
-                          cooperative: bool,
-                          plot: bool = False,
-                          plot_only_eve: bool = False,
-                          simulate_minigrid: bool = False,
-                          epsilon: float = 0,
-                          max_human_interventions: int = 5,
-                          compute_reg_for_human: bool = False,
-                          integrate_accepting: bool = False):
-        """
-        A parent function that computes a strategy for the system player under PURE ADVERSARIAL game.
-
-        :return:
-        """
-        # Add auxiliary accepting state
-        if integrate_accepting:
-            self.add_common_accepting_state(plot=False)
-
-        # # compute cooperative str
-        if cooperative:
-            coop_mcr_solver = ValueIteration(self.graph, competitive=False, int_val=False)
-            coop_mcr_solver.cooperative_solver(debug=True, plot=plot)
-            _comp_str_dict = coop_mcr_solver.str_dict
-            _comp_val_dict = coop_mcr_solver.state_value_dict
-        # compute competitive values from each state
-        else:
-            comp_mcr_solver = ValueIteration(self.graph, competitive=True, int_val=False)
-            comp_mcr_solver.solve(debug=True, plot=plot)
-            _comp_str_dict = comp_mcr_solver.str_dict
-            _comp_val_dict = comp_mcr_solver.state_value_dict
-
-        if simulate_minigrid:
-            # get the regret value of the game
-            _init_state = self.graph.get_initial_states()[0][0]
-            _game_reg_value: float = _comp_val_dict.get(_init_state)
-
-            if minigrid_instance is None:
-                warnings.warn("Please provide a Minigrid instance to simulate!. Exiting program")
-                sys.exit(-1)
-
-            _controls = self.get_controls_from_str_minigrid(str_dict=_comp_str_dict,
-                                                            epsilon=epsilon,
-                                                            max_human_interventions=max_human_interventions)
-
-            minigrid_instance.execute_str(_controls=(_game_reg_value, _controls))
 
     def add_common_accepting_state(self, plot: bool = False):
         """
@@ -526,7 +467,7 @@ class RegretMinimizationStrategySynthesis:
         coop_mcr_solver.cooperative_solver(debug=False, plot=False)
         coop_val_dict = coop_mcr_solver.state_value_dict
 
-        _best_alternate_values: Dict[Optional[tuple], Optional[int, float]] = defaultdict(lambda: -1)
+        _best_alternate_values: Dict[Optional[tuple], Union[int, float]] = defaultdict(lambda: -1)
 
         for _e in two_player_game._graph.edges():
             _u = _e[0]
@@ -543,7 +484,7 @@ class RegretMinimizationStrategySynthesis:
 
                     _curr_edge_weight = two_player_game.get_edge_attributes(_u, _succ, "weight")
 
-                    _curr_edge_coop_val: Optional[int, float] = _curr_edge_weight + coop_val_dict.get(_succ)
+                    _curr_edge_coop_val: Union[int, float] = _curr_edge_weight + coop_val_dict.get(_succ)
                     if _curr_edge_weight < _min_coop_val:
                         _min_coop_val = _curr_edge_coop_val
 
@@ -596,355 +537,6 @@ class RegretMinimizationStrategySynthesis:
                 else:
                     g_hat._graph.edges[curr_node, next_node, 0]['strategy'] = True
 
-    def _from_str_mpg_to_str(self, combined_str: Dict):
-        original_str = {}
-        # follow the strategy from the mpg toolbox
-        node_stack = []
-        curr_node = "v1"
-        b_val = combined_str[curr_node][1]
-
-        for u_node, v_node in combined_str.items():
-            if self.graph._graph.has_node(u_node[0]):
-                if u_node[1] == b_val and v_node[1] == b_val:
-                    if self.graph._graph.has_edge(u_node[0], v_node[0]):
-                            original_str.update({u_node[0]: v_node[0]})
-        return original_str
-
-    def get_controls_from_str(self, str_dict: Dict, debug: bool = False) -> List[str]:
-        """
-        A helper method to return a list of actions (edge labels) associated with the strategy found
-        :param str_dict: The regret minimizing strategy
-        :return: A sequence of labels that to be executed by the robot
-        """
-
-        start_state = self.graph.get_initial_states()[0][0]
-        accepting_state = self.graph.get_accepting_states()[0]
-        trap_state = self.graph.get_trap_states()[0]
-        control_sequence = []
-
-        curr_state = start_state
-        next_state = str_dict[curr_state]
-        # if self.graph._graph.nodes[next_state].get("player") == "adam":
-        #     curr_state = str_dict[next_state]
-        #     next_state = str_dict[curr_state]
-        #     x, y = curr_state[0][0].split("(")[1].split(")")[0].split(",")
-        #     control_sequence.append(("rand", np.array([int(x), int(y)])))
-        # else:
-        control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
-        while curr_state != next_state:
-            if next_state == accepting_state or next_state == trap_state:
-                break
-
-            curr_state = next_state
-            next_state = str_dict[curr_state]
-            # if self.graph._graph.nodes[next_state].get("player") == "adam":
-            #     curr_state = str_dict[next_state]
-            #     next_state = str_dict[curr_state]
-            #     x, y = curr_state[0][0].split("(")[1].split(")")[0].split(",")
-            #     control_sequence.append(("rand", np.array([int(x), int(y)])))
-            # else:
-            control_sequence.append(self.graph.get_edge_attributes(curr_state, next_state, 'actions'))
-
-        if debug:
-            print([_n for _n in control_sequence])
-
-        return control_sequence
-
-    def _epsilon_greedy_finite_choose_action(self,
-                                             graph,
-                                             _human_state: tuple,
-                                             str_dict: Dict[tuple, tuple],
-                                             epsilon: float, _absoring_states: List[tuple],
-                                             human_can_intervene: bool = False) -> Tuple[tuple, bool]:
-        """
-        Choose an action according to epsilon greedy algorithm
-
-        Using this policy we either select a random human action with epsilon probability and the human can select the
-        optimal action (as given in the str dict if any) with 1-epsilon probability.
-
-        This method returns a human action based on the above algorithm.
-        :param _human_state: The current state in the game from which we need to pick an action
-        :return: Tuple(next_state, flag) . flag = True if human decides to take an action.
-        """
-
-        if graph.get_state_w_attribute(_human_state, "player") != "adam":
-            warnings.warn("WARNING: Randomly choosing action for a non human state!")
-
-        _next_states = [_next_n for _next_n in graph._graph.successors(_human_state)]
-        _did_human_move = False
-
-        # if the human still has moves remaining then he follows the eps strategy else he does not move at all
-        if human_can_intervene:
-            # rand() return a floating point number between [0, 1)
-            if np.random.rand() < epsilon:
-                _next_state: tuple = random.choice(_next_states)
-            else:
-                _next_state: tuple = str_dict[_human_state]
-
-            if _next_state[0][1] != _human_state[0][1]:
-                _did_human_move = True
-        else:
-            # human follows the strategy dictated by the system
-            for _n in _next_states:
-                if _n[0][1] == _human_state[0][1]:
-                    _next_state = _n
-                    break
-
-        return _next_state, _did_human_move
-
-    def _epsilon_greedy_choose_action(self,
-                                      _human_state: tuple,
-                                      str_dict: Dict[tuple, tuple],
-                                      epsilon: float, _absoring_states: List[tuple],
-                                      human_can_intervene: bool = False) -> Tuple[tuple, bool]:
-        """
-        Choose an action according to epsilon greedy algorithm
-
-        Using this policy we either select a random human action with epsilon probability and the human can select the
-        optimal action (as given in the str dict if any) with 1-epsilon probability.
-
-        This method returns a human action based on the above algorithm.
-        :param _human_state: The current state in the game from which we need to pick an action
-        :return: Tuple(next_state, flag) . flag = True if human decides to take an action.
-        """
-
-        if self.graph.get_state_w_attribute(_human_state, "player") != "adam":
-            warnings.warn("WARNING: Randomly choosing action for a non human state!")
-
-        _next_states = [_next_n for _next_n in self.graph._graph.successors(_human_state)]
-        _did_human_move = False
-
-        # if the human still has moves remaining then he follows the eps strategy else he does not move at all
-        if human_can_intervene:
-            # rand() return a floating point number between [0, 1)
-            if np.random.rand() < epsilon:
-                _next_state: tuple = random.choice(_next_states)
-            else:
-                _next_state: tuple = str_dict[_human_state]
-
-            if _next_state[0][1] != _human_state[0][1]:
-                _did_human_move = True
-        else:
-            # human follows the strategy dictated by the system
-            for _n in _next_states:
-                if _n[0][1] == _human_state[0][1]:
-                    _next_state = _n
-                    break
-
-        return _next_state, _did_human_move
-
-    def get_controls_from_finite_memory_str_minigrid(self,
-                                                     graph,
-                                                     str_dict: Dict[tuple, tuple],
-                                                     epsilon: float,
-                                                     max_human_interventions: int = 1,
-                                                     debug: bool = False) -> List[Tuple[str, ndarray, int]]:
-        """
-        A helper method to return a list of actions (edge labels) associated with the strategy found
-
-        NOTE: after system node you need to have a human node.
-        :param str_dict: The regret minimizing strategy
-        :return: A sequence of labels that to be executed by the robot
-        """
-        if not isinstance(epsilon, float):
-            try:
-                epsilon = float(epsilon)
-                if epsilon > 1:
-                    warnings.warn("Please make sure that the value of epsilon is <=1")
-            except ValueError:
-                print(ValueError)
-
-        if not isinstance(max_human_interventions, int) or max_human_interventions < 0:
-            warnings.warn("Please make sure that the max human intervention bound should >= 0")
-
-        _start_state = graph.get_initial_states()[0][0]
-        _total_human_intervention = _start_state[0][1]
-        _accepting_states = graph.get_accepting_states()
-        _trap_states = graph.get_trap_states()
-
-        _absorbing_states = _accepting_states + _trap_states
-        _human_interventions: int = 0
-        _visited_states = []
-        _position_sequence = []
-
-        curr_sys_node = _start_state
-        next_env_node = str_dict[curr_sys_node]
-
-        _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
-        next_sys_node = self._epsilon_greedy_finite_choose_action(graph,
-                                                                  next_env_node,
-                                                                  str_dict,
-                                                                  epsilon=epsilon,
-                                                                  _absoring_states=_absorbing_states,
-                                                                  human_can_intervene=_can_human_intervene)[0]
-
-        (x, y) = next_sys_node[0][0][0][0]
-        _human_interventions: int = _total_human_intervention - next_sys_node[0][0][0][1]
-
-        next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
-
-        _visited_states.append(curr_sys_node)
-        _visited_states.append(next_sys_node)
-
-        _entered_absorbing_state = False
-
-        while 1:
-            _position_sequence.append(next_pos)
-
-            curr_sys_node = next_sys_node
-            next_env_node = str_dict[curr_sys_node]
-
-            if curr_sys_node == next_env_node:
-                x, y = next_sys_node[0][0][0][0]
-                _human_interventions: int = _total_human_intervention - next_sys_node[0][0][0][1]
-                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
-                _visited_states.append(next_sys_node)
-                break
-
-            # update the next sys node only if you not transiting to an absorbing state
-            if next_env_node not in _absorbing_states and\
-                    graph.get_state_w_attribute(next_env_node, "player") == "adam":
-                _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
-                next_sys_node = self._epsilon_greedy_finite_choose_action(graph,
-                                                                          next_env_node,
-                                                                          str_dict,
-                                                                          epsilon=epsilon,
-                                                                          _absoring_states=_absorbing_states,
-                                                                          human_can_intervene=_can_human_intervene)[0]
-
-            # if transiting to an absorbing state then due to the self transition the next sys node will be the same as
-            # the current env node which is an absorbing itself. Technically an absorbing state IS NOT assigned any
-            # player.
-            else:
-                next_sys_node = next_env_node
-
-            if next_sys_node in _visited_states:
-                break
-
-            # if you enter a trap/ accepting state then do not add that transition in _pos_sequence
-            elif next_sys_node in _absorbing_states:
-                _entered_absorbing_state = True
-                break
-            else:
-                x, y = next_sys_node[0][0][0][0]
-                _human_interventions: int = _total_human_intervention - next_sys_node[0][0][0][1]
-                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
-                _visited_states.append(next_sys_node)
-
-        if not _entered_absorbing_state:
-            _position_sequence.append(next_pos)
-
-        if debug:
-            print([_n for _n in _position_sequence])
-
-        return _position_sequence
-
-    def get_controls_from_str_minigrid(self,
-                                       str_dict: Dict[tuple, tuple],
-                                       epsilon: float,
-                                       max_human_interventions: int = 1,
-                                       debug: bool = False) -> List[Tuple[str, ndarray, int]]:
-        """
-        A helper method to return a list of actions (edge labels) associated with the strategy found
-
-        NOTE: after system node you need to have a human node.
-        :param str_dict: The regret minimizing strategy
-        :return: A sequence of labels that to be executed by the robot
-        """
-        if not isinstance(epsilon, float):
-            try:
-                epsilon = float(epsilon)
-                if epsilon > 1:
-                    warnings.warn("Please make sure that the value of epsilon is <=1")
-            except ValueError:
-                print(ValueError)
-
-        if not isinstance(max_human_interventions, int) or max_human_interventions < 0:
-            warnings.warn("Please make sure that the max human intervention bound should >= 0")
-
-        _start_state = self.graph.get_initial_states()[0][0]
-        if _start_state[0] == 'Init':
-            _next_states = [_next_n for _next_n in self.graph._graph.successors(_start_state)]
-            _start_state = _next_states[0]
-        _total_human_intervention = _start_state[0][1]
-        _accepting_states = self.graph.get_accepting_states()
-        _trap_states = self.graph.get_trap_states()
-
-        _absorbing_states = _accepting_states + _trap_states
-        _human_interventions: int = 0
-        _visited_states = []
-        _position_sequence = []
-
-        curr_sys_node = _start_state
-        next_env_node = str_dict[curr_sys_node]
-
-        _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
-        next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
-                                                           str_dict,
-                                                           epsilon=epsilon,
-                                                           _absoring_states=_absorbing_states,
-                                                           human_can_intervene=_can_human_intervene)[0]
-
-        (x, y) = next_sys_node[0][0]
-        _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
-
-        next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
-
-        _visited_states.append(curr_sys_node)
-        _visited_states.append(next_sys_node)
-
-        _entered_absorbing_state = False
-
-        while 1:
-            _position_sequence.append(next_pos)
-
-            curr_sys_node = next_sys_node
-            next_env_node = str_dict[curr_sys_node]
-
-            if curr_sys_node == next_env_node:
-                x, y = next_sys_node[0][0]
-                _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
-                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
-                _visited_states.append(next_sys_node)
-                break
-
-            # update the next sys node only if you not transiting to an absorbing state
-            if next_env_node not in _absorbing_states and\
-                    self.graph.get_state_w_attribute(next_env_node, "player") == "adam":
-                _can_human_intervene: bool = True if _human_interventions < max_human_interventions else False
-                next_sys_node = self._epsilon_greedy_choose_action(next_env_node,
-                                                                   str_dict,
-                                                                   epsilon=epsilon,
-                                                                   _absoring_states=_absorbing_states,
-                                                                   human_can_intervene=_can_human_intervene)[0]
-
-            # if transiting to an absorbing state then due to the self transition the next sys node will be the same as
-            # the current env node which is an absorbing itself. Technically an absorbing state IS NOT assigned any
-            # player.
-            else:
-                next_sys_node = next_env_node
-
-            if next_sys_node in _visited_states:
-                break
-
-            # if you enter a trap/ accepting state then do not add that transition in _pos_sequence
-            elif next_sys_node in _absorbing_states:
-                _entered_absorbing_state = True
-                break
-            else:
-                x, y = next_sys_node[0][0]
-                _human_interventions: int = _total_human_intervention - next_sys_node[0][1]
-                next_pos = ("rand", np.array([int(x), int(y)]), _human_interventions)
-                _visited_states.append(next_sys_node)
-
-        if not _entered_absorbing_state:
-            _position_sequence.append(next_pos)
-
-        if debug:
-            print([_n for _n in _position_sequence])
-
-        return _position_sequence
-
     def plot_str_for_cumulative_reg(self,
                                     game_venue: TwoPlayerGraph,
                                     str_dict: Dict,
@@ -967,37 +559,3 @@ class RegretMinimizationStrategySynthesis:
 
         if plot:
             game_venue.plot_graph()
-
-    def plot_str_from_mgp(self,
-                          g_hat: TwoPlayerGraph,
-                          str_dict: Dict,
-                          only_eve: bool = False,
-                          plot: bool = False) -> Dict:
-        """
-        A helper method that plots all the VALID strategies computed on g_hat on g_hat. It then maps back the
-         least regret strategy back to the original strategy.
-        :return:
-        """
-
-        g_hat.set_edge_attribute('strategy', False)
-
-        if only_eve:
-            self._add_strategy_flag_only_eve(g_hat, str_dict)
-
-        else:
-            self._add_strategy_flag(g_hat, str_dict)
-
-        # Map back strategies from g_hat to the original abstraction
-        org_str = self._from_str_mpg_to_str(str_dict)
-
-        if only_eve:
-            self._add_strategy_flag_only_eve(self.graph, org_str)
-
-        else:
-            self._add_strategy_flag(self.graph, org_str)
-
-        if plot:
-            g_hat.plot_graph()
-            self.graph.plot_graph()
-
-        return org_str

@@ -1,3 +1,4 @@
+import sys
 import math
 import warnings
 
@@ -26,6 +27,23 @@ class RegretMinimizationStrategySynthesis:
         self.graph = graph
         self.graph_of_alternatives = None
         self.graph_of_utility = None
+        self._strategy: dict = None
+        self._state_values: dict = None
+    
+
+    @property
+    def strategy(self):
+        if not bool(self._strategy):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the strategy.")
+            sys.exit(-1)
+        return self._strategy
+    
+    @property
+    def state_values(self):
+        if not bool(self.state_values):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the State Values.")
+            sys.exit(-1)
+        return self._state_values
 
 
     def add_common_accepting_state(self, plot: bool = False):
@@ -133,6 +151,9 @@ class RegretMinimizationStrategySynthesis:
                                                                           plot_w_vals=False,
                                                                           plot_only_eve=False,
                                                                           plot=False)
+
+        self._strategy = reg_strs
+        self._state_values = reg_vals
 
         return reg_strs, reg_vals
 

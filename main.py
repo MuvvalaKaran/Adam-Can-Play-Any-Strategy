@@ -302,10 +302,9 @@ def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     """
     A new regret computation method. Assumption: The weights on the graph represent costs and are hence non-negative.
-    Sys player is trying to minimize its cumulative cost while the env player is trying to maximize the cumulative cost.
+    Sys player is minimizing its cumulative cost while the env player is trying to maximize the cumulative cost.
 
     Steps:
-
         1. Add an auxiliary tmp_accp state from the accepting state and the trap state. The edge weight is 0 and W_bar
            respectively. W_bar is equak to : (|V| - 1) x W where W is the max absolute weight
         2. Compute the best competitive value and best alternate value for each strategy i.e edge for sys node.
@@ -314,25 +313,11 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
         5. Map back these strategies to the original game.
 
     :param trans_sys:
-    :param mini_grid_instance:
-    :param epsilon:
-    :param max_human_interventions:
-    :param plot:
     :return:
     """
 
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys)
-
-    # if mini_grid_instance:
-    #     reg_syn_handle.add_common_accepting_state(plot=False)
-
-    # reg_syn_handle.target_weighted_arena_finite_reg_solver(twa_graph=trans_sys,
-    #                                                        debug=False,
-    #                                                        purge_states=True,
-    #                                                        plot_w_vals=True,
-    #                                                        plot=plot,
-    #                                                        plot_only_eve=False)
 
     reg_syn_handle.edge_weighted_arena_finite_reg_solver(purge_states=True,
                                                          plot=False)
@@ -446,7 +431,7 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
 
 def adversarial_game_toy_example() -> TwoPlayerGraph:
     """
-    The two example found from the Adversarial Game script. 
+    The example from the Adversarial Game script. 
     """
 
     # build a graph

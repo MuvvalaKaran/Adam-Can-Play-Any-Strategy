@@ -2,6 +2,10 @@
 *.idea
 *.pdf
 
+# ignore the pseudo-code directory
+pseudo_code/
+
+
 # ignore "ignore tracking" in the plots directory
 !plots/
 

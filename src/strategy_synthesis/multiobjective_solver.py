@@ -24,8 +24,6 @@ ParetoPoint = List[float]
 ParetoPoints = List[ParetoPoint]
 Strategies = Dict[str, Strategy]
 
-NUM_CORES = multiprocessing.cpu_count()
-
 
 def get_vertices(polygon: Polygon) -> List:
     if not isinstance(polygon, Polygon):

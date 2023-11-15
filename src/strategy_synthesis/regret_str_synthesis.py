@@ -1,4 +1,5 @@
 import sys
+import time
 import math
 import warnings
 
@@ -509,7 +510,8 @@ class RegretMinimizationStrategySynthesis:
         # pre-compute cooperative values form each state
         start = time.time()
         coop_mcr_solver = ValueIteration(two_player_game, competitive=False)
-        coop_mcr_solver.cooperative_solver(debug=False, plot=False)
+        # coop_mcr_solver.cooperative_solver(debug=False, plot=False)
+        coop_mcr_solver.solve(debug=False, plot=False)
         stop = time.time()
         print(f"******************************cVal computation time: {stop - start}****************************")
         coop_val_dict = coop_mcr_solver.state_value_dict

@@ -4,8 +4,6 @@ import warnings
 from collections import defaultdict
 from typing import Dict, Set, Union, List, Optional
 
-from src.graph import TwoPlayerGraph
-
 from ..graph import TwoPlayerGraph
 
 from .best_effort_syn import QualitativeBestEffortReachSyn, QualitativeBestEffortSafetySyn

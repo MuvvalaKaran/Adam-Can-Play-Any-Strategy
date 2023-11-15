@@ -339,23 +339,6 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     reg_syn_handle.edge_weighted_arena_finite_reg_solver(purge_states=True,
                                                          plot=False)
 
-    # reg_syn_handle.finite_reg_solver_1(minigrid_instance=mini_grid_instance,
-    #                                    plot=plot,
-    #                                    plot_only_eve=False,
-    #                                    simulate_minigrid=bool(mini_grid_instance),
-    #                                    epsilon=epsilon,
-    #                                    max_human_interventions=max_human_interventions,
-    #                                    compute_reg_for_human=compute_reg_for_human)
-
-    # reg_syn_handle.finite_reg_solver_2(minigrid_instance=mini_grid_instance,
-    #                                    plot=plot,
-    #                                    plot_only_eve=False,
-    #                                    simulate_minigrid=bool(mini_grid_instance),
-    #                                    epsilon=epsilon,
-    #                                    max_human_interventions=max_human_interventions,
-    #                                    compute_reg_for_human=compute_reg_for_human)
-
-
 def four_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     """
     A method where I manually create the 4 state toy exmaple form our discussion to test Sstrategy synthesis

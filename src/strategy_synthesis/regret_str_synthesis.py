@@ -15,6 +15,10 @@ from ..graph import ProductAutomaton
 from .value_iteration import ValueIteration
 
 
+INT_MIN_VAL = -2147483648
+INT_MAX_VAL = 2147483647
+
+
 class RegretMinimizationStrategySynthesis:
     """
     This class implements the Algo as sepcified the ICRA 22 paper.
@@ -25,9 +29,9 @@ class RegretMinimizationStrategySynthesis:
     """
     def __init__(self,
                  graph: TwoPlayerGraph) -> 'RegretMinimizationStrategySynthesis':
-        self.graph = graph
-        self.graph_of_alternatives = None
-        self.graph_of_utility = None
+        self._graph = graph
+        self._graph_of_alternatives = None
+        self._graph_of_utility = None
         self._strategy: dict = None
         self._state_values: dict = None
     
@@ -41,10 +45,45 @@ class RegretMinimizationStrategySynthesis:
     
     @property
     def state_values(self):
-        if not bool(self.state_values):
+        if not bool(self._state_values):
             warnings.warn("[Error] Please Run the strategy synthesis method before accessing the State Values.")
             sys.exit(-1)
         return self._state_values
+    
+    @property
+    def graph(self):
+        return self._graph
+    
+    @property
+    def graph_of_alternatives(self):
+        if not bool(self._graph_of_alternatives):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Graph of Best-Response.")
+            sys.exit(-1)
+        return self._graph_of_alternatives
+    
+    @property
+    def graph_of_utility(self):
+        if not bool(self._graph_of_utility):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Graph of Utility.")
+            sys.exit(-1)
+        
+        return self._graph_of_utility
+
+    
+    @graph.setter
+    def graph(self, graph):
+        assert isinstance(graph, TwoPlayerGraph), "Please enter a graph which is of type TwoPlayerGraph"
+        self._game = graph
+    
+
+    @graph_of_alternatives.setter
+    def graph_of_alternatives(self, graph_of_alternatives):
+        self._graph_of_alternatives = graph_of_alternatives
+    
+
+    @graph_of_utility.setter
+    def graph_of_utility(self, graph_of_utility):
+        self._graph_of_utility = graph_of_utility
 
 
     def add_common_accepting_state(self, plot: bool = False):
@@ -609,3 +648,16 @@ class RegretMinimizationStrategySynthesis:
 
         if plot:
             game_venue.plot_graph()
+    
+
+    def is_winning(self) -> bool:
+        """
+        A helper method that return True if the initial state(s) belongs to the list of system player' winning region
+        :return: boolean value indicating if system player can force a visit to the accepting states or not
+        """
+        _init_states = self.graph_of_alternatives.get_initial_states()
+
+        for state,_ in _init_states:
+            if INT_MIN_VAL < self.state_values.get(state) < INT_MAX_VAL:
+                return True
+        return False

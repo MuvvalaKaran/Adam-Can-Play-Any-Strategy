@@ -40,7 +40,8 @@ class QualitativeSafeReachBestEffort(QualitativeBestEffortReachSyn):
 
         # remove env states from the winning region and cooperative winning region. 
         self._winning_region = [ws for ws in self._winning_region if self._game.get_state_w_attribute(ws, 'player') == 'eve']
-        self._coop_winning_region = [cs for cs in self._coop_winning_region if self._game.get_state_w_attribute(cs, 'player') == 'eve']
+        # self._coop_winning_region = [cs for cs in self._coop_winning_region if self._game.get_state_w_attribute(cs, 'player') == 'eve']
+        self._coop_winning_region = [cs for cs in self._coop_winning_region]
         self._pending_region = set(self.coop_winning_region).difference(set(self.winning_region))
 
         # now compute BE Safety strategies
@@ -71,7 +72,7 @@ class QualitativeSafeReachBestEffort(QualitativeBestEffortReachSyn):
                     sys_best_effort_pending_str[ps].update(set(be_handle.sys_best_effort_str[ps]))
 
             except KeyError:
-                warnings.warn(f"SOmething went wrog during Best Effort Synthesis in Pending Region! \
+                warnings.warn(f"Something went wrog during Best Effort Synthesis in Pending Region! \
                             state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
         
         # override the sys_coop_winning_str dictionary that computed in compute_cooperative_winning_strategy() method above

@@ -413,7 +413,8 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         coop_handle = PermissiveValueIteration(game=self.game, competitive=False)
         coop_handle.solve(debug=False, plot=False, extract_strategy=True)
         self._sys_coop_winning_str = coop_handle.sys_str_dict
-        self._coop_winning_region = (coop_handle.sys_winning_region).union(set(coop_handle.env_str_dict.keys()))
+        # self._coop_winning_region = (coop_handle.sys_winning_region).union(set(coop_handle.env_str_dict.keys()))
+        self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
         
         if self.debug and coop_handle.is_winning():
             print("There exists a path from the Initial State")

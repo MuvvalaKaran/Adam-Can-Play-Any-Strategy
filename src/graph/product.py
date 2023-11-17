@@ -107,6 +107,7 @@ class ProductAutomaton(TwoPlayerGraph):
         self._graph = nx.MultiDiGraph(name=self._graph_name)
 
         # This is the product construction method used by Kandai in fpr his PDFA product construction
+        # TODO: Add confunctionality to construct non-absorbing product automaton for non-pdfa instances too!
         if self._pdfa_compose:
             self._extend_trans_init()
 
@@ -596,6 +597,8 @@ class ProductAutomaton(TwoPlayerGraph):
 
             if self._auto_graph._graph.nodes[auto_node].get('accepting'):
                 self._graph.nodes[_p_node]['accepting'] = True
+            
+            self._graph.nodes[_p_node]['player'] = 'eve'
 
         return _p_node
 

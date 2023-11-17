@@ -136,7 +136,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
 
         # now compute BE Safety strategies
         safety_be_handle = QuantitativeBestEffortSafetySyn(game=self.game, target_states=self._coop_winning_region, debug=False)
-        safety_be_handle.compute_best_effort_safety_strategies(plot=True)
+        safety_be_handle.compute_best_effort_safety_strategies(plot=False)
 
         if debug:
             print("BE Safe Str in Pending + Winning Region: ", safety_be_handle.sys_best_effort_str)
@@ -147,7 +147,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
 
         # Finally, compute reachability strategies from the pending region with Winning region as reacability objective
         be_handle = QuantitativeBestEffortReachSyn(game=be_reach_win_trans_sys, debug=False)
-        be_handle.compute_best_effort_strategies(plot=True)
+        be_handle.compute_best_effort_strategies(plot=False)
         
         if debug:
             print("BE Reach Str to winning region: ", be_handle.sys_best_effort_str)
@@ -163,7 +163,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
                     sys_best_effort_pending_str[ps].update(set(be_handle.sys_best_effort_str[ps]))
 
             except KeyError:
-                warnings.warn(f"SOmething went wrog during Best Effort Synthesis in Pending Region! \
+                warnings.warn(f"Something went wrog during Best Effort Synthesis in Pending Region! \
                             state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
         
         # override the sys_coop_winning_str dictionary that computed in compute_cooperative_winning_strategy() method above

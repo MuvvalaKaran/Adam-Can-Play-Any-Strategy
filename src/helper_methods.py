@@ -1,7 +1,7 @@
-# A decorator to throw warning when we use deprecated methods/functions/routines
+import time
 import warnings
 
-
+# A decorator to throw warning when we use deprecated methods/functions/routines
 def deprecated(func):
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emmitted
@@ -15,3 +15,14 @@ def deprecated(func):
     new_func.__doc__ = func.__doc__
     new_func.__dict__.update(func.__dict__)
     return new_func
+
+
+# A decorator to time the execution of a function
+def timer_decorator(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"Function {func.__name__} took {end_time - start_time} seconds to run.")
+        return result
+    return wrapper

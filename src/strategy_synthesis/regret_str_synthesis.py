@@ -1,4 +1,5 @@
 import sys
+import time
 import math
 import warnings
 
@@ -14,6 +15,10 @@ from ..graph import ProductAutomaton
 from .value_iteration import ValueIteration
 
 
+INT_MIN_VAL = -2147483648
+INT_MAX_VAL = 2147483647
+
+
 class RegretMinimizationStrategySynthesis:
     """
     This class implements the Algo as sepcified the ICRA 22 paper.
@@ -24,9 +29,9 @@ class RegretMinimizationStrategySynthesis:
     """
     def __init__(self,
                  graph: TwoPlayerGraph) -> 'RegretMinimizationStrategySynthesis':
-        self.graph = graph
-        self.graph_of_alternatives = None
-        self.graph_of_utility = None
+        self._graph = graph
+        self._graph_of_alternatives = None
+        self._graph_of_utility = None
         self._strategy: dict = None
         self._state_values: dict = None
     
@@ -40,10 +45,45 @@ class RegretMinimizationStrategySynthesis:
     
     @property
     def state_values(self):
-        if not bool(self.state_values):
+        if not bool(self._state_values):
             warnings.warn("[Error] Please Run the strategy synthesis method before accessing the State Values.")
             sys.exit(-1)
         return self._state_values
+    
+    @property
+    def graph(self):
+        return self._graph
+    
+    @property
+    def graph_of_alternatives(self):
+        if not bool(self._graph_of_alternatives):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Graph of Best-Response.")
+            sys.exit(-1)
+        return self._graph_of_alternatives
+    
+    @property
+    def graph_of_utility(self):
+        if not bool(self._graph_of_utility):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Graph of Utility.")
+            sys.exit(-1)
+        
+        return self._graph_of_utility
+
+    
+    @graph.setter
+    def graph(self, graph):
+        assert isinstance(graph, TwoPlayerGraph), "Please enter a graph which is of type TwoPlayerGraph"
+        self._game = graph
+    
+
+    @graph_of_alternatives.setter
+    def graph_of_alternatives(self, graph_of_alternatives):
+        self._graph_of_alternatives = graph_of_alternatives
+    
+
+    @graph_of_utility.setter
+    def graph_of_utility(self, graph_of_utility):
+        self._graph_of_utility = graph_of_utility
 
 
     def add_common_accepting_state(self, plot: bool = False):
@@ -100,6 +140,7 @@ class RegretMinimizationStrategySynthesis:
             self.graph.plot_graph()
 
     def edge_weighted_arena_finite_reg_solver(self,
+                                              reg_factor: float = 1,
                                               purge_states: bool = True,
                                               plot: bool = False) -> Tuple[Dict, Dict]:
         """
@@ -120,24 +161,35 @@ class RegretMinimizationStrategySynthesis:
         :return:
         """
         # compute the minmax value of the game
+        start = time.time()
         comp_mcr_solver = ValueIteration(self.graph, competitive=True)
         comp_mcr_solver.solve(debug=False, plot=False)
-
+        stop = time.time()
+        print(f"******************************Min-Max Computation time: {stop - start} ****************************")
         # init state value
         _init_state = self.graph.get_initial_states()[0][0]
-        min_max_value = comp_mcr_solver.state_value_dict[_init_state] * 1.2
+        min_max_value = comp_mcr_solver.state_value_dict[_init_state] * reg_factor
         # min_max_value = comp_mcr_solver.state_value_dict[_init_state].item()
         min_max_value = math.ceil(min_max_value)
-        # min_max_value = 6
+
+        print(f"Min-Max Value: {comp_mcr_solver.state_value_dict[_init_state]}")
+        print(f"Regret budget: {min_max_value}")
+
         # construct a TWA given the graph
+        start = time.time()
         self.graph_of_utility = self._construct_graph_of_utility(min_max_value)
+        stop = time.time()
 
         print(f"#nodes in the graph of utility before pruning:{len(self.graph_of_utility._graph.nodes())}")
         print(f"#edges in the graph of utility before pruning:{len(self.graph_of_utility._graph.edges())}")
+        print(f"******************************Graph of Utility construction time: {stop - start} ****************************")
 
         # helper method to remove the state that cannot reached from the initial state of G'
         if purge_states:
+            start = time.time()
             self._remove_non_reachable_states(self.graph_of_utility)
+            stop = time.time()
+            print(f"******************************Removing non-reachable states on Graph of Utility : {stop - start} ****************************")
 
         if plot:
             self.graph_of_utility.plot_graph()
@@ -184,6 +236,7 @@ class RegretMinimizationStrategySynthesis:
         _best_alternate_values: Dict = self._get_best_alternatives_dict(twa_graph)
 
         # construct graph of best alternatives (G')
+        start = time.time()
         self.graph_of_alternatives =\
             self._new_construct_graph_of_best_alternatives(twa_game=twa_graph,
                                                            best_alt_values_dict=_best_alternate_values)
@@ -194,22 +247,32 @@ class RegretMinimizationStrategySynthesis:
 
         # for all the edge that transit to a target state we need to compute the regret associate with that
         self._compute_reg_for_edge_to_target_nodes(game=self.graph_of_alternatives)
+        stop = time.time()
+        print(
+            f"******************************Graph of Best Response construction time: {stop - start} ****************************")
 
         # purge nodes that are not reachable form the init state
         if purge_states:
+            start = time.time()
             self._remove_non_reachable_states(self.graph_of_alternatives)
+            stop = time.time()
+            print(
+                f"******************************Removing non-reachable states on Graph of Best Response: {stop - start} ****************************")
 
         if debug:
             print(f"#nodes in the graph of alternative after pruning :{len(self.graph_of_alternatives._graph.nodes())}")
             print(f"#edges in the graph of alternative after pruning :{len(self.graph_of_alternatives._graph.edges())}")
 
         # play minmax game to compute regret minimizing strategy
+        start = time.time()
         minmax_mcr_solver = ValueIteration(self.graph_of_alternatives, competitive=True)
         minmax_mcr_solver.solve(debug=True, plot=plot_w_vals)
         _comp_str_dict = minmax_mcr_solver.str_dict
         _comp_val_dict = minmax_mcr_solver.state_value_dict
         _init_state = self.graph_of_alternatives.get_initial_states()[0][0]
         _game_reg_value: float = _comp_val_dict.get(_init_state)
+        stop = time.time()
+        print(f"Time took for computing reg strs on the Graph of best Response {stop - start}")
 
         if plot_only_eve:
             self.plot_str_for_cumulative_reg(game_venue=self.graph_of_alternatives,
@@ -484,8 +547,12 @@ class RegretMinimizationStrategySynthesis:
         """
 
         # pre-compute cooperative values form each state
+        start = time.time()
         coop_mcr_solver = ValueIteration(two_player_game, competitive=False)
-        coop_mcr_solver.cooperative_solver(debug=False, plot=False)
+        # coop_mcr_solver.cooperative_solver(debug=False, plot=False)
+        coop_mcr_solver.solve(debug=False, plot=False)
+        stop = time.time()
+        print(f"******************************cVal computation time: {stop - start}****************************")
         coop_val_dict = coop_mcr_solver.state_value_dict
 
         _best_alternate_values: Dict[Optional[tuple], Union[int, float]] = defaultdict(lambda: -1)
@@ -513,7 +580,8 @@ class RegretMinimizationStrategySynthesis:
 
             # else:
             #     warnings.warn(f"Encountered a state {_u} with an invalid player attribute")
-
+        stop = time.time()
+        print(f"******************************BA set computation time: {stop - start}****************************")
         return _best_alternate_values
 
     def _add_strategy_flag(self,
@@ -580,3 +648,16 @@ class RegretMinimizationStrategySynthesis:
 
         if plot:
             game_venue.plot_graph()
+    
+
+    def is_winning(self) -> bool:
+        """
+        A helper method that return True if the initial state(s) belongs to the list of system player' winning region
+        :return: boolean value indicating if system player can force a visit to the accepting states or not
+        """
+        _init_states = self.graph_of_alternatives.get_initial_states()
+
+        for state,_ in _init_states:
+            if INT_MIN_VAL < self.state_values.get(state) < INT_MAX_VAL:
+                return True
+        return False

@@ -1,8 +1,10 @@
 import abc
 import warnings
 import sys
+import copy
 
-from typing import Tuple, Optional, Dict, Union
+from collections import defaultdict
+from typing import Tuple, Optional, Dict, Union, List, Set
 
 # import local packages
 from src.graph import graph_factory
@@ -18,6 +20,8 @@ from src.strategy_synthesis.adversarial_game import ReachabilityGame as Reachabi
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
+from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn
+from src.strategy_synthesis.best_effort_safe_reach import QualitativeSafeReachBestEffort, QuantitativeSafeReachBestEffort
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -281,11 +285,13 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                       permissive_strategies: bool = False):
     
     if permissive_strategies:
-        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=competitive)
+        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=False)
     else:
-        vi_handle = ValueIteration(game=trans_sys, competitive=True)
-    
+        vi_handle = ValueIteration(game=trans_sys, competitive=False)
     vi_handle.solve(debug=debug, plot=plot)
+    print("******************************************************************************************************")
+    print("Winning strategy exists") if vi_handle.is_winning() else print("No Winning strategy exists")
+    print("******************************************************************************************************")
 
 
 def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
@@ -297,6 +303,60 @@ def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
     coop_handle.print_winning_strategies()
 
     coop_handle.plot_graph(with_strategy=True)
+
+
+def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
+    """
+     A method to compute Qualitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QualitativeBestEffortReachSyn(game=trans_sys, debug=debug)
+    be_handle.compute_best_effort_strategies(plot=plot)
+    be_handle.get_losing_region(print_states=print_states)
+    be_handle.get_pending_region(print_states=print_states)
+    be_handle.get_winning_region(print_states=print_states)
+
+
+def ijcai24_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+    """
+     This methods implements my proposed algorithm for IJCAI 24. The algorithm is as follows:
+
+     1. Compute Losing, Pending and Winning region.
+     2. In Winning region compute Winning strategy - BE reachability
+     3. In Winning + Pending region compute BE Safety
+     4. In Pending region compute BE Reachability game with objective of reaching the Winning region
+     5. Merge strategies
+    """
+    safe_reach_be_handle = QualitativeSafeReachBestEffort(game=trans_sys, debug=False)
+    safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
+
+
+def ijcai24_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+    """
+     This methods implements my proposed algorithm for IJCAI 24 with Quantitative objectives. The algorithm is as follows:
+
+     1. Compute Losing, Pending and Winning region.
+     2. In Winning region compute Winning strategy - BE reachability
+     3. In Winning + Pending region compute BE Safety
+     4. In Pending region compute BE Reachability game with objective of reaching the Winning region
+     5. Merge strategies
+    
+     The algorithm is same as the Qualitative one.
+    """
+    safe_reach_be_handle = QuantitativeSafeReachBestEffort(game=trans_sys, debug=False)
+    safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
+
+
+def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
+    """
+     A method to compute Quantitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QuantitativeBestEffortReachSyn(game=trans_sys, debug=debug)
+    be_handle.compute_best_effort_strategies(plot=plot)
+    be_handle.get_losing_region(print_states=print_states)
+    be_handle.get_pending_region(print_states=print_states)
+    be_handle.get_winning_region(print_states=print_states)
 
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
@@ -482,29 +542,32 @@ if __name__ == "__main__":
 
     # define some constants
     EPSILON = 0  # 0 - the best strategy (for human too) and 1 - Completely random
-    IROS_FLAG = False
+    IROS_FLAG: bool = False
     ENERGY_BOUND = 30
     ALLOWED_HUMAN_INTERVENTIONS = 2
 
     # some constants related to computation
-    finite = True
-    go_fast = True
+    finite: bool = True
+    go_fast: bool = True
 
     # some constants that allow for appr _instance creations
-    three_state_ts = False
-    five_state_ts = False
-    variant_1_paper = False
-    target_weighted_arena = False
-    two_player_arena = True
+    three_state_ts: bool = False
+    five_state_ts: bool = False
+    variant_1_paper: bool = False
+    target_weighted_arena: bool = False
+    two_player_arena: bool = True
 
     # solver to call
-    BE_synthesis = False
-    finite_reg_synthesis = False
-    infinte_reg_synthesis = False
-    adversarial_game = False
-    iros_str_synthesis = False
-    min_max_game = False
-    compute_win_lose_regions = True
+    qual_BE_synthesis: bool = False
+    quant_BE_synthesis: bool = False
+    ijcai_qual_BE_synthesis: bool = False
+    ijcai_quant_BE_synthesis: bool = True
+    finite_reg_synthesis: bool = False
+    infinte_reg_synthesis: bool = False
+    adversarial_game: bool = False
+    iros_str_synthesis: bool = False
+    min_max_game: bool = False
+    compute_win_lose_regions: bool = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:
@@ -568,14 +631,17 @@ if __name__ == "__main__":
     elif compute_win_lose_regions:
         play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
 
-    elif BE_synthesis:
-        assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-        reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=True)
-        reachability_game_handle.reachability_solver()
-        # reachability_game_handle.maximally_permissive_reachability_solver()
-        reachability_game_handle.plot_graph(with_strategy=True)
-        reachability_game_handle.print_winning_region()
-        reachability_game_handle.print_winning_strategies()
+    elif qual_BE_synthesis:
+        play_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
+
+    elif quant_BE_synthesis:
+        play_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
+    
+    elif ijcai_qual_BE_synthesis:
+        ijcai24_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True)
+    
+    elif ijcai_quant_BE_synthesis:
+        ijcai24_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

@@ -49,6 +49,8 @@ class ReachabilityGame:
 
     @property
     def sys_winning_region(self):
+        if not bool(self._sys_winning_region):
+            self.get_winning_region()
         return self._sys_winning_region
 
     @property
@@ -70,6 +72,18 @@ class ReachabilityGame:
             warnings.warn("Please enter a graph which is of type TwoPlayerGraph")
 
         self._game = game
+    
+
+    def get_winning_region(self, print_states: bool = False):
+        """
+            A Method that compute the set of states from which the sys player can enforce a visit to the target state(s). 
+        """
+        assert bool(self._sys_winning_region) is True, "Please Run the solver before accessing the Winning region."
+        
+        if print_states:
+            print("Winning Region: \n", self._sys_winning_region)
+        
+        return self._sys_winning_region
 
     def _compute_no_of_node_successors(self) -> dict:
         """

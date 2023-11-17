@@ -1,3 +1,5 @@
+import warnings
+
 from collections import defaultdict, deque
 
 # import local packages
@@ -35,24 +37,27 @@ class CooperativeGame(ReachabilityGame):
             sys_winning_region.add(_s)
         
         while queue:
+            # pop a state and look at it's predecessor
             _s = queue.popleft()
+            
             for _pre_s in self.game._graph.predecessors(_s):
                 if _regions[_pre_s] == -1:
                     queue.append(_pre_s)
-                _regions[_pre_s] = "eve"
-                sys_winning_region.add(_pre_s)
-                if self.extract_strategy:
-                    sys_str[_pre_s].add(_s)
+                    _regions[_pre_s] = "eve"
+                    sys_winning_region.add(_pre_s)
+                    if self.extract_strategy:
+                        if self.game._graph.nodes[_pre_s]["player"] == "eve":
+                            sys_str[_pre_s].add(_s)
+                        elif self.game._graph.nodes[_pre_s]["player"] == "adam":
+                            env_str[_pre_s].add(_s)
+                        else:
+                            warnings.warn(f"Please make sure that every node in the game is assigned a player."
+                                          f"Currently node {_pre_s} does not have a player assigned to it")
         
-        for _s in self.game._graph.nodes():
-            if _regions[_s] != "eve":
-                _regions[_s] = "adam"
-                env_winning_region.add(_s)
 
-                if self.extract_strategy and self.game._graph.nodes[_s]["player"] == "adam":
-                    for _successor in self.game._graph.successors(_s):
-                        if _regions[_successor] != "eve":
-                            env_str[_s].add(_successor)
+        # Note, as this is a min-min game, env's winning region belongs to a set of states from which there
+        # does not exists a path to the accepting state 
+        env_winning_region = self.game_states.difference(sys_winning_region)
         
         if self.extract_strategy:
             for _s in accepting_states:
@@ -60,6 +65,7 @@ class CooperativeGame(ReachabilityGame):
                     for _succ_s in self.game._graph.successors(_s):
                         if _regions[_succ_s] == "eve":
                             sys_str[_s].add(_succ_s)
+                            break
         
         self._sys_winning_region = sys_winning_region
         self._env_winning_region = env_winning_region

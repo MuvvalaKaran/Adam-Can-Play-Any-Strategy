@@ -301,8 +301,9 @@ def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
     coop_handle.reachability_solver()
     coop_handle.print_winning_region()
     coop_handle.print_winning_strategies()
-
-    coop_handle.plot_graph(with_strategy=True)
+    
+    if plot:
+        coop_handle.plot_graph(with_strategy=True)
 
 
 def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
@@ -567,7 +568,7 @@ if __name__ == "__main__":
     adversarial_game: bool = False
     iros_str_synthesis: bool = False
     min_max_game: bool = False
-    compute_win_lose_regions: bool = False
+    min_min_game: bool = True
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:
@@ -628,7 +629,7 @@ if __name__ == "__main__":
     elif min_max_game:
         play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=False)
     
-    elif compute_win_lose_regions:
+    elif min_min_game:
         play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
 
     elif qual_BE_synthesis:

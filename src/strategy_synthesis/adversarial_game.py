@@ -40,6 +40,7 @@ class ReachabilityGame:
         self._sys_str: Optional[dict] = None
         self._env_str: Optional[dict] = None
 
+        self.game_states = set(self.game.get_states()._nodes.keys())
         self._sanity_check_player()
         self._sanity_check_total(debug=debug)
 
@@ -72,6 +73,7 @@ class ReachabilityGame:
             warnings.warn("Please enter a graph which is of type TwoPlayerGraph")
 
         self._game = game
+        self.game_states = set(self.game.get_states()._nodes.keys())
     
 
     def get_winning_region(self, print_states: bool = False):
@@ -156,7 +158,6 @@ class ReachabilityGame:
                 env_winning_region.append(_s)
 
                 if self.game._graph.nodes[_s]["player"] == "adam":
-
                     for _successor in self.game._graph.successors(_s):
                         if _regions[_successor] != "eve":
                             env_str[_s] = _successor

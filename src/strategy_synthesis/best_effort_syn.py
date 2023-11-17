@@ -106,7 +106,7 @@ class QualitativeBestEffortReachSyn():
 
     def get_losing_region(self, print_states: bool = False):
         """
-            A Method that compute the set of states from which there does not exist a path to the target state(s). 
+        A Method that compute the set of states from which there does not exist a path to the target state(s). 
         """
         assert bool(self._coop_winning_region) is True, "Please Run the solver before accessing the Losing region."
         self._losing_region = self.game_states.difference(self._coop_winning_region)
@@ -119,7 +119,7 @@ class QualitativeBestEffortReachSyn():
 
     def get_pending_region(self, print_states: bool = False):
         """
-            A Method that compute the set of states from which there does exists a path to the target state(s). 
+        A Method that compute the set of states from which there does exists a path to the target state(s). 
         """
         assert bool(self._winning_region) is True, "Please Run the solver before accessing the Pending region."
         if not bool(self._losing_region):
@@ -135,7 +135,7 @@ class QualitativeBestEffortReachSyn():
 
     def get_winning_region(self, print_states: bool = False):
         """
-            A Method that compute the set of states from which the sys player can enforce a visit to the target state(s). 
+        A Method that compute the set of states from which the sys player can enforce a visit to the target state(s). 
         """
         assert bool(self._winning_region) is True, "Please Run the solver before accessing the Winning region."
         
@@ -144,11 +144,13 @@ class QualitativeBestEffortReachSyn():
         
         return self._winning_region
 
-
     def compute_cooperative_winning_strategy(self):
         """
-            A Method that computes the cooperatively winning strategy, cooperative winning region and Losing region.
+        A Method that computes the cooperatively winning strategy, cooperative winning region and Losing region.
         """
+        # TODO Update this!
+        # Convert the original game into a Quantitative game with unite edge weight everywhere. 
+        # Then we play Quantitative Min-Min game 
         coop_handle = CooperativeGame(game=self.game, debug=self.debug, extract_strategy=True)
         coop_handle.reachability_solver()
         self._sys_coop_winning_str = coop_handle.sys_str
@@ -160,8 +162,8 @@ class QualitativeBestEffortReachSyn():
 
     def compute_winning_strategies(self, permissive: bool = False):
         """
-            A Method that computes the Winning strategies and corresponding winning region.
-              Set the permissive flag to True to compute the set of all winning strategies. 
+        A Method that computes the Winning strategies and corresponding winning region.
+         Set the permissive flag to True to compute the set of all winning strategies. 
         """
         reachability_game_handle = ReachabilityGame(game=self.game, debug=self.debug)
         if permissive:
@@ -186,7 +188,7 @@ class QualitativeBestEffortReachSyn():
 
     def compute_best_effort_strategies(self, plot: bool = False, permissive: bool = False):
         """
-            This method calls compute_winning_strategies() and compute_cooperative_winning_strategy() methods and stitches them together. 
+        This method calls compute_winning_strategies() and compute_cooperative_winning_strategy() methods and stitches them together. 
         """
         # get winning strategies
         self.compute_winning_strategies(permissive=permissive)
@@ -234,8 +236,8 @@ class QualitativeBestEffortReachSyn():
 
 class QualitativeBestEffortSafetySyn():
     """
-     This class implements best-effort safety synthesis algorithm. Given, a two-player game, a set of target states,
-       compute Best-effort sfaty strategies that ensures the robot is doing its best to stay within the safe region (target states).
+    This class implements best-effort safety synthesis algorithm. Given, a two-player game, a set of target states,
+      compute Best-effort sfaty strategies that ensures the robot is doing its best to stay within the safe region (target states).
     
     Intuitively, Best- efforty safety is a weaker form of safety game, where set of states in the safety game are states from which the robot can
       enforce staying in the safe region. A safe region is a set of states that do not belong to losing region (or belong to Winning + Pendinng Region)

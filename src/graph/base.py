@@ -403,10 +403,6 @@ class Graph(abc.ABC):
         """
         self._graph.add_weighted_edges_from(edges_w_weight)
 
-    @deprecated
-    def add_edge_attributes(self, u, v, attribute_key, attribute_value):
-        self.add_edge(u, v, attribute_key=attribute_value)
-
     def set_edge_attribute(self, attr, attr_value):
         """
         A method that add an @attr to all the nodes in the graph and set their value to attr_value

@@ -28,12 +28,9 @@ class ValueIteration:
         self.org_graph: Optional[TwoPlayerGraph] = copy.deepcopy(game)
         self.competitive = competitive
         self._int_val = int_val
-        self._local_graph: Optional[DiGraph] = None
         self._val_vector: Optional[ndarray] = None
         self._node_int_map: Optional[bidict] = None
         self._num_of_nodes: int = 0
-        self._MAX_POSSIBLE_W: int = 0
-        self.W: int = 0
         self._state_value_dict: Optional[dict] = defaultdict(lambda: -1)
         self._str_dict: Dict = defaultdict(lambda: -1)
         self._sys_str_dict: Dict = defaultdict(lambda: -1)
@@ -57,14 +54,6 @@ class ValueIteration:
     @property
     def num_of_nodes(self):
         return self._num_of_nodes
-
-    @property
-    def W(self):
-        return self._W
-
-    @property
-    def local_graph(self):
-        return self._local_graph
 
     @property
     def state_value_dict(self):
@@ -106,9 +95,6 @@ class ValueIteration:
     def competitive(self, value: bool):
         self._competitive = value
 
-    @W.setter
-    def W(self, value: int):
-        self._W = value
     
     def is_winning(self) -> bool:
         """
@@ -167,13 +153,11 @@ class ValueIteration:
         """
         A method to initialize parameters such the
          1. Number of nodes in a given graph,
-         2. The max absolute weight,
-         3. The internal node mapping dict, and
-         4. Initializing the value vector and assigning all the target state(s) 0 init value
+         2. The internal node mapping dict, and
+         3. Initializing the value vector and assigning all the target state(s) 0 init value
         :return:
         """
         self._num_of_nodes = len(list(self.org_graph._graph.nodes))
-        self._W = abs(self.org_graph.get_max_weight())
         self._node_int_map = bidict({state: index for index, state in enumerate(self.org_graph._graph.nodes)})
         # self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
         self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
@@ -332,8 +316,8 @@ class ValueIteration:
             # get the max value
             if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
                 _next_max_node = self._get_max_env_val(_n, self.val_vector[:, -1])
-                # if len(_next_max_node) > 0:
-                _env_str_dict[_n] = _next_max_node
+                if _next_max_node is not None:
+                    _env_str_dict[_n] = _next_max_node
             
             # get the min value
             elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
@@ -417,15 +401,6 @@ class ValueIteration:
                 self.state_value_dict.update({_s: math.inf})
             else:
                 self.state_value_dict.update({_s: _int_val_vector[i]})
-
-        # for v0 we have to specially make an exception if v1 has value higher than 0 then go down else take self-loop
-        # if self.competitive and self.org_graph._graph_name == "G_hat":
-            # _v1_node_int = self.node_int_map["v1"]
-            # if self.val_vector[_v1_node_int][0] >= 0:
-            #     _max_str_dict["v0"] = "v1"
-            #     self.state_value_dict["v0"] = self.state_value_dict["v1"]
-            # else:
-            #     _max_str_dict["v0"] = "v0"
         
         # extract sys and env strategy after converging.
         if extract_strategy:
@@ -468,9 +443,6 @@ class ValueIteration:
 
         if _cumu_trap_region == _trap_region:
             print("The two sets are equal")
-
-        # we know that trap region is correct so
-        _missing_nodes = _trap_region.difference(_cumu_trap_region)
 
     def _compute_convergence_idx(self) -> Dict[int, int]:
         """
@@ -525,9 +497,11 @@ class ValueIteration:
         if self.competitive:
             _next_node, _ = max(_succ_vals, key=operator.itemgetter(1))
         else:
-            _next_node, _ = min(_succ_vals, key=operator.itemgetter(1))
-
+            _next_node, _val = min(_succ_vals, key=operator.itemgetter(1))
+            if _val == math.inf:
+                return None
         return _next_node
+        
 
     def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Union[str, None]:
         """
@@ -628,6 +602,8 @@ class PermissiveValueIteration(ValueIteration):
             _, _val = max(_succ_vals, key=operator.itemgetter(1))
         else:
             _, _val = min(_succ_vals, key=operator.itemgetter(1))
+            if _val == math.inf:
+                return None
 
         return [_node for _node, _node_val in _succ_vals if _val == _node_val]
 
@@ -700,7 +676,7 @@ class PermissiveValueIteration(ValueIteration):
         if debug:
             print(f"Number of iteration to converge: {iter_var}")
             print(f"Init state value: {self.state_value_dict[_init_node]}")
-            self._sanity_check()    
+            # self._sanity_check()
 
     def _add_state_costs_to_graph(self):
         """
@@ -712,3 +688,57 @@ class PermissiveValueIteration(ValueIteration):
         for _n in self.org_graph._graph.nodes():
             sval = self.state_value_dict[_n]
             self.org_graph.add_state_attribute(_n, "val", [sval if INT_MIN_VAL < sval < INT_MAX_VAL else 'inf'])
+
+
+class PermissiveSafetyValueIteration(PermissiveValueIteration):
+    """
+    This class inherits Permissive Value iteration class. In this class, we are computing maximally permissive strategies that ensures
+     that the system remains the pending region. Thus, every state in the pending region is an acceptign state and every states that belongs
+     to the losing region is the non-accepting states.
+
+    We slightly modify the _get_min_sys_val() and _get_max_env_val methods and keep the rest of the Value Iteration algorithm the same.
+    """
+
+    def _get_min_sys_val(self, node: str, pre_vec: ndarray) -> List[str]:
+        """
+        At Sys state: argmin_a(W(s')) for all s'
+
+         Here W(s') shuld be zero or infinity
+        """
+        _succ_vals: List = []
+        for _next_n in self.org_graph._graph.successors(node):
+            _node_int = self.node_int_map[_next_n]
+            _val = pre_vec[_node_int]
+            if _val != math.inf:
+                _succ_vals.append((_next_n, _val))
+
+        try:
+            _, min_val = min(_succ_vals, key=operator.itemgetter(1))
+            return [_node for _node, _node_val in _succ_vals if min_val == _node_val]
+        except ValueError:
+            return None
+    
+
+    def _get_max_env_val(self, node: Union[str, tuple], pre_vec: ndarray) -> List[str]:
+        """
+        A method that returns the max value for the current node that belongs to the env.
+         At Env state: argmax_a(W(s')) for all s'
+
+        Here W(s') shuld be zero or infinity
+        
+        :param node: The current node in in the graph
+        :param pre_vec: The previous value vector
+        :return: A List of states
+        """
+
+        _succ_vals: List = []
+        for _next_n in self.org_graph._graph.successors(node):
+            _node_int = self.node_int_map[_next_n]
+            _val = pre_vec[_node_int] + self.org_graph.get_edge_weight(node, _next_n)
+            _succ_vals.append((_next_n, _val))
+        
+
+        assert self.competitive is True, "[Error] Running Permissive Value Iteration in Pending region with cooperative human! Make sure self.competitive is set to True"
+        _, _val = max(_succ_vals, key=operator.itemgetter(1))
+
+        return [_node for _node, _node_val in _succ_vals if _val == _node_val]

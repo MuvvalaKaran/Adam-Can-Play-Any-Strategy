@@ -1,5 +1,6 @@
 import sys
 import copy
+import warnings
 
 from collections import defaultdict
 from typing import Optional, Union, List, Iterable
@@ -7,7 +8,7 @@ from typing import Optional, Union, List, Iterable
 from ..graph import TwoPlayerGraph
 from .adversarial_game import ReachabilityGame
 from .cooperative_game import CooperativeGame
-from .value_iteration import ValueIteration, PermissiveValueIteration
+from .value_iteration import ValueIteration, PermissiveValueIteration, PermissiveSafetyValueIteration
 
 
 class QualitativeBestEffortReachSyn():
@@ -16,8 +17,8 @@ class QualitativeBestEffortReachSyn():
     
     The algorithm is as follows:
 
-    2. Given a target set, identify Winning region and synthesize winning strategies.
-    3. Given, a target set, identify Cooperatively Winning (Pending) region synthesize cooperative winning strategies
+    1. Given a target set, identify Winning region and synthesize winning strategies.
+    2. Given a target set, identify Cooperatively Winning (Pending) region and  synthesize cooperative winning strategies
     3. Merge the strategies. 
         3.1 States that belong to winning region play the winning strategy
         3.2 States that belong to pending region play cooperative winning strategy
@@ -106,7 +107,7 @@ class QualitativeBestEffortReachSyn():
 
     def get_losing_region(self, print_states: bool = False):
         """
-            A Method that compute the set of states from which there does not exist a path to the target state(s). 
+        A Method that compute the set of states from which there does not exist a path to the target state(s). 
         """
         assert bool(self._coop_winning_region) is True, "Please Run the solver before accessing the Losing region."
         self._losing_region = self.game_states.difference(self._coop_winning_region)
@@ -119,7 +120,7 @@ class QualitativeBestEffortReachSyn():
 
     def get_pending_region(self, print_states: bool = False):
         """
-            A Method that compute the set of states from which there does exists a path to the target state(s). 
+        A Method that compute the set of states from which there does exists a path to the target state(s). 
         """
         assert bool(self._winning_region) is True, "Please Run the solver before accessing the Pending region."
         if not bool(self._losing_region):
@@ -135,7 +136,7 @@ class QualitativeBestEffortReachSyn():
 
     def get_winning_region(self, print_states: bool = False):
         """
-            A Method that compute the set of states from which the sys player can enforce a visit to the target state(s). 
+        A Method that compute the set of states from which the sys player can enforce a visit to the target state(s). 
         """
         assert bool(self._winning_region) is True, "Please Run the solver before accessing the Winning region."
         
@@ -144,10 +145,9 @@ class QualitativeBestEffortReachSyn():
         
         return self._winning_region
 
-
     def compute_cooperative_winning_strategy(self):
         """
-            A Method that computes the cooperatively winning strategy, cooperative winning region and Losing region.
+        A Method that computes the cooperatively winning strategy, cooperative winning region and Losing region.
         """
         coop_handle = CooperativeGame(game=self.game, debug=self.debug, extract_strategy=True)
         coop_handle.reachability_solver()
@@ -160,14 +160,11 @@ class QualitativeBestEffortReachSyn():
 
     def compute_winning_strategies(self, permissive: bool = False):
         """
-            A Method that computes the Winning strategies and corresponding winning region.
-              Set the permissive flag to True to compute the set of all winning strategies. 
+        A Method that computes the Winning strategies and corresponding winning region.
+         Set the permissive flag to True to compute the set of all winning strategies. 
         """
         reachability_game_handle = ReachabilityGame(game=self.game, debug=self.debug)
-        if permissive:
-            reachability_game_handle.maximally_permissive_reachability_solver()
-        else:
-            reachability_game_handle.reachability_solver()
+        reachability_game_handle.reachability_solver()
         self._sys_winning_str = reachability_game_handle.sys_str
         self._env_winning_str = reachability_game_handle.env_str
 
@@ -186,7 +183,7 @@ class QualitativeBestEffortReachSyn():
 
     def compute_best_effort_strategies(self, plot: bool = False, permissive: bool = False):
         """
-            This method calls compute_winning_strategies() and compute_cooperative_winning_strategy() methods and stitches them together. 
+        This method calls compute_winning_strategies() and compute_cooperative_winning_strategy() methods and stitches them together. 
         """
         # get winning strategies
         self.compute_winning_strategies(permissive=permissive)
@@ -201,8 +198,9 @@ class QualitativeBestEffortReachSyn():
             if self.game.get_state_w_attribute(winning_state, 'player') == 'eve':
                 try:
                     del _sys_coop_win_sys[winning_state]
-                except:
-                    print("[ERROR]: Encountered a state that exists in Winning region but does not exists in Cooperative Winning region. This is wrong")
+                except KeyError:
+                    warnings.warn("[ERROR]: Encountered a state that exists in Winning region but does not exists in Cooperative Winning region. This is wrong! \
+                                  state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
                     sys.exit(-1)
         
         # for states that belong to the losing region, we can play any strategy
@@ -234,11 +232,11 @@ class QualitativeBestEffortReachSyn():
 
 class QualitativeBestEffortSafetySyn():
     """
-     This class implements best-effort safety synthesis algorithm. Given, a two-player game, a set of target states,
-       compute Best-effort sfaty strategies that ensures the robot is doing its best to stay within the safe region (target states).
+    This class implements best-effort safety synthesis algorithm. Given, a two-player game, a set of target states,
+      compute Best-effort safety strategies that ensures the robot is doing its best to stay within the safe region (target states).
     
-    Intuitively, Best- efforty safety is a weaker form of safety game, where set of states in the safety game are states from which the robot can
-      enforce staying in the safe region. A safe region is a set of states that do not belong to losing region (or belong to Winning + Pendinng Region)
+    Intuitively, Best-effort safety is a weaker form of safety game, where set of states in the safety game are states from which the robot can
+      enforce staying in the safe region. A safe region is a set of states that do not belong to losing region (or belong to Winning + Pending Region)
     """
 
 
@@ -307,35 +305,86 @@ class QualitativeBestEffortSafetySyn():
 
         self._game = game
         self.game_states = set(game.get_states()._nodes.keys())
+        # self.sys_game_states = set(game.get_states()._nodes.keys(""))
+    
+
+    def get_losing_region(self, print_states: bool = False):
+        """
+        A Method that compute the set of states from which there does not exist a strategy in the safe game. 
+        """
+        _losing_region = self.game_states.difference(self._sys_winning_region)
+        self._losing_region = [state for state in _losing_region if self.game.get_state_w_attribute(state, 'player') == 'eve']
+        if print_states:
+            print("Losing Region: \n", self._losing_region)
+        
+        return self._losing_region
+    
+
+    def compute_cooperative_winning_strategy(self):
+        """
+        A Method that computes the cooperatively winning strategy, cooperative winning region and Losing region.
+
+        Approach : Convert the original game into a Quantitative game with unit edge weight everywhere. 
+        Then we play Quantitative Min-Min game. Note: The edge weight added because Value Iteration takes in a wieght graph.
+        The edge weights do not play any role in Value iterartion. Check Algorithm for more info. 
+        """
+        tmp_copy_game = copy.deepcopy(self.game)
+        tmp_copy_game.add_accepting_states_from([state for state in self.target_states if self.game.get_state_w_attribute(state, "player") == 'eve'])
+        for _s in tmp_copy_game._graph.nodes():
+            for _e in tmp_copy_game._graph.out_edges(_s):
+                tmp_copy_game._graph[_e[0]][_e[1]][0]["weight"] = 1 if tmp_copy_game._graph.nodes(data='player')[_s] == 'eve' else 0
+
+        coop_handle = PermissiveSafetyValueIteration(game=tmp_copy_game, competitive=True)
+        coop_handle.solve(debug=False, plot=False, extract_strategy=True)
+        self._sys_winning_str = coop_handle.sys_str_dict
+        self._sys_winning_region =  set(coop_handle.sys_str_dict.keys())
+        self._sys_coop_winning_str = coop_handle.sys_str_dict
+        self._coop_winning_region = set(coop_handle.sys_str_dict.keys())
+        # self._pending_region = self._coop_winning_region
+        
+        if self.debug and coop_handle.is_winning():
+            print("There exists a path from the Initial State")
 
 
     def compute_best_effort_safety_strategies(self, plot: bool = False):
         """
-         This methods converts the safety games into a Reachability game by assigning all the target states as the accepting states
+        This method converts the safety game into a Reachability game by assigning all the target states as the accepting states
            and the objective of the sys player is visit the accepting states. 
         """
-
         # create a reacability game and then compute BE reachability strategies.
 
         # create a local copy of the game and modify the accpeting states
-        game_copy = copy.deepcopy(self.game)
-        game_copy.add_accepting_states_from(self.target_states)
+        # game_copy = copy.deepcopy(self.game)
+        # game_copy.add_accepting_states_from([state for state in self.target_states if self.game.get_state_w_attribute(state, "player") == 'eve'])
 
-        best_effort_reach_handle = QualitativeBestEffortReachSyn(game=game_copy, debug=self.debug)
-        best_effort_reach_handle.compute_best_effort_strategies(plot=plot, permissive=True)
+        # best_effort_reach_handle = QualitativeBestEffortReachSyn(game=game_copy, debug=self.debug)
+        # best_effort_reach_handle.compute_best_effort_strategies(plot=plot, safety_permissive=True)
+        self.compute_cooperative_winning_strategy()
 
-        # update dictionaries 
-        self._sys_best_effort_str = best_effort_reach_handle.sys_best_effort_str
-        self._sys_winning_str = best_effort_reach_handle.sys_winning_str
-        self._env_winning_str = best_effort_reach_handle.env_winning_str
-        self._sys_coop_winning_str = best_effort_reach_handle.sys_coop_winning_str
+        # for states that belong to the losing region, we can play any strategy
+        _sys_losing_str = {state: list(self.game._graph.successors(state)) for state in self.get_losing_region() if self.game.get_state_w_attribute(state, 'player') == 'eve'} 
 
-        # update regions
-        self._winning_region = best_effort_reach_handle.winning_region
-        self._coop_winning_region = best_effort_reach_handle.coop_winning_region
+        # update dictionary 
+        self._sys_best_effort_str = {**self.sys_winning_str, **_sys_losing_str}
 
-        self._pending_region = best_effort_reach_handle.get_pending_region()
-        self._losing_region = best_effort_reach_handle.get_losing_region()
+        if plot:
+            self.add_str_flag()
+            self.game.plot_graph()
+
+
+    def add_str_flag(self):
+        """
+        A helper function used to add the 'strategy' attribute to edges that belong to the winning strategy. 
+        This function is called before plotting the winning strategy.
+        """
+        self.game.set_edge_attribute('strategy', False)
+
+        for curr_node, next_node in self._sys_best_effort_str.items():
+            if isinstance(next_node, set) or isinstance(next_node, list):
+                for n_node in next_node:
+                    self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
+            else:
+                self.game._graph.edges[curr_node, next_node, 0]['strategy'] = True
 
 
 
@@ -345,8 +394,8 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
     
     The algorithm is as follows:
 
-    2. Given a target set, identify Winning region and synthesize winning strategies.
-    3. Given, a target set, identify Cooperatively Winning (Pending) region synthesize cooperative winning strategies
+    1. Given a target set, identify Winning region and synthesize winning strategies.
+    2. Given a target set, identify Cooperatively Winning (Pending) region and synthesize cooperative winning strategies
     3. Merge the strategies. 
         3.1 States that belong to winning region play the winning strategy
         3.2 States that belong to pending region play cooperative winning strategy
@@ -357,14 +406,15 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         super().__init__(game, debug)
     
 
-    def compute_cooperative_winning_strategy(self):
+    def compute_cooperative_winning_strategy(self, permissive: bool = False):
         """
         Override the base method to run the Value Iteration code
         """
         coop_handle = PermissiveValueIteration(game=self.game, competitive=False)
         coop_handle.solve(debug=False, plot=False, extract_strategy=True)
         self._sys_coop_winning_str = coop_handle.sys_str_dict
-        self._coop_winning_region = coop_handle.sys_winning_region
+        # self._coop_winning_region = (coop_handle.sys_winning_region).union(set(coop_handle.env_str_dict.keys()))
+        self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
         
         if self.debug and coop_handle.is_winning():
             print("There exists a path from the Initial State")
@@ -402,7 +452,7 @@ class QuantitativeBestEffortSafetySyn(QualitativeBestEffortSafetySyn):
      This class implements best-effort safety synthesis algorithm with quantitative objectives.
        Given, a two-player game, a set of target states, compute Best-effort sfaty strategies that ensures the robot is doing its best to stay within the safe region (target states).
 
-     The Algorithm is same as in QualitativeBestEffortSafetySyn class/
+     The Algorithm is same as in QualitativeBestEffortSafetySyn class.
     """
 
 

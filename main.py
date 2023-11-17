@@ -258,13 +258,13 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                         debug: bool = False,
+                        permissive_strategies: bool = False,
                         print_winning_regions: bool = False,
-                        print_str: bool = False):
+                        print_str: bool = False,
+                        plot: bool = False):
 
     reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
     reachability_game_handle.reachability_solver()
-    _sys_str_dict = reachability_game_handle.sys_str
-    _env_str_dict = reachability_game_handle.env_str
 
     if print_winning_regions:
         reachability_game_handle.print_winning_region()
@@ -276,6 +276,9 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
         print("Assuming Env to be adversarial, sys CAN force a visit to the accepting states")
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
+    
+    if plot:
+        reachability_game_handle.plot_graph(with_strategy=True)
 
 
 def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
@@ -285,9 +288,9 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                       permissive_strategies: bool = False):
     
     if permissive_strategies:
-        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=False)
+        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=competitive)
     else:
-        vi_handle = ValueIteration(game=trans_sys, competitive=False)
+        vi_handle = ValueIteration(game=trans_sys, competitive=competitive)
     vi_handle.solve(debug=debug, plot=plot)
     print("******************************************************************************************************")
     print("Winning strategy exists") if vi_handle.is_winning() else print("No Winning strategy exists")
@@ -297,12 +300,13 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
 def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                           debug: bool = False,
                           plot: bool = False):
-    coop_handle = CooperativeGame(game=trans_sys, debug=False, extract_strategy=True)
+    coop_handle = CooperativeGame(game=trans_sys, debug=debug, extract_strategy=True)
     coop_handle.reachability_solver()
     coop_handle.print_winning_region()
     coop_handle.print_winning_strategies()
-
-    coop_handle.plot_graph(with_strategy=True)
+    
+    if plot:
+        coop_handle.plot_graph(with_strategy=True)
 
 
 def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
@@ -327,6 +331,7 @@ def ijcai24_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = Fals
      4. In Pending region compute BE Reachability game with objective of reaching the Winning region
      5. Merge strategies
     """
+    # TODO: Need to fix permissive reachability strategy synthesis
     safe_reach_be_handle = QualitativeSafeReachBestEffort(game=trans_sys, debug=False)
     safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
 
@@ -366,7 +371,7 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
 
     Steps:
         1. Add an auxiliary tmp_accp state from the accepting state and the trap state. The edge weight is 0 and W_bar
-           respectively. W_bar is equak to : (|V| - 1) x W where W is the max absolute weight
+           respectively. W_bar is equal to : (|V| - 1) x W where W is the max absolute weight
         2. Compute the best competitive value and best alternate value for each strategy i.e edge for sys node.
         3. Reg = competitive - cooperative(w')
         4. On this reg graph we then play competitive game i.e Sys: Min player and Env: Max player
@@ -375,7 +380,6 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     :param trans_sys:
     :return:
     """
-
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys)
 
@@ -470,6 +474,13 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_edge("s5", "s7")
     two_player_graph.add_edge("s6", "s6")
     two_player_graph.add_edge("s7", "s7")
+
+    # adding dangling env and sys state for testing compute_cooperative_winning_strategy synthesis for env and sys player
+    two_player_graph.add_states_from(["s9", "s10"])
+    two_player_graph.add_state_attribute("s9", "player", "adam")
+    two_player_graph.add_state_attribute("s10", "player", "eve") 
+    two_player_graph.add_edge("s9", "s10")
+    two_player_graph.add_edge("s10", "s9")
     
     # safety game
     # two_player_graph.add_accepting_states_from(["s0", "s4", "s7"])
@@ -567,7 +578,7 @@ if __name__ == "__main__":
     adversarial_game: bool = False
     iros_str_synthesis: bool = False
     min_max_game: bool = False
-    compute_win_lose_regions: bool = False
+    play_coop_game: bool = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:
@@ -615,20 +626,17 @@ if __name__ == "__main__":
 
     if finite_reg_synthesis:
         finite_reg_minimizing_str(trans_sys)
-    elif adversarial_game:
-        compute_winning_str(trans_sys,
-                            debug=True,
-                            print_winning_regions=True,
-                            print_str=True)
-    elif iros_str_synthesis:
-        compute_bounded_winning_str(trans_sys,
-                                    energy_bound=ENERGY_BOUND,
-                                    debug=False,
-                                    print_str=False)
-    elif min_max_game:
-        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=False)
     
-    elif compute_win_lose_regions:
+    elif adversarial_game:
+        compute_winning_str(trans_sys, debug=True, plot=True, print_winning_regions=True, print_str=True)
+    
+    elif iros_str_synthesis:
+        compute_bounded_winning_str(trans_sys, energy_bound=ENERGY_BOUND, debug=False, print_str=False)
+    
+    elif min_max_game:
+        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=True)
+    
+    elif play_coop_game:
         play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
 
     elif qual_BE_synthesis:

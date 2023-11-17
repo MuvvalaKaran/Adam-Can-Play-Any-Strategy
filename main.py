@@ -258,14 +258,14 @@ def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]
 
 def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                         debug: bool = False,
+                        permissive_strategies: bool = False,
                         print_winning_regions: bool = False,
-                        print_str: bool = False):
+                        print_str: bool = False,
+                        plot: bool = False):
 
     reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
     reachability_game_handle.reachability_solver()
-    _sys_str_dict = reachability_game_handle.sys_str
-    _env_str_dict = reachability_game_handle.env_str
-
+    
     if print_winning_regions:
         reachability_game_handle.print_winning_region()
 
@@ -276,6 +276,9 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
         print("Assuming Env to be adversarial, sys CAN force a visit to the accepting states")
     else:
         print("Assuming Env to be adversarial, sys CANNOT force a visit to the accepting states")
+    
+    if plot:
+        reachability_game_handle.plot_graph(with_strategy=True)
 
 
 def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
@@ -285,9 +288,9 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                       permissive_strategies: bool = False):
     
     if permissive_strategies:
-        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=False)
+        vi_handle = PermissiveValueIteration(game=trans_sys, competitive=competitive)
     else:
-        vi_handle = ValueIteration(game=trans_sys, competitive=False)
+        vi_handle = ValueIteration(game=trans_sys, competitive=competitive)
     vi_handle.solve(debug=debug, plot=plot)
     print("******************************************************************************************************")
     print("Winning strategy exists") if vi_handle.is_winning() else print("No Winning strategy exists")
@@ -297,7 +300,7 @@ def play_min_max_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
 def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                           debug: bool = False,
                           plot: bool = False):
-    coop_handle = CooperativeGame(game=trans_sys, debug=False, extract_strategy=True)
+    coop_handle = CooperativeGame(game=trans_sys, debug=debug, extract_strategy=True)
     coop_handle.reachability_solver()
     coop_handle.print_winning_region()
     coop_handle.print_winning_strategies()
@@ -616,20 +619,17 @@ if __name__ == "__main__":
 
     if finite_reg_synthesis:
         finite_reg_minimizing_str(trans_sys)
-    elif adversarial_game:
-        compute_winning_str(trans_sys,
-                            debug=True,
-                            print_winning_regions=True,
-                            print_str=True)
-    elif iros_str_synthesis:
-        compute_bounded_winning_str(trans_sys,
-                                    energy_bound=ENERGY_BOUND,
-                                    debug=False,
-                                    print_str=False)
-    elif min_max_game:
-        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=False)
     
-    elif min_min_game:
+    elif adversarial_game:
+        compute_winning_str(trans_sys, debug=True, plot=True, print_winning_regions=True, print_str=True)
+    
+    elif iros_str_synthesis:
+        compute_bounded_winning_str(trans_sys, energy_bound=ENERGY_BOUND, debug=False, print_str=False)
+    
+    elif min_max_game:
+        play_min_max_game(trans_sys=trans_sys, debug=True, plot=True, permissive_strategies=True, competitive=True)
+    
+    elif play_coop_game:
         play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
 
     elif qual_BE_synthesis:

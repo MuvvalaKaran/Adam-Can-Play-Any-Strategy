@@ -9,7 +9,9 @@ from .adversarial_game import ReachabilityGame
 
 class CooperativeGame(ReachabilityGame):
     """
-        This class inherits ReachabilityGame class and modifies the reachability solver and the permissive reachability solver to compute set of states form which there exists a path to the accepting state(s).
+    This class inherits ReachabilityGame class and modifies the reachability solver to compute"
+     1. Set of cooperative winning states form which there exists a path to the accepting state(s).
+     2. The cooperative winning strategy.
     """
 
     def __init__(self, game: TwoPlayerGraph, debug: bool = False, extract_strategy: bool = False):

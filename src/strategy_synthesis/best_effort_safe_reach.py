@@ -33,9 +33,9 @@ class QualitativeSafeReachBestEffort(QualitativeBestEffortReachSyn):
         sys_best_effort_pending_str: Dict[str, Set[str]] = defaultdict(lambda: set({}))
 
         # get winning strategies
-        self.compute_winning_strategies(permissive=False)
+        self.compute_winning_strategies()
 
-        # get cooperative winning strategies
+        # get cooperative winning region
         self.compute_cooperative_winning_strategy()
 
         # remove env states from the winning region and cooperative winning region. 
@@ -46,7 +46,7 @@ class QualitativeSafeReachBestEffort(QualitativeBestEffortReachSyn):
 
         # now compute BE Safety strategies
         safety_be_handle = QualitativeBestEffortSafetySyn(game=self.game, target_states=self._coop_winning_region, debug=True)
-        safety_be_handle.compute_best_effort_safety_strategies(plot=False)
+        safety_be_handle.compute_best_effort_safety_strategies(plot=True)
 
         if debug:
             print("BE Safe Str in Pending + Winning Region: ", safety_be_handle.sys_best_effort_str)
@@ -57,6 +57,7 @@ class QualitativeSafeReachBestEffort(QualitativeBestEffortReachSyn):
 
         # Finally, compute reachability strategies from the pending region with Winning region as reacability objective
         be_handle = QualitativeBestEffortReachSyn(game=be_reach_win_trans_sys, debug=False)
+        # TODO: We need to code up Qualitative Permissive Reachability code.
         be_handle.compute_best_effort_strategies(plot=False)
         
         if debug:
@@ -64,21 +65,25 @@ class QualitativeSafeReachBestEffort(QualitativeBestEffortReachSyn):
         
         # for pending states (ps)
         for ps in self.pending_region:
-            try:
-                safereach_str = set(be_handle.sys_best_effort_str[ps]).intersection(safety_be_handle.sys_best_effort_str[ps])
-                if safereach_str:
-                    sys_best_effort_pending_str[ps].update(safereach_str)
-                else:
-                    sys_best_effort_pending_str[ps].update(set(be_handle.sys_best_effort_str[ps]))
+            if self.game.get_state_w_attribute(ps, 'player') == 'eve':
+                try:
+                    safereach_str = set(be_handle.sys_best_effort_str[ps]).intersection(safety_be_handle.sys_best_effort_str[ps])
+                    if safereach_str:
+                        sys_best_effort_pending_str[ps].update(safereach_str)
+                    else:
+                        sys_best_effort_pending_str[ps].update(set(be_handle.sys_best_effort_str[ps]))
 
-            except KeyError:
-                warnings.warn(f"Something went wrog during Best Effort Synthesis in Pending Region! \
-                            state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
+                except KeyError:
+                    warnings.warn(f"Something went wrog during Best Effort Synthesis in Pending Region! \
+                                state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
         
         # override the sys_coop_winning_str dictionary that computed in compute_cooperative_winning_strategy() method above
         self._sys_coop_winning_str = sys_best_effort_pending_str
+
+        # for states that belong to the losing region, we can play any strategy
+        _sys_losing_str = {state: list(self.game._graph.successors(state)) for state in self.get_losing_region() if self.game.get_state_w_attribute(state, 'player') == 'eve'}
         
-        self._sys_best_effort_str: Dict[str, Set[str]] = {**self.sys_winning_str, **self._sys_coop_winning_str}
+        self._sys_best_effort_str: Dict[str, Set[str]] = {**self.sys_winning_str, **self._sys_coop_winning_str, **_sys_losing_str}
 
         if plot:
             self.add_str_flag()
@@ -131,7 +136,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
 
         # now compute BE Safety strategies
         safety_be_handle = QuantitativeBestEffortSafetySyn(game=self.game, target_states=self._coop_winning_region, debug=False)
-        safety_be_handle.compute_best_effort_safety_strategies(plot=False)
+        safety_be_handle.compute_best_effort_safety_strategies(plot=True)
 
         if debug:
             print("BE Safe Str in Pending + Winning Region: ", safety_be_handle.sys_best_effort_str)
@@ -142,7 +147,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
 
         # Finally, compute reachability strategies from the pending region with Winning region as reacability objective
         be_handle = QuantitativeBestEffortReachSyn(game=be_reach_win_trans_sys, debug=False)
-        be_handle.compute_best_effort_strategies(plot=False)
+        be_handle.compute_best_effort_strategies(plot=True)
         
         if debug:
             print("BE Reach Str to winning region: ", be_handle.sys_best_effort_str)
@@ -163,8 +168,11 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
         
         # override the sys_coop_winning_str dictionary that computed in compute_cooperative_winning_strategy() method above
         self._sys_coop_winning_str = sys_best_effort_pending_str
+
+        # for states that belong to the losing region, we can play any strategy
+        _sys_losing_str = {state: list(self.game._graph.successors(state)) for state in self.get_losing_region() if self.game.get_state_w_attribute(state, 'player') == 'eve'}
         
-        self._sys_best_effort_str: Dict[str, Set[str]] = {**self.sys_winning_str, **self._sys_coop_winning_str}
+        self._sys_best_effort_str: Dict[str, Set[str]] = {**self.sys_winning_str, **self._sys_coop_winning_str, **_sys_losing_str}
 
         if plot:
             self.add_str_flag()

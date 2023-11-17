@@ -265,7 +265,7 @@ def compute_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
 
     reachability_game_handle = ReachabilitySolver(game=trans_sys, debug=debug)
     reachability_game_handle.reachability_solver()
-    
+
     if print_winning_regions:
         reachability_game_handle.print_winning_region()
 
@@ -331,6 +331,7 @@ def ijcai24_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = Fals
      4. In Pending region compute BE Reachability game with objective of reaching the Winning region
      5. Merge strategies
     """
+    # TODO: Need to fix permissive reachability strategy synthesis
     safe_reach_be_handle = QualitativeSafeReachBestEffort(game=trans_sys, debug=False)
     safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
 
@@ -370,7 +371,7 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
 
     Steps:
         1. Add an auxiliary tmp_accp state from the accepting state and the trap state. The edge weight is 0 and W_bar
-           respectively. W_bar is equak to : (|V| - 1) x W where W is the max absolute weight
+           respectively. W_bar is equal to : (|V| - 1) x W where W is the max absolute weight
         2. Compute the best competitive value and best alternate value for each strategy i.e edge for sys node.
         3. Reg = competitive - cooperative(w')
         4. On this reg graph we then play competitive game i.e Sys: Min player and Env: Max player
@@ -379,7 +380,6 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     :param trans_sys:
     :return:
     """
-
     # build an instance of strategy minimization class
     reg_syn_handle = RegMinStrSyn(trans_sys)
 
@@ -474,6 +474,13 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_edge("s5", "s7")
     two_player_graph.add_edge("s6", "s6")
     two_player_graph.add_edge("s7", "s7")
+
+    # adding dangling env and sys state for testing compute_cooperative_winning_strategy synthesis for env and sys player
+    two_player_graph.add_states_from(["s9", "s10"])
+    two_player_graph.add_state_attribute("s9", "player", "adam")
+    two_player_graph.add_state_attribute("s10", "player", "eve") 
+    two_player_graph.add_edge("s9", "s10")
+    two_player_graph.add_edge("s10", "s9")
     
     # safety game
     # two_player_graph.add_accepting_states_from(["s0", "s4", "s7"])
@@ -571,7 +578,7 @@ if __name__ == "__main__":
     adversarial_game: bool = False
     iros_str_synthesis: bool = False
     min_max_game: bool = False
-    min_min_game: bool = True
+    play_coop_game: bool = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:

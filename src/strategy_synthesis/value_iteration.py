@@ -661,7 +661,7 @@ class PermissiveValueIteration(ValueIteration):
         # update the state value dict
         for i in range(self.num_of_nodes):
             _s = self.node_int_map.inverse[i]
-            self.state_value_dict.update({_s: _int_val_vector[i]})
+            self.state_value_dict.update({_s: _int_val_vector[i] if INT_MIN_VAL <  _int_val_vector[i] < INT_MAX_VAL  else math.inf})
 
         # extract sys and env strategy after converging.
         if extract_strategy:

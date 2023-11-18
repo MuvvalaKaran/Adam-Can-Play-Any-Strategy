@@ -1,4 +1,5 @@
 import copy
+import math
 import warnings
 
 from collections import defaultdict
@@ -170,7 +171,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
         
         # compute best effor state value - at winning states we keep the winning strategy values and at pending states we keep best reach values from safe reach startegies
         for c_state, cs_str in self._coop_winning_state_values.items():
-            if c_state in self._winning_state_values.keys():
+            if c_state in self._winning_state_values.keys() and self._winning_state_values[c_state] != math.inf:
                 self.best_effort_state_values[c_state] =  self._winning_state_values[c_state]
             else:
                 self.best_effort_state_values[c_state] = cs_str
@@ -184,6 +185,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
         self._sys_best_effort_str: Dict[str, Set[str]] = {**self.sys_winning_str, **self._sys_coop_winning_str, **_sys_losing_str}
 
         if plot:
+            self._add_state_costs_to_graph()
             self.add_str_flag()
             self.game.plot_graph()
         

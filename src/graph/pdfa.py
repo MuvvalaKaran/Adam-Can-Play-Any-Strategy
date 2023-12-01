@@ -165,7 +165,7 @@ class PDFABuilder(Builder):
                  sc_ltl: str = "",
                  use_alias: bool = False,
                  plot: bool = False,
-                 view: bool = True,
+                 view: bool = False,
                  format: str = 'png') -> 'PDFAGraph':
 
         if not (isinstance(sc_ltl, str) or sc_ltl == ""):

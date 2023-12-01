@@ -1,0 +1,76 @@
+root@e22ca6994089:~/symbolic_planning/src# pip3 install 'gym-minigrid==1.0.2' --force-reinstall
+Collecting gym-minigrid==1.0.2
+  Downloading gym_minigrid-1.0.2-py3-none-any.whl (47 kB)
+     |████████████████████████████████| 47 kB 2.9 MB/s 
+Processing /root/.cache/pip/wheels/17/79/65/7afedc162d858b02708a3b8f7a6dd5b1000dcd5b0f894f7cc1/gym-0.26.2-py3-none-any.whl
+Collecting numpy>=1.15.0
+  Using cached numpy-1.24.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.3 MB)
+Collecting importlib-metadata>=4.8.0; python_version < "3.10"
+  Using cached importlib_metadata-6.8.0-py3-none-any.whl (22 kB)
+Collecting cloudpickle>=1.2.0
+  Using cached cloudpickle-3.0.0-py3-none-any.whl (20 kB)
+Collecting gym-notices>=0.0.4
+  Using cached gym_notices-0.0.8-py3-none-any.whl (3.0 kB)
+Collecting zipp>=0.5
+  Using cached zipp-3.17.0-py3-none-any.whl (7.4 kB)
+ERROR: imageio 2.31.6 has requirement pillow<10.1.0,>=8.3.2, but you'll have pillow 10.1.0 which is incompatible.
+Installing collected packages: zipp, importlib-metadata, cloudpickle, numpy, gym-notices, gym, gym-minigrid
+  Attempting uninstall: zipp
+    Found existing installation: zipp 3.17.0
+    Uninstalling zipp-3.17.0:
+      Successfully uninstalled zipp-3.17.0
+  Attempting uninstall: importlib-metadata
+    Found existing installation: importlib-metadata 6.8.0
+    Uninstalling importlib-metadata-6.8.0:
+      Successfully uninstalled importlib-metadata-6.8.0
+  Attempting uninstall: cloudpickle
+    Found existing installation: cloudpickle 3.0.0
+    Uninstalling cloudpickle-3.0.0:
+      Successfully uninstalled cloudpickle-3.0.0
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.24.4
+    Uninstalling numpy-1.24.4:
+      Successfully uninstalled numpy-1.24.4
+  Attempting uninstall: gym-notices
+    Found existing installation: gym-notices 0.0.8
+    Uninstalling gym-notices-0.0.8:
+      Successfully uninstalled gym-notices-0.0.8
+  Attempting uninstall: gym
+    Found existing installation: gym 0.26.2
+    Uninstalling gym-0.26.2:
+      Successfully uninstalled gym-0.26.2
+  Attempting uninstall: gym-minigrid
+    Found existing installation: gym-minigrid 1.2.2
+    Uninstalling gym-minigrid-1.2.2:
+      Successfully uninstalled gym-minigrid-1.2.2
+Successfully installed cloudpickle-3.0.0 gym-0.26.2 gym-minigrid-1.0.2 gym-notices-0.0.8 importlib-metadata-6.8.0 numpy-1.24.4 zipp-3.17.0
+
+
+root@e22ca6994089:~/symbolic_planning/src# pip3 install 'gym==0.21.0' --force-reinstall
+Collecting gym==0.21.0
+  Downloading gym-0.21.0.tar.gz (1.5 MB)
+     |████████████████████████████████| 1.5 MB 21.4 MB/s 
+Collecting cloudpickle>=1.2.0
+  Using cached cloudpickle-3.0.0-py3-none-any.whl (20 kB)
+Collecting numpy>=1.18.0
+  Using cached numpy-1.24.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.3 MB)
+Building wheels for collected packages: gym
+  Building wheel for gym (setup.py) ... done
+  Created wheel for gym: filename=gym-0.21.0-py3-none-any.whl size=1616824 sha256=d4bc619cb9a50bc836a5e452d86be1352101c51ab2c50c2ceb5c0c9cdf7ae350
+  Stored in directory: /root/.cache/pip/wheels/27/6d/b3/a3a6e10704795c9b9000f1ab2dc480dfe7bed42f5972806e73
+Successfully built gym
+ERROR: imageio 2.31.6 has requirement pillow<10.1.0,>=8.3.2, but you'll have pillow 10.1.0 which is incompatible.
+Installing collected packages: cloudpickle, numpy, gym
+  Attempting uninstall: cloudpickle
+    Found existing installation: cloudpickle 3.0.0
+    Uninstalling cloudpickle-3.0.0:
+      Successfully uninstalled cloudpickle-3.0.0
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.24.4
+    Uninstalling numpy-1.24.4:
+      Successfully uninstalled numpy-1.24.4
+  Attempting uninstall: gym
+    Found existing installation: gym 0.26.2
+    Uninstalling gym-0.26.2:
+      Successfully uninstalled gym-0.26.2
+Successfully installed cloudpickle-3.0.0 gym-0.21.0 numpy-1.24.4

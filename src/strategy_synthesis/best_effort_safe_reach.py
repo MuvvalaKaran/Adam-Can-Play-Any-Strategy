@@ -46,7 +46,7 @@ class QualitativeSafeReachBestEffort(QualitativeBestEffortReachSyn):
 
         # now compute BE Safety strategies
         safety_be_handle = QualitativeBestEffortSafetySyn(game=self.game, target_states=self._coop_winning_region, debug=True)
-        safety_be_handle.compute_best_effort_safety_strategies(plot=True)
+        safety_be_handle.compute_best_effort_safety_strategies(plot=False)
 
         if debug:
             print("BE Safe Str in Pending + Winning Region: ", safety_be_handle.sys_best_effort_str)

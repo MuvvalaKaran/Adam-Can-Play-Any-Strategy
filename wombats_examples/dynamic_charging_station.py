@@ -17,6 +17,7 @@ import gym
 import copy
 import time
 import warnings
+import numpy as np
 from pathlib import Path
 
 EXAMPLE_DIR = os.getcwd()
@@ -49,11 +50,12 @@ Graph.automata_data_dir = DIR
 
 debug = True
 
-env_id = 'MiniGrid-ToyCorridorLava-v0'
+# env_id = 'MiniGrid-ToyCorridorLava-v0'
+env_id = "MiniGrid-CorridorLava-v0"
 pdfa_config_yaml="config/PDFA_charging_station"
 player_steps = {'sys': [1], 'env': [1]}
 # player_steps = {'sys': [1, 2], 'env': [1]}
-player_steps = {'sys': [2], 'env': [1]}
+player_steps = {'sys': [1], 'env': [1]}
 
 load_game_from_file = False
 plot_minigrid = False
@@ -169,7 +171,20 @@ def build_minigrid_game(env_snap: bool = False):
     initialize_edge_labels_on_fancy_graph(two_player_graph)
 
 
-    return two_player_graph
+    return two_player_graph, env
+
+
+def simulate_strategy(env, game, sys_actions, iterations: int = 100):
+    """
+    A function to simulate the synthesize strategy. Available env_action 'random' and 'interactive'.
+    """
+    sim = Simulator(env, game)
+    sim.run(iterations=iterations,
+            sys_actions=sys_actions,
+            env_strategy='random',
+            render=False,
+            record_video=iterations<=15)
+    sim.get_stats()
 
 
 def compute_strategy(strategy_type: str, game, debug: bool = False, plot: bool = False, reg_factor: float = 1.25):
@@ -222,7 +237,7 @@ def compute_strategy(strategy_type: str, game, debug: bool = False, plot: bool =
 if __name__ == '__main__':
 
     # build two player game
-    game = build_minigrid_game()
+    game, env = build_minigrid_game()
 
     # get all the aps, and the player
     set_ap = set({})
@@ -266,8 +281,47 @@ if __name__ == '__main__':
 
 
     # synthesize strategy - Min-Max, Min-Min
-    valid_str_syn_algos = ["Min-Max", "Min-Min", "Regret", "BestEffortQual", "BestEffortQuant", "BestEffortSafeReachQual", "BestEffortSafeReachQuant"]
+    # valid_str_syn_algos = ["Min-Max", "Min-Min", "Regret", "BestEffortQual", "BestEffortQuant", "BestEffortSafeReachQual", "BestEffortSafeReachQuant"]
+    valid_str_syn_algos = ["Min-Max"]
     for st in valid_str_syn_algos:
         strategy_handle = compute_strategy(strategy_type=st, game=dfa_game, debug=False, plot=False)
     
     # print(strategy_handle)
+    simulate_str: bool = True
+    if simulate_str:
+        player = 'sys'
+        SYS_ACTIONS = []
+        for multiactions in env.player_actions[player]:
+            action_strings = []
+            for agent, actions in zip(env.unwrapped.agents, multiactions):
+                action_string = []
+                for action in actions:
+                    if action is None or np.isnan(action):
+                        continue
+                    a_str = agent.ACTION_ENUM_TO_STR[action]
+                    action_string.append(a_str)
+                action_strings.append(tuple(action_string))
+            action_strs = action_strings[0] if player == 'sys' else action_strings[1:]
+            SYS_ACTIONS.append(tuple(action_strs))
+        
+        print(SYS_ACTIONS)
+
+        # hard code actions to go to green region
+        two_right_steps = "east_east__None"
+        one_right_step = "east__None"
+        up_step = "north__None"
+        down_step = "south__None"
+
+        # for two step envs
+        # up_step = ('north',)
+        # down_step = ('south',)
+        # one_right_step = ('east',)
+        # one_left_step = ('west',)
+        # STRATEGY = [two_right_steps, one_right_step, up_step, two_right_steps, down_step, two_right_steps, one_right_step]
+
+        # for one step envs
+        STRATEGY = [one_right_step, one_right_step, one_right_step, up_step, one_right_step, one_right_step, down_step, one_right_step, one_right_step, one_right_step]
+
+        simulate_strategy(env=env, game=dfa_game, sys_actions=STRATEGY)
+    
+

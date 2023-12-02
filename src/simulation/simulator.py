@@ -116,7 +116,8 @@ class Simulator:
             # Use env_state that the system chose and not from the game.
             _, obs, cost, done = self._game.step(sys_state, sys_action, env_state)
             self.log(steps, cost, obs, sys_action, env_state, 'sys')
-            self._simulate_on_env(render, sys_actions=sys_action)
+            # self._simulate_on_env(render, sys_actions=sys_action)
+            self._simulate_on_env(render, sys_actions=[sys_action.split('__')[0]])
 
             steps += 1
 
@@ -131,7 +132,8 @@ class Simulator:
 
             sys_state, obs, cost, done = self._game.step(env_state, env_action)
             self.log(steps, cost, obs, env_action, sys_state, 'env')
-            self._simulate_on_env(render, env_actions=env_action)
+            # self._simulate_on_env(render, env_actions=env_action)
+            self._simulate_on_env(render, env_actions=[env_action.split('__')[1]])
 
             steps += 1
 
@@ -150,7 +152,8 @@ class Simulator:
                 self._env.step([[action], [None]])
 
         if env_actions is not None:
-            self._env.step([[None], *env_actions])
+            # self._env.step([[None], *env_actions])
+            self._env.step([[None], env_actions])
 
         if render:
             self._env.render()
@@ -192,7 +195,11 @@ class Simulator:
 
         if curr_player == 'sys':
             self._sys_actions.append(action)
-            pos = state[0][1][0]
+            if isinstance(state, tuple) or isinstance(state, list):
+                pos = state[0][1][0]
+            elif state == 'accept_all':
+                pos = 'goal'
+
             # self._sys_grid[pos[0], pos[1]] += 1
         else:
             self._env_actions.append(action)

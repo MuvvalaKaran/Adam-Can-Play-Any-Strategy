@@ -79,7 +79,8 @@ class Strategy(Graph):
 
     def __init__(self, game, graph_name: str):
         super().__init__(config_yaml=None, save_flag=True)
-        self._game = copy.deepcopy(game)
+        # self._game = copy.deepcopy(game)
+        self._game = game
         self._graph_name = graph_name
 
     def _is_graph_constructed(self):
@@ -138,8 +139,9 @@ class RandomStrategy(Strategy):
     def step(self, prev_state, prev_action, curr_state):
         successors = list(self._game._graph.successors(curr_state))
         next_state = random.choice(successors)
-        actions = list(self._game.get_edge_attributes(curr_state, next_state, 'actions'))
-        action = random.choice(actions)
+        # actions = list(self._game.get_edge_attributes(curr_state, next_state, 'actions'))
+        action = self._game.get_edge_attributes(curr_state, next_state, 'actions')
+        # action = random.choice(actions)
 
         return action, self._game.step(curr_state, action)[0]
 
@@ -191,6 +193,7 @@ class ActionSequenceStrategy(Strategy):
             self.i += 1
 
             return action, self._game.step(curr_state, action)[0]
+            # return action.split('__')[0], self._game.step(curr_state, action)[0]
         else:
             raise Exception('No more actions to take')
 

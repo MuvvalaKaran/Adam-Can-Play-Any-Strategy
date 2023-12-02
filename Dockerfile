@@ -17,7 +17,7 @@ SHELL ["/bin/bash", "-c"]
 RUN pip3 install pyyaml numpy bidict networkx graphviz ply pybullet \
     pyperplan==1.3 IPython svgwrite matplotlib imageio lark-parser==0.9.0 sympy==1.6.1 \
     cloudpickle cycler future mpmath pandas pydot pydot3 pyglet pytz scipy \
-    gym gym_minigrid joblib tqdm shapely paramiko
+    gym gym_minigrid==1.0.2 joblib tqdm shapely paramiko
 
 RUN echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list
 

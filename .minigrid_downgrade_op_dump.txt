@@ -1,0 +1,162 @@
+root@e22ca6994089:~/symbolic_planning/src# pip3 install 'gym-minigrid==1.0.2' --force-reinstall
+Collecting gym-minigrid==1.0.2
+  Downloading gym_minigrid-1.0.2-py3-none-any.whl (47 kB)
+     |████████████████████████████████| 47 kB 2.9 MB/s 
+Processing /root/.cache/pip/wheels/17/79/65/7afedc162d858b02708a3b8f7a6dd5b1000dcd5b0f894f7cc1/gym-0.26.2-py3-none-any.whl
+Collecting numpy>=1.15.0
+  Using cached numpy-1.24.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.3 MB)
+Collecting importlib-metadata>=4.8.0; python_version < "3.10"
+  Using cached importlib_metadata-6.8.0-py3-none-any.whl (22 kB)
+Collecting cloudpickle>=1.2.0
+  Using cached cloudpickle-3.0.0-py3-none-any.whl (20 kB)
+Collecting gym-notices>=0.0.4
+  Using cached gym_notices-0.0.8-py3-none-any.whl (3.0 kB)
+Collecting zipp>=0.5
+  Using cached zipp-3.17.0-py3-none-any.whl (7.4 kB)
+ERROR: imageio 2.31.6 has requirement pillow<10.1.0,>=8.3.2, but you'll have pillow 10.1.0 which is incompatible.
+Installing collected packages: zipp, importlib-metadata, cloudpickle, numpy, gym-notices, gym, gym-minigrid
+  Attempting uninstall: zipp
+    Found existing installation: zipp 3.17.0
+    Uninstalling zipp-3.17.0:
+      Successfully uninstalled zipp-3.17.0
+  Attempting uninstall: importlib-metadata
+    Found existing installation: importlib-metadata 6.8.0
+    Uninstalling importlib-metadata-6.8.0:
+      Successfully uninstalled importlib-metadata-6.8.0
+  Attempting uninstall: cloudpickle
+    Found existing installation: cloudpickle 3.0.0
+    Uninstalling cloudpickle-3.0.0:
+      Successfully uninstalled cloudpickle-3.0.0
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.24.4
+    Uninstalling numpy-1.24.4:
+      Successfully uninstalled numpy-1.24.4
+  Attempting uninstall: gym-notices
+    Found existing installation: gym-notices 0.0.8
+    Uninstalling gym-notices-0.0.8:
+      Successfully uninstalled gym-notices-0.0.8
+  Attempting uninstall: gym
+    Found existing installation: gym 0.26.2
+    Uninstalling gym-0.26.2:
+      Successfully uninstalled gym-0.26.2
+  Attempting uninstall: gym-minigrid
+    Found existing installation: gym-minigrid 1.2.2
+    Uninstalling gym-minigrid-1.2.2:
+      Successfully uninstalled gym-minigrid-1.2.2
+Successfully installed cloudpickle-3.0.0 gym-0.26.2 gym-minigrid-1.0.2 gym-notices-0.0.8 importlib-metadata-6.8.0 numpy-1.24.4 zipp-3.17.0
+
+
+root@e22ca6994089:~/symbolic_planning/src# pip3 install 'gym==0.21.0' --force-reinstall
+Collecting gym==0.21.0
+  Downloading gym-0.21.0.tar.gz (1.5 MB)
+     |████████████████████████████████| 1.5 MB 21.4 MB/s 
+Collecting cloudpickle>=1.2.0
+  Using cached cloudpickle-3.0.0-py3-none-any.whl (20 kB)
+Collecting numpy>=1.18.0
+  Using cached numpy-1.24.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.3 MB)
+Building wheels for collected packages: gym
+  Building wheel for gym (setup.py) ... done
+  Created wheel for gym: filename=gym-0.21.0-py3-none-any.whl size=1616824 sha256=d4bc619cb9a50bc836a5e452d86be1352101c51ab2c50c2ceb5c0c9cdf7ae350
+  Stored in directory: /root/.cache/pip/wheels/27/6d/b3/a3a6e10704795c9b9000f1ab2dc480dfe7bed42f5972806e73
+Successfully built gym
+ERROR: imageio 2.31.6 has requirement pillow<10.1.0,>=8.3.2, but you'll have pillow 10.1.0 which is incompatible.
+Installing collected packages: cloudpickle, numpy, gym
+  Attempting uninstall: cloudpickle
+    Found existing installation: cloudpickle 3.0.0
+    Uninstalling cloudpickle-3.0.0:
+      Successfully uninstalled cloudpickle-3.0.0
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.24.4
+    Uninstalling numpy-1.24.4:
+      Successfully uninstalled numpy-1.24.4
+  Attempting uninstall: gym
+    Found existing installation: gym 0.26.2
+    Uninstalling gym-0.26.2:
+      Successfully uninstalled gym-0.26.2
+Successfully installed cloudpickle-3.0.0 gym-0.21.0 numpy-1.24.4
+
+
+root@e22ca6994089:~/symbolic_planning/src# pip3 install 'matplotlib==3.5' --force-reinstall                                     
+Collecting matplotlib==3.5
+  Downloading matplotlib-3.5.0-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl (11.3 MB)
+     |████████████████████████████████| 11.3 MB 10.7 MB/s 
+Collecting pyparsing>=2.2.1
+  Using cached pyparsing-3.1.1-py3-none-any.whl (103 kB)
+Collecting kiwisolver>=1.0.1
+  Using cached kiwisolver-1.4.5-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl (1.2 MB)
+Collecting fonttools>=4.22.0
+  Downloading fonttools-4.45.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (4.6 MB)
+     |████████████████████████████████| 4.6 MB 74.8 MB/s 
+Collecting packaging>=20.0
+  Using cached packaging-23.2-py3-none-any.whl (53 kB)
+Collecting setuptools-scm>=4
+  Downloading setuptools_scm-8.0.4-py3-none-any.whl (42 kB)
+     |████████████████████████████████| 42 kB 367 kB/s 
+Collecting numpy>=1.17
+  Using cached numpy-1.24.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.3 MB)
+Collecting cycler>=0.10
+  Using cached cycler-0.12.1-py3-none-any.whl (8.3 kB)
+Collecting python-dateutil>=2.7
+  Using cached python_dateutil-2.8.2-py2.py3-none-any.whl (247 kB)
+Collecting pillow>=6.2.0
+  Using cached Pillow-10.1.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.5 MB)
+Collecting setuptools
+  Downloading setuptools-69.0.2-py3-none-any.whl (819 kB)
+     |████████████████████████████████| 819 kB 81.1 MB/s 
+Collecting typing-extensions
+  Using cached typing_extensions-4.8.0-py3-none-any.whl (31 kB)
+Collecting tomli>=1; python_version < "3.11"
+  Downloading tomli-2.0.1-py3-none-any.whl (12 kB)
+Collecting six>=1.5
+  Using cached six-1.16.0-py2.py3-none-any.whl (11 kB)
+ERROR: imageio 2.31.6 has requirement pillow<10.1.0,>=8.3.2, but you'll have pillow 10.1.0 which is incompatible.
+Installing collected packages: pyparsing, kiwisolver, fonttools, packaging, setuptools, typing-extensions, tomli, setuptools-scm, numpy, cycler, six, python-dateutil, pillow, matplotlib
+  Attempting uninstall: pyparsing
+    Found existing installation: pyparsing 3.1.1
+    Uninstalling pyparsing-3.1.1:
+      Successfully uninstalled pyparsing-3.1.1
+  Attempting uninstall: kiwisolver
+    Found existing installation: kiwisolver 1.4.5
+    Uninstalling kiwisolver-1.4.5:
+      Successfully uninstalled kiwisolver-1.4.5
+  Attempting uninstall: fonttools
+    Found existing installation: fonttools 4.43.1
+    Uninstalling fonttools-4.43.1:
+      Successfully uninstalled fonttools-4.43.1
+  Attempting uninstall: packaging
+    Found existing installation: packaging 23.2
+    Uninstalling packaging-23.2:
+      Successfully uninstalled packaging-23.2
+  Attempting uninstall: setuptools
+    Found existing installation: setuptools 45.2.0
+    Not uninstalling setuptools at /usr/lib/python3/dist-packages, outside environment /usr
+    Can't uninstall 'setuptools'. No files were found to uninstall.
+  Attempting uninstall: typing-extensions
+    Found existing installation: typing-extensions 4.8.0
+    Uninstalling typing-extensions-4.8.0:
+      Successfully uninstalled typing-extensions-4.8.0
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.24.4
+    Uninstalling numpy-1.24.4:
+      Successfully uninstalled numpy-1.24.4
+  Attempting uninstall: cycler
+    Found existing installation: cycler 0.12.1
+    Uninstalling cycler-0.12.1:
+      Successfully uninstalled cycler-0.12.1
+  Attempting uninstall: six
+    Found existing installation: six 1.16.0
+    Uninstalling six-1.16.0:
+      Successfully uninstalled six-1.16.0
+  Attempting uninstall: python-dateutil
+    Found existing installation: python-dateutil 2.8.2
+    Uninstalling python-dateutil-2.8.2:
+      Successfully uninstalled python-dateutil-2.8.2
+  Attempting uninstall: pillow
+    Found existing installation: Pillow 10.1.0
+    Uninstalling Pillow-10.1.0:
+      Successfully uninstalled Pillow-10.1.0
+  Attempting uninstall: matplotlib
+    Found existing installation: matplotlib 3.7.3
+    Uninstalling matplotlib-3.7.3:
+      Successfully uninstalled matplotlib-3.7.3
+Successfully installed cycler-0.12.1 fonttools-4.45.1 kiwisolver-1.4.5 matplotlib-3.5.0 numpy-1.24.4 packaging-23.2 pillow-10.1.0 pyparsing-3.1.1 python-dateutil-2.8.2 setuptools-69.0.2 setuptools-scm-8.0.4 six-1.16.0 tomli-2.0.1 typing-extensions-4.8.0

@@ -72,7 +72,7 @@ Here `<docker_container_name>` is any name of your choice and `<image_name>` is 
 
 ### Running Gym-Minigrid examples
 
-If you want to record `gym-minigrid` runs from [Wombats](git@github.com:aria-systems-group/wombats.git) library then install `ffmpeg` tool using the following commands:
+If you want to record `gym-minigrid` runs from [Wombats](https://github.com/aria-systems-group/wombats) library then install `ffmpeg` tool using the following commands:
 
 ```bash
 apt  update && apt upgrade
@@ -161,8 +161,8 @@ Please refer to the README file in the tar ball or on their Github [page](https:
 
 ### Gym-Minigrid related issues
 
-1. Due to dependency issues of [`Wombats`](git@github.com:aria-systems-group/wombats.git) library, both `gym` and `gym-minigrid` have to be of specific version; precisely, `gym==0.21.0` and `gym-minigrid=1.0.2`. 
-2. When using docker, if you want to visualize minigrid runs, then enable X11 forwarding - [Link])(https://stackoverflow.com/questions/44429394/x11-forwarding-of-a-gui-app-running-in-docker).
+1. Due to dependency issues of [`Wombats`](https://github.com/aria-systems-group/wombats) library, both `gym` and `gym-minigrid` have to be of specific version; precisely, `gym==0.21.0` and `gym-minigrid=1.0.2`. 
+2. When using docker, if you want to visualize minigrid runs, then enable X11 forwarding - [Link](https://stackoverflow.com/questions/44429394/x11-forwarding-of-a-gui-app-running-in-docker).
 3. If you get `'FigureCanvasAgg' object has no attribute 'set_window_title'` error when running minigrid examples with `render` flag then you possibly have the wrong `matplotlib` version. Changing `matplotlib` version to 3.5 works. If you already have installed `matplotlib` then use the following command to install the specific version 
 
 ```bash

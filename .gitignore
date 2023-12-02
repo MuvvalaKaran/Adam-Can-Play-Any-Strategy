@@ -40,3 +40,9 @@ envname.yml
 **/.DS_Store
 **/*.png
 # examples/**/config
+
+# ignore wombats_example folder
+wombats_examples/*.py
+
+# ignore build txt dump 
+.minigrid_downgrade_op_dump.txt

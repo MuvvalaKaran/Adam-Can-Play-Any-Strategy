@@ -814,7 +814,7 @@ class ProductAutomaton(TwoPlayerGraph):
         weights = self.get_edge_attributes(virtual_init_node, sys_state, 'weights')
 
         # return virtual_init_node, env_action, sys_state, list(weights.values())
-        return None, None, virtual_init_node, 0
+        return None, None, virtual_init_node, [0, 0]
 
     def next_transition(self, state, action):
 
@@ -838,7 +838,8 @@ class ProductAutomaton(TwoPlayerGraph):
         weights = self.get_edge_attributes(state, next_state, 'weights')
         obs = self._graph[state][next_state][0].get('ap', '')
 
-        done = self._graph.nodes[next_state].get('originalAccepting')
+        # done = self._graph.nodes[next_state].get('originalAccepting')
+        done = self._graph.nodes[next_state].get('accepting')
         done = False if done is None else True
 
         return next_state, obs, list(weights.values()), done

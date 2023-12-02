@@ -282,9 +282,12 @@ if __name__ == '__main__':
 
     # synthesize strategy - Min-Max, Min-Min
     # valid_str_syn_algos = ["Min-Max", "Min-Min", "Regret", "BestEffortQual", "BestEffortQuant", "BestEffortSafeReachQual", "BestEffortSafeReachQuant"]
+    start = time.time()
     valid_str_syn_algos = ["Min-Max"]
     for st in valid_str_syn_algos:
         strategy_handle = compute_strategy(strategy_type=st, game=dfa_game, debug=False, plot=False)
+    end = time.time()
+    print(f"Done Synthesizing a strategy: {end-start:0.2f} seconds")
     
     # print(strategy_handle)
     simulate_str: bool = True
@@ -320,8 +323,12 @@ if __name__ == '__main__':
         # STRATEGY = [two_right_steps, one_right_step, up_step, two_right_steps, down_step, two_right_steps, one_right_step]
 
         # for one step envs
+        print("Starting to Roll out strategy")
+        start = time.time()
         STRATEGY = [one_right_step, one_right_step, one_right_step, up_step, one_right_step, one_right_step, down_step, one_right_step, one_right_step, one_right_step]
-
         simulate_strategy(env=env, game=dfa_game, sys_actions=STRATEGY)
+        print("Done Rolling out strategy")
+        end = time.time()
+        print(f"Done Rolling out strategy: {end-start:0.2f} seconds")
     
 

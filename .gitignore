@@ -2,6 +2,9 @@
 *.idea
 *.pdf
 
+# ignore jupter checkpoints
+*.ipynb_checkpoints
+
 # ignore the pseudo-code directory
 pseudo_code/
 

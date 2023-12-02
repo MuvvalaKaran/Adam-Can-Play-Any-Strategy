@@ -183,7 +183,7 @@ def simulate_strategy(env, game, sys_actions, iterations: int = 100):
             sys_actions=sys_actions,
             env_strategy='random',
             render=False,
-            record_video=iterations<=15)
+            record_video=False)
     sim.get_stats()
 
 

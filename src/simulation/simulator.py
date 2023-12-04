@@ -4,8 +4,8 @@ from typing import List, Any, Union
 import matplotlib.pyplot as plt
 
 from .logger import Logger
-from src.prism.strategy import Strategy, ActionSequenceStrategy, RandomStrategy, InteractiveStrategy
-from src.graph.product import ProductAutomaton
+from ..prism.strategy import Strategy, ActionSequenceStrategy, RandomStrategy, InteractiveStrategy
+from ..graph.product import ProductAutomaton
 
 Result = Any
 Actions = None

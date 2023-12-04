@@ -445,7 +445,7 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         Override the base method to run the Value Iteration code
         """
         coop_handle = PermissiveValueIteration(game=self.game, competitive=False)
-        coop_handle.solve(debug=False, plot=True, extract_strategy=True)
+        coop_handle.solve(debug=False, plot=False, extract_strategy=True)
         self._sys_coop_winning_str = coop_handle.sys_str_dict
         # self._coop_winning_region = (coop_handle.sys_winning_region).union(set(coop_handle.env_str_dict.keys()))
         self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
@@ -464,7 +464,7 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         else:    
             reachability_game_handle = ValueIteration(game=self.game, competitive=True)
         
-        reachability_game_handle.solve(debug=False, plot=True, extract_strategy=True)
+        reachability_game_handle.solve(debug=False, plot=False, extract_strategy=True)
         self._sys_winning_str = reachability_game_handle.sys_str_dict
         self._env_winning_str = reachability_game_handle.env_str_dict
         self._winning_state_values = reachability_game_handle.state_value_dict

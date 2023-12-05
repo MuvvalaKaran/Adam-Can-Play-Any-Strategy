@@ -193,7 +193,6 @@ class ActionSequenceStrategy(Strategy):
             self.i += 1
 
             return action, self._game.step(curr_state, action)[0]
-            # return action.split('__')[0], self._game.step(curr_state, action)[0]
         else:
             raise Exception('No more actions to take')
 

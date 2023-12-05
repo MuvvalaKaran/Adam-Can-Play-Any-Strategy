@@ -1,10 +1,11 @@
-import networkx as nx
-import warnings
+import sys
 import math
-import numpy as np
 import copy
 import yaml
 import queue
+import warnings
+import networkx as nx
+import numpy as np
 
 from typing import List, Tuple, Dict, Set, Optional, Union
 from collections import deque, defaultdict
@@ -820,6 +821,18 @@ class ProductAutomaton(TwoPlayerGraph):
 
         if state not in self._transitions:
             raise Exception(f'{state} not in the graph')
+        
+        # if action is of tuple like ('north', 'north') then reconstruct it
+        # to north_north_None if state is sys else None_south_south
+        if self.get_state_w_attribute(state, 'player') == 'eve':
+            action = '_'.join(action)
+            action += '__None'
+        elif self.get_state_w_attribute(state, 'player') == 'adam':
+            action = 'None__' + '_'.join(action)
+        else: 
+            warnings.warn(f"Came across a Minigrid abstraction states: {state} with no player assigned to it.")
+            sys.exit(-1)
+
 
         if action not in self._transitions[state]:
             actions = list(self._transitions[state].keys())

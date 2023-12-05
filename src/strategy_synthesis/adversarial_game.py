@@ -125,9 +125,10 @@ class ReachabilityGame:
         accepting_states = self.game.get_accepting_states()
 
         for _s in accepting_states:
-            queue.append(_s)
-            _regions[_s] = "eve"
-            sys_winning_region.append(_s)
+            if self.game.get_state_w_attribute(_s, "player") == "eve":
+                queue.append(_s)
+                _regions[_s] = "eve"
+                sys_winning_region.append(_s)
 
         while queue:
             _s = queue.popleft()

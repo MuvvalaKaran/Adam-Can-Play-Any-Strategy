@@ -411,7 +411,7 @@ class ValueIteration:
             self._sys_str_dict, self._env_str_dict = self.extract_strategy()
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
-        self._sys_winning_region = set(self._sys_str_dict.keys()).union(self._accp_states)
+        self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
 
         if plot:
             self._change_orig_graph_name(prefix='adv_str_on_')
@@ -672,7 +672,7 @@ class PermissiveValueIteration(ValueIteration):
             self._sys_str_dict, self._env_str_dict = self.extract_strategy()
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
-        self._sys_winning_region = set(self._sys_str_dict.keys()).union(self._accp_states)
+        self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
 
         if plot:
             self.plot_graph()

@@ -853,7 +853,8 @@ class ProductAutomaton(TwoPlayerGraph):
 
         # done = self._graph.nodes[next_state].get('originalAccepting')
         done = self._graph.nodes[next_state].get('accepting')
-        done = False if done is None else True
+        # done = False if done is None else True
+        done = False
 
         return next_state, obs, list(weights.values()), done
 

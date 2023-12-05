@@ -481,6 +481,15 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_state_attribute("s10", "player", "eve") 
     two_player_graph.add_edge("s9", "s10")
     two_player_graph.add_edge("s10", "s9")
+
+    two_player_graph.add_states_from(["s11", "s12"])
+    two_player_graph.add_state_attribute("s11", "player", "eve")
+    two_player_graph.add_state_attribute("s12", "player", "eve")
+    two_player_graph.add_edge("s8", "s11")
+    two_player_graph.add_edge("s11", "s11")
+    two_player_graph.add_edge("s1", "s12")
+    two_player_graph.add_edge("s12", "s12")
+
     
     # safety game
     # two_player_graph.add_accepting_states_from(["s0", "s4", "s7"])
@@ -495,7 +504,7 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     
     ## Testing -manually changing the edge wegit s0 -> s2
     # two_player_graph.add_weighted_edges_from(["s0", "s2", 2])
-    two_player_graph._graph["s0"]["s2"][0]["weight"] =  2
+    two_player_graph._graph["s0"]["s2"][0]["weight"] =  1
 
     return two_player_graph
 

@@ -112,13 +112,18 @@ class ValueIteration:
         """
         A method that computes the set of target states, and assigns the respective nodes a zero value in the the value
         vector
+
+        For non-absorbing games (products that are constrcuted in non-abdorbing fashion), we need to make sure that the
+          env states with accepting DFA state should NOT initlaized as target state. This is because, the env player controls
+          that state. Thus we will only initialize the sys states with accepting DFA state as target state with initial value 0. 
         :return:
         """
         assert len(self._accp_states) != 0, "For Value Iteration algorithm, you need atleast one accepting state. FIX THIS!!!"
 
         for _s in self._accp_states:
-            _node_int = self.node_int_map[_s]
-            self.val_vector[_node_int][0] = 0
+            if self.org_graph.get_state_w_attribute(_s, "player") == "eve":
+                _node_int = self.node_int_map[_s]
+                self.val_vector[_node_int][0] = 0
 
     def _initialize_trap_state_costs(self):
         """
@@ -159,7 +164,6 @@ class ValueIteration:
         """
         self._num_of_nodes = len(list(self.org_graph._graph.nodes))
         self._node_int_map = bidict({state: index for index, state in enumerate(self.org_graph._graph.nodes)})
-        # self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=INT_MAX_VAL, dtype=np.int32)
         self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
         self._initialize_target_state_costs()
 
@@ -343,7 +347,7 @@ class ValueIteration:
         for _n in self.org_graph._graph.nodes():
             _int_node = self.node_int_map[_n]
 
-            if _n in self._accp_states:
+            if _n in self._accp_states and self.org_graph.get_state_w_attribute(_n, "player") == "eve":
                 continue
             
             val_vector[_int_node][0] = self._get_opt_val(_n, val_pre)
@@ -407,7 +411,7 @@ class ValueIteration:
             self._sys_str_dict, self._env_str_dict = self.extract_strategy()
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
-        self._sys_winning_region = set(self._sys_str_dict.keys()).union(self._accp_states)
+        self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
 
         if plot:
             self._change_orig_graph_name(prefix='adv_str_on_')
@@ -555,7 +559,7 @@ class PermissiveValueIteration(ValueIteration):
     """
     Inherit Value Iteration class and override the max, min function to return a set of strategies.
 
-    The solve() function is modified to store set of optimal strategies. 
+    The solve() function is modified to store set (permissive) of optimal strategies. 
     """
 
     def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
@@ -661,14 +665,14 @@ class PermissiveValueIteration(ValueIteration):
         # update the state value dict
         for i in range(self.num_of_nodes):
             _s = self.node_int_map.inverse[i]
-            self.state_value_dict.update({_s: _int_val_vector[i]})
+            self.state_value_dict.update({_s: _int_val_vector[i] if INT_MIN_VAL <  _int_val_vector[i] < INT_MAX_VAL  else math.inf})
 
         # extract sys and env strategy after converging.
         if extract_strategy:
             self._sys_str_dict, self._env_str_dict = self.extract_strategy()
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
-        self._sys_winning_region = set(self._sys_str_dict.keys()).union(self._accp_states)
+        self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
 
         if plot:
             self.plot_graph()
@@ -693,8 +697,8 @@ class PermissiveValueIteration(ValueIteration):
 class PermissiveSafetyValueIteration(PermissiveValueIteration):
     """
     This class inherits Permissive Value iteration class. In this class, we are computing maximally permissive strategies that ensures
-     that the system remains the pending region. Thus, every state in the pending region is an acceptign state and every states that belongs
-     to the losing region is the non-accepting states.
+     that the system remains the pending region. Thus, every state in the pending region is an accepting state and every state that belongs
+     to the losing region are the non-accepting states.
 
     We slightly modify the _get_min_sys_val() and _get_max_env_val methods and keep the rest of the Value Iteration algorithm the same.
     """
@@ -738,7 +742,7 @@ class PermissiveSafetyValueIteration(PermissiveValueIteration):
             _succ_vals.append((_next_n, _val))
         
 
-        assert self.competitive is True, "[Error] Running Permissive Value Iteration in Pending region with cooperative human! Make sure self.competitive is set to True"
+        assert self.competitive is True, "[Error] Running Permissive Value Iteration in Pending region with non-cooperative human! Make sure self.competitive is set to True"
         _, _val = max(_succ_vals, key=operator.itemgetter(1))
 
         return [_node for _node, _node_val in _succ_vals if _val == _node_val]

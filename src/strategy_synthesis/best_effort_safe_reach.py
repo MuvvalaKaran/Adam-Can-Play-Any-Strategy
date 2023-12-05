@@ -1,4 +1,5 @@
 import copy
+import math
 import warnings
 
 from collections import defaultdict
@@ -127,6 +128,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
         self._winning_region = [ws for ws in self._winning_region if self.game.get_state_w_attribute(ws, 'player') == 'eve']
         self._coop_winning_region = [cs for cs in  self._coop_winning_region if self.game.get_state_w_attribute(cs, 'player') == 'eve']
         self._pending_region = set(self._coop_winning_region).difference(set(self._winning_region))
+        self._winning_state_values = self._winning_state_values
 
 
         if debug:
@@ -148,6 +150,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
         # Finally, compute reachability strategies from the pending region with Winning region as reacability objective
         be_handle = QuantitativeBestEffortReachSyn(game=be_reach_win_trans_sys, debug=False)
         be_handle.compute_best_effort_strategies(plot=False)
+        self._coop_winning_state_values = be_handle._coop_winning_state_values
         
         if debug:
             print("BE Reach Str to winning region: ", be_handle.sys_best_effort_str)
@@ -166,6 +169,13 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
                 warnings.warn(f"Something went wrog during Best Effort Synthesis in Pending Region! \
                             state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
         
+        # compute best effor state value - at winning states we keep the winning strategy values and at pending states we keep best reach values from safe reach startegies
+        for c_state, cs_str in self._coop_winning_state_values.items():
+            if c_state in self._winning_state_values.keys() and self._winning_state_values[c_state] != math.inf:
+                self.best_effort_state_values[c_state] =  self._winning_state_values[c_state]
+            else:
+                self.best_effort_state_values[c_state] = cs_str
+        
         # override the sys_coop_winning_str dictionary that computed in compute_cooperative_winning_strategy() method above
         self._sys_coop_winning_str = sys_best_effort_pending_str
 
@@ -175,6 +185,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
         self._sys_best_effort_str: Dict[str, Set[str]] = {**self.sys_winning_str, **self._sys_coop_winning_str, **_sys_losing_str}
 
         if plot:
+            self._add_state_costs_to_graph()
             self.add_str_flag()
             self.game.plot_graph()
         

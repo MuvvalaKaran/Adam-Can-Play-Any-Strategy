@@ -12,9 +12,9 @@ from abc import ABCMeta, abstractmethod
 from scipy.stats import rv_discrete, uniform
 from typing import Union, List, Dict, Tuple, Set, Any, Hashable
 
-from src.graph import Graph
-from src.graph import TwoPlayerGraph
-from src.strategy_synthesis.adversarial_game import ReachabilityGame as ReachabilitySolver
+from ..graph import Graph
+from ..graph import TwoPlayerGraph
+from ..strategy_synthesis.adversarial_game import ReachabilityGame as ReachabilitySolver
 
 Node = Hashable
 Nodes = List[Node]
@@ -193,7 +193,6 @@ class ActionSequenceStrategy(Strategy):
             self.i += 1
 
             return action, self._game.step(curr_state, action)[0]
-            # return action.split('__')[0], self._game.step(curr_state, action)[0]
         else:
             raise Exception('No more actions to take')
 

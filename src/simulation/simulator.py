@@ -4,8 +4,8 @@ from typing import List, Any, Union
 import matplotlib.pyplot as plt
 
 from .logger import Logger
-from src.prism.strategy import Strategy, ActionSequenceStrategy, RandomStrategy, InteractiveStrategy
-from src.graph.product import ProductAutomaton
+from ..prism.strategy import Strategy, ActionSequenceStrategy, RandomStrategy, InteractiveStrategy
+from ..graph.product import ProductAutomaton
 
 Result = Any
 Actions = None
@@ -109,15 +109,14 @@ class Simulator:
         done = False
         steps = 0
 
-        while not done:
+        while not done and steps <= len(sys_strategy._actions):
 
             # System's Action
             sys_action, env_state = sys_strategy.step(env_state, env_action, sys_state)
             # Use env_state that the system chose and not from the game.
             _, obs, cost, done = self._game.step(sys_state, sys_action, env_state)
             self.log(steps, cost, obs, sys_action, env_state, 'sys')
-            # self._simulate_on_env(render, sys_actions=sys_action)
-            self._simulate_on_env(render, sys_actions=[sys_action.split('__')[0]])
+            self._simulate_on_env(render, sys_actions=sys_action)
 
             steps += 1
 
@@ -132,8 +131,7 @@ class Simulator:
 
             sys_state, obs, cost, done = self._game.step(env_state, env_action)
             self.log(steps, cost, obs, env_action, sys_state, 'env')
-            # self._simulate_on_env(render, env_actions=env_action)
-            self._simulate_on_env(render, env_actions=[env_action.split('__')[1]])
+            self._simulate_on_env(render, env_actions=env_action)
 
             steps += 1
 

@@ -1,1 +1,1 @@
-__all__ = ["factory", "graph", "mpg_tool", "payoff", "spot", "strategy_synthesis", "simulation"]
+__all__ = ["factory", "graph", "mpg_tool", "spot", "strategy_synthesis", "simulation"]

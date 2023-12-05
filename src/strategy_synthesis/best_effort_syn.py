@@ -1,9 +1,10 @@
 import sys
+import math
 import copy
 import warnings
 
 from collections import defaultdict
-from typing import Optional, Union, List, Iterable
+from typing import Optional, Union, List, Iterable, Dict
 
 from ..graph import TwoPlayerGraph
 from .adversarial_game import ReachabilityGame
@@ -35,6 +36,9 @@ class QualitativeBestEffortReachSyn():
         self._env_winning_str: Optional[dict] = None
         self._sys_coop_winning_str: Optional[dict] = None
         self._sys_best_effort_str: Optional[dict] = None
+        self._best_effort_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
+        self._winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
+        self._coop_winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
 
         self.game_states = set(self.game.get_states()._nodes.keys())
         self.debug: bool = debug
@@ -82,6 +86,18 @@ class QualitativeBestEffortReachSyn():
     @property
     def sys_best_effort_str(self):
         return self._sys_best_effort_str
+
+    @property
+    def best_effort_state_values(self):
+        return self._best_effort_state_values
+    
+    @property
+    def winning_state_values(self):
+        return self._winning_state_values
+
+    @property
+    def coop_winning_state_values(self):
+        return self._coop_winning_state_values
 
     @game.setter
     def game(self, game: TwoPlayerGraph):
@@ -250,6 +266,9 @@ class QualitativeBestEffortSafetySyn():
         self._env_winning_str: Optional[dict] = None
         self._sys_coop_winning_str: Optional[dict] = None
         self._sys_best_effort_str: Optional[dict] = None
+        self._best_effort_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
+        self._winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
+        self._coop_winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
 
         self.game_states = set(self.game.get_states()._nodes.keys())
         self.debug: bool = debug
@@ -305,7 +324,19 @@ class QualitativeBestEffortSafetySyn():
 
         self._game = game
         self.game_states = set(game.get_states()._nodes.keys())
-        # self.sys_game_states = set(game.get_states()._nodes.keys(""))
+    
+
+    @property
+    def best_effort_state_values(self):
+        return self._best_effort_state_values
+    
+    @property
+    def winning_state_values(self):
+        return self._winning_state_values
+
+    @property
+    def coop_winning_state_values(self):
+        return self._coop_winning_state_values
     
 
     def get_losing_region(self, print_states: bool = False):
@@ -329,6 +360,7 @@ class QualitativeBestEffortSafetySyn():
         The edge weights do not play any role in Value iterartion. Check Algorithm for more info. 
         """
         tmp_copy_game = copy.deepcopy(self.game)
+        # create a local copy of the game and modify the accpeting states
         tmp_copy_game.add_accepting_states_from([state for state in self.target_states if self.game.get_state_w_attribute(state, "player") == 'eve'])
         for _s in tmp_copy_game._graph.nodes():
             for _e in tmp_copy_game._graph.out_edges(_s):
@@ -352,13 +384,6 @@ class QualitativeBestEffortSafetySyn():
            and the objective of the sys player is visit the accepting states. 
         """
         # create a reacability game and then compute BE reachability strategies.
-
-        # create a local copy of the game and modify the accpeting states
-        # game_copy = copy.deepcopy(self.game)
-        # game_copy.add_accepting_states_from([state for state in self.target_states if self.game.get_state_w_attribute(state, "player") == 'eve'])
-
-        # best_effort_reach_handle = QualitativeBestEffortReachSyn(game=game_copy, debug=self.debug)
-        # best_effort_reach_handle.compute_best_effort_strategies(plot=plot, safety_permissive=True)
         self.compute_cooperative_winning_strategy()
 
         # for states that belong to the losing region, we can play any strategy
@@ -406,6 +431,15 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         super().__init__(game, debug)
     
 
+    def _add_state_costs_to_graph(self):
+        """
+        A helper method that adds the Best Effort costs associated with each state.
+        """
+        for state in self.game._graph.nodes():
+            self.game.add_state_attribute(state, "val", [self.best_effort_state_values[state]])
+
+    
+
     def compute_cooperative_winning_strategy(self, permissive: bool = False):
         """
         Override the base method to run the Value Iteration code
@@ -415,6 +449,7 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         self._sys_coop_winning_str = coop_handle.sys_str_dict
         # self._coop_winning_region = (coop_handle.sys_winning_region).union(set(coop_handle.env_str_dict.keys()))
         self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
+        self._coop_winning_state_values = coop_handle.state_value_dict
         
         if self.debug and coop_handle.is_winning():
             print("There exists a path from the Initial State")
@@ -432,11 +467,12 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         reachability_game_handle.solve(debug=False, plot=False, extract_strategy=True)
         self._sys_winning_str = reachability_game_handle.sys_str_dict
         self._env_winning_str = reachability_game_handle.env_str_dict
-        # self._winning_region = reachability_game_handle.sys_winning_region
+        self._winning_state_values = reachability_game_handle.state_value_dict
 
         # sometime an accepting may not have a winning strategy. Thus, we only store states that have an winning strategy
         _sys_states_winning_str = reachability_game_handle.sys_str_dict.keys()
 
+        # update winning region and optimal state values
         for ws in reachability_game_handle.sys_winning_region:
             if self.game.get_state_w_attribute(ws, 'player') == 'eve' and ws in _sys_states_winning_str:
                 self._winning_region.add(ws)
@@ -457,34 +493,33 @@ class QuantitativeBestEffortSafetySyn(QualitativeBestEffortSafetySyn):
 
 
     def __init__(self, game: TwoPlayerGraph, target_states: Iterable, debug: bool = False) -> None:
-        super().__init__(game, debug)
-        self.target_states = target_states
+        super().__init__(game, target_states, debug)
 
 
-    def compute_best_effort_safety_strategies(self, plot: bool = False):
-        """
-         This methods converts the safety games into a Reachability game by assigning all the target states as the accepting states
-           and the objective of the sys player is visit the accepting states. 
-        """
+    # def compute_best_effort_safety_strategies(self, plot: bool = False):
+    #     """
+    #      This methods converts the safety games into a Reachability game by assigning all the target states as the accepting states
+    #        and the objective of the sys player is visit the accepting states. 
+    #     """
 
-        # create a reacability game and then compute BE reachability strategies.
+    #     # create a reacability game and then compute BE reachability strategies.
 
-        # create a local copy of the game and modify the accpeting states
-        game_copy = copy.deepcopy(self.game)
-        game_copy.add_accepting_states_from(self.target_states)
+    #     # create a local copy of the game and modify the accpeting states
+    #     game_copy = copy.deepcopy(self.game)
+    #     game_copy.add_accepting_states_from(self.target_states)
 
-        best_effort_reach_handle = QuantitativeBestEffortReachSyn(game=game_copy, debug=self.debug)
-        best_effort_reach_handle.compute_best_effort_strategies(plot=plot, permissive=True)
+    #     best_effort_reach_handle = QuantitativeBestEffortReachSyn(game=game_copy, debug=self.debug)
+    #     best_effort_reach_handle.compute_best_effort_strategies(plot=plot, permissive=True)
 
-        # update dictionaries 
-        self._sys_best_effort_str = best_effort_reach_handle.sys_best_effort_str
-        self._sys_winning_str = best_effort_reach_handle.sys_winning_str
-        self._env_winning_str = best_effort_reach_handle.env_winning_str
-        self._sys_coop_winning_str = best_effort_reach_handle.sys_coop_winning_str
+    #     # update dictionaries 
+    #     self._sys_best_effort_str = best_effort_reach_handle.sys_best_effort_str
+    #     self._sys_winning_str = best_effort_reach_handle.sys_winning_str
+    #     self._env_winning_str = best_effort_reach_handle.env_winning_str
+    #     self._sys_coop_winning_str = best_effort_reach_handle.sys_coop_winning_str
 
-        # update regions
-        self._winning_region = best_effort_reach_handle.winning_region
-        self._coop_winning_region = best_effort_reach_handle.coop_winning_region
+    #     # update regions
+    #     self._winning_region = best_effort_reach_handle.winning_region
+    #     self._coop_winning_region = best_effort_reach_handle.coop_winning_region
 
-        self._pending_region = best_effort_reach_handle.get_pending_region()
-        self._losing_region = best_effort_reach_handle.get_losing_region()
+    #     self._pending_region = best_effort_reach_handle.get_pending_region()
+        # self._losing_region = best_effort_reach_handle.get_losing_region()

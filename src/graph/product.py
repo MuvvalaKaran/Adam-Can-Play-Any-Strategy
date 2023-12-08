@@ -851,10 +851,7 @@ class ProductAutomaton(TwoPlayerGraph):
         weights = self.get_edge_attributes(state, next_state, 'weights')
         obs = self._graph[state][next_state][0].get('ap', '')
 
-        # done = self._graph.nodes[next_state].get('originalAccepting')
-        done = self._graph.nodes[next_state].get('accepting')
-        # done = False if done is None else True
-        done = False
+        done = next_state in self._auto_graph.get_absorbing_states()
 
         return next_state, obs, list(weights.values()), done
 

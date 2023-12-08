@@ -109,7 +109,7 @@ class Simulator:
         done = False
         steps = 0
 
-        while not done and steps <= len(sys_strategy._actions):
+        while not done:
 
             # System's Action
             sys_action, env_state = sys_strategy.step(env_state, env_action, sys_state)
@@ -155,6 +155,7 @@ class Simulator:
 
         if render:
             self._env.render()
+            plt.pause(0.1)
 
     def _check_strategies(self, sys_strategy, sys_actions, env_strategy, env_actions):
 

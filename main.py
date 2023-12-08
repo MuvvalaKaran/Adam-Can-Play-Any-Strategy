@@ -571,9 +571,6 @@ def construct_ltlf_dfa():
                                     plot=True)
     sys.exit(-1)
 
-    # dfa_handle = LTLfDFAGraph(formula="F(c & b)", graph_name="ltlf_dfa", use_alias=False, config_yaml="config/ltlf_dfa", save_flag=True, verbose=True)
-    # dfa_handle.construct_graph(plot=True)
-
 
 if __name__ == "__main__":
 

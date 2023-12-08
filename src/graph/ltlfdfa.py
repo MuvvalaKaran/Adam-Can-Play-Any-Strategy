@@ -3,11 +3,17 @@ import networkx as nx
 
 from collections import defaultdict
 from typing import List, Dict
+from graphviz import Digraph
+from sympy import symbols
+
+from ltlf2dfa.parser.ltlf import LTLfParser
+from ltlf2dfa.ltlf2dfa import ter2symb, simplify_guard
+
 
 from ..factory.builder import Builder
-from ..spot.Parser import ANDExpression, ORExpression, NotExpression, SymbolExpression, TrueExpression
-from ltlf2dfa.parser.ltlf import LTLfParser
 from .dfa import DFAGraph
+from ..spot.Parser import ANDExpression, ORExpression, NotExpression, SymbolExpression, TrueExpression
+
 
 
 class LTLfDFAGraph(DFAGraph):
@@ -152,13 +158,13 @@ class LTLfDFAGraph(DFAGraph):
             return value_type(0.0)
 
 
-    def parse_mona(self, mona_output):
+    def parse_mona(self):
         """
         Parse mona output and extract the initial, accpeting and other states.
           The edges are constructed by get_ltlf_edge_formula(). 
         """
         free_variables = self.get_value(
-            mona_output, r".*DFA for formula with free variables:[\s]*(.*?)\n.*", str
+            self._mona_dfa, r".*DFA for formula with free variables:[\s]*(.*?)\n.*", str
         )
         if "state" in free_variables:
             free_variables = None
@@ -172,7 +178,7 @@ class LTLfDFAGraph(DFAGraph):
         self._task_labels = task_labels
 
         self._init_state = ['q1']
-        accepting_states = self.get_value(mona_output, r".*Accepting states:[\s]*(.*?)\n.*", str)
+        accepting_states = self.get_value(self._mona_dfa, r".*Accepting states:[\s]*(.*?)\n.*", str)
         accepting_states = [
             str(x.strip()) for x in accepting_states.split() if len(x.strip()) > 0
         ]
@@ -180,7 +186,7 @@ class LTLfDFAGraph(DFAGraph):
         self._accp_states = [f"q{int(i)}" for i in accepting_states]
 
         # store # DFA states
-        self._num_of_states = self.get_value(mona_output, '.*Automaton has[\s]*(\d+)[\s]states.*', int) - 1
+        self._num_of_states = self.get_value(self._mona_dfa, '.*Automaton has[\s]*(\d+)[\s]states.*', int) - 1
 
         # adding print statements to debug
         print("init state: ", self.init_state)
@@ -195,7 +201,8 @@ class LTLfDFAGraph(DFAGraph):
          A helper function that calls Mona and then parse the output and construct a DFA.
         """
         parser = LTLfParser()
-        formula = parser(self._formula)       # returns an LTLf Formula
+        # returns an LTLf Formula
+        formula = parser(self._formula)       
 
         # LTLf to Mona DFA
         mona_dfa = formula.to_dfa(mona_dfa_out=True)
@@ -210,9 +217,71 @@ class LTLfDFAGraph(DFAGraph):
         if "Formula is unsatisfiable" in mona_dfa:
             print("Unsat Formula")
         else:
-            my_dfa = self.parse_mona(mona_dfa)
+            my_dfa = self.parse_mona()
         
         return my_dfa
+
+    def _fancy_edge_labels(self) -> Dict[tuple, str]:
+        """
+         A function that returns the fancy edge labels for the graph by calling the LTLfDFA toolbox.
+           This function basically recreates the transition using LTLF2DFA toolbox's functions.
+        """
+        and_dot_trans = {}  # maps each couple (src, dst) to a list of guards
+        _ap = tuple([symbols(prop.name) for prop in self._task_labels])
+        
+        for line in self._mona_dfa.splitlines():
+            if line.startswith("State "):
+                orig_state = self.get_value(line, r".*State[\s]*(\d+):\s.*", int)
+                guard = self.get_value(line, r".*:[\s](.*?)[\s]->.*", str)
+                if _ap:
+                    guard = ter2symb(_ap, guard)
+                else:
+                    guard = ter2symb(_ap, "X")
+                dest_state = self.get_value(line, r".*state[\s]*(\d+)[\s]*.*", int)
+                if orig_state:
+                    if (f"q{orig_state}", f"q{dest_state}") in and_dot_trans:
+                        and_dot_trans[(f"q{orig_state}", f"q{dest_state}")].append(guard)
+                    else:
+                        and_dot_trans[(f"q{orig_state}", f"q{dest_state}")] = [guard]
+
+        or_dot_trans = {}
+        for c, guards in and_dot_trans.items():
+            simplified_guard = simplify_guard(guards)
+            or_dot_trans[(c[0], c[1])] = str(simplified_guard).lower()
+        
+        return or_dot_trans
+
+    def fancy_graph(self, color=("lightgrey", "red", "purple"), **kwargs) -> None:
+        dot: Digraph = Digraph(name="graph")
+        nodes = self._graph_yaml["nodes"]
+
+        for n in nodes:
+            # default color for all the nodes is grey
+            dot.node(f'{str(n[0])}', _attributes={"shape": "circle", "style": "filled", "fillcolor": color[0]})
+            if n[1].get("init"):
+                # default color for init node is red
+                dot.node(f'{str(n[0])}', _attributes={"style": "filled", "fillcolor": color[1]})
+            if n[1].get("accepting"):
+                # default color for accepting node is purple
+                dot.node(f'{str(n[0])}',
+                         _attributes={"shape": "doublecircle", "style": "filled", "fillcolor": color[2]})
+
+
+        # for guard formula we call the original ltlf2dfa tool as the formulas are more readable
+        fancy_edges = self._fancy_edge_labels()
+
+        for (src, dest), edge in fancy_edges.items():
+            dot.edge(f'{src}', f'{dest}', label=edge)
+
+        # set graph attributes
+        dot.graph_attr['rankdir'] = 'LR'
+        dot.node_attr['fixedsize'] = 'False'
+        dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
+
+        if self._save_flag:
+            graph_name = str(self._graph.__getattribute__('name'))
+            self.save_dot_graph(dot, graph_name, **kwargs)
+        return super().fancy_graph(color, **kwargs)
 
 
 class LTLfDFABuilder(Builder):

@@ -558,6 +558,15 @@ def adversarial_game_toy_example() -> TwoPlayerGraph:
     return two_player_graph
 
 
+def construct_ltlf_dfa():
+    """
+    A method to construct the LTLf DFA for the given LTLf formula
+    """
+    from src.graph import LTLfDFAGraph
+    dfa_handle = LTLfDFAGraph(formula="F(c & b)", graph_name="ltlf_dfa", use_alias=False, config_yaml="config/ltlf_dfa", save_flag=True, verbose=True)
+    dfa_handle.construct_graph(plot=True)
+
+
 if __name__ == "__main__":
 
     # define some constants
@@ -575,7 +584,8 @@ if __name__ == "__main__":
     five_state_ts: bool = False
     variant_1_paper: bool = False
     target_weighted_arena: bool = False
-    two_player_arena: bool = True
+    two_player_arena: bool = False
+    check_ltlf_dfa: bool = True
 
     # solver to call
     qual_BE_synthesis: bool = False
@@ -614,6 +624,10 @@ if __name__ == "__main__":
                                       _plot_prod=True)
         trans_sys = twa_graph.product_automaton
     
+    elif check_ltlf_dfa:
+        construct_ltlf_dfa()
+        sys.exit(-1)
+
     elif two_player_arena:
         # 4 state example
         # two_player_graph = four_state_BE_example(add_weights=True)

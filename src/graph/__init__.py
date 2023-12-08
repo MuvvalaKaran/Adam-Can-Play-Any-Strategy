@@ -1,5 +1,6 @@
 from .base import Graph
 from .dfa import DFAGraph, DFABuilder
+from .ltlfdfa import LTLfDFAGraph
 from .pdfa import PDFABuilder
 from .two_player_graph import TwoPlayerGraph, TwoPlayerGraphBuilder
 from .trans_sys import FiniteTransSys, TransitionSystemBuilder

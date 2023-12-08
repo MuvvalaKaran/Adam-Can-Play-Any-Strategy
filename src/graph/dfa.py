@@ -262,11 +262,11 @@ class DFAGraph(Graph):
 
 class DFABuilder(Builder):
     """
-    Implements the generic graph builder class for TwoPlayerGraph
+    Implements the generic graph builder class for LTL DFA Construction from Spot Toolbox
     """
     def __init__(self):
         """
-        Constructs a new instance of the TwoPlayerGraph Builder
+        Constructs a new instance of the DFABuilder Builder
         """
         Builder.__init__(self)
 

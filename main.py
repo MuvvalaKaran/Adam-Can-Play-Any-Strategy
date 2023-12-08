@@ -562,9 +562,17 @@ def construct_ltlf_dfa():
     """
     A method to construct the LTLf DFA for the given LTLf formula
     """
-    from src.graph import LTLfDFAGraph
-    dfa_handle = LTLfDFAGraph(formula="F(c & b)", graph_name="ltlf_dfa", use_alias=False, config_yaml="config/ltlf_dfa", save_flag=True, verbose=True)
-    dfa_handle.construct_graph(plot=True)
+    
+    dfa_handle = graph_factory.get('LTLfDFA',
+                                    graph_name="ltlf_automaton",
+                                    config_yaml="config/ltltf_automaton",
+                                    save_flag=True,
+                                    ltlf="!d U g",
+                                    plot=True)
+    sys.exit(-1)
+
+    # dfa_handle = LTLfDFAGraph(formula="F(c & b)", graph_name="ltlf_dfa", use_alias=False, config_yaml="config/ltlf_dfa", save_flag=True, verbose=True)
+    # dfa_handle.construct_graph(plot=True)
 
 
 if __name__ == "__main__":

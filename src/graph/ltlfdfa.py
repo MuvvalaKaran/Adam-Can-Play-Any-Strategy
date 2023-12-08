@@ -8,7 +8,7 @@ from sympy import symbols
 
 from ltlf2dfa.parser.ltlf import LTLfParser
 from ltlf2dfa.ltlf2dfa import ter2symb, simplify_guard
-
+from ..spot.Parser import parse as parse_guard
 
 from ..factory.builder import Builder
 from .dfa import DFAGraph
@@ -117,10 +117,20 @@ class LTLfDFAGraph(DFAGraph):
             for sym_edge in edges:
                 expr = ORExpression(expr, sym_edge)
             
-            or_transitions[(source, dest)] = expr
+            # for expression(s) that are of type TrueExpression(), we convert them to SymbolExpression() with name '(True)'.
+            # this is done to be consistent with spot's output and to keep the product construction code consistent.
+            if and_transitions[(source, dest)][0].name == 'TRUE':
+                assert len(and_transitions[(source, dest)]) == 1, "[Error] Constructing DFA. The (true) edge construction in DFA failed. FIX THIS!!!"
+                or_transitions[(source, dest)] = parse_guard('(true)')
+                self.add_edge(source, dest, guard=parse_guard('(true)'), guard_formula=expr.__repr__())
+            else:
+                # need to for product construction
+                expr.formula = None
+                or_transitions[(source, dest)] = expr
+                self.add_edge(source, dest, guard=expr, guard_formula=expr.__repr__())
+
             if debug:
                 print(f"Edge from {source} ------{expr.__repr__()}------> {dest}")
-            self.add_edge(source, dest, guard=expr, guard_formula=expr.__repr__())
         
 
         if plot:

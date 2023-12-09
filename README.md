@@ -128,6 +128,31 @@ conda activate regret_syn_env
 python3 main.py
 ```
 
+## Tests
+
+All the tests related scripts are available in the `tests/` directory. I use python [unittest](https://docs.python.org/3.8/library/unittest.html) for testing individual components of my source code. Here are some commands to run the tests:
+
+To run a specific test package:
+
+```bash
+python3 -m unittest discover -s tests.<directory-name> -bv
+```
+
+To run a specific test script:
+
+```bash
+python3 -m tests.<directory-name>.<module-nane> -b
+```
+
+To run all tests:
+
+```bash
+python3 -m unittest -bv
+```
+
+For more details see the `tests/README.md`. Note, all commands must be run from `<root/of/project>`.
+
+
 ## Spot Troubleshooting notes
 
 You can build `spot` from source, official git [repo](https://gitlab.lrde.epita.fr/spot/spot) or Debain package. If you do source intallation, then run the following command to verify your installation

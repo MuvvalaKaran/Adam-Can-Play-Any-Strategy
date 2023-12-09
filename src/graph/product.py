@@ -549,7 +549,7 @@ class ProductAutomaton(TwoPlayerGraph):
 
         try:
             _weight = self._trans_sys._graph.get_edge_data(_u_ts_node, _v_ts_node)[0].get('weight')
-        except:
+        except KeyError:
             warnings.warn(f"The edge from {_u_ts_node} to {_v_ts_node} does not contain the attribute 'weight'."
                           f"Setting the edge weight to 0 while constructing the product")
             _weight = 0

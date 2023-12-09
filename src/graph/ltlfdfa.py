@@ -43,9 +43,10 @@ class LTLfDFAGraph(DFAGraph):
         self._init_state: List[str] = []
         self._accp_states: List[str] = []
         self._num_of_states: int = None
+        self._transitions: Dict[tuple, SymbolExpression] = {}
         
         # Construct mona DFA
-        self.construct_dfa(verbose=verbose)
+        self.construct_dfa(verbose=False)
     
 
     @property
@@ -67,6 +68,10 @@ class LTLfDFAGraph(DFAGraph):
     @property
     def num_of_states(self) -> str:
         return self._num_of_states
+    
+    @property
+    def transitions(self) -> str:
+        return self._transitions
     
 
     def get_symbols(self) -> List[str]:
@@ -109,7 +114,7 @@ class LTLfDFAGraph(DFAGraph):
                     and_transitions[(orig_state_, dest_state_)].append(transition_expr)
                     if debug:
                         print(f" Mona edge: {guard}")
-                        print(f"Symbolic Edge: {orig_state_} ------{transition_expr.__repr__()}------> {dest_state_}")
+                        print(f"Symbolic AND Edge: {orig_state_} ------{transition_expr.__repr__()}------> {dest_state_}")
 
         
         for (source, dest), edges in and_transitions.items():
@@ -130,8 +135,9 @@ class LTLfDFAGraph(DFAGraph):
                 self.add_edge(source, dest, guard=expr, guard_formula=expr.__repr__())
 
             if debug:
-                print(f"Edge from {source} ------{expr.__repr__()}------> {dest}")
+                print(f"Final OR Edge from {source} ------{expr.__repr__()}------> {dest}")
         
+        self._transitions = or_transitions
 
         if plot:
             self.plot_graph(**kwargs)
@@ -168,7 +174,7 @@ class LTLfDFAGraph(DFAGraph):
             return value_type(0.0)
 
 
-    def parse_mona(self):
+    def parse_mona(self, debug: bool = False):
         """
         Parse mona output and extract the initial, accpeting and other states.
           The edges are constructed by get_ltlf_edge_formula(). 
@@ -178,6 +184,7 @@ class LTLfDFAGraph(DFAGraph):
         )
         if "state" in free_variables:
             free_variables = None
+            task_labels = None
         else:
             task_labels: List[SymbolExpression] = []
             for x in free_variables.split():
@@ -199,10 +206,11 @@ class LTLfDFAGraph(DFAGraph):
         self._num_of_states = self.get_value(self._mona_dfa, '.*Automaton has[\s]*(\d+)[\s]states.*', int) - 1
 
         # adding print statements to debug
-        print("init state: ", self.init_state)
-        print("accepting states: ", self.accp_states)
-        print("num of states: ", self.num_of_states)
-        print("task labels: ", self.task_labels.__repr__())
+        if debug:
+            print("init state: ", self.init_state)
+            print("accepting states: ", self.accp_states)
+            print("num of states: ", self.num_of_states)
+            print("task labels: ", self.task_labels.__repr__())
 
     
     def construct_dfa(self,

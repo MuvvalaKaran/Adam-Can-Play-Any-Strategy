@@ -572,7 +572,7 @@ class ProductAutomaton(TwoPlayerGraph):
                 try:
                     weight = auto_edge_data[i_edge].get('weight')
                     pref = auto_edge_data[i_edge].get('prob')
-                except:
+                except KeyError:
                     msg = f"The weight from edge {_u_auto_node} to {_v_auto_node} does not exist"
                     warnings.warn(msg)
                     weight = 0
@@ -874,6 +874,8 @@ class ProductBuilder(Builder):
                  view: bool = True,
                  format: str = 'pdf',
                  from_file: bool = False,
+                 directory: str = '',
+                 filename: str = '',
                  **kwargs):
         """
         A function that takes as input a
@@ -913,7 +915,7 @@ class ProductBuilder(Builder):
                 self._instance.prune_graph(debug=debug)
 
         if plot:
-            self._instance.plot_graph(view=view, format=format)
+            self._instance.plot_graph(view=view, format=format, directory=directory, filename=filename)
 
         return self._instance
 

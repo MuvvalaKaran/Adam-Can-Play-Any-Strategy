@@ -116,7 +116,6 @@ class EdgeWeightedArena(GraphInstanceConstructionBase):
                                                         config_yaml="config/target_weighted_arena",
                                                         from_file=True,
                                                         save_flag=True,
-                                                        pre_built=True,
                                                         plot=self.plot_product)
         elif self.graph_type == "ewa":
             self._product_automaton = graph_factory.get("TwoPlayerGraph",
@@ -124,7 +123,6 @@ class EdgeWeightedArena(GraphInstanceConstructionBase):
                                                         config_yaml="config/edge_weighted_arena",
                                                         from_file=True,
                                                         save_flag=True,
-                                                        pre_built=True,
                                                         plot=self.plot_product)
         else:
             warnings.warn("PLease enter a valid graph type")
@@ -156,7 +154,6 @@ class VariantOneGraph(GraphInstanceConstructionBase):
                                                     config_yaml="config/two_player_graph",
                                                     from_file=True,
                                                     save_flag=True,
-                                                    pre_built=True,
                                                     plot=self.plot_product)
 
 
@@ -396,7 +393,6 @@ def four_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
                                          graph_name="two_player_graph",
                                          config_yaml="/config/two_player_graph",
                                          save_flag=True,
-                                         pre_built=False,
                                          from_file=False,
                                          plot=False)
 
@@ -438,7 +434,6 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
                                          graph_name="two_player_graph",
                                          config_yaml="/config/two_player_graph",
                                          save_flag=True,
-                                         pre_built=False,
                                          from_file=False,
                                          plot=False)
 
@@ -519,7 +514,6 @@ def adversarial_game_toy_example() -> TwoPlayerGraph:
                                          graph_name="two_player_graph",
                                          config_yaml="/config/two_player_graph",
                                          save_flag=True,
-                                         pre_built=False,
                                          from_file=False,
                                          plot=False)
 

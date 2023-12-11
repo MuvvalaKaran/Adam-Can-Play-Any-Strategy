@@ -166,19 +166,21 @@ class PDFABuilder(Builder):
                  use_alias: bool = False,
                  plot: bool = False,
                  view: bool = False,
-                 format: str = 'png') -> 'PDFAGraph':
+                 format: str = 'png',
+                 directory: str = '',
+                 filename: str = '') -> 'PDFAGraph':
 
         if not (isinstance(sc_ltl, str) or sc_ltl == ""):
-            raise TypeError(f"Please ensure that the ltl formula is of type string and is not empty. \n")
+            raise TypeError(f"Please ensure that the ltl formula is of type string and is not {type(sc_ltl)}. \n")
 
         if use_alias:
-            print(f"Using custom names for automaton nodes instead of the original ones by SPOT toolbox")
+            print("Using custom names for automaton nodes instead of the original ones by SPOT toolbox")
 
         self._instance = PDFAGraph(graph_name=graph_name,
                                   config_yaml=config_yaml,
                                   save_flag=save_flag,
                                   use_alias=use_alias)
 
-        self._instance.construct_graph(plot=plot, view=view, format=format)
+        self._instance.construct_graph(plot=plot, view=view, format=format, directory=directory, filename=filename)
 
         return self._instance

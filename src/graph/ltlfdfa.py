@@ -319,6 +319,8 @@ class LTLfDFABuilder(Builder):
                  plot: bool = False,
                  view: bool = True,
                  format: str = 'png',
+                 directory: str = '',
+                 filename: str = ''
                  ) -> 'LTLfDFAGraph':
 
         if not (isinstance(ltlf, str) or ltlf == ""):
@@ -329,7 +331,7 @@ class LTLfDFABuilder(Builder):
                                       config_yaml=config_yaml,
                                       save_flag=save_flag)
 
-        self._instance.construct_graph(plot=plot, view=view, format=format)
+        self._instance.construct_graph(plot=plot, view=view, format=format, directory=directory, filename=filename)
 
         return self._instance
 

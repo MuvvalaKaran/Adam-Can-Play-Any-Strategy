@@ -86,8 +86,13 @@ class Graph(abc.ABC):
                 print(error)
                 print(f"The file {file_name} does not exist")
 
-    def save_dot_graph(self, dot_object: Digraph, graph_name: str, view: bool = False,
-                       format: str = 'pdf') -> None:
+    def save_dot_graph(self,
+                       dot_object: Digraph,
+                       graph_name: str,
+                       view: bool = False,
+                       format: str = 'pdf',
+                       directory: str = '',
+                       filename: str = '') -> None:
         """
         A method to save the plotted graph in the respective folder
         :param dot_object: object of @Diagraph
@@ -104,8 +109,14 @@ class Graph(abc.ABC):
             view = view
             view_on_jupyter = False
 
-        directory = os.path.join(Graph._get_project_root_directory(), 'plots')
-        filename = os.path.join(directory, graph_name)
+        if directory == '':
+            directory = os.path.join(Graph._get_project_root_directory(), 'plots')
+            
+        if filename == '':
+            filename = os.path.join(directory, graph_name)
+        else:
+            filename = os.path.join(directory, filename)
+            
         path = dot_object.render(format=format, filename=filename, view=view)
 
         if view_on_jupyter:

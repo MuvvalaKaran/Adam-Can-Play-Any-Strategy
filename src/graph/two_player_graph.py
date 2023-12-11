@@ -339,11 +339,9 @@ class TwoPlayerGraphBuilder(Builder):
     Implements the generic graph builder class for TwoPlayerGraph
     """
 
-    def __init__(self) -> 'TwoPlayerGraphBuilder()':
+    def __init__(self) -> 'TwoPlayerGraphBuilder':
         """
         Constructs a new instance of the TwoPlayerGraph Builder
-
-        attr: pre_built : instance variable indicating if the user wants to build his own graph or use the internal one
         attr: two_player_graphs : a dictionary that has pre built instances of the TwoPlayerGraph key to the graph key
         """
 
@@ -356,10 +354,11 @@ class TwoPlayerGraphBuilder(Builder):
                  n_step: int = None,
                  save_flag: bool = False,
                  from_file: bool = False,
-                 pre_built: bool = False,   # TODO: Delete
                  plot: bool = False,
                  view: bool = True,
-                 format: str = 'pdf') -> TwoPlayerGraph:
+                 format: str = 'pdf',
+                 directory: str = '',
+                 filename: str = '' ) -> TwoPlayerGraph:
         """
         Return an initialized TwoPlayerGraph instance given the configuration data
         :param graph_name : Name of the graph

@@ -350,7 +350,11 @@ class TransitionSystemBuilder(Builder):
                  plot: bool = False,
                  human_intervention: int = 1,
                  finite: bool = False,
-                 plot_raw_ts: bool = False) -> 'FiniteTransSys':
+                 plot_raw_ts: bool = False,
+                 view: bool  = False,
+                 format: str = 'pdf',
+                 directory: str = '',
+                 filename: str = '') -> 'FiniteTransSys':
         """
         A method to create an instance of a finite transition system consisting of two players - eve and system .
         :param raw_trans_sys: The original graph with only nodes that belong to eve.
@@ -401,7 +405,7 @@ class TransitionSystemBuilder(Builder):
             self._instance.build_graph_from_file()
 
         if plot:
-            self._instance.plot_graph()
+            self._instance.plot_graph(view=view, format=format, directory=directory, filename=filename)
 
         return self._instance
 

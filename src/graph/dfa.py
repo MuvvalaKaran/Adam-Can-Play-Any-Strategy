@@ -278,6 +278,8 @@ class DFABuilder(Builder):
                  plot: bool = False,
                  view: bool = True,
                  format: str = 'png',
+                 directory: str = '',
+                 filename: str = ''
                  ) -> 'DFAGraph':
 
         if not (isinstance(sc_ltl, str) or sc_ltl == ""):
@@ -292,6 +294,6 @@ class DFABuilder(Builder):
                                   save_flag=save_flag,
                                   use_alias=use_alias)
 
-        self._instance.construct_graph(plot=plot, view=view, format=format)
+        self._instance.construct_graph(plot=plot, view=view, format=format, directory=directory, filename=filename)
 
         return self._instance

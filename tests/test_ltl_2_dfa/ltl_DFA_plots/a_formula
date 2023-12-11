@@ -1,0 +1,14 @@
+digraph "graph" {
+	graph [rankdir=LR]
+	node [fixedsize=False]
+	edge [arrowhead=vee arrowsize=1 decorate=True]
+	accept_all [fillcolor=lightgrey shape=circle style=filled]
+	accept_all [fillcolor=purple shape=doublecircle style=filled]
+	T0_init [fillcolor=lightgrey shape=circle style=filled]
+	T0_init [fillcolor=red style=filled]
+	T0_S2 [fillcolor=lightgrey shape=circle style=filled]
+	accept_all -> accept_all [label=1]
+	T0_init -> accept_all [label="(a)"]
+	T0_init -> T0_S2 [label="(!(a))"]
+	T0_S2 -> T0_S2 [label="(true)"]
+}

@@ -46,3 +46,6 @@ wombats_examples/*.py
 
 # ignore build txt dump 
 .minigrid_downgrade_op_dump.txt
+
+# ignore plot folders in tests directory
+tests/*_plots/

@@ -1,0 +1,14 @@
+digraph "graph" {
+	graph [rankdir=LR]
+	node [fixedsize=False]
+	edge [arrowhead=vee arrowsize=1 decorate=True]
+	q1 [fillcolor=lightgrey shape=circle style=filled]
+	q1 [fillcolor=red style=filled]
+	q2 [fillcolor=lightgrey shape=circle style=filled]
+	q3 [fillcolor=lightgrey shape=circle style=filled]
+	q3 [fillcolor=purple shape=doublecircle style=filled]
+	q1 -> q2 [label="~a"]
+	q1 -> q3 [label=a]
+	q2 -> q2 [label=true]
+	q3 -> q3 [label=true]
+}

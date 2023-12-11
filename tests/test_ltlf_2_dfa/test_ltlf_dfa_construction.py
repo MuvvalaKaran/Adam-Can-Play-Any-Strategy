@@ -5,11 +5,12 @@
 
  1. Pasrsing the Mona Output from Mona toolbox
  2. DFA graph construction
-   2.1 Asserting correct # of states, init states, accepting states, and absoarbing states, symbols (atomic propositions) in DFA
+   2.1 Asserting correct # of states, init states, accepting states, and absorbing states, symbols (atomic propositions) in DFA
    2.2 Asserting correct # of edges in DFA
    2.3 Asserting correct symbols that enable each edge
+ 3. Checking for plotting inside Docker - we will not plot if we are inside Docker
+ 4. Checking for plotting outside Docker - we will plot if we are outside Docker
 """
-
 import os
 import unittest
 
@@ -21,6 +22,9 @@ from src.spot.Parser import (
     TrueExpression,
 )
 from src.graph import graph_factory
+
+CURRENT_DIR = os.path.abspath(__file__)
+PLOT_DIR = os.path.join(os.path.dirname(CURRENT_DIR), "ltlf_DFA_plots")
 
 FORMULAS = {
     "a": {
@@ -179,17 +183,24 @@ FORMULAS = {
 
 
 class TestParsingMona(unittest.TestCase):
-    def construct_DFA(self, formula: str):
+    
+    def create_directory(self, directory_path):
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+    
+    def construct_DFA(self, formula: str, plot: bool = False):
         """
         A helper function that call builder to construct the correspond DFA for the LTLf formula
         """
         dfa_handle = graph_factory.get(
             "LTLfDFA",
             graph_name="ltlf_automaton",
-            config_yaml="config/ltltf_automaton",
+            config_yaml="config/ltlf_automaton",
             save_flag=True,
             ltlf=formula,
-            plot=False,
+            plot=plot,
+            directory=PLOT_DIR,
+            filename=f"{formula}_formula"
         )
         return dfa_handle
 
@@ -198,8 +209,8 @@ class TestParsingMona(unittest.TestCase):
         A function that calls the LTLf DFA Builder and checks for the DFA constructed.
         """
         for formula, exp_op in FORMULAS.items():
+            print("DFA Construction for LTLf Formula: ", formula)
             dfa_handle = self.construct_DFA(formula=formula)
-            print("Done")
             self.assertEqual(exp_op["init_state"], dfa_handle.init_state)
             self.assertEqual(exp_op["accp_state"], dfa_handle.accp_states)
             self.assertEqual(exp_op["num_of_states"], dfa_handle.num_of_states)
@@ -218,6 +229,19 @@ class TestParsingMona(unittest.TestCase):
                     edge_sym.__repr__(),
                     dfa_handle.transitions[(source, dest)].__repr__(),
                 )
+    
+    def test_dfa_plotting(self):
+        """
+        A function that calls the LTL DFA Builder with the plot flag set to true.
+          If we are inside Docker, we will not open the plot. If we are outside Docker, we will plot and display the plot too.
+        """
+        print(PLOT_DIR)
+        self.create_directory(PLOT_DIR)
+
+
+        for formula,_ in FORMULAS.items():
+            print("DFA Plotting for LTLf Formula: ", formula)
+            self.construct_DFA(formula=formula, plot=True)
 
 
 if __name__ == "__main__":

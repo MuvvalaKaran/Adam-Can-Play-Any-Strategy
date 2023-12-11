@@ -89,6 +89,10 @@ class DFAGraph(Graph):
 
             if _s == "q0":
                 self.add_accepting_state(_s)
+            # occurs when you enter "true" as a formula
+            if _s == "q01":
+                self.add_accepting_state(_s)
+                self.add_initial_state(_s)
 
         # add edges
         for (u, v) in edges.keys():
@@ -141,8 +145,15 @@ class DFAGraph(Graph):
         _new_state_lst = {}
         for _s in states:
             if _s == "T0_init":
-                _new_state_lst.update({_s: f"q1"})
+                _new_state_lst.update({_s: "q1"})
             elif _s == "accept_all":
+                _new_state_lst.update({_s: "q0"})
+            # occurs when you enter "true" as a formula 
+            elif _s == "accept_init":
+                _new_state_lst.update({_s: "q01"})
+            
+            # occurs when you enter Buchi formulas 
+            elif "accept_S" in _s:
                 _new_state_lst.update({_s: "q0"})
             else:
                 # find the number after the string T0_S

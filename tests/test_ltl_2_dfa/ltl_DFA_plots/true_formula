@@ -1,0 +1,9 @@
+digraph "graph" {
+	graph [rankdir=LR]
+	node [fixedsize=False]
+	edge [arrowhead=vee arrowsize=1 decorate=True]
+	accept_init [fillcolor=lightgrey shape=circle style=filled]
+	accept_init [fillcolor=red style=filled]
+	accept_init [fillcolor=purple shape=doublecircle style=filled]
+	accept_init -> accept_init [label="(true)"]
+}

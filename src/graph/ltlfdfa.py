@@ -245,7 +245,10 @@ class LTLfDFAGraph(DFAGraph):
            This function basically recreates the transition using LTLF2DFA toolbox's functions.
         """
         and_dot_trans = {}  # maps each couple (src, dst) to a list of guards
-        _ap = tuple([symbols(prop.name) for prop in self._task_labels])
+        if self._task_labels is None:
+            _ap = None
+        else:
+            _ap = tuple([symbols(prop.name) for prop in self._task_labels])
         
         for line in self._mona_dfa.splitlines():
             if line.startswith("State "):

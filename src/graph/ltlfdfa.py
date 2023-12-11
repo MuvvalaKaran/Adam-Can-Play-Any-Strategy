@@ -46,7 +46,7 @@ class LTLfDFAGraph(DFAGraph):
         self._transitions: Dict[tuple, SymbolExpression] = {}
         
         # Construct mona DFA
-        self.construct_dfa(verbose=False)
+        self.construct_dfa(verbose=verbose)
     
 
     @property
@@ -235,7 +235,7 @@ class LTLfDFAGraph(DFAGraph):
         if "Formula is unsatisfiable" in mona_dfa:
             print("Unsat Formula")
         else:
-            my_dfa = self.parse_mona()
+            my_dfa = self.parse_mona(debug=verbose)
         
         return my_dfa
 
@@ -299,7 +299,6 @@ class LTLfDFAGraph(DFAGraph):
         if self._save_flag:
             graph_name = str(self._graph.__getattribute__('name'))
             self.save_dot_graph(dot, graph_name, **kwargs)
-        return super().fancy_graph(color, **kwargs)
 
 
 class LTLfDFABuilder(Builder):

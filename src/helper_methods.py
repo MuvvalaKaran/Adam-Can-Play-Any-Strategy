@@ -1,6 +1,8 @@
 import time
 import warnings
 
+from pathlib import Path
+
 # A decorator to throw warning when we use deprecated methods/functions/routines
 def deprecated(func):
     """This is a decorator which can be used to mark functions
@@ -26,3 +28,8 @@ def timer_decorator(func):
         print(f"Function {func.__name__} took {end_time - start_time} seconds to run.")
         return result
     return wrapper
+
+
+def is_docker():
+    cgroup = Path('/proc/self/cgroup')
+    return Path('/.dockerenv').is_file() or cgroup.is_file() and 'docker' in cgroup.read_text()

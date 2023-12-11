@@ -281,10 +281,10 @@ class DFABuilder(Builder):
                  ) -> 'DFAGraph':
 
         if not (isinstance(sc_ltl, str) or sc_ltl == ""):
-            raise TypeError(f"Please ensure that the ltl formula is of type string and is not empty. \n")
+            raise TypeError(f"Please ensure that the ltl formula is of type string and is not {type(sc_ltl)}. \n")
 
         if use_alias:
-            print(f"Using custom names for automaton nodes instead of the original ones by SPOT toolbox")
+            print("Using custom names for automaton nodes instead of the original ones by SPOT toolbox")
 
         self._instance = DFAGraph(formula=sc_ltl,
                                   graph_name=graph_name,

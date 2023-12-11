@@ -11,7 +11,7 @@ from IPython import get_ipython
 from ..config import ROOT_PATH
 from graphviz import Digraph
 from typing import List, Tuple, Iterable, Union
-from ..helper_methods import deprecated
+from ..helper_methods import deprecated, is_docker
 
 
 def isnotebook():
@@ -97,6 +97,9 @@ class Graph(abc.ABC):
         if isnotebook():
             view_on_jupyter = view
             view = False
+        elif is_docker():
+            view = False
+            view_on_jupyter = False 
         else:
             view = view
             view_on_jupyter = False

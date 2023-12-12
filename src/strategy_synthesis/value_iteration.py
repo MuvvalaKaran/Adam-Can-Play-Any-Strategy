@@ -1,20 +1,19 @@
-import warnings
 import sys
 import math
-import networkx as nx
-import numpy as np
 import copy
 import operator
-import random
+import warnings
+import numpy as np
 
-from collections import defaultdict
-from networkx import DiGraph
-from numpy import ndarray
 from bidict import bidict
+from collections import defaultdict
 from typing import Optional, Union, Dict, List, Tuple
+
+from numpy import ndarray
 
 # import local packages
 from ..graph import TwoPlayerGraph
+from ..helper_methods import deprecated
 from .adversarial_game import ReachabilityGame as ReachabilitySolver
 
 # numpy int32 min value
@@ -27,6 +26,7 @@ class ValueIteration:
     def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
         self.org_graph: Optional[TwoPlayerGraph] = copy.deepcopy(game)
         self.competitive = competitive
+        
         self._int_val = int_val
         self._val_vector: Optional[ndarray] = None
         self._node_int_map: Optional[bidict] = None
@@ -38,10 +38,17 @@ class ValueIteration:
         self._sys_winning_region = None
         self._accp_states: set = set(self.org_graph.get_accepting_states())
         self._initialize_val_vector()
+        self._iterations_to_converge = math.inf
+        self._convergence_dict = defaultdict(lambda: -1)
+        self._init_state = self.set_init_state()
 
     @property
     def org_graph(self):
         return self.__org_graph
+    
+    @property
+    def init_state(self):
+        return self._init_state
 
     @property
     def val_vector(self):
@@ -78,6 +85,22 @@ class ValueIteration:
     @property
     def sys_winning_region(self):
         return self._sys_winning_region
+    
+    @property
+    def iterations_to_converge(self):
+        if self._iterations_to_converge == math.inf:
+            warnings.warn("[Error] Please Run the Value Iteration's solve() method before accessing the `iterations_to_converge` attribute.")
+            sys.exit(-1)
+        return self._iterations_to_converge
+    
+    @property
+    def convergence_dict(self):
+        if self._iterations_to_converge == math.inf:
+            warnings.warn("[Error] Please Run the Value Iteration's solve() method before accessing the `convergence_dict` attribute.")
+            sys.exit(-1)
+        
+        self._convergence_dict = self._compute_convergence_idx()
+        return self._convergence_dict
 
     @org_graph.setter
     def org_graph(self, org_graph):
@@ -95,17 +118,20 @@ class ValueIteration:
     def competitive(self, value: bool):
         self._competitive = value
 
+
+    def set_init_state(self):
+        _init_state: List[tuple] = self.org_graph.get_initial_states()
+        assert len(_init_state) == 1, "The initial state should be a single."
+        return _init_state[0][0]
     
+
     def is_winning(self) -> bool:
         """
         A helper method that return True if the initial state(s) belongs to the list of system player' winning region
         :return: boolean value indicating if system player can force a visit to the accepting states or not
         """
-        _init_states = self.org_graph.get_initial_states()
-
-        for state,_ in _init_states:
-            if INT_MIN_VAL < self.state_value_dict.get(state) < INT_MAX_VAL:
-                return True
+        if INT_MIN_VAL < self.state_value_dict.get(self.init_state) < INT_MAX_VAL:
+            return True
         return False
 
     def _initialize_target_state_costs(self):
@@ -174,7 +200,6 @@ class ValueIteration:
         :param curr_val_vec:
         :return:
         """
-
         return np.array_equal(pre_val_vec, curr_val_vec)
 
     def _add_trap_state_player(self):
@@ -187,7 +212,8 @@ class ValueIteration:
 
         for _n in _trap_states:
             self.org_graph.add_state_attribute(_n, "player", "adam")
-
+    
+    @deprecated
     def cooperative_solver(self, debug: bool = False, plot: bool = False):
         """
         A Method to compute the cooperative value from each state when both players are playing minimally.
@@ -390,6 +416,8 @@ class ValueIteration:
 
             # perform one step Value Iteration
             _val_vector: ndarray = self.update_state_values(val_vector=_val_vector)
+        
+        self._iterations_to_converge = iter_var
 
         # safely convert values in the last col of val vector to ints
         if self._int_val:
@@ -455,10 +483,6 @@ class ValueIteration:
         :return:
         """
         _convergence_dict: dict = {}
-        _init_node = self.org_graph.get_initial_states()[0][0]
-        _init_int_node = self.node_int_map[_init_node]
-        _init_val = self.val_vector[_init_int_node][0]
-
         _num_of_states, _num_of_iter = self.val_vector.shape
 
         for _state in range(_num_of_states):
@@ -466,10 +490,10 @@ class ValueIteration:
             for _itr in range(_num_of_iter - 1, 0, -1):
                 if self.val_vector[_state][_itr] != self.val_vector[_state][_itr - 1]:
                     _converge_at_first_iter = False
-                    _convergence_dict.update({_state: _itr})
+                    _convergence_dict.update({self.node_int_map.inverse[_state]: _itr})
                     break
             if _converge_at_first_iter:
-                _convergence_dict.update({_state: 0})
+                _convergence_dict.update({self.node_int_map.inverse[_state] : 0})
 
         return _convergence_dict
 

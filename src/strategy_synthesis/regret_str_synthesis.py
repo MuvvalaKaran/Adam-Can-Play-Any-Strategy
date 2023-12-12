@@ -13,7 +13,7 @@ from ..graph import ProductAutomaton
 
 # import local value iteration solver
 from .value_iteration import ValueIteration
-
+from ..helper_methods import deprecated
 
 INT_MIN_VAL = -2147483648
 INT_MAX_VAL = 2147483647
@@ -21,20 +21,45 @@ INT_MAX_VAL = 2147483647
 
 class RegretMinimizationStrategySynthesis:
     """
-    This class implements the Algo as sepcified the ICRA 22 paper.
+    This class implements the Algo as sepcified in the ICRA 22 paper.
 
     :param      graph:          A concrete instance of class TwoPlayerGraph or ProductAutomation
                                 (depending on how you construct the Graph) on which we will be performing the
                                 regret minimizing strategy synthesis
     """
     def __init__(self,
-                 graph: TwoPlayerGraph) -> 'RegretMinimizationStrategySynthesis':
-        self._graph = graph
-        self._graph_of_alternatives = None
-        self._graph_of_utility = None
+                 graph: TwoPlayerGraph,
+                 reg_factor: float = 1.25) -> 'RegretMinimizationStrategySynthesis':
+        self._graph: TwoPlayerGraph = graph
+        self._graph_of_alternatives: TwoPlayerGraph = None
+        self._graph_of_utility: TwoPlayerGraph = None
+        self._reg_factor: float = reg_factor
+        self._reg_budget: int = None 
+        self._min_budget: int = None
         self._strategy: dict = None
+        self._env_str_dict: dict = None
         self._state_values: dict = None
+        self._best_alternate_values: set = None
+        self._best_alternate_dict: set = None
+        self._graph_of_alternatives_fp_iter: Union[int, float] = math.inf
+        self._graph_of_utility_fp_iter: Union[int, float] = math.inf
+        self._reg_convergence_dict: dict = None
+
+    @property
+    def graph(self):
+        return self._graph
+
+    @property
+    def reg_factor(self):
+        return self._reg_factor
     
+    @property
+    def reg_budget(self):
+        return self._reg_budget
+    
+    @property
+    def min_budget(self):
+        return self._min_budget
 
     @property
     def strategy(self):
@@ -42,6 +67,13 @@ class RegretMinimizationStrategySynthesis:
             warnings.warn("[Error] Please Run the strategy synthesis method before accessing the strategy.")
             sys.exit(-1)
         return self._strategy
+
+    @property
+    def env_str_dict(self):
+        if not bool(self._env_str_dict):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the strategy.")
+            sys.exit(-1)
+        return self._env_str_dict
     
     @property
     def state_values(self):
@@ -51,8 +83,19 @@ class RegretMinimizationStrategySynthesis:
         return self._state_values
     
     @property
-    def graph(self):
-        return self._graph
+    def best_alternate_values(self):
+        if not bool(self._best_alternate_values):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Best Alternate Values.")
+            sys.exit(-1)
+        return self._best_alternate_values
+    
+
+    @property
+    def best_alternate_dict(self):
+        if not bool(self._best_alternate_dict):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Best Alternate Values.")
+            sys.exit(-1)
+        return self._best_alternate_dict
     
     @property
     def graph_of_alternatives(self):
@@ -60,6 +103,21 @@ class RegretMinimizationStrategySynthesis:
             warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Graph of Best-Response.")
             sys.exit(-1)
         return self._graph_of_alternatives
+
+    @property
+    def graph_of_alternatives_fp_iter(self):
+        if not bool(self._best_alternate_dict):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Best Alternate Values.")
+            sys.exit(-1)
+        return self._graph_of_alternatives_fp_iter
+    
+    @property
+    def reg_convergence_dict(self):
+        if self._reg_convergence_dict is None:
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the The Final Convergence Dictionary Values.")
+            sys.exit(-1)
+        return self._reg_convergence_dict
+    
     
     @property
     def graph_of_utility(self):
@@ -68,6 +126,13 @@ class RegretMinimizationStrategySynthesis:
             sys.exit(-1)
         
         return self._graph_of_utility
+    
+    @property
+    def graph_of_utility_fp_iter(self):
+        if not bool(self._best_alternate_dict):
+            warnings.warn("[Error] Please Run the strategy synthesis method before accessing the Best Alternate Values.")
+            sys.exit(-1)
+        return self._graph_of_utility_fp_iter
 
     
     @graph.setter
@@ -84,8 +149,14 @@ class RegretMinimizationStrategySynthesis:
     @graph_of_utility.setter
     def graph_of_utility(self, graph_of_utility):
         self._graph_of_utility = graph_of_utility
+    
 
+    @reg_factor.setter
+    def reg_factor(self, reg_factor):
+        assert reg_factor > 1, "Please enter a regret factor greater than 1"
+        self._reg_factor = reg_factor
 
+    @deprecated
     def add_common_accepting_state(self, plot: bool = False):
         """
         A helper method that adds a auxiliary accepting state from the current accepting state as well as the trap state
@@ -140,9 +211,8 @@ class RegretMinimizationStrategySynthesis:
             self.graph.plot_graph()
 
     def edge_weighted_arena_finite_reg_solver(self,
-                                              reg_factor: float = 1,
                                               purge_states: bool = True,
-                                              plot: bool = False) -> Tuple[Dict, Dict]:
+                                              plot: bool = False):
         """
         A function that computes a Regret Minimizing strategy by constructing the Graph of Utility G'. This graph (G')
         is of the form Target weighted arena (TWA).  The utility information is added to the nodes of G to construct
@@ -168,16 +238,17 @@ class RegretMinimizationStrategySynthesis:
         print(f"******************************Min-Max Computation time: {stop - start} ****************************")
         # init state value
         _init_state = self.graph.get_initial_states()[0][0]
-        min_max_value = comp_mcr_solver.state_value_dict[_init_state] * reg_factor
-        # min_max_value = comp_mcr_solver.state_value_dict[_init_state].item()
+        min_max_value = comp_mcr_solver.state_value_dict[_init_state] * self.reg_factor
         min_max_value = math.ceil(min_max_value)
 
         print(f"Min-Max Value: {comp_mcr_solver.state_value_dict[_init_state]}")
         print(f"Regret budget: {min_max_value}")
+        self._min_budget = comp_mcr_solver.state_value_dict[_init_state]
+        self._reg_budget = min_max_value
 
         # construct a TWA given the graph
         start = time.time()
-        self.graph_of_utility = self._construct_graph_of_utility(min_max_value)
+        self.graph_of_utility = self._construct_graph_of_utility()
         stop = time.time()
 
         print(f"#nodes in the graph of utility before pruning:{len(self.graph_of_utility._graph.nodes())}")
@@ -198,16 +269,16 @@ class RegretMinimizationStrategySynthesis:
         print(f"#edges in the graph of utility after pruning:{len(self.graph_of_utility._graph.edges())}")
 
         # Compute strs on this new TWA Graph
-        reg_strs, reg_vals = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
-                                                                          debug=True,
-                                                                          plot_w_vals=False,
-                                                                          plot_only_eve=False,
-                                                                          plot=False)
+        sys_reg_str, env_reg_str, reg_vals = self.target_weighted_arena_finite_reg_solver(twa_graph=self.graph_of_utility,
+                                                                                          debug=True,
+                                                                                          plot_w_vals=False,
+                                                                                          plot_only_eve=False,
+                                                                                          plot=False)
 
-        self._strategy = reg_strs
+        self._strategy = sys_reg_str
+        self._env_str_dict = env_reg_str
         self._state_values = reg_vals
 
-        return reg_strs, reg_vals
 
     def target_weighted_arena_finite_reg_solver(self,
                                                 twa_graph: TwoPlayerGraph,
@@ -215,7 +286,7 @@ class RegretMinimizationStrategySynthesis:
                                                 purge_states: bool = True,
                                                 plot_w_vals: bool = False,
                                                 plot_only_eve: bool = False,
-                                                plot: bool = False) -> Tuple[Dict, float]:
+                                                plot: bool = False) -> Tuple[Dict, Dict, Dict]:
         """
         A function to compute a Regret Minimizing strategy by constructing the Graph of best alternative G'.
         Please refer to  arXiv:1002.1456v3 Section 2 For the theory.
@@ -233,13 +304,11 @@ class RegretMinimizationStrategySynthesis:
         :return:
         """
         # compute the best alternative from each edge for cumulative payoff
-        _best_alternate_values: Dict = self._get_best_alternatives_dict(twa_graph)
+        self._get_best_alternatives_dict(twa_graph)
 
         # construct graph of best alternatives (G')
         start = time.time()
-        self.graph_of_alternatives =\
-            self._new_construct_graph_of_best_alternatives(twa_game=twa_graph,
-                                                           best_alt_values_dict=_best_alternate_values)
+        self.graph_of_alternatives = self._new_construct_graph_of_best_alternatives(twa_game=twa_graph)
 
         if debug:
             print(f"#nodes in the graph of alternative before pruning :{len(self.graph_of_alternatives._graph.nodes())}")
@@ -267,12 +336,17 @@ class RegretMinimizationStrategySynthesis:
         start = time.time()
         minmax_mcr_solver = ValueIteration(self.graph_of_alternatives, competitive=True)
         minmax_mcr_solver.solve(debug=True, plot=plot_w_vals)
-        _comp_str_dict = minmax_mcr_solver.str_dict
-        _comp_val_dict = minmax_mcr_solver.state_value_dict
-        _init_state = self.graph_of_alternatives.get_initial_states()[0][0]
-        _game_reg_value: float = _comp_val_dict.get(_init_state)
         stop = time.time()
         print(f"Time took for computing reg strs on the Graph of best Response {stop - start}")
+        _comp_str_dict = minmax_mcr_solver.str_dict
+        _env_str_dict = minmax_mcr_solver.env_str_dict
+        
+        _comp_val_dict = minmax_mcr_solver.state_value_dict
+
+        _init_state = self.graph_of_alternatives.get_initial_states()[0][0]
+        _game_reg_value: float = _comp_val_dict.get(_init_state)
+        self._graph_of_alternatives_fp_iter = minmax_mcr_solver.iterations_to_converge
+        self._reg_convergence_dict = minmax_mcr_solver.convergence_dict
 
         if plot_only_eve:
             self.plot_str_for_cumulative_reg(game_venue=self.graph_of_alternatives,
@@ -280,9 +354,9 @@ class RegretMinimizationStrategySynthesis:
                                              only_eve=plot_only_eve,
                                              plot=plot)
 
-        return _comp_str_dict, _comp_val_dict
+        return _comp_str_dict, _env_str_dict, _comp_val_dict
 
-    def _construct_graph_of_utility(self, min_max_val):
+    def _construct_graph_of_utility(self) -> TwoPlayerGraph:
         """
         A function to construct the graph of utility given an Edge Weighted Arena (EWA).
 
@@ -301,8 +375,7 @@ class RegretMinimizationStrategySynthesis:
 
         :return:
         """
-
-        _max_bounded_str_value = min_max_val
+        _max_bounded_str_value = self._reg_budget
 
         _graph_of_utls = TwoPlayerGraph("graph_of_utls_TWA", "config/graph_of_ults_TWA", True)
 
@@ -322,7 +395,7 @@ class RegretMinimizationStrategySynthesis:
                     _graph_of_utls._graph.nodes[_new_state]['init'] = True
 
         # manually add a sink state with player attribute adam
-        # we add sink as accepting so as not not backpropagate inf in coop value plays
+        # we add sink as accepting so as not to backpropagate inf in coop value plays
         _graph_of_utls.add_state("vT", accepting=False, init=False, player="eve")
 
         # construct edges
@@ -398,13 +471,13 @@ class RegretMinimizationStrategySynthesis:
         return _graph_of_utls
 
     def _new_construct_graph_of_best_alternatives(self,
-                                                 twa_game: TwoPlayerGraph,
-                                                 best_alt_values_dict: Dict) -> TwoPlayerGraph:
+                                                 twa_game: TwoPlayerGraph) -> TwoPlayerGraph:
 
         _graph_of_alts = TwoPlayerGraph("graph_of_alts_TWA", "config/graph_of_alts_TWA", True)
 
         # get the set of best alternatives - will already include inf
-        _best_alt_set = set(best_alt_values_dict.values())
+        _best_alt_set = set(self._best_alternate_dict.values())
+        self._best_alternate_values = _best_alt_set
 
         # get initial states
         _init_state = twa_game.get_initial_states()[0][0]
@@ -452,7 +525,7 @@ class RegretMinimizationStrategySynthesis:
                     # get the successors of the MIN/Sys player state in the original graph and edge to the successor
                     # who have satisfy min(b', ba(s, s'))
                     for _org_succ in twa_game._graph.successors(_s):
-                        _ba = best_alt_values_dict.get((_s, _org_succ))
+                        _ba = self._best_alternate_dict.get((_s, _org_succ))
                         _next_state_ba_value = min(_best_alt, _ba)
 
                         _succ = (_org_succ, _next_state_ba_value)
@@ -536,24 +609,24 @@ class RegretMinimizationStrategySynthesis:
 
                 game._graph[_pre_s][_target][0]['weight'] = _reg_value
 
-    def _get_best_alternatives_dict(self, two_player_game: TwoPlayerGraph) -> Dict:
+    def _get_best_alternatives_dict(self, two_player_game: TwoPlayerGraph):
         """
         A function that computes the best alternate (ba) value for each edge in the graph.
 
         If a state belongs to Adam :- ba = +inf
         if a state belongs to Eve :- ba(s, s') = minimum of all the cooperative values for successors s'' s.t.
          s'' not equal to s'.  If there is no alternate edge to choose from, then ba(s, s') = +inf
-        :return:
+        :return: None
         """
 
-        # pre-compute cooperative values form each state
+        # pre-compute cooperative values from each state that belong Sys (eve)
         start = time.time()
         coop_mcr_solver = ValueIteration(two_player_game, competitive=False)
-        # coop_mcr_solver.cooperative_solver(debug=False, plot=False)
         coop_mcr_solver.solve(debug=False, plot=False)
         stop = time.time()
         print(f"******************************cVal computation time: {stop - start}****************************")
         coop_val_dict = coop_mcr_solver.state_value_dict
+        self._graph_of_utility_fp_iter = coop_mcr_solver.iterations_to_converge
 
         _best_alternate_values: Dict[Optional[tuple], Union[int, float]] = defaultdict(lambda: -1)
 
@@ -578,11 +651,11 @@ class RegretMinimizationStrategySynthesis:
 
                 _best_alternate_values.update({_e: _min_coop_val})
 
-            # else:
-            #     warnings.warn(f"Encountered a state {_u} with an invalid player attribute")
         stop = time.time()
         print(f"******************************BA set computation time: {stop - start}****************************")
-        return _best_alternate_values
+
+        self._best_alternate_dict = _best_alternate_values
+
 
     def _add_strategy_flag(self,
                            g_hat: Union[TwoPlayerGraph, ProductAutomaton, Graph],

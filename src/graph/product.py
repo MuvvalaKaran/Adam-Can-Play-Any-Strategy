@@ -340,9 +340,6 @@ class ProductAutomaton(TwoPlayerGraph):
         There are always two of these - one accepting state and the other one is the "trap" state
         :return:
         """
-        # get max weight from the transition system
-        max_w: float = self._trans_sys.get_max_weight()
-
         for _u_ts_node in self._trans_sys._graph.nodes():
             for _u_a_node in self._auto_graph._graph.nodes():
 
@@ -375,8 +372,8 @@ class ProductAutomaton(TwoPlayerGraph):
                                                                                     _v_a_node,
                                                                                     _v_prod_node,
                                                                                     action=auto_action,
-                                                                                    obs=ap,)
-                                                                                    # pref=pref)
+                                                                                    obs=ap)
+                            
                             if exists:
                                 self._add_transition_absorbing(_u_prod_node,
                                                               _v_prod_node,

@@ -26,8 +26,7 @@ class ValueIteration:
     def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
         self.org_graph: Optional[TwoPlayerGraph] = copy.deepcopy(game)
         self.competitive = competitive
-        
-        self._int_val = int_val
+        self._int_val: bool = int_val
         self._val_vector: Optional[ndarray] = None
         self._node_int_map: Optional[bidict] = None
         self._num_of_nodes: int = 0
@@ -37,10 +36,11 @@ class ValueIteration:
         self._env_str_dict: Dict = defaultdict(lambda: -1)
         self._sys_winning_region = None
         self._accp_states: set = set(self.org_graph.get_accepting_states())
-        self._initialize_val_vector()
         self._iterations_to_converge = math.inf
         self._convergence_dict = defaultdict(lambda: -1)
         self._init_state = self.set_init_state()
+        self._initialize_val_vector()
+        
 
     @property
     def org_graph(self):
@@ -559,7 +559,6 @@ class ValueIteration:
         the nodes.
         :return:
         """
-
         for _n in self.org_graph._graph.nodes():
             self.org_graph.add_state_attribute(_n, "val", [self.state_value_dict[_n]])
 

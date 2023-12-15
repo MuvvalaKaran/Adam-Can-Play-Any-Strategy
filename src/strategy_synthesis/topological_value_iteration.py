@@ -22,6 +22,7 @@ class TopologicalValueIteration(ValueIteration):
     def __init__(self, game, competitive: bool = False, int_val: bool = True):
         super().__init__(game, competitive, int_val)
         self._states_by_payoff = None
+        self._valid_payoff_values = None
         if 'utls' in game.graph_name:
             self._get_nodes_per_gou()
         elif 'alts' in game.graph_name:
@@ -34,6 +35,10 @@ class TopologicalValueIteration(ValueIteration):
     @property
     def states_by_payoff(self):
         return self._states_by_payoff
+    
+    @property
+    def valid_payoff_values(self):
+        return self._valid_payoff_values
     
 
     def _get_nodes_per_gou(self):
@@ -60,7 +65,7 @@ class TopologicalValueIteration(ValueIteration):
         states_by_payoff[max_payoff]['nodes'].add('vT')
         states_by_payoff[max_payoff]['int_nodes'].add(self.node_int_map['vT'])
 
-
+        self._valid_payoff_values = sorted(list(states_by_payoff.keys()), reverse=True)
         self._states_by_payoff = states_by_payoff
     
 
@@ -99,8 +104,8 @@ class TopologicalValueIteration(ValueIteration):
         states_by_payoff[max_payoff]['nodes'].union('set_of_terminal_states')
         for _s in set_of_terminal_states:
             states_by_payoff[max_payoff]['int_nodes'].add(self.node_int_map[_s])
-        # states_by_payoff[max_payoff]['int_nodes'].add(self.node_int_map['vT'])
         
+        self._valid_payoff_values = sorted(list(states_by_payoff.keys()), reverse=True)
         self._states_by_payoff = states_by_payoff
     
 
@@ -116,8 +121,6 @@ class TopologicalValueIteration(ValueIteration):
         """
 
         val_pre = copy.copy(val_vector)
-
-        # for _n in self.org_graph._graph.nodes():
         for _n in self.states_by_payoff[topological_order]['nodes']:
             if _n in self._accp_states and self.org_graph.get_state_w_attribute(_n, "player") == "eve":
                 continue
@@ -136,19 +139,9 @@ class TopologicalValueIteration(ValueIteration):
         _val_vector = copy.deepcopy(self.val_vector)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
-        
-        # create n copies of the value vector
-        _val_pre_list = {u: copy.deepcopy(_val_pre) for u in range(len(self.states_by_payoff.keys()))}
-        sorted_val_pre = {k: v for k, v in sorted(_val_pre_list.items(), key=lambda item: item[0], reverse=True)}
-
         iter_var: int = 0
 
-        # now run Value Iteration in reverse order of the states that belong this payoff values
-        for payoff, _ in sorted_val_pre.items():
-            # if payoff == 6:
-            #     continue
-            
-            # iter_var: int = 0
+        for payoff in self.valid_payoff_values:
             while True:
                 if debug:
                     # if iter_var % 1000 == 0:
@@ -164,8 +157,6 @@ class TopologicalValueIteration(ValueIteration):
                     break
             
         self._iterations_to_converge = iter_var
-            # self._convergence_dict = self._compute_convergence_idx()
-            # states_by_convergence_itr_dict = self._get_state_sorted_by_convergence()
         
          # safely convert values in the last col of val vector to ints
         if self._int_val:
@@ -183,7 +174,7 @@ class TopologicalValueIteration(ValueIteration):
             self._sys_str_dict, self._env_str_dict = self.extract_strategy()
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
-        self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
+        self._sys_winning_region = set(self._sys_str_dict.keys()) 
 
         if plot:
             self.plot_graph()

@@ -14,7 +14,6 @@ from ..graph import ProductAutomaton
 # import local value iteration solver
 from .value_iteration import ValueIteration
 from .topological_value_iteration import TopologicalValueIteration
-from ..helper_methods import deprecated
 
 INT_MIN_VAL = -2147483648
 INT_MAX_VAL = 2147483647
@@ -30,11 +29,13 @@ class RegretMinimizationStrategySynthesis:
     """
     def __init__(self,
                  graph: TwoPlayerGraph,
-                 reg_factor: float = 1.25) -> 'RegretMinimizationStrategySynthesis':
+                 reg_factor: float = 1.25,
+                 sanity_checking: bool = False) -> 'RegretMinimizationStrategySynthesis':
         self._graph: TwoPlayerGraph = graph
         self._graph_of_alternatives: TwoPlayerGraph = None
         self._graph_of_utility: TwoPlayerGraph = None
         self._reg_factor: float = reg_factor
+        self._sanity_checking: bool = sanity_checking
         self._reg_budget: int = None 
         self._min_budget: int = None
         self._strategy: dict = None
@@ -61,6 +62,10 @@ class RegretMinimizationStrategySynthesis:
     @property
     def min_budget(self):
         return self._min_budget
+    
+    @property
+    def sanity_checking(self):
+        return self._sanity_checking
 
     @property
     def strategy(self):
@@ -156,64 +161,17 @@ class RegretMinimizationStrategySynthesis:
     def reg_factor(self, reg_factor):
         assert reg_factor > 1, "Please enter a regret factor greater than 1"
         self._reg_factor = reg_factor
+    
 
-    @deprecated
-    def add_common_accepting_state(self, plot: bool = False):
-        """
-        A helper method that adds a auxiliary accepting state from the current accepting state as well as the trap state
-        to the new accepting state. This helper methos is called by the finite_reg_solver method to augment the existing
-        graph as follows:
+    @sanity_checking.setter
+    def sanity_checking(self, sanity_checking):
+        assert isinstance(sanity_checking, bool), "Please enter a sanity_checking flag to either True or False. Default is False"
+        self._sanity_checking = sanity_checking
 
-        trap--W_bar --> new_accp (self-loop weight 0)
-                 /^
-                /
-               0
-              /
-             /
-            /
-        Acc
-
-        W_bar : Highest payoff any state could ever achieve when playing total-payoff game in cooperative setting,
-        assuming strategies to be non-cylic, will be equal to (|V| -1)W where W is the max absolute weight.
-
-        Now we remove Acc as the accepting state and add new_accp as the new accepting state and initialize this state
-        to 0 in the value iteration algorithm - essentially eliminating a trap region.
-
-        :return:
-        """
-
-        old_accp_states = self.graph.get_accepting_states()
-        trap_states = self.graph.get_trap_states()
-        _num_of_nodes = len(list(self.graph._graph.nodes))
-        _W = abs(self.graph.get_max_weight())
-        # w_bar = ((_num_of_nodes - 1) * _W)
-        w_bar = 0
-
-        # remove self-loops of accepting states and add edge from that state to the new accepting state with edge
-        # weight 0
-        for _accp in old_accp_states:
-            self.graph._graph.remove_edge(_accp, _accp)
-            self.graph.remove_state_attr(_accp, "accepting")
-            self.graph.add_state_attribute(_accp, "player", "eve")
-            self.graph.add_weighted_edges_from([(_accp, 'tmp_accp', 0)])
-
-        # remove self-loops of trap states and add edge from that state to the new accepting state with edge weight
-        # w_bar
-        for _trap in trap_states:
-            self.graph._graph.remove_edge(_trap, _trap)
-            self.graph.add_state_attribute(_trap, "player", "eve")
-            self.graph.add_weighted_edges_from([(_trap, 'tmp_accp', w_bar)])
-
-        self.graph.add_weighted_edges_from([('tmp_accp', 'tmp_accp', 0)])
-        self.graph.add_accepting_state('tmp_accp')
-        self.graph.add_state_attribute('tmp_accp', "player", "eve")
-
-        if plot:
-            self.graph.plot_graph()
 
     def edge_weighted_arena_finite_reg_solver(self,
                                               purge_states: bool = True,
-                                              verbose: bool = False,
+                                              verbose: bool = True,
                                               plot: bool = False):
         """
         A function that computes a Regret Minimizing strategy by constructing the Graph of Utility G'. This graph (G')
@@ -289,6 +247,7 @@ class RegretMinimizationStrategySynthesis:
     def run_value_iteration_wrapper(self,
                                     game: TwoPlayerGraph,
                                     competitve: bool,
+                                    extract_strategy: bool = True,
                                     topological: bool = True,
                                     sanity_checking: bool = False,
                                     debug: bool = False,
@@ -306,9 +265,11 @@ class RegretMinimizationStrategySynthesis:
             print("Running Value Iteration")
             vi_solver = ValueIteration(game, competitive=competitve)
         start = time.time()
-        vi_solver.solve(debug=debug, plot=plot)
+        vi_solver.solve(debug=debug, plot=plot, extract_strategy=extract_strategy if not sanity_checking else True)
         stop = time.time()
-        if verbose:
+        if verbose and competitve:
+            print(f"****************************** aVal Computation time: {stop - start} ****************************")
+        elif verbose and not competitve:
             print(f"****************************** cVal Computation time: {stop - start} ****************************")
         val_dict = vi_solver.state_value_dict
         sys_str_dict = vi_solver.str_dict
@@ -321,15 +282,17 @@ class RegretMinimizationStrategySynthesis:
             print("**********************************************************************************************************")
             _, nval_dict, nsys_str_dict, nenv_str_dict = self.run_value_iteration_wrapper(game=game,
                                                                                           competitve=competitve,
-                                                                                          topological=not topological ,
+                                                                                          topological=not topological,
+                                                                                          extract_strategy=True,
                                                                                           sanity_checking=not sanity_checking,
-                                                                                          debug=debug,
-                                                                                          plot=plot)
+                                                                                          debug=True,
+                                                                                          plot=plot,
+                                                                                          verbose=verbose)
                                                         
             try:
                 assert val_dict == nval_dict, "The state values computed using topological value iteration and normal value iteration are not the same. Please check your code." 
                 assert sys_str_dict == nsys_str_dict, "The strategies computed using topological value iteration and normal value iteration are not the same. Please check your code."
-                assert nenv_str_dict == env_str_dict, "The Env strategies computed using topological value iteration and normal value iteration are not the same. Please check your code."
+                assert env_str_dict == nenv_str_dict, "The Env strategies computed using topological value iteration and normal value iteration are not the same. Please check your code."
             except AssertionError:
                 for k, v in val_dict.items():
                     if k in nval_dict.keys():
@@ -354,6 +317,7 @@ class RegretMinimizationStrategySynthesis:
                                                 topological: bool = True,
                                                 verbose: bool = False,
                                                 purge_states: bool = True,
+                                                sanity_checking: bool = False,
                                                 plot_w_vals: bool = False,
                                                 plot_only_eve: bool = False,
                                                 plot: bool = False) -> Tuple[Dict, Dict, Dict]:
@@ -374,7 +338,7 @@ class RegretMinimizationStrategySynthesis:
         :return:
         """
         # compute the best alternative from each edge for cumulative payoff
-        self._get_best_alternatives_dict(twa_graph, verbose=verbose, topological=topological)
+        self._get_best_alternatives_dict(twa_graph, verbose=verbose, topological=topological, sanity_checking=self._sanity_checking)
 
         # construct graph of best alternatives (G')
         start = time.time()
@@ -405,48 +369,29 @@ class RegretMinimizationStrategySynthesis:
             print(f"#edges in the graph of alternative after pruning :{len(self.graph_of_alternatives._graph.edges())}")
 
         # play minmax game to compute regret minimizing strategy
-        start = time.time()
-        # if topological:
-        #     minmax_mcr_solver_topo = TopologicalValueIteration(self.graph_of_alternatives, competitive=True)
-        #     minmax_mcr_solver_topo.solve(debug=True, plot=plot_w_vals)
-        #     _comp_val_dict_topo = minmax_mcr_solver_topo.state_value_dict
-        #     _comp_str_dict_topo = minmax_mcr_solver_topo.str_dict
-        #     _env_str_dict_topo = minmax_mcr_solver_topo.env_str_dict
-        # else:
-        minmax_mcr_solver = ValueIteration(self.graph_of_alternatives, competitive=True)
-        minmax_mcr_solver.solve(debug=True, plot=plot_w_vals)
-        stop = time.time()
+        minmax_mcr_solver, comp_val_dict, sys_str_dict, env_str_dict  = self.run_value_iteration_wrapper(game=self.graph_of_alternatives,
+                                                                                                         competitve=True,
+                                                                                                         topological=True,
+                                                                                                         sanity_checking=self._sanity_checking,
+                                                                                                         extract_strategy=True,
+                                                                                                         verbose=verbose,
+                                                                                                         debug=True,
+                                                                                                         plot=plot_w_vals)
         if verbose:
             print(f"Time took for computing reg strs on the Graph of best Response {stop - start}")
-        _comp_str_dict = minmax_mcr_solver.str_dict
-        
-        # assert _comp_str_dict == _comp_str_dict_topo, "The strategies computed using topological value iteration and normal value iteration are not the same. Please check your code."
-        _env_str_dict = minmax_mcr_solver.env_str_dict
-        # assert _env_str_dict_topo == _env_str_dict, "The Env strategies computed using topological value iteration and normal value iteration are not the same. Please check your code."
-        _comp_val_dict = minmax_mcr_solver.state_value_dict
-        # try:
-        #     assert _comp_val_dict == _comp_val_dict_topo, "The state values computed using topological value iteration and normal value iteration are not the same. Please check your code."
-        # except AssertionError:
-        #     for k, v in _comp_val_dict.items():
-        #         if k in _comp_val_dict_topo.keys():
-        #             if v != _comp_val_dict_topo[k]:
-        #                 print(f"State: {k}, Value: {v}, Value_topo: {_comp_val_dict_topo[k]}")
-        #         else:
-        #             print(f"State {k} not found in topological value iteration state value dictionary")
-        #     sys.exit(-1)
         
         _init_state = self.graph_of_alternatives.get_initial_states()[0][0]
-        _game_reg_value: float = _comp_val_dict.get(_init_state)
+        _game_reg_value: float = comp_val_dict.get(_init_state)
         self._graph_of_alternatives_fp_iter = minmax_mcr_solver.iterations_to_converge
         self._reg_convergence_dict = minmax_mcr_solver.convergence_dict
 
         if plot_only_eve:
             self.plot_str_for_cumulative_reg(game_venue=self.graph_of_alternatives,
-                                             str_dict=_comp_str_dict,
+                                             str_dict=sys_str_dict,
                                              only_eve=plot_only_eve,
                                              plot=plot)
 
-        return _comp_str_dict, _env_str_dict, _comp_val_dict
+        return sys_str_dict, env_str_dict, comp_val_dict
 
     def _construct_graph_of_utility(self) -> TwoPlayerGraph:
         """
@@ -701,7 +646,7 @@ class RegretMinimizationStrategySynthesis:
 
                 game._graph[_pre_s][_target][0]['weight'] = _reg_value
 
-    def _get_best_alternatives_dict(self, two_player_game: TwoPlayerGraph, verbose: bool = False, topological: bool = True):
+    def _get_best_alternatives_dict(self, two_player_game: TwoPlayerGraph, verbose: bool = False, topological: bool = True, sanity_checking: bool = False):
         """
         A function that computes the best alternate (ba) value for each edge in the graph.
 
@@ -713,39 +658,16 @@ class RegretMinimizationStrategySynthesis:
 
         # pre-compute cooperative values from each state that belong Sys (eve)
         start = time.time()
-        # if topological:
-        #     coop_mcr_solver = TopologicalValueIteration(two_player_game, competitive=False)
-        #     coop_mcr_solver.solve(debug=False, plot=False)
-        #     coop_val_dict_topo = coop_mcr_solver.state_value_dict
-        # else:
-        # coop_mcr_solver = ValueIteration(two_player_game, competitive=False)
-        # coop_mcr_solver.solve(debug=False, plot=False)
         coop_mcr_solver, coop_val_dict, _, _  = self.run_value_iteration_wrapper(game=two_player_game,
                                                                                  competitve=False,
-                                                                                 topological=True,
-                                                                                 sanity_checking=True,
+                                                                                 topological=topological,
+                                                                                 sanity_checking=sanity_checking,
+                                                                                 extract_strategy=False,
                                                                                  verbose=verbose,
                                                                                  debug=False,
                                                                                  plot=False)
-        # sys.exit(-1)
-        # stop = time.time()
-        # if verbose:
-        #     print(f"******************************cVal computation time: {stop - start}****************************")
-        # coop_val_dict_org = coop_mcr_solver.state_value_dict
-        # assert coop_val_dict_topo == coop_val_dict_org, "[Error] The Topological VI code is not working as expected."
-        # coop_val_dict = coop_val_dict_topo
-       
         self._graph_of_utility_fp_iter = coop_mcr_solver.iterations_to_converge
         self._gou_convergence_dict = coop_mcr_solver.convergence_dict
-        _gou_states_by_convergence_itr_dict = coop_mcr_solver._get_state_sorted_by_convergence()
-        print("[Debugging] Done with cVal computation. Printing state by convergence iteration values")
-        for _itr, _states in _gou_states_by_convergence_itr_dict.items():
-            print(f"Iteration: {_itr} #states: {len(_states)}")
-        # print("State at itr 6: ", _gou_states_by_convergence_itr_dict[6])
-        # print("State at itr 5: ", _gou_states_by_convergence_itr_dict[5])
-        # print("State at itr 0: ", _gou_states_by_convergence_itr_dict[0])
-        # print("State at itr 1: ", _gou_states_by_convergence_itr_dict[1])
-        # sys.exit(-1)
 
         _best_alternate_values: Dict[Optional[tuple], Union[int, float]] = defaultdict(lambda: -1)
 

@@ -235,7 +235,7 @@ class ValueIteration:
         _val_vector = copy.deepcopy(self.val_vector)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
-        iter_var = 0
+        iter_var: int = 0
 
         _str_dict = {}
 
@@ -496,6 +496,20 @@ class ValueIteration:
                 _convergence_dict.update({self.node_int_map.inverse[_state] : 0})
 
         return _convergence_dict
+    
+
+    def _get_state_sorted_by_convergence(self) -> Dict[tuple, int]:
+        """
+        This method is used to looks thorugh the convergence diectionary and sorts states according to the iteration at which they converged.
+         This method is useful in debugging. 
+        :return:
+        """
+        _states_by_convergence_itr_dict: dict = defaultdict(lambda : set())
+
+        for state, itr in self.convergence_dict.items():
+            _states_by_convergence_itr_dict[itr].add(state)
+
+        return _states_by_convergence_itr_dict
 
     def print_state_values(self):
         """

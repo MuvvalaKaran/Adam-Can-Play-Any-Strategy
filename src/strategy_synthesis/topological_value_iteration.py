@@ -4,6 +4,7 @@ import copy
 import warnings
 import numpy as np
 
+from typing import List, Dict
 
 from numpy import ndarray
 from collections import defaultdict 
@@ -23,6 +24,17 @@ class TopologicalValueIteration(ValueIteration):
         super().__init__(game, competitive, int_val)
         self._states_by_payoff = None
         self._valid_payoff_values = None
+        
+        # SCC related stuff
+        adjacency_list = self.get_adjacency_list()
+        sccs = StronglyConnectedComponentComputation(adjacency_list).get_result()
+        
+        # debugging
+        print("Ordering according to Tarjan's algorithm")
+        for iter, scc in enumerate(sccs):
+            print(f"Order: {iter}")
+            print(', '.join([str(self.node_int_map.inverse[s]) for s in scc]))
+
         if 'utls' in game.graph_name:
             self._get_nodes_per_gou()
         elif 'alts' in game.graph_name:
@@ -30,6 +42,13 @@ class TopologicalValueIteration(ValueIteration):
         else:
             warnings.warn(f"[Waring] Graph name {game.graph_name} is not recognized.]")
             sys.exit(1)
+        
+        print("Sorted layers")
+        for u in self.valid_payoff_values:
+            print(f"Val: {u}")
+            print(', '.join([str(s) for s in self.states_by_payoff[u]['nodes']]))
+        sys.exit(-1)
+
     
 
     @property
@@ -39,7 +58,6 @@ class TopologicalValueIteration(ValueIteration):
     @property
     def valid_payoff_values(self):
         return self._valid_payoff_values
-    
 
     def _get_nodes_per_gou(self):
         """
@@ -108,6 +126,23 @@ class TopologicalValueIteration(ValueIteration):
         self._valid_payoff_values = sorted(list(states_by_payoff.keys()), reverse=True)
         self._states_by_payoff = states_by_payoff
     
+
+    def get_adjacency_list(self) -> List[List]:
+        """
+         Construct a adjancecny of list from the graph.
+        """
+        print("Computing Adjacency List")
+        adjacency_list: List[List] = defaultdict(lambda: [])
+        for soure_target in self.org_graph._graph.adjacency():
+            source =  soure_target[0]
+            source_int = self.node_int_map[source]
+            target_list: Dict[str, dict] = soure_target[1]
+
+            assert isinstance(target_list, dict), "[Error] Error during parsing of Adjacency list. Fix this!"
+            # adjacency_list[source].extend(target_list.keys())
+            adjacency_list[source_int].extend([self.node_int_map[t] for t in target_list.keys()])
+        
+        return adjacency_list
 
     def update_state_values(self, val_vector: ndarray, topological_order: int) -> ndarray:
         """
@@ -185,3 +220,59 @@ class TopologicalValueIteration(ValueIteration):
             # self._sanity_check()
 
 
+class StronglyConnectedComponentComputation:
+    def __init__(self, unweighted_graph):
+        self.graph = unweighted_graph
+        self.BEGIN, self.CONTINUE, self.RETURN = 0, 1, 2 # "recursion" handling
+
+    def get_result(self):
+        self.indices = dict()
+        self.lowlinks = defaultdict(lambda: -1)
+        self.stack_indices = dict()
+        self.current_index = 0
+        self.stack = []
+        self.sccs = []
+
+        for i in range(len(self.graph)):
+            if i not in self.indices:
+                self.visit(i)
+        self.sccs.reverse()
+        return self.sccs
+
+    def visit(self, vertex):
+        iter_stack = [(vertex, None, None, self.BEGIN)]
+        while iter_stack:
+            v, w, succ_index, state = iter_stack.pop()
+
+            if state == self.BEGIN:
+                self.current_index += 1
+                self.indices[v] = self.current_index
+                self.lowlinks[v] = self.current_index
+                self.stack_indices[v] = len(self.stack)
+                self.stack.append(v)
+
+                iter_stack.append((v, None, 0, self.CONTINUE))
+            elif state == self.CONTINUE:
+                successors = self.graph[v]
+                if succ_index == len(successors):
+                    if self.lowlinks[v] == self.indices[v]:
+                        stack_index = self.stack_indices[v]
+                        scc = self.stack[stack_index:]
+                        del self.stack[stack_index:]
+                        for n in scc:
+                            del self.stack_indices[n]
+                        self.sccs.append(scc)
+                else:
+                    w = successors[succ_index]
+                    if w not in self.indices:
+                        iter_stack.append((v, w, succ_index, self.RETURN))
+                        iter_stack.append((w, None, None, self.BEGIN))
+                    else:
+                        if w in self.stack_indices:
+                            self.lowlinks[v] = min(self.lowlinks[v],
+                                                   self.indices[w])
+                        iter_stack.append(
+                            (v, None, succ_index + 1, self.CONTINUE))
+            elif state == self.RETURN:
+                self.lowlinks[v] = min(self.lowlinks[v], self.lowlinks[w])
+                iter_stack.append((v, None, succ_index + 1, self.CONTINUE))

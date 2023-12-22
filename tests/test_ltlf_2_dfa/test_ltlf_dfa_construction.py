@@ -183,11 +183,10 @@ FORMULAS = {
 
 
 class TestParsingMona(unittest.TestCase):
-    
     def create_directory(self, directory_path):
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
-    
+
     def construct_DFA(self, formula: str, plot: bool = False):
         """
         A helper function that call builder to construct the correspond DFA for the LTLf formula
@@ -200,7 +199,7 @@ class TestParsingMona(unittest.TestCase):
             ltlf=formula,
             plot=plot,
             directory=PLOT_DIR,
-            filename=f"{formula}_formula"
+            filename=f"{formula}_formula",
         )
         return dfa_handle
 
@@ -229,7 +228,7 @@ class TestParsingMona(unittest.TestCase):
                     edge_sym.__repr__(),
                     dfa_handle.transitions[(source, dest)].__repr__(),
                 )
-    
+
     def test_dfa_plotting(self):
         """
         A function that calls the LTL DFA Builder with the plot flag set to true.
@@ -238,8 +237,7 @@ class TestParsingMona(unittest.TestCase):
         print(PLOT_DIR)
         self.create_directory(PLOT_DIR)
 
-
-        for formula,_ in FORMULAS.items():
+        for formula, _ in FORMULAS.items():
             print("DFA Plotting for LTLf Formula: ", formula)
             self.construct_DFA(formula=formula, plot=True)
 

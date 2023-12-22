@@ -7,7 +7,7 @@ This directory contains test scripts to check if the source code for abstraction
 Here is a list of available tests:
 
 - [x] `LTLf to DFA Construction`
-- [ ] `LTL to DFA Construction`
+- [x] `LTL to DFA Construction`
 - [ ] `Product Construction w LTLf, LTL, and PDFA formulas`
 - [ ] `PDFA Construction`
 - [ ] `Transition System Construction`

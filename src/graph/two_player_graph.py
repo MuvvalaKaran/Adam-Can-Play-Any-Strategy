@@ -377,7 +377,7 @@ class TwoPlayerGraphBuilder(Builder):
             self._instance.construct_graph(graph_yaml)
 
         if plot:
-            self._instance.plot_graph(view=view, format=format)
+            self._instance.plot_graph(view=view, format=format, directory=directory, filename=filename)
 
         return self._instance
 

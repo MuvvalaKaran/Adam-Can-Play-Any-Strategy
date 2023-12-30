@@ -664,7 +664,7 @@ class RegretMinimizationStrategySynthesis:
                                                                                  sanity_checking=sanity_checking,
                                                                                  extract_strategy=False,
                                                                                  verbose=verbose,
-                                                                                 debug=False,
+                                                                                 debug=True,
                                                                                  plot=False)
         self._graph_of_utility_fp_iter = coop_mcr_solver.iterations_to_converge
         self._gou_convergence_dict = coop_mcr_solver.convergence_dict

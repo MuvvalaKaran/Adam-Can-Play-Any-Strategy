@@ -215,8 +215,8 @@ class QualitativeBestEffortReachSyn():
                 try:
                     del _sys_coop_win_sys[winning_state]
                 except KeyError:
-                    warnings.warn("[ERROR]: Encountered a state that exists in Winning region but does not exists in Cooperative Winning region. This is wrong! \
-                                  state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
+                    warnings.warn(f"[ERROR]: Encountered a state that exists in Winning region but does not exists in Cooperative Winning region. This is wrong! \
+                                  state {winning_state} does not exists in BE Safety and BE Reachability strategy dictionary!")
                     sys.exit(-1)
         
         # for states that belong to the losing region, we can play any strategy

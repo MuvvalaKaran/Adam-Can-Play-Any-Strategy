@@ -20,20 +20,23 @@ class TopologicalValueIteration(ValueIteration):
     """
      A class that overrides the ValueIteration class to compute topologically's informed value iteration
     """
-    def __init__(self, game, competitive: bool = False, int_val: bool = True):
+    def __init__(self, game, competitive: bool = False, int_val: bool = True, experimental: bool = False):
         super().__init__(game, competitive, int_val)
         self._states_by_payoff = None
         self._valid_payoff_values = None
-        
-        # SCC related stuff
-        adjacency_list = self.get_adjacency_list()
-        sccs = StronglyConnectedComponentComputation(adjacency_list).get_result()
-        
-        # debugging
-        print("Ordering according to Tarjan's algorithm")
-        for iter, scc in enumerate(sccs):
-            print(f"Order: {iter}")
-            print(', '.join([str(self.node_int_map.inverse[s]) for s in scc]))
+
+        if experimental:
+            self.get_nx_kosaraju_sort()
+            
+            # SCC related stuff
+            adjacency_list = self.get_adjacency_list()
+            sccs = StronglyConnectedComponentComputation(adjacency_list).get_result()
+            
+            # debugging
+            print("Ordering according to Tarjan's algorithm")
+            for iter, scc in enumerate(sccs):
+                print(f"Order: {iter}")
+                print(', '.join([str(self.node_int_map.inverse[s]) for s in scc]))
 
         if 'utls' in game.graph_name:
             self._get_nodes_per_gou()
@@ -43,11 +46,12 @@ class TopologicalValueIteration(ValueIteration):
             warnings.warn(f"[Waring] Graph name {game.graph_name} is not recognized.]")
             sys.exit(1)
         
-        print("Sorted layers")
-        for u in self.valid_payoff_values:
-            print(f"Val: {u}")
-            print(', '.join([str(s) for s in self.states_by_payoff[u]['nodes']]))
-        sys.exit(-1)
+        if experimental:
+            print("Sorted layers")
+            for u in self.valid_payoff_values:
+                print(f"Val: {u}")
+                print(', '.join([str(s) for s in self.states_by_payoff[u]['nodes']]))
+            sys.exit(-1)
 
     
 
@@ -85,6 +89,15 @@ class TopologicalValueIteration(ValueIteration):
 
         self._valid_payoff_values = sorted(list(states_by_payoff.keys()), reverse=True)
         self._states_by_payoff = states_by_payoff
+    
+
+    def get_nx_kosaraju_sort(self):
+        import networkx as nx
+        sccs = nx.strongly_connected_components(self.org_graph._graph)
+        for scc in sccs:
+            # print(type(scc))
+            print(scc)
+        sys.exit(-1)
     
 
     def _get_nodes_per_alt(self):
@@ -180,7 +193,7 @@ class TopologicalValueIteration(ValueIteration):
             while True:
                 if debug:
                     # if iter_var % 1000 == 0:
-                    print(f"{iter_var} Iterations")
+                    print(f"{iter_var} Iterations & Payoff {payoff}")
                 
                 u_val_pre = copy.copy(_val_vector)
                 iter_var += 1

@@ -481,6 +481,18 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         
         if self.debug and reachability_game_handle.is_winning():
             print("There exists a Winning strategy from the Initial State")
+    
+
+    def compute_best_effort_strategies(self, plot: bool = False, permissive: bool = False):
+        super().compute_best_effort_strategies(plot, permissive)
+
+        for c_state, cs_val in self._coop_winning_state_values.items():
+            if c_state in self._winning_state_values.keys() and self._winning_state_values[c_state] != math.inf:
+                self.best_effort_state_values[c_state] =  self._winning_state_values[c_state]
+            else:
+                self.best_effort_state_values[c_state] = cs_val
+
+
 
 
 class QuantitativeBestEffortSafetySyn(QualitativeBestEffortSafetySyn):
@@ -494,6 +506,8 @@ class QuantitativeBestEffortSafetySyn(QualitativeBestEffortSafetySyn):
 
     def __init__(self, game: TwoPlayerGraph, target_states: Iterable, debug: bool = False) -> None:
         super().__init__(game, target_states, debug)
+
+        # compute best effor state value - at winning states we keep the winning strategy values and at pending states we keep best reach values from reach startegies
 
 
     # def compute_best_effort_safety_strategies(self, plot: bool = False):

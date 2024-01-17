@@ -170,11 +170,11 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
                             state {ps} does not exists in BE Safety and BE Reachability strategy dictionary!")
         
         # compute best effor state value - at winning states we keep the winning strategy values and at pending states we keep best reach values from safe reach startegies
-        for c_state, cs_str in self._coop_winning_state_values.items():
+        for c_state, cs_val in self._coop_winning_state_values.items():
             if c_state in self._winning_state_values.keys() and self._winning_state_values[c_state] != math.inf:
                 self.best_effort_state_values[c_state] =  self._winning_state_values[c_state]
             else:
-                self.best_effort_state_values[c_state] = cs_str
+                self.best_effort_state_values[c_state] = cs_val
         
         # override the sys_coop_winning_str dictionary that computed in compute_cooperative_winning_strategy() method above
         self._sys_coop_winning_str = sys_best_effort_pending_str

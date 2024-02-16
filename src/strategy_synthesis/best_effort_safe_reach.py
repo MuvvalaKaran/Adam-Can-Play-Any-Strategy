@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Dict, Set, Union, List, Optional
 
 from ..graph import TwoPlayerGraph
-
+from ..helper_methods import deprecated
 from .best_effort_syn import QualitativeBestEffortReachSyn, QualitativeBestEffortSafetySyn
 from .best_effort_syn import QuantitativeBestEffortReachSyn, QuantitativeBestEffortSafetySyn
 
@@ -110,7 +110,7 @@ class QuantitativeSafeReachBestEffort(QuantitativeBestEffortReachSyn):
     def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> None:
         super().__init__(game, debug)
     
-
+    @deprecated
     def compute_best_effort_strategies(self, debug: bool = False, plot: bool = False):
         """
          The main method that implements the safe reach best effort synthesis approach.

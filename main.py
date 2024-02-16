@@ -345,8 +345,7 @@ def ijcai24_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = Fal
     
      The algorithm is same as the Qualitative one.
     """
-    safe_reach_be_handle = QuantitativeSafeReachBestEffort(game=trans_sys, debug=False)
-    safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
+    raise NotImplementedError("The method is not implemented yet.")
 
 
 def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):

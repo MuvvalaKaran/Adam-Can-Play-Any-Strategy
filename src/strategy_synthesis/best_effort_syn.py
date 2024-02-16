@@ -481,6 +481,26 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         
         if self.debug and reachability_game_handle.is_winning():
             print("There exists a Winning strategy from the Initial State")
+    
+
+    def compute_best_effort_strategies(self, plot: bool = False, permissive: bool = False):
+        """
+        This algorithm implements synthesis of Admissible Strategy as per the def in the following paper:
+
+         Brenguier, Romain, et al. "Admissibility in quantitative graph games." arXiv preprint arXiv:1611.08677 (2016).
+
+        The algorithm is as follows:
+         1. Compute SCC using Tarjan's or Kosaraju Algorithm 
+         2. Compute aVal and cVal using the standard VI algorithms and the corresponding optimal strategies
+         3. For every state (v) that belongs to the Sys player, add an action to the set of admissible strategy if:
+            3.1 the state belongs to the Losing region
+            3.2 The action belongs to Winning or Cooperatively winning strategy
+            3.3 if v, v' belong to the same SCC then check if they loop. 
+                3.3.1 If yes, then do NOT add the strategy
+                3.3.2 If no, then check if w(v, v') + cVal^{v'} < aVal^{v}
+            3.4 if v, v' do NOT belong to the same SCC then check if w(v, v') + cVal^{v'} < aVal^{v}
+        """
+        raise NotImplementedError
 
 
 class QuantitativeBestEffortSafetySyn(QualitativeBestEffortSafetySyn):

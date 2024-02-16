@@ -494,32 +494,3 @@ class QuantitativeBestEffortSafetySyn(QualitativeBestEffortSafetySyn):
 
     def __init__(self, game: TwoPlayerGraph, target_states: Iterable, debug: bool = False) -> None:
         super().__init__(game, target_states, debug)
-
-
-    # def compute_best_effort_safety_strategies(self, plot: bool = False):
-    #     """
-    #      This methods converts the safety games into a Reachability game by assigning all the target states as the accepting states
-    #        and the objective of the sys player is visit the accepting states. 
-    #     """
-
-    #     # create a reacability game and then compute BE reachability strategies.
-
-    #     # create a local copy of the game and modify the accpeting states
-    #     game_copy = copy.deepcopy(self.game)
-    #     game_copy.add_accepting_states_from(self.target_states)
-
-    #     best_effort_reach_handle = QuantitativeBestEffortReachSyn(game=game_copy, debug=self.debug)
-    #     best_effort_reach_handle.compute_best_effort_strategies(plot=plot, permissive=True)
-
-    #     # update dictionaries 
-    #     self._sys_best_effort_str = best_effort_reach_handle.sys_best_effort_str
-    #     self._sys_winning_str = best_effort_reach_handle.sys_winning_str
-    #     self._env_winning_str = best_effort_reach_handle.env_winning_str
-    #     self._sys_coop_winning_str = best_effort_reach_handle.sys_coop_winning_str
-
-    #     # update regions
-    #     self._winning_region = best_effort_reach_handle.winning_region
-    #     self._coop_winning_region = best_effort_reach_handle.coop_winning_region
-
-    #     self._pending_region = best_effort_reach_handle.get_pending_region()
-        # self._losing_region = best_effort_reach_handle.get_losing_region()

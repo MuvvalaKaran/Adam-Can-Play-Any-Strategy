@@ -2,6 +2,7 @@ import sys
 import math
 import copy
 import warnings
+import networkx as nx
 
 from collections import defaultdict
 from typing import Optional, Union, List, Iterable, Dict
@@ -258,6 +259,7 @@ class QualitativeBestEffortSafetySyn():
 
     def __init__(self, game: TwoPlayerGraph, target_states: Iterable, debug: bool = False) -> None:
         self._game = game
+        self._num_of_nodes: int = len(list(self.org_graph._graph.nodes))
         self._winning_region: Union[List, set] = set({})
         self._coop_winning_region: Union[List, set] = None
         self._losing_region: Union[List, set] = None
@@ -277,6 +279,10 @@ class QualitativeBestEffortSafetySyn():
     @property
     def game(self):
         return self._game
+
+    @property
+    def num_of_nodes(self):
+        return self._num_of_nodes
 
     @property
     def winning_region(self):
@@ -429,7 +435,7 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
 
     def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> None:
         super().__init__(game, debug)
-    
+        self.sccs: List[List] = None
 
     def _add_state_costs_to_graph(self):
         """
@@ -481,7 +487,65 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         
         if self.debug and reachability_game_handle.is_winning():
             print("There exists a Winning strategy from the Initial State")
+
+    def states_in_same_scc(self, state1, state2) -> bool:
+        """
+         A helper method to check if two state belong to same SCCs or not.
+        """
+        for scc in self.sccs:
+            if state1 in scc and state2 in scc:
+                return True
+        return False
     
+    def check_if_play_loops(self, start_state, end_state, sanity_check: bool = False) -> bool:
+        """
+         A helper function that checks if the play starting from start_state induced by the optimal winning strategy or cooperative winning strategy starting loops. 
+        """
+        play = set({})
+        curr_state = start_state
+        play.add(start_state)
+        play_len = 0
+        
+        while end_state not in play or not any(state in play for state in self.target_states):
+            if curr_state in self.pending_region:
+               next_state = self.coop_winning_region[curr_state]
+            else:
+                next_state = self.winning_region[curr_state]   
+            
+            if next_state == end_state:
+                return True
+            
+            # sanity checking
+            if sanity_check and play_len > self.num_of_nodes:
+                warnings.warn(f"[Error] Problem rolling out the optimal strategy from state: {start_state}. The length of play exceeds the max length of {self.num_of_nodes}")
+                sys.exit(-1)
+            
+            play.add(next_state)
+            play_len += 1 
+            curr_state = next_state
+        
+        return False
+    
+    def admissibility_check(self, curr_state , succ_state) -> None:
+        """
+         A method that implements the admissibility check for evert valid action from a state in winning and pending region.
+        """
+        # if the successor state belongs to the winning/cooperative region, then add the action to the admissible strategy
+        if self.sys_winning_str.get(curr_state, None) == succ_state or self.sys_coop_winning_str.get(curr_state, None) == succ_state:
+            self._sys_best_effort_str[curr_state].add(succ_state)
+        
+        # else first check if v, v' belong to the same SCC
+        else:
+            is_same_scc: bool = self.states_in_same_scc(curr_state, succ_state)
+            if not is_same_scc:
+                if self.game.get_edge_weight(curr_state, succ_state) + self.coop_winning_state_values[succ_state] < self.winning_state_values[curr_state]:
+                    self._sys_best_effort_str[curr_state].add(succ_state)
+            
+            elif is_same_scc:
+                # check if it is a loop, if yes, then ignore else, check if w(v, v') + cVal^{v'} < aVal^{v
+                if not self.check_if_play_loops(start_state=succ_state, end_state=curr_state, sanity_check=True):
+                    if self.game.get_edge_weight(curr_state, succ_state) + self.coop_winning_state_values[succ_state] < self.winning_state_values[curr_state]:
+                        self._sys_best_effort_str[curr_state].add(succ_state)
 
     def compute_best_effort_strategies(self, plot: bool = False, permissive: bool = False):
         """
@@ -492,15 +556,39 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         The algorithm is as follows:
          1. Compute SCC using Tarjan's or Kosaraju Algorithm 
          2. Compute aVal and cVal using the standard VI algorithms and the corresponding optimal strategies
-         3. For every state (v) that belongs to the Sys player, add an action to the set of admissible strategy if:
+         3. For every state (v) that belongs to the Sys player and every valid action from v, add the action to the set of admissible strategy if:
             3.1 the state belongs to the Losing region
             3.2 The action belongs to Winning or Cooperatively winning strategy
             3.3 if v, v' belong to the same SCC then check if they loop. 
                 3.3.1 If yes, then do NOT add the strategy
                 3.3.2 If no, then check if w(v, v') + cVal^{v'} < aVal^{v}
             3.4 if v, v' do NOT belong to the same SCC then check if w(v, v') + cVal^{v'} < aVal^{v}
+         4. Return the set of admissible strategies
         """
-        raise NotImplementedError
+        # compute SCC
+        sccs = nx.strongly_connected_components(self.game)
+        for scc in sccs:
+            # print(type(scc))
+            print(scc)
+        
+        # override best-effrot strategy to be a mappging from state to set of admissible strategies
+        self._sys_best_effort_str = defaultdict(lambda: set({}))
+        
+        # get aVal and winning strategies, set permissive to True
+        self.compute_winning_strategies(permissive=permissive)
+
+        # get cVal and cooperative winning strategies
+        self.compute_cooperative_winning_strategy()
+
+        for state, s_attr in self.game.get_states_w_attributes():
+            if s_attr['player'] == 'eve':
+                if state in self.get_losing_region():
+                    # add all the actions to the admissible strategy
+                    self._sys_best_effort_str = {state: set(self.game._graph.successors(state))}
+                else:
+                    for succ_state in self.game._graph.successors(state):
+                        self.admissibility_check(curr_state=state, succ_state=succ_state)
+
 
 
 class QuantitativeBestEffortSafetySyn(QualitativeBestEffortSafetySyn):

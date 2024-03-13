@@ -21,7 +21,6 @@ from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
 from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn
-from src.strategy_synthesis.best_effort_safe_reach import QualitativeSafeReachBestEffort, QuantitativeSafeReachBestEffort
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -316,36 +315,6 @@ def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, 
     be_handle.get_losing_region(print_states=print_states)
     be_handle.get_pending_region(print_states=print_states)
     be_handle.get_winning_region(print_states=print_states)
-
-
-def ijcai24_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
-    """
-     This methods implements my proposed algorithm for IJCAI 24. The algorithm is as follows:
-
-     1. Compute Losing, Pending and Winning region.
-     2. In Winning region compute Winning strategy - BE reachability
-     3. In Winning + Pending region compute BE Safety
-     4. In Pending region compute BE Reachability game with objective of reaching the Winning region
-     5. Merge strategies
-    """
-    # TODO: Need to fix permissive reachability strategy synthesis
-    safe_reach_be_handle = QualitativeSafeReachBestEffort(game=trans_sys, debug=False)
-    safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
-
-
-def ijcai24_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
-    """
-     This methods implements my proposed algorithm for IJCAI 24 with Quantitative objectives. The algorithm is as follows:
-
-     1. Compute Losing, Pending and Winning region.
-     2. In Winning region compute Winning strategy - BE reachability
-     3. In Winning + Pending region compute BE Safety
-     4. In Pending region compute BE Reachability game with objective of reaching the Winning region
-     5. Merge strategies
-    
-     The algorithm is same as the Qualitative one.
-    """
-    raise NotImplementedError("The method is not implemented yet.")
 
 
 def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
@@ -714,8 +683,6 @@ if __name__ == "__main__":
     # solver to call
     qual_BE_synthesis: bool = False
     quant_BE_synthesis: bool = True
-    ijcai_qual_BE_synthesis: bool = False
-    ijcai_quant_BE_synthesis: bool = True
     finite_reg_synthesis: bool = False
     infinte_reg_synthesis: bool = False
     adversarial_game: bool = False
@@ -798,12 +765,6 @@ if __name__ == "__main__":
 
     elif quant_BE_synthesis:
         play_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
-    
-    elif ijcai_qual_BE_synthesis:
-        ijcai24_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True)
-    
-    elif ijcai_quant_BE_synthesis:
-        ijcai24_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

@@ -358,6 +358,10 @@ def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False,
     be_handle.get_losing_region(print_states=print_states)
     be_handle.get_pending_region(print_states=print_states)
     be_handle.get_winning_region(print_states=print_states)
+    
+    # print be strategy dictionary for sanity checking
+    for state, succ_states in be_handle.sys_best_effort_str.items():
+        print(f"Strategy from {state} is {succ_states}")
 
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
@@ -382,14 +386,14 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     reg_syn_handle.edge_weighted_arena_finite_reg_solver(purge_states=True,
                                                          plot=False)
 
-def four_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
+def four_state_BE_example(add_weights: bool = False, plot: bool = False) -> TwoPlayerGraph:
     """
-    A method where I manually create the 4 state toy exmaple form our discussion to test Sstrategy synthesis
+    A method where I manually create the 4 state toy exmaple from our discussion to test Strategy synthesis. Fig. 1. in our paper
     """
 
     # build a graph
     two_player_graph = graph_factory.get("TwoPlayerGraph",
-                                         graph_name="two_player_graph",
+                                         graph_name="two_player_graph1",
                                          config_yaml="/config/two_player_graph",
                                          save_flag=True,
                                          from_file=False,
@@ -420,17 +424,21 @@ def four_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
         for _s in two_player_graph._graph.nodes():
             for _e in two_player_graph._graph.out_edges(_s):
                 two_player_graph._graph[_e[0]][_e[1]][0]["weight"] = 1 if two_player_graph._graph.nodes(data='player')[_s] == 'eve' else 0
+    
+    if plot:
+        two_player_graph.plot_graph()
+    
     return two_player_graph
 
 
-def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
+def eight_state_BE_example(add_weights: bool = False, plot: bool = False) -> TwoPlayerGraph:
     """
-    A method where I manually create the 4 state toy exmaple form our discussion to test Sstrategy synthesis
+    A method where I manually create the 8 state toy exmaple form our discussion to test Sstrategy synthesis
     """
 
     # build a graph
     two_player_graph = graph_factory.get("TwoPlayerGraph",
-                                         graph_name="two_player_graph",
+                                         graph_name="two_player_graph2",
                                          config_yaml="/config/two_player_graph",
                                          save_flag=True,
                                          from_file=False,
@@ -499,6 +507,9 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     ## Testing -manually changing the edge wegit s0 -> s2
     # two_player_graph.add_weighted_edges_from(["s0", "s2", 2])
     two_player_graph._graph["s0"]["s2"][0]["weight"] =  1
+
+    if plot:
+        two_player_graph.plot_graph()
 
     return two_player_graph
 
@@ -582,12 +593,12 @@ if __name__ == "__main__":
     five_state_ts: bool = False
     variant_1_paper: bool = False
     target_weighted_arena: bool = False
-    two_player_arena: bool = False
-    check_ltlf_dfa: bool = True
+    two_player_arena: bool = True
+    check_ltlf_dfa: bool = False
 
     # solver to call
     qual_BE_synthesis: bool = False
-    quant_BE_synthesis: bool = False
+    quant_BE_synthesis: bool = True
     ijcai_qual_BE_synthesis: bool = False
     ijcai_quant_BE_synthesis: bool = True
     finite_reg_synthesis: bool = False
@@ -628,10 +639,10 @@ if __name__ == "__main__":
 
     elif two_player_arena:
         # 4 state example
-        # two_player_graph = four_state_BE_example(add_weights=True)
+        two_player_graph = four_state_BE_example(add_weights=True, plot=False)
 
         # 6 state example
-        two_player_graph = eight_state_BE_example(add_weights=True)
+        # two_player_graph = eight_state_BE_example(add_weights=True, plot=False)
 
         # toy adversarial game graph
         # two_player_graph = adversarial_game_toy_example()

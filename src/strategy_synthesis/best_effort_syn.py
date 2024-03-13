@@ -2,10 +2,11 @@ import sys
 import math
 import copy
 import warnings
+import numpy as np
 import networkx as nx
 
 from collections import defaultdict
-from typing import Optional, Union, List, Iterable, Dict
+from typing import Optional, Union, List, Iterable, Dict, Set
 
 from ..graph import TwoPlayerGraph
 from .adversarial_game import ReachabilityGame
@@ -29,6 +30,7 @@ class QualitativeBestEffortReachSyn():
 
     def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> None:
         self._game = game
+        self._num_of_nodes: int = len(list(self.game._graph.nodes))
         self._winning_region: Union[List, set] = set({})
         self._coop_winning_region: Union[List, set] = None
         self._losing_region: Union[List, set] = None
@@ -36,18 +38,24 @@ class QualitativeBestEffortReachSyn():
         self._sys_winning_str: Optional[dict] = None
         self._env_winning_str: Optional[dict] = None
         self._sys_coop_winning_str: Optional[dict] = None
+        self._env_coop_winning_str: Optional[dict] = None
         self._sys_best_effort_str: Optional[dict] = None
         self._best_effort_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
         self._winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
         self._coop_winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
 
-        self.game_states = set(self.game.get_states()._nodes.keys())
+        self.game_states: Set[str] = set(self.game.get_states()._nodes.keys())
         self.debug: bool = debug
+        self.target_states: Set[str] = set(s for s in self.game.get_accepting_states())
     
 
     @property
     def game(self):
         return self._game
+    
+    @property
+    def num_of_nodes(self):
+        return self._num_of_nodes
 
     @property
     def winning_region(self):
@@ -83,6 +91,10 @@ class QualitativeBestEffortReachSyn():
     @property
     def sys_coop_winning_str(self):
         return self._sys_coop_winning_str
+    
+    @property
+    def env_coop_winning_str(self):
+        return self._env_coop_winning_str
 
     @property
     def sys_best_effort_str(self):
@@ -169,6 +181,7 @@ class QualitativeBestEffortReachSyn():
         coop_handle = CooperativeGame(game=self.game, debug=self.debug, extract_strategy=True)
         coop_handle.reachability_solver()
         self._sys_coop_winning_str = coop_handle.sys_str
+        self._env_coop_winning_str = coop_handle.env_str
         self._coop_winning_region = coop_handle.sys_winning_region
         
         if self.debug and coop_handle.is_winning:
@@ -267,6 +280,7 @@ class QualitativeBestEffortSafetySyn():
         self._sys_winning_str: Optional[dict] = None
         self._env_winning_str: Optional[dict] = None
         self._sys_coop_winning_str: Optional[dict] = None
+        self._env_coop_winning_str: Optional[dict] = None
         self._sys_best_effort_str: Optional[dict] = None
         self._best_effort_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
         self._winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
@@ -318,6 +332,10 @@ class QualitativeBestEffortSafetySyn():
     @property
     def sys_coop_winning_str(self):
         return self._sys_coop_winning_str
+    
+    @property
+    def env_coop_winning_str(self):
+        return self._env_coop_winning_str
 
     @property
     def sys_best_effort_str(self):
@@ -453,6 +471,7 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         coop_handle = PermissiveValueIteration(game=self.game, competitive=False)
         coop_handle.solve(debug=False, plot=False, extract_strategy=True)
         self._sys_coop_winning_str = coop_handle.sys_str_dict
+        self._env_coop_winning_str = coop_handle.env_str_dict
         # self._coop_winning_region = (coop_handle.sys_winning_region).union(set(coop_handle.env_str_dict.keys()))
         self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
         self._coop_winning_state_values = coop_handle.state_value_dict
@@ -497,33 +516,58 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
                 return True
         return False
     
-    def check_if_play_loops(self, start_state, end_state, sanity_check: bool = False) -> bool:
+    def check_if_play_loops(self, start_state: str, end_state: str, play: Set[str] = set({}), sanity_check: bool = False, play_len: int = 0) -> bool:
         """
          A helper function that checks if the play starting from start_state induced by the optimal winning strategy or cooperative winning strategy starting loops. 
         """
-        play = set({})
         curr_state = start_state
         play.add(start_state)
-        play_len = 0
         
-        while end_state not in play or not any(state in play for state in self.target_states):
+        while end_state not in play and not any(state in play for state in self.target_states):
             if curr_state in self.pending_region:
-               next_state = self.coop_winning_region[curr_state]
+               next_state: List[str] = self.sys_coop_winning_str[curr_state] if self.game.get_state_w_attribute(curr_state, 'player') == 'eve' else self.env_coop_winning_str[curr_state]
             else:
-                next_state = self.winning_region[curr_state]   
+                next_state: List[str] = self.sys_winning_str[curr_state]
             
-            if next_state == end_state:
-                return True
+            # all of this is correct if len(next_state) == 1
+            if len(next_state) == 1:
+                if next_state[0] == end_state:
+                    return True
+                elif next_state[0] in self.target_states:
+                    return False
+                
+                # sanity checking
+                if sanity_check and play_len > self.num_of_nodes:
+                    warnings.warn(f"[Error] Problem rolling out the optimal strategy from state: {start_state}. The length of play exceeds the max length of {self.num_of_nodes}")
+                    sys.exit(-1)
             
-            # sanity checking
-            if sanity_check and play_len > self.num_of_nodes:
-                warnings.warn(f"[Error] Problem rolling out the optimal strategy from state: {start_state}. The length of play exceeds the max length of {self.num_of_nodes}")
-                sys.exit(-1)
-            
-            play.add(next_state)
-            play_len += 1 
-            curr_state = next_state
+                play.add(next_state[0])
+                play_len += 1 
+                curr_state = next_state[0]
+            else:
+                # recursion, for all optimal strategies
+                all_plays_loops = np.zeros(len(next_state))
+                for iter_count, ns in enumerate(next_state):
+                    play_loops = self.check_if_play_loops(start_state=ns,
+                                                          end_state=end_state,
+                                                          play=copy.deepcopy(play),
+                                                          play_len=play_len,
+                                                          sanity_check=sanity_check)
+
+                    if play_loops:
+                        all_plays_loops[iter_count] = 1
+                    
+                    # the play does not loop; break the recursion
+                    else:
+                        return False
+                        
+                
+                if all_plays_loops.all():
+                    return True
         
+        if end_state in play:
+            return True
+
         return False
     
     def admissibility_check(self, curr_state , succ_state) -> None:
@@ -543,7 +587,7 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
             
             elif is_same_scc:
                 # check if it is a loop, if yes, then ignore else, check if w(v, v') + cVal^{v'} < aVal^{v
-                if not self.check_if_play_loops(start_state=succ_state, end_state=curr_state, sanity_check=True):
+                if not self.check_if_play_loops(start_state=succ_state, end_state=curr_state, play=set({}), sanity_check=True):
                     if self.game.get_edge_weight(curr_state, succ_state) + self.coop_winning_state_values[succ_state] < self.winning_state_values[curr_state]:
                         self._sys_best_effort_str[curr_state].add(succ_state)
 
@@ -566,8 +610,8 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
          4. Return the set of admissible strategies
         """
         # compute SCC
-        sccs = nx.strongly_connected_components(self.game)
-        for scc in sccs:
+        self.sccs = list(s for s in nx.strongly_connected_components(self.game._graph))
+        for scc in self.sccs:
             # print(type(scc))
             print(scc)
         
@@ -584,7 +628,7 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
             if s_attr['player'] == 'eve':
                 if state in self.get_losing_region():
                     # add all the actions to the admissible strategy
-                    self._sys_best_effort_str = {state: set(self.game._graph.successors(state))}
+                    self._sys_best_effort_str[state] = self._sys_best_effort_str[state].union(set(list(self.game._graph.successors(state))))
                 else:
                     for succ_state in self.game._graph.successors(state):
                         self.admissibility_check(curr_state=state, succ_state=succ_state)

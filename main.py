@@ -514,6 +514,121 @@ def eight_state_BE_example(add_weights: bool = False, plot: bool = False) -> Two
     return two_player_graph
 
 
+
+def example_two_BE_example(add_weights: bool = False, plot: bool = False) -> TwoPlayerGraph:
+    """
+    A method where I manually create the 11 state exmaple form our discussion to test Sstrategy synthesis (Example 2)
+    """
+
+    # build a graph
+    two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                         graph_name="two_player_graph3",
+                                         config_yaml="/config/two_player_graph",
+                                         save_flag=True,
+                                         from_file=False,
+                                         plot=False)
+
+    # circle in this toy example is sys(eve) and square is env(adam) - a little length one
+    two_player_graph.add_states_from(["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"])
+
+    two_player_graph.add_initial_state('s0')
+    two_player_graph.add_state_attribute("s0", "player", "eve")
+    two_player_graph.add_state_attribute("s1", "player", "adam")
+    two_player_graph.add_state_attribute("s2", "player", "eve")
+    two_player_graph.add_state_attribute("s3", "player", "adam")
+    two_player_graph.add_state_attribute("s4", "player", "eve")
+    two_player_graph.add_state_attribute("s5", "player", "adam")
+    two_player_graph.add_state_attribute("s6", "player", "eve")
+    two_player_graph.add_state_attribute("s7", "player", "adam")
+    two_player_graph.add_state_attribute("s8", "player", "eve")
+    two_player_graph.add_state_attribute("s9", "player", "adam")
+    two_player_graph.add_state_attribute("s10", "player", "eve")
+
+    two_player_graph.add_edge("s0", "s1")
+    two_player_graph.add_edge("s1", "s0")
+    two_player_graph.add_edge("s1", "s2")
+    two_player_graph.add_edge("s1", "s6")
+    two_player_graph.add_edge("s2", "s3")
+    two_player_graph.add_edge("s3", "s2")
+    two_player_graph.add_edge("s3", "s4")
+    two_player_graph.add_edge("s4", "s5")
+    two_player_graph.add_edge("s5", "s4")
+    two_player_graph.add_edge("s5", "s6")
+    two_player_graph.add_edge("s6", "s7")
+    two_player_graph.add_edge("s7", "s8")
+    two_player_graph.add_edge("s8", "s9")
+    two_player_graph.add_edge("s9", "s10")
+    two_player_graph.add_edge("s10", "s10")
+    
+    # reachability game
+    two_player_graph.add_accepting_states_from(["s10"])
+
+    if add_weights:
+        for _s in two_player_graph._graph.nodes():
+            for _e in two_player_graph._graph.out_edges(_s):
+                two_player_graph._graph[_e[0]][_e[1]][0]["weight"] = 1 if two_player_graph._graph.nodes(data='player')[_s] == 'eve' else 0
+
+    if plot:
+        two_player_graph.plot_graph()
+
+    return two_player_graph
+
+
+def example_three_BE_example(add_weights: bool = False, plot: bool = False) -> TwoPlayerGraph:
+    """
+    A method where I manually create the 8 state exmaple from our discussion to test Strategy synthesis (Example 3)
+    """
+
+    # build a graph
+    two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                         graph_name="two_player_graph4",
+                                         config_yaml="/config/two_player_graph",
+                                         save_flag=True,
+                                         from_file=False,
+                                         plot=False)
+
+    # circle in this toy example is sys(eve) and square is env(adam) - a little length one
+    two_player_graph.add_states_from(["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"])
+
+    two_player_graph.add_initial_state('s0')
+    two_player_graph.add_state_attribute("s0", "player", "eve")
+    two_player_graph.add_state_attribute("s1", "player", "adam")
+    two_player_graph.add_state_attribute("s2", "player", "adam")
+    two_player_graph.add_state_attribute("s3", "player", "eve")
+    two_player_graph.add_state_attribute("s4", "player", "adam")
+    two_player_graph.add_state_attribute("s5", "player", "eve")
+    two_player_graph.add_state_attribute("s6", "player", "adam")
+    two_player_graph.add_state_attribute("s7", "player", "adam")
+    two_player_graph.add_state_attribute("s8", "player", "eve")
+
+    two_player_graph.add_edge("s0", "s1")
+    two_player_graph.add_edge("s0", "s2")
+    two_player_graph.add_edge("s1", "s3")
+    two_player_graph.add_edge("s2", "s5")
+    two_player_graph.add_edge("s3", "s4")
+    two_player_graph.add_edge("s4", "s5")
+    two_player_graph.add_edge("s6", "s5")
+    two_player_graph.add_edge("s3", "s6")
+    two_player_graph.add_edge("s5", "s7")
+    two_player_graph.add_edge("s6", "s8")
+    two_player_graph.add_edge("s7", "s8")
+    two_player_graph.add_edge("s7", "s0")
+    two_player_graph.add_edge("s8", "s8")
+    
+    # reachability game
+    two_player_graph.add_accepting_states_from(["s8"])
+
+    if add_weights:
+        for _s in two_player_graph._graph.nodes():
+            for _e in two_player_graph._graph.out_edges(_s):
+                two_player_graph._graph[_e[0]][_e[1]][0]["weight"] = 1 if two_player_graph._graph.nodes(data='player')[_s] == 'eve' else 0
+
+    if plot:
+        two_player_graph.plot_graph()
+
+    return two_player_graph
+
+
 def adversarial_game_toy_example() -> TwoPlayerGraph:
     """
     The example from the Adversarial Game script. 
@@ -639,15 +754,22 @@ if __name__ == "__main__":
 
     elif two_player_arena:
         # 4 state example
-        two_player_graph = four_state_BE_example(add_weights=True, plot=False)
+        # two_player_graph = four_state_BE_example(add_weights=True, plot=False)
 
-        # 6 state example
+        # 8 state example
         # two_player_graph = eight_state_BE_example(add_weights=True, plot=False)
+
+        # Example 2 from Appendix
+        two_player_graph = example_two_BE_example(add_weights=True, plot=False)
+
+        # Example 3 from Appendix
+        # two_player_graph = example_three_BE_example(add_weights=True, plot=True)
 
         # toy adversarial game graph
         # two_player_graph = adversarial_game_toy_example()
 
         trans_sys = two_player_graph
+        # sys.exit(-1)
 
     else:
         warnings.warn("Please ensure at-least one of the flags is True")

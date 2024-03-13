@@ -529,6 +529,10 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
             else:
                 next_state: List[str] = self.sys_winning_str[curr_state]
             
+            # preprocess next_state to be if type list
+            if not isinstance(next_state, list):
+                next_state = [next_state] 
+
             # all of this is correct if len(next_state) == 1
             if len(next_state) == 1:
                 if next_state[0] == end_state:
@@ -632,7 +636,10 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
                 else:
                     for succ_state in self.game._graph.successors(state):
                         self.admissibility_check(curr_state=state, succ_state=succ_state)
-
+        
+        if plot:
+            self.add_str_flag()
+            self.game.plot_graph()
 
 
 class QuantitativeBestEffortSafetySyn(QualitativeBestEffortSafetySyn):

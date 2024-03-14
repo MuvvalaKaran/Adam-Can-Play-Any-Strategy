@@ -18,7 +18,7 @@ from graphviz import Digraph
 class TwoPlayerGraph(Graph):
 
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False,
-                 finite: bool = True) -> 'TwoPlayerGraph()':
+                 finite: bool = True) -> 'TwoPlayerGraph':
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
         self._graph_name = graph_name
         self._graph = nx.MultiDiGraph(name=graph_name)

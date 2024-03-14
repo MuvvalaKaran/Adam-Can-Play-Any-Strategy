@@ -5,30 +5,25 @@ import warnings
 import numpy as np
 import networkx as nx
 
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from typing import Optional, Union, List, Iterable, Dict, Set
 
 from ..graph import TwoPlayerGraph
 from .adversarial_game import ReachabilityGame
 from .cooperative_game import CooperativeGame
-from .value_iteration import ValueIteration, PermissiveValueIteration, PermissiveSafetyValueIteration
+from .value_iteration import ValueIteration, PermissiveValueIteration
 
 
-class QualitativeBestEffortReachSyn():
+class AbstractBestEffortReachSyn(metaclass=ABCMeta):
     """
-    Class that computes Qualitative Best Effort strategies with reachability objectives. 
-    
-    The algorithm is as follows:
+     A abstract class for BestEffort and Admissibility Synthesis algorithms.
 
-    1. Given a target set, identify Winning region and synthesize winning strategies.
-    2. Given a target set, identify Cooperatively Winning (Pending) region and  synthesize cooperative winning strategies
-    3. Merge the strategies. 
-        3.1 States that belong to winning region play the winning strategy
-        3.2 States that belong to pending region play cooperative winning strategy
-        3.3 States that belong to losing region play any strategy
+     This is the correct way to create meta classes in Python3. 
+     See Reference:https://stackoverflow.com/questions/7196376/python-abstractmethod-decorator
     """
-
-    def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> None:
+    def __init__(self,  game: TwoPlayerGraph, debug: bool = False):
+        super().__init__()
         self._game = game
         self._num_of_nodes: int = len(list(self.game._graph.nodes))
         self._winning_region: Union[List, set] = set({})
@@ -44,8 +39,8 @@ class QualitativeBestEffortReachSyn():
         self._winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
         self._coop_winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
 
-        self.game_states: Set[str] = set(self.game.get_states()._nodes.keys())
         self.debug: bool = debug
+        self.game_states: Set[str] = set(self.game.get_states()._nodes.keys())
         self.target_states: Set[str] = set(s for s in self.game.get_accepting_states())
     
 
@@ -173,6 +168,52 @@ class QualitativeBestEffortReachSyn():
             print("Winning Region: \n", self._winning_region)
         
         return self._winning_region
+    
+    def add_str_flag(self):
+        """
+        A helper function used to add the 'strategy' attribute to edges that belong to the winning strategy. 
+        This function is called before plotting the winning strategy.
+        """
+        self.game.set_edge_attribute('strategy', False)
+
+        for curr_node, next_node in self._sys_best_effort_str.items():
+            if isinstance(next_node, set) or isinstance(next_node, list):
+                for n_node in next_node:
+                    self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
+            else:
+                self.game._graph.edges[curr_node, next_node, 0]['strategy'] = True
+    
+    @abstractmethod
+    def compute_cooperative_winning_strategy(self):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def compute_winning_strategies(self):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def compute_best_effort_strategies(self):
+        raise NotImplementedError
+
+
+
+class QualitativeBestEffortReachSyn(AbstractBestEffortReachSyn):
+    """
+    Class that computes Qualitative Best Effort strategies with reachability objectives. 
+    
+    The algorithm is as follows:
+
+    1. Given a target set, identify Winning region and synthesize winning strategies.
+    2. Given a target set, identify Cooperatively Winning (Pending) region and  synthesize cooperative winning strategies
+    3. Merge the strategies. 
+        3.1 States that belong to winning region play the winning strategy
+        3.2 States that belong to pending region play cooperative winning strategy
+        3.3 States that belong to losing region play any strategy
+    """
+
+    def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> 'QualitativeBestEffortReachSyn':
+        super().__init__(game=game, debug=debug)
+    
 
     def compute_cooperative_winning_strategy(self):
         """
@@ -244,23 +285,8 @@ class QualitativeBestEffortReachSyn():
             self.game.plot_graph()
 
 
-    def add_str_flag(self):
-        """
-        A helper function used to add the 'strategy' attribute to edges that belong to the winning strategy. 
-        This function is called before plotting the winning strategy.
-        """
-        self.game.set_edge_attribute('strategy', False)
 
-        for curr_node, next_node in self._sys_best_effort_str.items():
-            if isinstance(next_node, set) or isinstance(next_node, list):
-                for n_node in next_node:
-                    self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
-            else:
-                self.game._graph.edges[curr_node, next_node, 0]['strategy'] = True
-
-
-
-class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
+class QuantitativeBestEffortReachSyn(AbstractBestEffortReachSyn):
     """
     Class that computes Quantitative Best Effort strategies with reachability objectives. 
     
@@ -274,7 +300,7 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         3.3 States that belong to losing region play any strategy
     """
 
-    def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> None:
+    def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> 'QuantitativeBestEffortReachSyn':
         super().__init__(game, debug)
         self.sccs: List[List] = None
 
@@ -463,3 +489,14 @@ class QuantitativeBestEffortReachSyn(QualitativeBestEffortReachSyn):
         if plot:
             self.add_str_flag()
             self.game.plot_graph()
+
+
+
+class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
+
+    def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> 'QuantitativeHopefullAdmissibleReachSyn':
+        super().__init__(game=game, debug=debug)
+    
+    
+    def compute_best_effort_strategies(self):
+        raise NotImplementedError

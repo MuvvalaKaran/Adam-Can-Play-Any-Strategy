@@ -717,6 +717,85 @@ class PermissiveValueIteration(ValueIteration):
             self.org_graph.add_state_attribute(_n, "val", [sval if INT_MIN_VAL < sval < INT_MAX_VAL else 'inf'])
 
 
+class HopefulPermissiveValueIteration(PermissiveValueIteration):
+
+    # def _get_max_env_val(self, node: Union[str, tuple], pre_vec: ndarray) -> List[str]:
+    #     """
+    #     A method that returns the max value for the current node that belongs to the env.
+    #     :param node: The current node in in the graph
+    #     :param pre_vec: The previous value vector
+    #     :return: A List of states
+    #     """
+
+    #     _succ_vals: List = []
+    #     _only_vals = set({})
+    #     for _next_n in self.org_graph._graph.successors(node):
+    #         _node_int = self.node_int_map[_next_n]
+    #         _val = pre_vec[_node_int] + self.org_graph.get_edge_weight(node, _next_n)
+    #         # if _val != math.inf:
+    #         _only_vals.add(_val)
+    #         _succ_vals.append((_next_n, _val))
+
+    #     # get org node int value
+    #     if self.competitive:
+    #         _lonly_vals = list(_only_vals)
+    #         if len(_lonly_vals) == 1 and _lonly_vals[0] == math.inf:
+    #             _, _val = max(_succ_vals, key=operator.itemgetter(1))
+    #         # if the succ state are all NOT vals
+    #         elif len(_lonly_vals) == 1 and _lonly_vals[0] != math.inf:
+    #             _val = _lonly_vals[0]
+    #         else:
+    #             # get the 2nd highest value
+    #             _lonly_vals.sort()
+    #             _val = _lonly_vals[-2]
+            
+    #         # sort the list and pick the second biggest element
+    #         # _succ_vals.sort(key=operator.itemgetter(1))
+    #         # _, _val = max(_succ_vals, key=operator.itemgetter(1))
+    #         # _, _val = _succ_vals[-2]
+    #     else:
+    #         _, _val = min(_succ_vals, key=operator.itemgetter(1))
+    #         if _val == math.inf:
+    #             return None
+
+    #     return [_node for _node, _node_val in _succ_vals if _val == _node_val]
+
+
+    def _get_opt_val(self, node: Union[str, tuple], pre_vec: ndarray):
+        """
+         This method only return the max (adverasrial)/min (cooperative) value
+        """
+        _succ_vals = set({})
+        for _next_n in self.org_graph._graph.successors(node):
+            _node_int = self.node_int_map[_next_n]
+            _val = (self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int][0])
+            _succ_vals.add(_val)
+        
+        if self.org_graph.get_state_w_attribute(node, "player") == "eve":
+            _val = min(_succ_vals)
+        else:
+            # TODO: Fix this in future
+            # assert self.org_graph.get_state_w_attribute(node, "player") == "adam", "Error. Encountered a state that is supposed to belong to the env player."
+
+            if self.competitive:
+                _lvals = list(_succ_vals)
+                if len(_lvals) == 1 and _lvals[0] == math.inf:
+                    _val = max(_succ_vals)
+                # if the succ state are all NOT vals
+                elif len(_lvals) == 1 and _lvals[0] != math.inf:
+                    _val = _lvals[0]
+                else:
+                    # get the 2nd highest value
+                    _lvals.sort()
+                    _val = _lvals[-2]
+                # _val = max(_succ_vals)
+            else:
+                _val = min(_succ_vals)
+
+        return _val
+
+
+
 class PermissiveSafetyValueIteration(PermissiveValueIteration):
     """
     This class inherits Permissive Value iteration class. In this class, we are computing maximally permissive strategies that ensures

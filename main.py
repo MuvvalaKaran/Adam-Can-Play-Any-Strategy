@@ -20,7 +20,7 @@ from src.strategy_synthesis.adversarial_game import ReachabilityGame as Reachabi
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
-from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn
+from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, QuantitativeHopefullAdmissibleReachSyn
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -329,6 +329,19 @@ def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False,
     be_handle.get_winning_region(print_states=print_states)
     
     # print be strategy dictionary for sanity checking
+    for state, succ_states in be_handle.sys_best_effort_str.items():
+        print(f"Strategy from {state} is {succ_states}")
+    
+
+def play_quant_hopeful_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
+    """
+     A method to compute Quantitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QuantitativeHopefullAdmissibleReachSyn(game=trans_sys, debug=debug)
+    be_handle.compute_best_effort_strategies(plot=plot)
+    
+    # print admissible strategy dictionary for sanity checking
     for state, succ_states in be_handle.sys_best_effort_str.items():
         print(f"Strategy from {state} is {succ_states}")
 
@@ -682,7 +695,8 @@ if __name__ == "__main__":
 
     # solver to call
     qual_BE_synthesis: bool = False
-    quant_BE_synthesis: bool = True
+    quant_BE_synthesis: bool = False
+    quant_hopeful_admissibile_synthesis: bool = True
     finite_reg_synthesis: bool = False
     infinte_reg_synthesis: bool = False
     adversarial_game: bool = False
@@ -765,6 +779,9 @@ if __name__ == "__main__":
 
     elif quant_BE_synthesis:
         play_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
+    
+    elif quant_hopeful_admissibile_synthesis:
+        play_quant_hopeful_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

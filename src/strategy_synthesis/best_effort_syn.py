@@ -12,7 +12,7 @@ from typing import Optional, Union, List, Iterable, Dict, Set
 from ..graph import TwoPlayerGraph
 from .adversarial_game import ReachabilityGame
 from .cooperative_game import CooperativeGame
-from .value_iteration import ValueIteration, PermissiveValueIteration
+from .value_iteration import ValueIteration, PermissiveValueIteration, HopefulPermissiveValueIteration
 
 
 class AbstractBestEffortReachSyn(metaclass=ABCMeta):
@@ -35,6 +35,7 @@ class AbstractBestEffortReachSyn(metaclass=ABCMeta):
         self._sys_coop_winning_str: Optional[dict] = None
         self._env_coop_winning_str: Optional[dict] = None
         self._sys_best_effort_str: Optional[dict] = None
+        self._env_best_effort_str: Optional[dict] = None
         self._best_effort_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
         self._winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
         self._coop_winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
@@ -94,6 +95,10 @@ class AbstractBestEffortReachSyn(metaclass=ABCMeta):
     @property
     def sys_best_effort_str(self):
         return self._sys_best_effort_str
+    
+    @property
+    def env_best_effort_str(self):
+        return self._env_best_effort_str
 
     @property
     def best_effort_state_values(self):
@@ -497,6 +502,64 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
     def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> 'QuantitativeHopefullAdmissibleReachSyn':
         super().__init__(game=game, debug=debug)
     
+
+    def compute_cooperative_winning_strategy(self, permissive: bool = False):
+        """
+        Override the base method to run the Value Iteration code
+        """
+        coop_handle = PermissiveValueIteration(game=self.game, competitive=False)
+        coop_handle.solve(debug=False, plot=False, extract_strategy=True)
+        self._sys_coop_winning_str = coop_handle.sys_str_dict
+        self._env_coop_winning_str = coop_handle.env_str_dict
+        # self._coop_winning_region = (coop_handle.sys_winning_region).union(set(coop_handle.env_str_dict.keys()))
+        self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
+        self._coop_winning_state_values = coop_handle.state_value_dict
+        
+        if self.debug and coop_handle.is_winning():
+            print("There exists a path from the Initial State")
     
-    def compute_best_effort_strategies(self):
-        raise NotImplementedError
+    
+    def compute_winning_strategies(self, permissive: bool = False):
+        """
+         Override the base method to run the Value Iteration code
+        """
+        if permissive:
+            reachability_game_handle = PermissiveValueIteration(game=self.game, competitive=True)
+        else:    
+            reachability_game_handle = ValueIteration(game=self.game, competitive=True)
+        
+        reachability_game_handle.solve(debug=False, plot=False, extract_strategy=True)
+        self._sys_winning_str = reachability_game_handle.sys_str_dict
+        self._env_winning_str = reachability_game_handle.env_str_dict
+        self._winning_state_values = reachability_game_handle.state_value_dict
+
+        # sometime an accepting may not have a winning strategy. Thus, we only store states that have an winning strategy
+        _sys_states_winning_str = reachability_game_handle.sys_str_dict.keys()
+
+        # update winning region and optimal state values
+        for ws in reachability_game_handle.sys_winning_region:
+            if self.game.get_state_w_attribute(ws, 'player') == 'eve' and ws in _sys_states_winning_str:
+                self._winning_region.add(ws)
+            elif self.game.get_state_w_attribute(ws, 'player') == 'adam':
+                self._winning_region.add(ws)
+        
+        if self.debug and reachability_game_handle.is_winning():
+            print("There exists a Winning strategy from the Initial State")
+
+    
+    def compute_best_effort_strategies(self, plot: bool = False):
+        """
+         In this algorithm we call the modified Value Iteration algorithm to computer permissive Admissible strategies.
+        """
+
+        reachability_game_handle = HopefulPermissiveValueIteration(game=self.game, competitive=True)
+        reachability_game_handle.solve(debug=False, plot=False, extract_strategy=True)
+
+        self._sys_best_effort_str = reachability_game_handle.sys_str_dict
+        self._env_best_effort_str = reachability_game_handle.env_str_dict
+        self._best_effort_state_values = reachability_game_handle.state_value_dict
+
+        if plot:
+            self.add_str_flag()
+            self.game.plot_graph()
+

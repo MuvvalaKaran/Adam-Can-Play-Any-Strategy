@@ -570,35 +570,36 @@ def example_three_BE_example(add_weights: bool = False, plot: bool = False) -> T
                                          plot=False)
 
     # circle in this toy example is sys(eve) and square is env(adam) - a little length one
-    two_player_graph.add_states_from(["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"])
+    two_player_graph.add_states_from(["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9"])
 
-    two_player_graph.add_initial_state('s0')
-    two_player_graph.add_state_attribute("s0", "player", "eve")
-    two_player_graph.add_state_attribute("s1", "player", "adam")
+    two_player_graph.add_initial_state('s1')
+    two_player_graph.add_state_attribute("s1", "player", "eve")
     two_player_graph.add_state_attribute("s2", "player", "adam")
-    two_player_graph.add_state_attribute("s3", "player", "eve")
-    two_player_graph.add_state_attribute("s4", "player", "adam")
-    two_player_graph.add_state_attribute("s5", "player", "eve")
-    two_player_graph.add_state_attribute("s6", "player", "adam")
+    two_player_graph.add_state_attribute("s3", "player", "adam")
+    two_player_graph.add_state_attribute("s4", "player", "eve")
+    two_player_graph.add_state_attribute("s5", "player", "adam")
+    two_player_graph.add_state_attribute("s6", "player", "eve")
     two_player_graph.add_state_attribute("s7", "player", "adam")
-    two_player_graph.add_state_attribute("s8", "player", "eve")
+    two_player_graph.add_state_attribute("s8", "player", "adam")
+    two_player_graph.add_state_attribute("s9", "player", "eve")
 
-    two_player_graph.add_edge("s0", "s1")
-    two_player_graph.add_edge("s0", "s2")
+    two_player_graph.add_edge("s1", "s2")
     two_player_graph.add_edge("s1", "s3")
-    two_player_graph.add_edge("s2", "s5")
-    two_player_graph.add_edge("s3", "s4")
-    two_player_graph.add_edge("s4", "s5")
-    two_player_graph.add_edge("s6", "s5")
+    two_player_graph.add_edge("s2", "s4")
     two_player_graph.add_edge("s3", "s6")
-    two_player_graph.add_edge("s5", "s7")
+    two_player_graph.add_edge("s4", "s5")
+    two_player_graph.add_edge("s5", "s6")
+    two_player_graph.add_edge("s7", "s6")
+    two_player_graph.add_edge("s4", "s7")
     two_player_graph.add_edge("s6", "s8")
-    two_player_graph.add_edge("s7", "s8")
-    two_player_graph.add_edge("s7", "s0")
-    two_player_graph.add_edge("s8", "s8")
+    two_player_graph.add_edge("s7", "s9")
+    two_player_graph.add_edge("s8", "s9")
+    two_player_graph.add_edge("s8", "s1")
+    two_player_graph.add_edge("s8", "s4")
+    two_player_graph.add_edge("s9", "s9")
     
     # reachability game
-    two_player_graph.add_accepting_states_from(["s8"])
+    two_player_graph.add_accepting_states_from(["s9"])
 
     if add_weights:
         for _s in two_player_graph._graph.nodes():
@@ -741,10 +742,10 @@ if __name__ == "__main__":
         # two_player_graph = eight_state_BE_example(add_weights=True, plot=False)
 
         # Example 2 from Appendix
-        two_player_graph = example_two_BE_example(add_weights=True, plot=False)
+        # two_player_graph = example_two_BE_example(add_weights=True, plot=False)
 
         # Example 3 from Appendix
-        # two_player_graph = example_three_BE_example(add_weights=True, plot=True)
+        two_player_graph = example_three_BE_example(add_weights=True, plot=True)
 
         # toy adversarial game graph
         # two_player_graph = adversarial_game_toy_example()

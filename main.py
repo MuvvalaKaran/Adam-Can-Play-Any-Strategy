@@ -612,7 +612,7 @@ def example_three_BE_example(add_weights: bool = False, plot: bool = False) -> T
     return two_player_graph
 
 
-def adversarial_game_toy_example() -> TwoPlayerGraph:
+def adversarial_game_toy_example(plot: bool = False) -> TwoPlayerGraph:
     """
     The example from the Adversarial Game script. 
     """
@@ -656,6 +656,9 @@ def adversarial_game_toy_example() -> TwoPlayerGraph:
     two_player_graph.add_edge("s7", "s0")
 
     two_player_graph.add_accepting_states_from(["s3", "s4"])
+
+    if plot:
+        two_player_graph.plot_graph()
 
     return two_player_graph
 

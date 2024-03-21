@@ -8,7 +8,7 @@ import networkx as nx
 
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict, deque
-from typing import Optional, Union, List, Iterable, Dict, Set, Tuple
+from typing import Optional, Union, List, Iterable, Dict, Set, Tuple, Generator
 
 from ..graph import TwoPlayerGraph
 from ..graph import graph_factory
@@ -572,99 +572,79 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
                 adm_tree._graph.edges[curr_node, next_node, 0]['strategy'] = True
     
 
-    def construct_tree(self, graph: TwoPlayerGraph, plot: bool = False, sanity_check: bool = True) -> TwoPlayerGraph:
+    def add_edges(self, game, ebunch_to_add, **attr) -> None:
         """
-         A method to construct a tree game the original games. The depth of the tree is bounded to |V|  - 1
+         A function to add all the edges in the ebunch_to_add. 
         """
-        max_depth: int = self.num_of_nodes - 1
-        
-        _adm_tree: TwoPlayerGraph = graph_factory.get("TwoPlayerGraph",
-                                                      graph_name="adm_tree",
-                                                      config_yaml="config/adm_tree",
-                                                      save_flag=True,
-                                                      from_file=False, 
-                                                      plot=False)
-        
-        # dictionary to keep tack of node at in topological order
-        layered_nodes_encountered = defaultdict(lambda: deque())
+        for e in ebunch_to_add:
+            # u and v as 2-Tuple with node and node attributes of source (u) and destination node (v)
+            u, v, dd = e
+            u_node = u[0]
+            u_attr = u[1]
+            v_node = v[0]
+            v_attr = v[1]
+           
+            key = None
+            ddd = {}
+            ddd.update(attr)
+            ddd.update(dd)
 
-        # keep a queue to keep track of tree expansion,
-        # deque offer O(1) pop operation while in list it is O(n)
-        assert len(self.game_init_states) == 1, f"[Error]: Error while constructing Admissibility Tree. There should be only 1 init state, got {len(self.game_init_states)}"
-        new_init_state = (self.game_init_states[0][0], 0)
-        layered_nodes_encountered[0].append(new_init_state)
-        nodes_added_to_tree: Set = set({})
-
-        _org_state_attrs = self.game._graph.nodes[self.game_init_states[0][0]]
-        _adm_tree.add_state(new_init_state, **_org_state_attrs)
-        _adm_tree._graph.nodes[new_init_state]['init'] = True
-
-        nodes_added_to_tree.add(new_init_state)
-
-        # construct nodes
-        count = 0
-        while count <= max_depth:
-            while len(layered_nodes_encountered[count]) != 0:
-                curr_state: Tuple[str, int] = layered_nodes_encountered[count].popleft()
-                
-                # separate curr state and weight 
-                cstate_only = curr_state[0]
-                cw_only = curr_state[1]
-                
-                # curre state is accepting node, just add self loop
-                if cstate_only in self.target_states:
-                    edge_attrs = self.game._graph.edges[cstate_only, cstate_only, 0]
-                    _adm_tree.add_edge(u=curr_state, v=curr_state, **edge_attrs)
-                    _adm_tree._graph[curr_state][curr_state][0]['weight'] = 0
-                    continue
-
-                for sstate_only in self.game._graph.successors(cstate_only):
-                    # self loops to same state are not allowed except for accepting states so succ_state != curr_state
-                    assert sstate_only != cstate_only, "[Error] Encouters self loop in Original Game. Fix This!!!"
-                    edgew: int = self.game.get_edge_attributes(cstate_only, sstate_only, "weight")
-                    next_w = cw_only + edgew
-
-                    succ_state = (sstate_only, next_w)
-
-                    # add these nodes to Tree
-                    if succ_state not in nodes_added_to_tree:
-                        _adm_tree.add_state(succ_state, **self.game._graph.nodes[sstate_only])
-                        _adm_tree._graph.nodes[succ_state]['init'] = False
-                        nodes_added_to_tree.add(succ_state)
-                        layered_nodes_encountered[count + 1].append(succ_state)
-                    
-                    # construct edge
-                    edge_attrs = self.game._graph.edges[cstate_only, sstate_only, 0]
-
-                    if not _adm_tree._graph.has_edge(curr_state, succ_state):
-                        _adm_tree.add_edge(u=curr_state, v=succ_state, **edge_attrs)
-                        # add the Total payoff to the last edge weight
-                        if succ_state[0] in self.target_states:
-                            _adm_tree._graph[curr_state][succ_state][0]['weight'] = next_w
-                        else:
-                            _adm_tree._graph[curr_state][succ_state][0]['weight'] = 0
+            # add node attributes too
+            game._graph.add_node(u_node, **u_attr)
+            game._graph.add_node(v_node, **v_attr)
             
-            if count == max_depth:
-                break
-                
-            count += 1
+            # add edge attributes too 
+            if not game._graph.has_edge(u_node, v_node):
+                key = game._graph.add_edge(u_node, v_node, key)
+                game._graph[u_node][v_node][key].update(ddd)
+    
+
+    def construct_tree(self, terminal_state_name: str = "vT",) -> Generator[Tuple, None, None]:
+        """
+         This method constructs tree in a non-recurisve depth first fashion. The worst case complexity is O(|E|).
+        """
+        max_depth: int = len(self.game._graph)
+        source = self.game_init_states[0][0]
+        nodes = [source]
+
+        visited = set()
+        for start in nodes:
+            if start in visited:
+                continue
+
+            visited.add(start)
+            stack = [(start, 0, iter(self.game._graph[start]))]
+            stack_state_only = [start]
+            depth_now: int = 1
+
+            while stack:
+                parent, pweight, children = stack[-1]
+                for child in children:
+                    if child not in stack_state_only:
+                        cweight = pweight + self.game._graph[parent][child][0]['weight']
+                        if child in  self.target_states:
+                            yield ((parent, pweight), self.game._graph.nodes[parent]), ((child, cweight), self.game._graph.nodes[child]), {'weight': cweight}
+                        else:
+                            yield ((parent, pweight), self.game._graph.nodes[parent]), ((child, cweight), self.game._graph.nodes[child]), {'weight': 0}
+                        visited.add(child)
+                        if depth_now < max_depth:
+                            stack.append((child, cweight, iter(self.game._graph[child])))
+                            stack_state_only.append(child)
+                            depth_now += 1
+                            break
+                    # a state that was already in play is visited. Add edge to terminal state.
+                    else:
+                        if parent not in self.target_states:
+                            yield ((parent, pweight), self.game._graph.nodes[parent]), (terminal_state_name, {}), {'weight': 0}
+                        else:
+                            yield ((parent, pweight), self.game._graph.nodes[parent]), ((parent, pweight), self.game._graph.nodes[parent]), {'weight': 0}
+                else:
+                    stack.pop()
+                    stack_state_only.pop()
+                    depth_now -= 1
         
-        # print the nodes thats in the last layer
-        print(layered_nodes_encountered[count + 1])
-        # every nodes that does not have an outgoing edges can transition to a terminal state with infinity value
-        terminal_state = "vT"
-        _adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False, 'weight': 0})
-        while len(layered_nodes_encountered[count + 1]):
-            state = layered_nodes_encountered[count + 1].popleft()
-            _adm_tree.add_edge(u=state, v=terminal_state, **edge_attrs)
-            _adm_tree._graph[state][terminal_state][0]['weight'] = 0
-        
-        _adm_tree.add_edge(u=terminal_state, v=terminal_state, **{'weight': 0})
-        
-        if plot:
-            _adm_tree.plot_graph()
-        
-        return _adm_tree
+        # add self loop to terminal state
+        yield (terminal_state_name, {}), (terminal_state_name, {}), {'weight': 0}
 
     
     def compute_best_effort_strategies(self, plot: bool = False):
@@ -683,13 +663,23 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
 
         # now construct tree
         start = time.time()
-        graph_tree = self.unrolled_graph = self.construct_tree(graph=None, plot=False)
+        _adm_tree: TwoPlayerGraph = graph_factory.get("TwoPlayerGraph",
+                                                      graph_name="adm_tree",
+                                                      config_yaml="config/adm_tree",
+                                                      save_flag=True,
+                                                      from_file=False, 
+                                                      plot=False)
+
+        terminal_state: str = "vT"
+        _adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False})
+
+        self.add_edges(_adm_tree, self.construct_tree(terminal_state_name=terminal_state))
         stop = time.time()
         print(f"Time to construct the Admissbility Tree: {stop - start:.2f}")
         # sys.exit(-1)
         
         # finally, run the modified VI algorithm
-        reachability_game_handle = HopefulPermissiveValueIteration(game=graph_tree, competitive=True)
+        reachability_game_handle = HopefulPermissiveValueIteration(game=_adm_tree, competitive=True)
         reachability_game_handle.solve(debug=False, plot=True, extract_strategy=True)
 
         self._sys_best_effort_str = reachability_game_handle.sys_str_dict

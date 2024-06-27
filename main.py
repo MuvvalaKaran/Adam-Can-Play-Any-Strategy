@@ -745,13 +745,13 @@ if __name__ == "__main__":
         # two_player_graph = eight_state_BE_example(add_weights=True, plot=False)
 
         # Example 2 from Appendix
-        # two_player_graph = example_two_BE_example(add_weights=True, plot=False)
+        # two_player_graph = example_two_BE_example(add_weights=True, plot=True)
 
         # Example 3 from Appendix
         two_player_graph = example_three_BE_example(add_weights=True, plot=True)
 
         # toy adversarial game graph
-        # two_player_graph = adversarial_game_toy_example()
+        # two_player_graph = adversarial_game_toy_example(plot=True)
 
         trans_sys = two_player_graph
         # sys.exit(-1)

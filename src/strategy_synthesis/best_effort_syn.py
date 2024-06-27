@@ -501,7 +501,21 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
 
     def __init__(self, game: TwoPlayerGraph, debug: bool = False) -> 'QuantitativeHopefullAdmissibleReachSyn':
         super().__init__(game=game, debug=debug)
-    
+        self._adm_tree: TwoPlayerGraph = graph_factory.get("TwoPlayerGraph",
+                                                           graph_name="adm_tree",
+                                                           config_yaml="config/adm_tree",
+                                                           save_flag=True,
+                                                           from_file=False, 
+                                                           plot=False)
+
+
+    @property
+    def adm_tree(self):
+        if len(self._adm_tree._graph) == 0:
+            warnings.warn("[Error] Got empty Tree. Please run best-effort synthesis code to construct tree")
+            sys.exit(-1)
+        return self._adm_tree
+
 
     def compute_cooperative_winning_strategy(self, permissive: bool = False):
         """
@@ -572,7 +586,7 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
                 adm_tree._graph.edges[curr_node, next_node, 0]['strategy'] = True
     
 
-    def add_edges(self, game, ebunch_to_add, **attr) -> None:
+    def add_edges(self, ebunch_to_add, **attr) -> None:
         """
          A function to add all the edges in the ebunch_to_add. 
         """
@@ -590,13 +604,13 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
             ddd.update(dd)
 
             # add node attributes too
-            game._graph.add_node(u_node, **u_attr)
-            game._graph.add_node(v_node, **v_attr)
+            self._adm_tree._graph.add_node(u_node, **u_attr)
+            self._adm_tree._graph.add_node(v_node, **v_attr)
             
             # add edge attributes too 
-            if not game._graph.has_edge(u_node, v_node):
-                key = game._graph.add_edge(u_node, v_node, key)
-                game._graph[u_node][v_node][key].update(ddd)
+            if not self._adm_tree._graph.has_edge(u_node, v_node):
+                key = self._adm_tree._graph.add_edge(u_node, v_node, key)
+                self._adm_tree._graph[u_node][v_node][key].update(ddd)
     
 
     def construct_tree(self, terminal_state_name: str = "vT",) -> Generator[Tuple, None, None]:
@@ -663,28 +677,34 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
 
         # now construct tree
         start = time.time()
-        _adm_tree: TwoPlayerGraph = graph_factory.get("TwoPlayerGraph",
-                                                      graph_name="adm_tree",
-                                                      config_yaml="config/adm_tree",
-                                                      save_flag=True,
-                                                      from_file=False, 
-                                                      plot=False)
-
         terminal_state: str = "vT"
-        _adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False})
+        self._adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False})
 
-        self.add_edges(_adm_tree, self.construct_tree(terminal_state_name=terminal_state))
+        self.add_edges(self.construct_tree(terminal_state_name=terminal_state))
         stop = time.time()
         print(f"Time to construct the Admissbility Tree: {stop - start:.2f}")
         # sys.exit(-1)
         
         # finally, run the modified VI algorithm
-        reachability_game_handle = HopefulPermissiveValueIteration(game=_adm_tree, competitive=True)
-        reachability_game_handle.solve(debug=False, plot=True, extract_strategy=True)
+        reachability_game_handle = HopefulPermissiveValueIteration(game=self._adm_tree, competitive=True)
+        reachability_game_handle.solve(debug=False, plot=False, extract_strategy=True)
 
         self._sys_best_effort_str = reachability_game_handle.sys_str_dict
         self._env_best_effort_str = reachability_game_handle.env_str_dict
         self._best_effort_state_values = reachability_game_handle.state_value_dict
+
+        # sanity checker to check if strategies are history dependent or not.
+        # tree_to_org_game_str = {}
+        # for tree_s in _adm_tree._graph.nodes:
+        #     if tree_s != terminal_state and _adm_tree.get_state_w_attribute(tree_s, "player") == "eve":
+        #         org_s, _ = tree_s    
+        #         # if state already exists, enforce its the same strategy
+        #         if org_s in tree_to_org_game_str:
+        #             assert tree_to_org_game_str[org_s] == self.sys_best_effort_str[tree_s], \
+        #             f"[Error] Strategies are history dependent! Need to investigate this! Got two different strategies {tree_to_org_game_str[org_s]} and {self.sys_best_effort_str[tree_s]} "
+        #         else:
+        #             tree_to_org_game_str[org_s] = self.sys_best_effort_str[tree_s][0]
+
 
         # if plot:
             # self.add_str_flag(adm_tree=graph_tree)

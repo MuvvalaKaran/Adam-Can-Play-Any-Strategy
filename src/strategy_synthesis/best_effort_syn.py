@@ -2,6 +2,7 @@ import sys
 import time
 import math
 import copy
+import operator
 import warnings
 import numpy as np
 import networkx as nx
@@ -517,12 +518,12 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
         return self._adm_tree
 
 
-    def compute_cooperative_winning_strategy(self, permissive: bool = False):
+    def compute_cooperative_winning_strategy(self, permissive: bool = False, plot: bool = False):
         """
         Override the base method to run the Value Iteration code
         """
         coop_handle = PermissiveValueIteration(game=self.game, competitive=False)
-        coop_handle.solve(debug=False, plot=False, extract_strategy=True)
+        coop_handle.solve(debug=False, plot=plot, extract_strategy=True)
         self._sys_coop_winning_str = coop_handle.sys_str_dict
         self._env_coop_winning_str = coop_handle.env_str_dict
         # self._coop_winning_region = (coop_handle.sys_winning_region).union(set(coop_handle.env_str_dict.keys()))
@@ -533,7 +534,7 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
             print("There exists a path from the Initial State")
     
     
-    def compute_winning_strategies(self, permissive: bool = False):
+    def compute_winning_strategies(self, permissive: bool = False, plot: bool = True):
         """
          Override the base method to run the Value Iteration code
         """
@@ -542,7 +543,7 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
         else:    
             reachability_game_handle = ValueIteration(game=self.game, competitive=True)
         
-        reachability_game_handle.solve(debug=False, plot=False, extract_strategy=True)
+        reachability_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
         self._sys_winning_str = reachability_game_handle.sys_str_dict
         self._env_winning_str = reachability_game_handle.env_str_dict
         self._winning_state_values = reachability_game_handle.state_value_dict
@@ -687,7 +688,7 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
         
         # finally, run the modified VI algorithm
         reachability_game_handle = HopefulPermissiveValueIteration(game=self._adm_tree, competitive=True)
-        reachability_game_handle.solve(debug=False, plot=False, extract_strategy=True)
+        reachability_game_handle.solve(debug=False, plot=True, extract_strategy=True)
 
         self._sys_best_effort_str = reachability_game_handle.sys_str_dict
         self._env_best_effort_str = reachability_game_handle.env_str_dict
@@ -710,4 +711,283 @@ class QuantitativeHopefullAdmissibleReachSyn(AbstractBestEffortReachSyn):
             # self.add_str_flag(adm_tree=graph_tree)
             # graph_tree.plot_graph()
             # self.game.plot_graph()
+
+
+class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
+    """
+     Overrides baseclass to construct a tree up until a pyaoff is reached. 
+    """
+
+    def __init__(self, budget: int,  game: TwoPlayerGraph, debug: bool = False) -> 'QuantitativeHopefullAdmissibleReachSyn':
+        super().__init__(game, debug)
+        self._sys_best_effort_str = defaultdict(lambda: set({}))  # overide base class instation as in the base class the dictionary was returned from VI code.
+        self._budget = budget
+        self._adv_coop_state_values: Dict[Tuple, int] = defaultdict(lambda: math.inf)
+        self._adm_tree.graph_name = "adm_tree_budget"
+
+    @property
+    def budget(self):
+        return self._budget
+    
+    @property
+    def adv_coop_state_values(self):
+        return self._adv_coop_state_values
+
+    @budget.setter
+    def budget(self, budget: Union[int, float]):
+        if isinstance(budget, float):
+            warnings.warn("[Warning] Budget entered is a float. Floor-ing the number")
+        
+        self._budget = math.floor(budget)
+    
+    def add_str_flag(self):
+        # super(AbstractBestEffortReachSyn, self).add_str_flag()
+        self.game.set_edge_attribute('strategy', False)
+
+        for curr_node, next_node in self._sys_best_effort_str.items():
+            if isinstance(next_node, set) or isinstance(next_node, list):
+                for n_node in next_node:
+                    self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
+            else:
+                self.game._graph.edges[curr_node, next_node, 0]['strategy'] = True
+    
+
+    def add_edges(self, ebunch_to_add, **attr) -> None:
+        """
+         A function to add all the edges in the ebunch_to_add. 
+        """
+        init_node_added: bool = False
+        for e in ebunch_to_add:
+            # u and v as 2-Tuple with node and node attributes of source (u) and destination node (v)
+            u, v, dd = e
+            u_node = u[0]
+            u_attr = u[1]
+            v_node = v[0]
+            v_attr = v[1]
+           
+            key = None
+            ddd = {}
+            ddd.update(attr)
+            ddd.update(dd)
+
+            # add node attributes too
+            self._adm_tree._graph.add_node(u_node, **u_attr)
+            self._adm_tree._graph.add_node(v_node, **v_attr)
+
+            if u_attr.get('init') and not init_node_added:
+                init_node_added = True
+            
+            if init_node_added and 'init' in u_attr:
+                del u_attr['init']
+            
+            # add edge attributes too 
+            if not self._adm_tree._graph.has_edge(u_node, v_node):
+                key = self._adm_tree._graph.add_edge(u_node, v_node, key)
+                self._adm_tree._graph[u_node][v_node][key].update(ddd)
+    
+
+    def construct_tree(self, terminal_state_name: str = "vT") -> Generator[Tuple, None, None]:
+        """
+         This method override the base methods. It constructs a tree in a non-recurisve depth first fashion for all plays in the original graph whose payoff <+ budger.
+        """
+        source = self.game_init_states[0][0]
+        nodes = [source]
+
+        visited = set()
+        for start in nodes:
+            if start in visited:
+                continue
+
+            visited.add(start)
+            # node, payoff, # of occ, child node
+            stack = [(start, 0, 1, iter(self.game._graph[start]))] 
+            stack_tree_state: Dict[Tuple[str, int], int] = {(start, 0) : 1} ## to track nodes in the tree
+            stack_state_only: List[str] = [start]
+
+            while stack:
+                parent, pweight, pocc, children = stack[-1]
+                for child in children:
+                    cweight = pweight + self.game._graph[parent][child][0]['weight'] 
+                    
+                    # book keeping, did we visit this state before?
+                    if stack_tree_state.get((child, cweight)) is None:
+                        cocc = 1    
+                    else:
+                        cocc = stack_tree_state.get((child, cweight)) + 1
+                    
+                    stack_tree_state[(child, cweight)] = cocc
+                    if child in self.target_states:
+                        yield ((parent, pweight, pocc), self.game._graph.nodes[parent]), ((child, cweight, cocc), self.game._graph.nodes[child]), {'weight': cweight}
+                    else:
+                        if cweight <= self.budget:
+                            yield ((parent, pweight, pocc), self.game._graph.nodes[parent]), ((child, cweight, cocc), self.game._graph.nodes[child]), {'weight': 0}
+
+                    visited.add(child)
+                    
+                    if cweight <= self.budget and child not in self.target_states:
+                        stack.append((child, cweight, cocc, iter(self.game._graph[child])))
+                        stack_state_only.append(child)
+                        break
+                    # a state that was already in play is visited. Add edge to terminal state.
+                    elif cweight > self.budget:
+                        yield ((parent, pweight, pocc), self.game._graph.nodes[parent]), ((terminal_state_name), {}), {'weight': 0}
+
+                else:
+                    stack.pop()
+                    stack_state_only.pop()
+        
+        # add self loop to terminal state
+        yield ((terminal_state_name), {}), ((terminal_state_name), {}), {'weight': 0}
+    
+
+    def compute_adversarial_cooperative_value(self):
+        """
+         A function that compute the adversarial-cooperative value for each state in the unrolled graph
+        """
+        for curr_node in self.game._graph.nodes():
+            if not self.game._graph.nodes(data='accepting')[curr_node]:
+                adv_val: int = self.winning_state_values[curr_node]
+                coop_succ_vals: List[Tuple[str, int]] = []
+                for succ_node in self.game._graph.successors(curr_node):
+                    if self.winning_state_values[succ_node] <= adv_val:
+                        coop_succ_vals.append((succ_node, self.coop_winning_state_values[succ_node]))
+                
+                _, min_val = min(coop_succ_vals, key=operator.itemgetter(1))
+        
+                self._adv_coop_state_values[curr_node] = min_val
+            
+            # acVal for accepting states in zero
+            else:
+                self._adv_coop_state_values[curr_node] = 0
+    
+
+    def check_admissible_edge(self, source: Tuple[str, int, int], succ: Tuple[str, int, int], avalues: Set[int]) -> bool:
+        """
+         A function that check if the an edge is admissible or not when traversing the tree of plays.
+        """
+        if self.coop_winning_state_values[succ] < min(avalues):
+            return True
+        elif self.winning_state_values[source] == self.winning_state_values[succ] == self.coop_winning_state_values[succ] == self.adv_coop_state_values[source]:
+            return True
+        
+        return False
+    
+
+    def compute_best_effort_strategies(self, plot: bool = False):
+        """
+         In this algorithm we call the modified Value Iteration algorithm to computer permissive Admissible strategies.
+
+         The algorithm is as follows:
+            First, we create a tree of bounded depth (u <= budget)
+            Finally, we return the strategies. 
+        """
+        # now construct tree
+        start = time.time()
+        terminal_state: str = "vT"
+        self._adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False})
+
+        self.add_edges(self.construct_tree(terminal_state_name=terminal_state))
+        stop = time.time()
+        print(f"Time to construct the Admissbility Tree: {stop - start:.2f}")
+
+        # compute aVal and cVal
+        self._game = self._adm_tree
+        # manually add the terminal state to Env player
+        self.game.add_state_attribute(terminal_state, "player", "adam")  
+
+        # get winning strategies
+        self.compute_winning_strategies(permissive=True, plot=False)
+
+        # get cooperative winning strategies
+        self.compute_cooperative_winning_strategy(plot=False)
+
+        # compute acVal for each state
+        self.compute_adversarial_cooperative_value()
+        
+        # Admissibility setup
+        # returns an iterator
+        def states_from_iter(node):
+            return iter(self.game._graph[node])
+
+        visited = set()
+
+        # normal DFS in preorder traversal
+        source = self.game.get_initial_states()[0][0]
+        visited.add(source)
+        stack = [(source, states_from_iter(source))]
+        avalues = [self.winning_state_values[source]]  # set of adversarial values encountered up until now.
+
+        while stack:
+            parent, children = stack[-1]
+            try:
+                child = next(children)
+
+                # if child in visited:
+                #     print(f"{parent}: {child}")
+                # else:
+                visited.add(child)
+                # print(f"{parent}: {child}")
+                
+                # only append if the edge from parent to child is admissible and update avalues too
+                if self.game._graph.nodes(data='player')[parent] == 'eve' and self.check_admissible_edge(source=parent, succ=child, avalues=avalues):
+                    stack.append((child, states_from_iter(child)))
+                    print(f"Admissible: {parent}: {child}")
+                    self._sys_best_effort_str[parent] = self._sys_best_effort_str[parent].union(set([child])) 
+                    avalues.append(self.winning_state_values[child])
+                else:
+                    assert self.game._graph.nodes(data='player')[parent] in['adam', 'eve'], f"[Warning] Encountered state: {parent} without player attribute in the tree."
+                    if parent != 'vT':
+                        stack.append((child, states_from_iter(child)))
+                        print(f"Env state: {parent}: {child}")
+                        avalues.append(self.winning_state_values[child])
+            
+            # when you come across leaf node, stop exploring
+            except StopIteration:
+                stack.pop()
+                avalues.pop()
+        
+        # start DFS
+        # for start_node in nodes:
+        #     # history = [(start_node, set({self.winning_state_values[start_node]}))]
+        #     history = [start]
+        #     while history:
+        #         current_node, adv_val = history[-1]
+        #         if current_node not in visited_nodes:
+        #             states[current_node] = states_from(current_node)
+        #             # check for admissibility
+        #             for succ_node in states[current_node]:
+        #                 if self.coop_winning_state_values[succ_node] < min(adv_val):
+        #                     admissible_edges.append((current_node, succ_node))
+        #                 elif self.winning_state_values[start_node] == self.winning_state_values[succ_node] == self.coop_winning_state_values[succ_node] == self.adv_coop_state_values[current_node]:
+        #                     admissible_edges.append((current_node, succ_node))
+                        
+        #                 history.append((succ_node, self.winning_state_values[current_node]))
+
+        #             visited_nodes.add(current_node)
+                    
+
+        #         if len(states[current_node]) == 0:
+        #         # except StopIteration:
+        #             # No more edges from the current node.
+        #             history.pop()
+                
+        #         # add condition to pop node if state is vT
+        #         elif current_node[0] == 'vT':
+        #             history.pop()
+
+                # else:
+                    # if state not in visited_nodes:
+                        # visited_nodes.add(state)
+                        # Mark the traversed "to" node as to-be-explored.
+                        # if check_reverse and edge[-1] == REVERSE:
+                        #     stack.append(edge[0])
+                        # else:
+                    # history.append((current_node, self.winning_state_values[current_node]))
+
+
+        if plot:
+            self.add_str_flag()
+            print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
+            print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
+            self.adm_tree.plot_graph(alias=False)
 

@@ -20,7 +20,8 @@ from src.strategy_synthesis.adversarial_game import ReachabilityGame as Reachabi
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
-from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, QuantitativeHopefullAdmissibleReachSyn
+from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, \
+      QuantitativeHopefullAdmissibleReachSyn, QuantitativeNaiveAdmissible
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -346,6 +347,19 @@ def play_quant_hopeful_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debu
         print(f"Strategy from {state} is {succ_states}")
 
 
+def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
+    """
+     A method to compute Quantitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=3)
+    be_handle.compute_best_effort_strategies(plot=plot)
+    
+    # print admissible strategy dictionary for sanity checking
+    for state, succ_states in be_handle.sys_best_effort_str.items():
+        print(f"Strategy from {state} is {succ_states}")
+
+
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     """
     A new regret computation method. Assumption: The weights on the graph represent costs and are hence non-negative.
@@ -563,7 +577,7 @@ def example_three_BE_example(add_weights: bool = False, plot: bool = False) -> T
 
     # build a graph
     two_player_graph = graph_factory.get("TwoPlayerGraph",
-                                         graph_name="two_player_graph4",
+                                         graph_name="two_player_graph5",
                                          config_yaml="/config/two_player_graph",
                                          save_flag=True,
                                          from_file=False,
@@ -700,7 +714,8 @@ if __name__ == "__main__":
     # solver to call
     qual_BE_synthesis: bool = False
     quant_BE_synthesis: bool = False
-    quant_hopeful_admissibile_synthesis: bool = True
+    quant_hopeful_admissibile_synthesis: bool = False
+    quant_naive_adm: bool = True # AAAI 25
     finite_reg_synthesis: bool = False
     infinte_reg_synthesis: bool = False
     adversarial_game: bool = False
@@ -748,7 +763,7 @@ if __name__ == "__main__":
         # two_player_graph = example_two_BE_example(add_weights=True, plot=True)
 
         # Example 3 from Appendix
-        two_player_graph = example_three_BE_example(add_weights=True, plot=True)
+        two_player_graph = example_three_BE_example(add_weights=True, plot=False)
 
         # toy adversarial game graph
         # two_player_graph = adversarial_game_toy_example(plot=True)
@@ -786,6 +801,9 @@ if __name__ == "__main__":
     
     elif quant_hopeful_admissibile_synthesis:
         play_quant_hopeful_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
+    
+    elif quant_naive_adm:
+        play_quant_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

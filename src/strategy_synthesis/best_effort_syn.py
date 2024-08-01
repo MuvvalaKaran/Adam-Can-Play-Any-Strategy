@@ -842,23 +842,24 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
 
     def compute_adversarial_cooperative_value(self):
         """
-         A function that compute the adversarial-cooperative value for each state in the unrolled graph
+         A function that compute the adversarial-cooperative value for each state in the unrolled graph. We do not compute acVal for Env player state.
         """
         for curr_node in self.game._graph.nodes():
-            if not self.game._graph.nodes(data='accepting')[curr_node]:
-                adv_val: int = self.winning_state_values[curr_node]
-                coop_succ_vals: List[Tuple[str, int]] = []
-                for succ_node in self.game._graph.successors(curr_node):
-                    if self.winning_state_values[succ_node] <= adv_val:
-                        coop_succ_vals.append((succ_node, self.coop_winning_state_values[succ_node]))
-                
-                _, min_val = min(coop_succ_vals, key=operator.itemgetter(1))
-        
-                self._adv_coop_state_values[curr_node] = min_val
+            if self.game._graph.nodes(data='player')[curr_node] == 'eve':
+                if not self.game._graph.nodes(data='accepting')[curr_node]:
+                    adv_val: int = self.winning_state_values[curr_node]
+                    coop_succ_vals: List[Tuple[str, int]] = []
+                    for succ_node in self.game._graph.successors(curr_node):
+                        if self.winning_state_values[succ_node] <= adv_val:
+                            coop_succ_vals.append((succ_node, self.coop_winning_state_values[succ_node]))
+                    
+                    _, min_val = min(coop_succ_vals, key=operator.itemgetter(1))
             
-            # acVal for accepting states in zero
-            else:
-                self._adv_coop_state_values[curr_node] = 0
+                    self._adv_coop_state_values[curr_node] = min_val
+                
+                # acVal for accepting states in zero
+                else:
+                    self._adv_coop_state_values[curr_node] = 0
     
 
     def check_admissible_edge(self, source: Tuple[str, int, int], succ: Tuple[str, int, int], avalues: Set[int]) -> bool:
@@ -873,13 +874,55 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
         return False
     
 
+    def dfs_admissibility(self, ) -> None:
+        """
+         A helper function called from compute_best_effort_strategies() method to run the DFS algorithm in preorder fashion and
+           add admissible edge to the strategy dictionary.
+        """
+        # Admissibility setup
+        def states_from_iter(node) -> Iterable[List]:
+            return iter(self.game._graph[node])
+
+        visited = set()
+        source = self.game.get_initial_states()[0][0]
+        visited.add(source)
+        stack = [(source, states_from_iter(source))]
+        avalues = [self.winning_state_values[source]]  # set of adversarial values encountered up until now.
+
+        while stack:
+            parent, children = stack[-1]
+            try:
+                child = next(children)
+                visited.add(child)
+                
+                # only append if the edge from parent to child is admissible and update avalues too
+                if self.game._graph.nodes(data='player')[parent] == 'eve' and self.check_admissible_edge(source=parent, succ=child, avalues=avalues):
+                    stack.append((child, states_from_iter(child)))
+                    print(f"Admissible: {parent}: {child}")
+                    self._sys_best_effort_str[parent] = self._sys_best_effort_str[parent].union(set([child])) 
+                    avalues.append(self.winning_state_values[child])
+                else:
+                    assert self.game._graph.nodes(data='player')[parent] in ['adam', 'eve'], f"[Warning] Encountered state: {parent} without player attribute in the tree."
+                    if parent != 'vT':
+                        stack.append((child, states_from_iter(child)))
+                        print(f"Env state: {parent}: {child}")
+                        avalues.append(self.winning_state_values[child])
+            
+            # when you come across leaf node, stop exploring
+            except StopIteration:
+                stack.pop()
+                avalues.pop()
+    
+
     def compute_best_effort_strategies(self, plot: bool = False):
         """
          In this algorithm we call the modified Value Iteration algorithm to computer permissive Admissible strategies.
 
          The algorithm is as follows:
             First, we create a tree of bounded depth (u <= budget)
-            Finally, we return the strategies. 
+            Then, we compute aVal, cVal, acVal associated with each state. 
+            We run a DFS algrorithm and check for admissibility of each edge using Thm. 3 in the paper. 
+            Finally, return the strategies. 
         """
         # now construct tree
         start = time.time()
@@ -889,9 +932,8 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
         self.add_edges(self.construct_tree(terminal_state_name=terminal_state))
         stop = time.time()
         print(f"Time to construct the Admissbility Tree: {stop - start:.2f}")
-
-        # compute aVal and cVal
         self._game = self._adm_tree
+        
         # manually add the terminal state to Env player
         self.game.add_state_attribute(terminal_state, "player", "adam")  
 
@@ -903,87 +945,9 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
 
         # compute acVal for each state
         self.compute_adversarial_cooperative_value()
-        
-        # Admissibility setup
-        # returns an iterator
-        def states_from_iter(node):
-            return iter(self.game._graph[node])
 
-        visited = set()
-
-        # normal DFS in preorder traversal
-        source = self.game.get_initial_states()[0][0]
-        visited.add(source)
-        stack = [(source, states_from_iter(source))]
-        avalues = [self.winning_state_values[source]]  # set of adversarial values encountered up until now.
-
-        while stack:
-            parent, children = stack[-1]
-            try:
-                child = next(children)
-
-                # if child in visited:
-                #     print(f"{parent}: {child}")
-                # else:
-                visited.add(child)
-                # print(f"{parent}: {child}")
-                
-                # only append if the edge from parent to child is admissible and update avalues too
-                if self.game._graph.nodes(data='player')[parent] == 'eve' and self.check_admissible_edge(source=parent, succ=child, avalues=avalues):
-                    stack.append((child, states_from_iter(child)))
-                    print(f"Admissible: {parent}: {child}")
-                    self._sys_best_effort_str[parent] = self._sys_best_effort_str[parent].union(set([child])) 
-                    avalues.append(self.winning_state_values[child])
-                else:
-                    assert self.game._graph.nodes(data='player')[parent] in['adam', 'eve'], f"[Warning] Encountered state: {parent} without player attribute in the tree."
-                    if parent != 'vT':
-                        stack.append((child, states_from_iter(child)))
-                        print(f"Env state: {parent}: {child}")
-                        avalues.append(self.winning_state_values[child])
-            
-            # when you come across leaf node, stop exploring
-            except StopIteration:
-                stack.pop()
-                avalues.pop()
-        
-        # start DFS
-        # for start_node in nodes:
-        #     # history = [(start_node, set({self.winning_state_values[start_node]}))]
-        #     history = [start]
-        #     while history:
-        #         current_node, adv_val = history[-1]
-        #         if current_node not in visited_nodes:
-        #             states[current_node] = states_from(current_node)
-        #             # check for admissibility
-        #             for succ_node in states[current_node]:
-        #                 if self.coop_winning_state_values[succ_node] < min(adv_val):
-        #                     admissible_edges.append((current_node, succ_node))
-        #                 elif self.winning_state_values[start_node] == self.winning_state_values[succ_node] == self.coop_winning_state_values[succ_node] == self.adv_coop_state_values[current_node]:
-        #                     admissible_edges.append((current_node, succ_node))
-                        
-        #                 history.append((succ_node, self.winning_state_values[current_node]))
-
-        #             visited_nodes.add(current_node)
-                    
-
-        #         if len(states[current_node]) == 0:
-        #         # except StopIteration:
-        #             # No more edges from the current node.
-        #             history.pop()
-                
-        #         # add condition to pop node if state is vT
-        #         elif current_node[0] == 'vT':
-        #             history.pop()
-
-                # else:
-                    # if state not in visited_nodes:
-                        # visited_nodes.add(state)
-                        # Mark the traversed "to" node as to-be-explored.
-                        # if check_reverse and edge[-1] == REVERSE:
-                        #     stack.append(edge[0])
-                        # else:
-                    # history.append((current_node, self.winning_state_values[current_node]))
-
+        # Compute Admissible strategies
+        self.dfs_admissibility()
 
         if plot:
             self.add_str_flag()

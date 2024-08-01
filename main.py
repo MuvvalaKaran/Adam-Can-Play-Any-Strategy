@@ -352,12 +352,13 @@ def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool 
      A method to compute Quantitative Best effort strategies for the system player
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=3)
+    be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=10)
     be_handle.compute_best_effort_strategies(plot=plot)
     
     # print admissible strategy dictionary for sanity checking
-    for state, succ_states in be_handle.sys_best_effort_str.items():
-        print(f"Strategy from {state} is {succ_states}")
+    if debug: 
+        for state, succ_states in be_handle.sys_best_effort_str.items():
+            print(f"Strategy from {state} is {succ_states}")
 
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
@@ -677,6 +678,74 @@ def adversarial_game_toy_example(plot: bool = False) -> TwoPlayerGraph:
     return two_player_graph
 
 
+def admissibility_game_toy_example(plot: bool = False) -> TwoPlayerGraph:
+    """
+     The example from Figure of the AAAI 25 paper - 08/01/24
+    """
+
+    # build a graph
+    two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                         graph_name="admissibile_game_1",
+                                         config_yaml="/config/admissibile_game_1",
+                                         save_flag=True,
+                                         from_file=False,
+                                         plot=False)
+
+    # circle in this toy example is sys(eve) and square is env(adam)
+    two_player_graph.add_states_from(["v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10"])
+
+    two_player_graph.add_initial_state('v0')
+    two_player_graph.add_state_attribute("v0", "player", "eve")
+    two_player_graph.add_state_attribute("v1", "player", "adam")
+    two_player_graph.add_state_attribute("v2", "player", "adam")
+    two_player_graph.add_state_attribute("v3", "player", "eve")
+    two_player_graph.add_state_attribute("v4", "player", "eve")
+    two_player_graph.add_state_attribute("v5", "player", "adam")
+    two_player_graph.add_state_attribute("v6", "player", "eve")
+    two_player_graph.add_state_attribute("v7", "player", "adam")
+    two_player_graph.add_state_attribute("v8", "player", "eve")
+    two_player_graph.add_state_attribute("v9", "player", "eve")
+    two_player_graph.add_state_attribute("v10", "player", "adam")
+
+    two_player_graph.add_edge("v0", "v1")
+    two_player_graph.add_edge("v0", "v2")
+    two_player_graph.add_edge("v1", "v4")
+    two_player_graph.add_edge("v2", "v3")
+    two_player_graph.add_edge("v3", "v2")
+    two_player_graph.add_edge("v2", "v6")
+    two_player_graph.add_edge("v4", "v5")
+    two_player_graph.add_edge("v4", "v7")
+    two_player_graph.add_edge("v5", "v6")
+    two_player_graph.add_edge("v7", "v8")
+    two_player_graph.add_edge("v7", "v9")
+    two_player_graph.add_edge("v9", "v10")
+    two_player_graph.add_edge("v8", "v10")
+    two_player_graph.add_edge("v10", "v6")
+    # two_player_graph.add_edge("v6", "v6")
+    two_player_graph._graph['v0']['v1'][0]["weight"] = 1
+    two_player_graph._graph['v0']['v2'][0]["weight"] = 1
+    two_player_graph._graph['v1']['v4'][0]["weight"] = 0
+    two_player_graph._graph['v2']['v3'][0]["weight"] = 0
+    two_player_graph._graph['v3']['v2'][0]["weight"] = 1
+    two_player_graph._graph['v2']['v6'][0]["weight"] = 0
+    two_player_graph._graph['v4']['v5'][0]["weight"] = 9
+    two_player_graph._graph['v4']['v7'][0]["weight"] = 1
+    two_player_graph._graph['v5']['v6'][0]["weight"] = 0
+    two_player_graph._graph['v7']['v8'][0]["weight"] = 0
+    two_player_graph._graph['v7']['v9'][0]["weight"] = 0
+    two_player_graph._graph['v8']['v10'][0]["weight"] = 8
+    two_player_graph._graph['v9']['v10'][0]["weight"] = 1
+    two_player_graph._graph['v10']['v6'][0]["weight"] = 0
+
+    two_player_graph.add_accepting_states_from(["v6"])
+
+    if plot:
+        two_player_graph.plot_graph()
+
+    return two_player_graph
+
+
+
 def construct_ltlf_dfa():
     """
     A method to construct the LTLf DFA for the given LTLf formula
@@ -763,10 +832,13 @@ if __name__ == "__main__":
         # two_player_graph = example_two_BE_example(add_weights=True, plot=True)
 
         # Example 3 from Appendix
-        two_player_graph = example_three_BE_example(add_weights=True, plot=False)
+        # two_player_graph = example_three_BE_example(add_weights=True, plot=False)
 
         # toy adversarial game graph
         # two_player_graph = adversarial_game_toy_example(plot=True)
+
+        # toy admissibility game graph
+        two_player_graph = admissibility_game_toy_example(plot=False)
 
         trans_sys = two_player_graph
         # sys.exit(-1)
@@ -803,7 +875,7 @@ if __name__ == "__main__":
         play_quant_hopeful_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
     
     elif quant_naive_adm:
-        play_quant_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
+        play_quant_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=False, print_states=True)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

@@ -874,10 +874,12 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
         return False
     
 
-    def dfs_admissibility(self, ) -> None:
+    def dfs_admissibility(self, debug: bool = False) -> None:
         """
          A helper function called from compute_best_effort_strategies() method to run the DFS algorithm in preorder fashion and
            add admissible edge to the strategy dictionary.
+        
+           Set the debug flag to true to print admissible edges.
         """
         # Admissibility setup
         def states_from_iter(node) -> Iterable[List]:
@@ -898,17 +900,19 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
                 # only append if the edge from parent to child is admissible and update avalues too
                 if self.game._graph.nodes(data='player')[parent] == 'eve' and self.check_admissible_edge(source=parent, succ=child, avalues=avalues):
                     stack.append((child, states_from_iter(child)))
-                    print(f"Admissible: {parent}: {child}")
+                    if self.debug: 
+                        print(f"Admissible edge: {parent}: {child}")
                     self._sys_best_effort_str[parent] = self._sys_best_effort_str[parent].union(set([child])) 
                     avalues.append(self.winning_state_values[child])
                 else:
                     assert self.game._graph.nodes(data='player')[parent] in ['adam', 'eve'], f"[Warning] Encountered state: {parent} without player attribute in the tree."
                     if parent != 'vT':
                         stack.append((child, states_from_iter(child)))
-                        print(f"Env state: {parent}: {child}")
+                        if self.debug:
+                            print(f"Env state edge: {parent}: {child}")
                         avalues.append(self.winning_state_values[child])
             
-            # when you come across leaf node, stop exploring
+            # when you come across leaf node - accepting + Terminal state (default is vT), stop exploring
             except StopIteration:
                 stack.pop()
                 avalues.pop()

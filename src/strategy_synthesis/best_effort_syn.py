@@ -953,15 +953,19 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
         self.game.add_state_attribute(terminal_state, "player", "adam")  
 
         # get winning strategies
+        print("Computing Winning strategy")
         self.compute_winning_strategies(permissive=True, plot=False)
 
         # get cooperative winning strategies
+        print("Computing Cooperative Winning strategy")
         self.compute_cooperative_winning_strategy(plot=False)
 
         # compute acVal for each state
+        print("Computing Adversarial-Cooperative strategy")
         self.compute_adversarial_cooperative_value()
 
         # Compute Admissible strategies
+        print("Computing Admissible strategy")
         self.dfs_admissibility(construct_transducer=True)
 
         if plot:

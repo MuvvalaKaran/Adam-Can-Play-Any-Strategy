@@ -21,7 +21,8 @@ from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
 from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, \
-      QuantitativeHopefullAdmissibleReachSyn, QuantitativeNaiveAdmissible
+      QuantitativeHopefullAdmissibleReachSyn
+from src.strategy_synthesis.adm_str_syn import QuantitativeNaiveAdmissible
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -719,7 +720,7 @@ def admissibility_game_toy_example_1(plot: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_edge("v7", "v8", weight=0)
     two_player_graph.add_edge("v7", "v9", weight=0)
     two_player_graph.add_edge("v9", "v10", weight=1)
-    two_player_graph.add_edge("v8", "v10", weight=9)
+    two_player_graph.add_edge("v8", "v10", weight=8)
     two_player_graph.add_edge("v10", "v6", weight=0)
 
     two_player_graph.add_accepting_states_from(["v6"])
@@ -897,10 +898,10 @@ if __name__ == "__main__":
         # two_player_graph = adversarial_game_toy_example(plot=True)
 
         # toy admissibility game graph 1
-        # two_player_graph = admissibility_game_toy_example_1(plot=False)
+        two_player_graph = admissibility_game_toy_example_1(plot=False)
 
         # toy admissibility game graph 2
-        two_player_graph = admissibility_game_toy_example_2(plot=True)
+        # two_player_graph = admissibility_game_toy_example_2(plot=True)
 
         trans_sys = two_player_graph
         # sys.exit(-1)

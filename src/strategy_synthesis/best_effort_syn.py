@@ -874,7 +874,7 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
         return False
     
 
-    def dfs_admissibility(self, debug: bool = False) -> None:
+    def dfs_admissibility(self, construct_transducer: bool = False) -> None:
         """
          A helper function called from compute_best_effort_strategies() method to run the DFS algorithm in preorder fashion and
            add admissible edge to the strategy dictionary.
@@ -886,6 +886,7 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
             return iter(self.game._graph[node])
 
         visited = set()
+        admissible_nodes = set()
         source = self.game.get_initial_states()[0][0]
         visited.add(source)
         stack = [(source, states_from_iter(source))]
@@ -904,6 +905,8 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
                         print(f"Admissible edge: {parent}: {child}")
                     self._sys_best_effort_str[parent] = self._sys_best_effort_str[parent].union(set([child])) 
                     avalues.append(self.winning_state_values[child])
+                    admissible_nodes.add(parent)
+                    admissible_nodes.add(child)
                 else:
                     assert self.game._graph.nodes(data='player')[parent] in ['adam', 'eve'], f"[Warning] Encountered state: {parent} without player attribute in the tree."
                     if parent != 'vT':
@@ -911,14 +914,22 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
                         if self.debug:
                             print(f"Env state edge: {parent}: {child}")
                         avalues.append(self.winning_state_values[child])
+                        admissible_nodes.add(parent)
+                        admissible_nodes.add(child)
             
             # when you come across leaf node - accepting + Terminal state (default is vT), stop exploring
             except StopIteration:
                 stack.pop()
                 avalues.pop()
+        
+        # remove non-admissible edges from the tree
+        if construct_transducer:
+            non_admissible_nodes: set = set(self.game._graph.nodes) - admissible_nodes
+            self.game._graph.remove_nodes_from(non_admissible_nodes)
+
     
 
-    def compute_best_effort_strategies(self, plot: bool = False):
+    def compute_best_effort_strategies(self, plot: bool = False, plot_transducer: bool = False):
         """
          In this algorithm we call the modified Value Iteration algorithm to computer permissive Admissible strategies.
 
@@ -951,11 +962,10 @@ class QuantitativeNaiveAdmissible(QuantitativeHopefullAdmissibleReachSyn):
         self.compute_adversarial_cooperative_value()
 
         # Compute Admissible strategies
-        self.dfs_admissibility()
+        self.dfs_admissibility(construct_transducer=True)
 
         if plot:
             self.add_str_flag()
             print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
             print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
             self.adm_tree.plot_graph(alias=False)
-

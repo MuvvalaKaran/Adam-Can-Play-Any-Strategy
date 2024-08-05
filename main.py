@@ -347,7 +347,7 @@ def play_quant_hopeful_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debu
         print(f"Strategy from {state} is {succ_states}")
 
 
-def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
+def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
     """
      A method to compute Quantitative Best effort strategies for the system player
     """
@@ -678,7 +678,7 @@ def adversarial_game_toy_example(plot: bool = False) -> TwoPlayerGraph:
     return two_player_graph
 
 
-def admissibility_game_toy_example(plot: bool = False) -> TwoPlayerGraph:
+def admissibility_game_toy_example_1(plot: bool = False) -> TwoPlayerGraph:
     """
      The example from Figure of the AAAI 25 paper - 08/01/24
     """
@@ -707,37 +707,96 @@ def admissibility_game_toy_example(plot: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_state_attribute("v9", "player", "eve")
     two_player_graph.add_state_attribute("v10", "player", "adam")
 
-    two_player_graph.add_edge("v0", "v1")
-    two_player_graph.add_edge("v0", "v2")
-    two_player_graph.add_edge("v1", "v4")
-    two_player_graph.add_edge("v2", "v3")
-    two_player_graph.add_edge("v3", "v2")
-    two_player_graph.add_edge("v2", "v6")
-    two_player_graph.add_edge("v4", "v5")
-    two_player_graph.add_edge("v4", "v7")
-    two_player_graph.add_edge("v5", "v6")
-    two_player_graph.add_edge("v7", "v8")
-    two_player_graph.add_edge("v7", "v9")
-    two_player_graph.add_edge("v9", "v10")
-    two_player_graph.add_edge("v8", "v10")
-    two_player_graph.add_edge("v10", "v6")
-    # two_player_graph.add_edge("v6", "v6")
-    two_player_graph._graph['v0']['v1'][0]["weight"] = 1
-    two_player_graph._graph['v0']['v2'][0]["weight"] = 1
-    two_player_graph._graph['v1']['v4'][0]["weight"] = 0
-    two_player_graph._graph['v2']['v3'][0]["weight"] = 0
-    two_player_graph._graph['v3']['v2'][0]["weight"] = 1
-    two_player_graph._graph['v2']['v6'][0]["weight"] = 0
-    two_player_graph._graph['v4']['v5'][0]["weight"] = 9
-    two_player_graph._graph['v4']['v7'][0]["weight"] = 1
-    two_player_graph._graph['v5']['v6'][0]["weight"] = 0
-    two_player_graph._graph['v7']['v8'][0]["weight"] = 0
-    two_player_graph._graph['v7']['v9'][0]["weight"] = 0
-    two_player_graph._graph['v8']['v10'][0]["weight"] = 8
-    two_player_graph._graph['v9']['v10'][0]["weight"] = 1
-    two_player_graph._graph['v10']['v6'][0]["weight"] = 0
+    two_player_graph.add_edge("v0", "v1", weight=1)
+    two_player_graph.add_edge("v0", "v2", weight=1)
+    two_player_graph.add_edge("v1", "v4", weight=0)
+    two_player_graph.add_edge("v2", "v3", weight=0)
+    two_player_graph.add_edge("v3", "v2", weight=1)
+    two_player_graph.add_edge("v2", "v6", weight=0)
+    two_player_graph.add_edge("v4", "v5", weight=9)
+    two_player_graph.add_edge("v4", "v7", weight=1)
+    two_player_graph.add_edge("v5", "v6", weight=0)
+    two_player_graph.add_edge("v7", "v8", weight=0)
+    two_player_graph.add_edge("v7", "v9", weight=0)
+    two_player_graph.add_edge("v9", "v10", weight=1)
+    two_player_graph.add_edge("v8", "v10", weight=9)
+    two_player_graph.add_edge("v10", "v6", weight=0)
 
     two_player_graph.add_accepting_states_from(["v6"])
+
+    if plot:
+        two_player_graph.plot_graph()
+
+    return two_player_graph
+
+
+def admissibility_game_toy_example_2(plot: bool = False) -> TwoPlayerGraph:
+    """
+     The example from Figure 5 of the AAAI 25 paper - 08/01/24
+    """
+
+    # build a graph
+    two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                         graph_name="admissibile_game_2",
+                                         config_yaml="/config/admissibile_game_2",
+                                         save_flag=True,
+                                         from_file=False,
+                                         plot=False)
+
+    # circle in this toy example is sys(eve) and square is env(adam)
+    two_player_graph.add_states_from(["v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", \
+                                       "v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19"])
+
+    two_player_graph.add_initial_state('v0')
+    two_player_graph.add_state_attribute("v0", "player", "eve")
+    two_player_graph.add_state_attribute("v1", "player", "adam")
+    two_player_graph.add_state_attribute("v2", "player", "adam")
+    two_player_graph.add_state_attribute("v3", "player", "eve")
+    two_player_graph.add_state_attribute("v4", "player", "eve")
+    two_player_graph.add_state_attribute("v5", "player", "adam")
+    two_player_graph.add_state_attribute("v6", "player", "adam")
+    two_player_graph.add_state_attribute("v7", "player", "eve")
+    two_player_graph.add_state_attribute("v8", "player", "adam")
+    two_player_graph.add_state_attribute("v9", "player", "adam")
+    two_player_graph.add_state_attribute("v10", "player", "adam")
+    two_player_graph.add_state_attribute("v11", "player", "eve")
+    two_player_graph.add_state_attribute("v12", "player", "eve")
+    two_player_graph.add_state_attribute("v13", "player", "eve")
+    # value nodes - acceptine states. 
+    two_player_graph.add_state_attribute("v14", "player", "eve")
+    two_player_graph.add_state_attribute("v15", "player", "eve")
+    two_player_graph.add_state_attribute("v16", "player", "eve")
+    two_player_graph.add_state_attribute("v17", "player", "eve")
+    two_player_graph.add_state_attribute("v18", "player", "eve")
+    two_player_graph.add_state_attribute("v19", "player", "eve")
+
+    two_player_graph.add_edge("v0", "v1", weight=0)
+    two_player_graph.add_edge("v0", "v2", weight=0)
+    two_player_graph.add_edge("v0", "v10", weight=0)
+    two_player_graph.add_edge("v10", "v11", weight=0)
+    two_player_graph.add_edge("v11", "v10", weight=1)
+    two_player_graph.add_edge("v1", "v3", weight=0)
+    two_player_graph.add_edge("v1", "v12", weight=0)
+    two_player_graph.add_edge("v12", "v1", weight=1)
+    two_player_graph.add_edge("v2", "v13", weight=0)
+    two_player_graph.add_edge("v13", "v2", weight=1)
+    two_player_graph.add_edge("v2", "v4", weight=0)
+    
+    two_player_graph.add_edge("v3", "v5", weight=0)
+    two_player_graph.add_edge("v3", "v6", weight=0)
+    two_player_graph.add_edge("v4", "v6", weight=0)
+    two_player_graph.add_edge("v6", "v7", weight=0)
+    two_player_graph.add_edge("v7", "v8", weight=0)
+    two_player_graph.add_edge("v7", "v9", weight=0)
+    # leaf node edges
+    two_player_graph.add_edge("v5", "v14", weight=3)
+    two_player_graph.add_edge("v5", "v15", weight=4)
+    two_player_graph.add_edge("v8", "v16", weight=2)
+    two_player_graph.add_edge("v8", "v17", weight=9)
+    two_player_graph.add_edge("v9", "v18", weight=5)
+    two_player_graph.add_edge("v9", "v19", weight=10)
+
+    two_player_graph.add_accepting_states_from(["v14", "v15", "v16", "v17", "v18", "v19"])
 
     if plot:
         two_player_graph.plot_graph()
@@ -837,8 +896,11 @@ if __name__ == "__main__":
         # toy adversarial game graph
         # two_player_graph = adversarial_game_toy_example(plot=True)
 
-        # toy admissibility game graph
-        two_player_graph = admissibility_game_toy_example(plot=False)
+        # toy admissibility game graph 1
+        # two_player_graph = admissibility_game_toy_example_1(plot=False)
+
+        # toy admissibility game graph 2
+        two_player_graph = admissibility_game_toy_example_2(plot=True)
 
         trans_sys = two_player_graph
         # sys.exit(-1)
@@ -875,7 +937,7 @@ if __name__ == "__main__":
         play_quant_hopeful_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
     
     elif quant_naive_adm:
-        play_quant_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=False, print_states=True)
+        play_quant_admissbile_synthesis_game(trans_sys=trans_sys, debug=False, plot=True)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

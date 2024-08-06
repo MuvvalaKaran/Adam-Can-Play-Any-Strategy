@@ -548,6 +548,115 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
             sys.exit(-1)
         return self._adm_str_trnd
     
+
+    def _remove_non_reachable_states(self, game):
+        """
+        A helper method that removes all the states that are not reachable from the initial state. This method is
+        called by the edge weighted are reg solver method to trim states and reduce the size of the graph
+
+        :param game:
+        :return:
+        """
+        print("Starting purging nodes")
+        # get the initial state
+        _init_state = game.get_initial_states()[0][0]
+        _org_node_set: set = set(game._graph.nodes())
+
+        stack = deque()
+        path: set = set()
+
+        stack.append(_init_state)
+        while stack:
+            vertex = stack.pop()
+            if vertex in path:
+                continue
+            path.add(vertex)
+            for _neighbour in game._graph.successors(vertex):
+                stack.append(_neighbour)
+
+        _valid_states = path
+
+        _nodes_to_be_purged = _org_node_set - _valid_states
+        game._graph.remove_nodes_from(_nodes_to_be_purged)
+        print("Done purging nodes")
+
+
+    def construct_graph_of_utility_variant(self, terminal_state_name: str = "vT") -> None:
+        """
+            A function to construct the graph of utility given a two-player turn-based game. 
+            This function is similar to the regret synthesis code
+        """
+        source = self.game_init_states[0][0]
+
+        # construct nodes
+        for _s in self.game._graph.nodes():
+            for _u in range(self.budget + 1):
+                _org_state_attrs = self.game._graph.nodes[_s]
+                _new_state = (_s, _u)
+                self.adm_tree.add_state(_new_state, **_org_state_attrs)
+                self.adm_tree._graph.nodes[_new_state]['accepting'] = False
+                self.adm_tree._graph.nodes[_new_state]['init'] = False
+
+                if _s == source and _u == 0:
+                    self.adm_tree._graph.nodes[_new_state]['init'] = True
+        
+        # self-loop for the terminal states with edge weight zero.
+        self.adm_tree.add_edge((terminal_state_name), (terminal_state_name))
+        self.adm_tree._graph[(terminal_state_name)][(terminal_state_name)][0]['weight'] = 0
+
+        # construct edges
+        for _s in self.game._graph.nodes():
+            for _u in range(self.budget + 1):
+                _curr_state = (_s, _u)
+
+                # get the org neighbours of the _s in the org graph
+                for _org_succ in self.game._graph.successors(_s):
+                    # the edge weight between these two, add _u to this edge weight to get _u'. Add this edge to G'
+                    _org_edge_w: int = self.game.get_edge_attributes(_s, _org_succ, "weight")
+                    _next_u = _u + _org_edge_w
+
+                    _succ_state = (_org_succ, _next_u)
+
+                    if not self.adm_tree._graph.has_node(_succ_state):
+                        if _next_u <= self.budget:
+                            warnings.warn(f"Trying to add a new node {_succ_state} to the graph of utility."
+                                          f"This should not happen. Check your construction code")
+                            continue
+
+                    # if the next state is within the bounds then, add that state to the graph of utility with edge
+                    # weight 0
+                    if _next_u <= self.budget:
+                        _org_edge_attrs = self.game._graph.edges[_s, _org_succ, 0]
+                        self.adm_tree.add_edge(u=_curr_state,
+                                                v=_succ_state,
+                                                **_org_edge_attrs)
+
+                        self.adm_tree._graph[_curr_state][_succ_state][0]['weight'] = 0
+
+                    if _next_u > self.budget:
+                        if not self.adm_tree._graph.has_edge(_curr_state, terminal_state_name):
+                            self.adm_tree.add_edge(u=_curr_state, v=terminal_state_name, weight=0)
+        
+        # construct target states
+        _accp_states: list = self.game.get_accepting_states()
+
+        for _accp_s in _accp_states:
+            for _u in range(self.budget + 1):
+                _new_accp_s = (_accp_s, _u)
+
+                if not self.adm_tree._graph.has_node(_new_accp_s):
+                    warnings.warn(f"Trying to add a new accepting node {_new_accp_s} to the graph of best alternatives."
+                                  f"This should not happen. Check your construction code")
+
+                self.adm_tree.add_accepting_state(_new_accp_s)
+
+                # also we need to add edge weight to target states.
+                for _pre_s in self.adm_tree._graph.predecessors(_new_accp_s):
+                    if _pre_s == _new_accp_s:
+                        continue
+                    self.adm_tree._graph[_pre_s][_new_accp_s][0]['weight'] = _u
+        
+    
     
     def construct_graph_of_utility(self, terminal_state_name: str = "vT") -> None:
         """
@@ -555,14 +664,17 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         """
         source = self.game_init_states[0][0]
         self.adm_tree.add_state((source, 0), **self.game._graph.nodes[source])
-        stack = [(source, 0, iter(self.game._graph[source]))] 
+        # stack = [(source, 0, iter(self.game._graph[source]))] 
+        stack = deque()
+        stack.append((source, 0, iter(self.game._graph[source])))
 
         while stack:
             parent, pweight, children = stack[-1]
 
-            for child in children:
+            try:
+            # for child in children:
+                child = next(children)
                 cweight = pweight + self.game._graph[parent][child][0]['weight']
-                edge_attrs = self.game._graph.edges[parent, child, 0]
 
                 if cweight <= self.budget:
                     edge_attrs = self.game._graph.edges[parent, child, 0]
@@ -578,17 +690,16 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
                             self.adm_tree.add_edge((parent, pweight), (child, cweight), **edge_attrs)
                             self.adm_tree._graph[(parent, pweight)][(child, cweight)][0]['weight'] = 0
                 
-                # visited.add(child)
                 if cweight <= self.budget and child not in self.target_states:
                     stack.append((child, cweight, iter(self.game._graph[child])))
-                    break
+                    # break
                 # a state that was already in play is visited. Add edge to terminal state.
                 elif cweight > self.budget:
                     if not self.adm_tree._graph.has_edge((parent, pweight), (terminal_state_name)):
                         self.adm_tree.add_edge((parent, pweight), (terminal_state_name))
                         self.adm_tree._graph[(parent, pweight)][(terminal_state_name)][0]['weight'] = 0
             
-            else:
+            except StopIteration:
                 stack.pop()
         
         # self-loop for the terminal states with edge weight zero.
@@ -609,19 +720,27 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         # now construct tree
         start = time.time()
         terminal_state: str = "vT"
-        self._adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False})
+        self._adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False, 'player': 'adam'})
 
-        # self.add_edges(self.construct_tree(terminal_state_name=terminal_state))
+        # self.construct_graph_of_utility_variant(terminal_state_name=terminal_state)
+        # # helper method to remove the state that cannot reached from the initial state of G'
+        # # if purge_states:
+        # start = time.time()
+        # self._remove_non_reachable_states(self.adm_tree)
+        # stop = time.time()
+        # if self.debug:
+        #     print(f"******************************Removing non-reachable states on Graph of Utility : {stop - start} ****************************")
+
+
         self.construct_graph_of_utility(terminal_state_name=terminal_state)
         stop = time.time()
         print(f"Time to construct the Admissbility Tree: {stop - start:.2f}")
         self._game = self._adm_tree
-        # self.game.plot_graph()
-        # sys.exit(-1)
-        
-        # manually add the terminal state to Env player
-        self.game.add_state_attribute(terminal_state, "player", "adam")  
+        self.game.plot_graph()
 
+        print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
+        print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
+        sys.exit(-1)
         # get winning strategies
         print("Computing Winning strategy")
         self.compute_winning_strategies(permissive=True, plot=False)

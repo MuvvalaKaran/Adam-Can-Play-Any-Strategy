@@ -1,11 +1,8 @@
 import sys
 import time
 import math
-import copy
 import operator
 import warnings
-import numpy as np
-import networkx as nx
 
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict, deque
@@ -13,9 +10,7 @@ from typing import Optional, Union, List, Iterable, Dict, Set, Tuple, Generator
 
 from ..graph import TwoPlayerGraph
 from ..graph import graph_factory
-from .adversarial_game import ReachabilityGame
-from .cooperative_game import CooperativeGame
-from .value_iteration import ValueIteration, PermissiveValueIteration, HopefulPermissiveValueIteration
+from .value_iteration import ValueIteration, PermissiveValueIteration
 
 
 class AbstractBestEffortReachSyn(metaclass=ABCMeta):
@@ -38,8 +33,6 @@ class AbstractBestEffortReachSyn(metaclass=ABCMeta):
         self._sys_coop_winning_str: Optional[dict] = None
         self._env_coop_winning_str: Optional[dict] = None
         self._sys_adm_str: Optional[dict] = None
-        # self._env_best_effort_str: Optional[dict] = None
-        # self._best_effort_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
         self._winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
         self._coop_winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
 
@@ -99,14 +92,6 @@ class AbstractBestEffortReachSyn(metaclass=ABCMeta):
     @property
     def sys_adm_str(self):
         return self._sys_adm_str
-    
-    # @property
-    # def env_best_effort_str(self):
-    #     return self._env_best_effort_str
-
-    # @property
-    # def best_effort_state_values(self):
-    #     return self._best_effort_state_values
     
     @property
     def winning_state_values(self):
@@ -211,7 +196,7 @@ class AbstractBestEffortReachSyn(metaclass=ABCMeta):
         raise NotImplementedError
     
     @abstractmethod
-    def compute_best_effort_strategies(self):
+    def compute_adm_strategies(self):
         raise NotImplementedError
 
 
@@ -254,6 +239,11 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
             warnings.warn("[Warning] Budget entered is a float. Floor-ing the number")
         
         self._budget = math.floor(budget)
+    
+    # Admissibility setup
+    def states_from_iter(self, node) -> Iterable[List]:
+        return iter(self.game._graph[node])
+
     
     def compute_cooperative_winning_strategy(self, permissive: bool = False, plot: bool = False):
         """
@@ -428,26 +418,19 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
         
            Set the debug flag to true to print admissible edges.
         """
-        # Admissibility setup
-        def states_from_iter(node) -> Iterable[List]:
-            return iter(self.game._graph[node])
-
-        # visited = set()
         admissible_nodes = set()
         source = self.game.get_initial_states()[0][0]
-        # visited.add(source)
-        stack = [(source, states_from_iter(source))]
+        stack = [(source, self.states_from_iter(source))]
         avalues = [self.winning_state_values[source]]  # set of adversarial values encountered up until now.
 
         while stack:
             parent, children = stack[-1]
             try:
                 child = next(children)
-                # visited.add(child)
                 
                 # only append if the edge from parent to child is admissible and update avalues too
                 if self.game._graph.nodes(data='player')[parent] == 'eve' and self.check_admissible_edge(source=parent, succ=child, avalues=avalues):
-                    stack.append((child, states_from_iter(child)))
+                    stack.append((child, self.states_from_iter(child)))
                     if self.debug: 
                         print(f"Admissible edge: {parent}: {child}")
                     self._sys_best_effort_str[parent] = self._sys_best_effort_str[parent].union(set([child])) 
@@ -460,7 +443,7 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
                 else:
                     assert self.game._graph.nodes(data='player')[parent] in 'adam', f"[Warning] Encountered state: {parent} without player attribute in the tree."
                     if parent != 'vT':
-                        stack.append((child, states_from_iter(child)))
+                        stack.append((child, self.states_from_iter(child)))
                         if self.debug:
                             print(f"Env state edge: {parent}: {child}")
                         avalues.append(self.winning_state_values[child])
@@ -479,7 +462,7 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
 
     
 
-    def compute_best_effort_strategies(self, plot: bool = False, plot_transducer: bool = False):
+    def compute_adm_strategies(self, plot: bool = False, plot_transducer: bool = False):
         """
          In this algorithm we call the modified Value Iteration algorithm to computer permissive Admissible strategies.
 
@@ -549,10 +532,6 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
             sys.exit(-1)
         return self._transducer
 
-    
-    def states_from_iter(self, node) -> Iterable[List]:
-            return iter(self.game._graph[node])
-
 
     def is_state_in_transducer(self, state, transducer_dict: dict) -> int:
         """
@@ -564,7 +543,6 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         else:
             transducer_dict[state] += 1 
             return transducer_dict.get(state)
-
 
     
     def dfs_admissibility(self, construct_transducer: bool = False) -> None:
@@ -592,7 +570,6 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
                     cocc = self.is_state_in_transducer(child, transducer_dict=book_keeing_str)
                     self.sys_adm_str[(parent, pocc)] = (child, cocc) 
                     if construct_transducer:
-                        # if child in self.target_states:
                         self._transducer.add_state((child, cocc), **self.game._graph.nodes[child])
                         self._transducer.add_edge((parent, pocc), (child, cocc))
                     stack.append((child, cocc, self.states_from_iter(child)))
@@ -653,7 +630,7 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         print("Done purging nodes")
 
 
-    def construct_graph_of_utility_variant(self, terminal_state_name: str = "vT") -> None:
+    def construct_graph_of_utility(self, terminal_state_name: str = "vT") -> None:
         """
             A function to construct the graph of utility given a two-player turn-based game. 
             This function is similar to the regret synthesis code
@@ -699,10 +676,7 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
                     # weight 0
                     if _next_u <= self.budget:
                         _org_edge_attrs = self.game._graph.edges[_s, _org_succ, 0]
-                        self.adm_tree.add_edge(u=_curr_state,
-                                                v=_succ_state,
-                                                **_org_edge_attrs)
-
+                        self.adm_tree.add_edge(u=_curr_state, v=_succ_state, **_org_edge_attrs)
                         self.adm_tree._graph[_curr_state][_succ_state][0]['weight'] = 0
 
                     if _next_u > self.budget:
@@ -727,59 +701,9 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
                     if _pre_s == _new_accp_s:
                         continue
                     self.adm_tree._graph[_pre_s][_new_accp_s][0]['weight'] = _u
-        
-    
-    @DeprecationWarning
-    def construct_graph_of_utility(self, terminal_state_name: str = "vT") -> None:
-        """
-        A function to construct the graph of utility given a two-player turn-based game.
-        """
-        source = self.game_init_states[0][0]
-        self.adm_tree.add_state((source, 0), **self.game._graph.nodes[source])
-        # stack = [(source, 0, iter(self.game._graph[source]))] 
-        stack = deque()
-        stack.append((source, 0, iter(self.game._graph[source])))
-
-        while stack:
-            parent, pweight, children = stack[-1]
-
-            try:
-            # for child in children:
-                child = next(children)
-                cweight = pweight + self.game._graph[parent][child][0]['weight']
-
-                if cweight <= self.budget:
-                    edge_attrs = self.game._graph.edges[parent, child, 0]
-                    self.adm_tree.add_state((child, cweight), **self.game._graph.nodes[child])
-                    self.adm_tree._graph.nodes[(child, cweight)]['init'] = False
-                    if child in self.target_states:
-                        if not self.adm_tree._graph.has_edge((parent, pweight), (child, cweight)):
-                            self.adm_tree.add_edge((parent, pweight), (child, cweight), **edge_attrs)
-                            self.adm_tree._graph[(parent, pweight)][(child, cweight)][0]['weight'] = cweight
-
-                    else:
-                        if not self.adm_tree._graph.has_edge((parent, pweight), (child, cweight)):
-                            self.adm_tree.add_edge((parent, pweight), (child, cweight), **edge_attrs)
-                            self.adm_tree._graph[(parent, pweight)][(child, cweight)][0]['weight'] = 0
-                
-                if cweight <= self.budget and child not in self.target_states:
-                    stack.append((child, cweight, iter(self.game._graph[child])))
-                    # break
-                # a state that was already in play is visited. Add edge to terminal state.
-                elif cweight > self.budget:
-                    if not self.adm_tree._graph.has_edge((parent, pweight), (terminal_state_name)):
-                        self.adm_tree.add_edge((parent, pweight), (terminal_state_name))
-                        self.adm_tree._graph[(parent, pweight)][(terminal_state_name)][0]['weight'] = 0
-            
-            except StopIteration:
-                stack.pop()
-        
-        # self-loop for the terminal states with edge weight zero.
-        self.adm_tree.add_edge((terminal_state_name), (terminal_state_name))
-        self.adm_tree._graph[(terminal_state_name)][(terminal_state_name)][0]['weight'] = 0
     
 
-    def compute_best_effort_strategies(self, plot: bool = False, purge_states: bool = True, plot_transducer: bool = False):
+    def compute_adm_strategies(self, plot: bool = False, purge_states: bool = True, plot_transducer: bool = False):
         """
          In this algorithm we call the modified Value Iteration algorithm to computer permissive Admissible strategies.
 
@@ -801,7 +725,7 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         terminal_state: str = "vT"
         self._adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False, 'player': 'adam'})
 
-        self.construct_graph_of_utility_variant(terminal_state_name=terminal_state)
+        self.construct_graph_of_utility(terminal_state_name=terminal_state)
         # helper method to remove the state that cannot reached from the initial state of G'
         if purge_states:
             start = time.time()
@@ -815,11 +739,13 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         self._game = self._adm_tree
         self._game_init_states = self.game.get_initial_states()
         self.target_states = set(s for s in self._game.get_accepting_states())
-        # self.game.plot_graph()
+
+        if plot:
+            self.game.plot_graph(alias=False)
 
         print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
         print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
-        # sys.exit(-1)
+
         # get winning strategies
         print("Computing Winning strategy")
         self.compute_winning_strategies(permissive=True, plot=False)
@@ -829,7 +755,6 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         # get cooperative winning strategies
         print("Computing Cooperative Winning strategy")
         self.compute_cooperative_winning_strategy(plot=False)
-        # sys.exit(-1)
 
         # compute acVal for each state
         print("Computing Adversarial-Cooperative strategy")
@@ -837,9 +762,10 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
 
         # Compute Admissible strategies
         print("Computing Admissible strategy")
+        # construct_transuder: bool = True if plot_transducer else False
         self.dfs_admissibility(construct_transducer=True)
 
-        if plot:
+        if plot_transducer:
             print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
             print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
             self.transducer.plot_graph(alias=False)

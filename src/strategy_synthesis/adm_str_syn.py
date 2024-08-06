@@ -44,7 +44,7 @@ class AbstractBestEffortReachSyn(metaclass=ABCMeta):
         self._coop_winning_state_values: Dict[str, float] = defaultdict(lambda: math.inf)
 
         self.debug: bool = debug
-        self.game_init_states: List = self.game.get_initial_states()
+        self._game_init_states: List = self.game.get_initial_states()
         self.game_states: Set[str] = set(self.game.get_states()._nodes.keys())
         self.target_states: Set[str] = set(s for s in self.game.get_accepting_states())
     
@@ -115,6 +115,18 @@ class AbstractBestEffortReachSyn(metaclass=ABCMeta):
     @property
     def coop_winning_state_values(self):
         return self._coop_winning_state_values
+    
+    @property
+    def game_init_states(self):
+        return self._game_init_states
+    
+    @game_init_states.setter
+    def game_init_states(self, init_states):
+        if len(init_states) > 1:
+            warnings.warn("[Error] Got Multiple Initial states. Admissibility code works for one unique initial state only.")
+            sys.exit(-1)
+        self.game_init_states = init_states
+
 
     @game.setter
     def game(self, game: TwoPlayerGraph):
@@ -232,7 +244,7 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
     @property
     def adm_tree(self):
         if len(self._adm_tree._graph) == 0:
-            warnings.warn("[Error] Got empty Tree. Please run best-effort synthesis code to construct tree")
+            warnings.warn("[Error] Got empty Tree. Please run Admissibility synthesis code to construct tree")
             sys.exit(-1)
         return self._adm_tree
 
@@ -420,10 +432,10 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
         def states_from_iter(node) -> Iterable[List]:
             return iter(self.game._graph[node])
 
-        visited = set()
+        # visited = set()
         admissible_nodes = set()
         source = self.game.get_initial_states()[0][0]
-        visited.add(source)
+        # visited.add(source)
         stack = [(source, states_from_iter(source))]
         avalues = [self.winning_state_values[source]]  # set of adversarial values encountered up until now.
 
@@ -431,7 +443,7 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
             parent, children = stack[-1]
             try:
                 child = next(children)
-                visited.add(child)
+                # visited.add(child)
                 
                 # only append if the edge from parent to child is admissible and update avalues too
                 if self.game._graph.nodes(data='player')[parent] == 'eve' and self.check_admissible_edge(source=parent, succ=child, avalues=avalues):
@@ -497,6 +509,129 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
         # get cooperative winning strategies
         print("Computing Cooperative Winning strategy")
         self.compute_cooperative_winning_strategy(plot=False)
+
+        # compute acVal for each state
+        print("Computing Adversarial-Cooperative strategy")
+        self.compute_adversarial_cooperative_value()
+
+        # Compute Admissible strategies
+        print("Computing Admissible strategy")
+        self.dfs_admissibility(construct_transducer=True)
+
+        if plot:
+            self.add_str_flag()
+            print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
+            print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
+            self.adm_tree.plot_graph(alias=False)
+
+
+
+class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
+    """
+     This class overrides the base's class Tree construction code to construct a Graph of Utility. 
+     Just like we did in Regret Synthesis and run synthesis algorithm on this graph
+    """
+
+    def __init__(self, budget: int, game: TwoPlayerGraph, debug: bool = False) -> QuantitativeNaiveAdmissible:
+        super().__init__(budget, game, debug)
+        self._adm_str_trnd: TwoPlayerGraph = graph_factory.get("TwoPlayerGraph",
+                                                           graph_name="adm_str_transducer",
+                                                           config_yaml="config/adm_str_transducer",
+                                                           save_flag=True,
+                                                           from_file=False, 
+                                                           plot=False)
+        
+    @property
+    def adm_str_trnd(self):
+        if len(self._adm_str_trnd._graph) == 0:
+            warnings.warn("[Error] Got empty Transducer. Please run Admissibility synthesis code to construct Transducer")
+            sys.exit(-1)
+        return self._adm_str_trnd
+    
+    
+    def construct_graph_of_utility(self, terminal_state_name: str = "vT") -> None:
+        """
+        A function to construct the graph of utility given a two-player turn-based game.
+        """
+        source = self.game_init_states[0][0]
+        self.adm_tree.add_state((source, 0), **self.game._graph.nodes[source])
+        stack = [(source, 0, iter(self.game._graph[source]))] 
+
+        while stack:
+            parent, pweight, children = stack[-1]
+
+            for child in children:
+                cweight = pweight + self.game._graph[parent][child][0]['weight']
+                edge_attrs = self.game._graph.edges[parent, child, 0]
+
+                if cweight <= self.budget:
+                    edge_attrs = self.game._graph.edges[parent, child, 0]
+                    self.adm_tree.add_state((child, cweight), **self.game._graph.nodes[child])
+                    self.adm_tree._graph.nodes[(child, cweight)]['init'] = False
+                    if child in self.target_states:
+                        if not self.adm_tree._graph.has_edge((parent, pweight), (child, cweight)):
+                            self.adm_tree.add_edge((parent, pweight), (child, cweight), **edge_attrs)
+                            self.adm_tree._graph[(parent, pweight)][(child, cweight)][0]['weight'] = cweight
+
+                    else:
+                        if not self.adm_tree._graph.has_edge((parent, pweight), (child, cweight)):
+                            self.adm_tree.add_edge((parent, pweight), (child, cweight), **edge_attrs)
+                            self.adm_tree._graph[(parent, pweight)][(child, cweight)][0]['weight'] = 0
+                
+                # visited.add(child)
+                if cweight <= self.budget and child not in self.target_states:
+                    stack.append((child, cweight, iter(self.game._graph[child])))
+                    break
+                # a state that was already in play is visited. Add edge to terminal state.
+                elif cweight > self.budget:
+                    if not self.adm_tree._graph.has_edge((parent, pweight), (terminal_state_name)):
+                        self.adm_tree.add_edge((parent, pweight), (terminal_state_name))
+                        self.adm_tree._graph[(parent, pweight)][(terminal_state_name)][0]['weight'] = 0
+            
+            else:
+                stack.pop()
+        
+        # self-loop for the terminal states with edge weight zero.
+        self.adm_tree.add_edge((terminal_state_name), (terminal_state_name))
+        self.adm_tree._graph[(terminal_state_name)][(terminal_state_name)][0]['weight'] = 0
+    
+
+    def compute_best_effort_strategies(self, plot: bool = False, plot_transducer: bool = False):
+        """
+         In this algorithm we call the modified Value Iteration algorithm to computer permissive Admissible strategies.
+
+         The algorithm is as follows:
+            First, we create a tree of bounded depth (u <= budget)
+            Then, we compute aVal, cVal, acVal associated with each state. 
+            We run a DFS algrorithm and check for admissibility of each edge using Thm. 3 in the paper. 
+            Finally, return the strategies. 
+        """
+        # now construct tree
+        start = time.time()
+        terminal_state: str = "vT"
+        self._adm_tree.add_state(terminal_state, **{'init': False, 'accepting': False})
+
+        # self.add_edges(self.construct_tree(terminal_state_name=terminal_state))
+        self.construct_graph_of_utility(terminal_state_name=terminal_state)
+        stop = time.time()
+        print(f"Time to construct the Admissbility Tree: {stop - start:.2f}")
+        self._game = self._adm_tree
+        # self.game.plot_graph()
+        # sys.exit(-1)
+        
+        # manually add the terminal state to Env player
+        self.game.add_state_attribute(terminal_state, "player", "adam")  
+
+        # get winning strategies
+        print("Computing Winning strategy")
+        self.compute_winning_strategies(permissive=True, plot=False)
+        if self.is_winning():
+            print("Winning stratgey exists")
+
+        # get cooperative winning strategies
+        print("Computing Cooperative Winning strategy")
+        self.compute_cooperative_winning_strategy(plot=False)
+        sys.exit(-1)
 
         # compute acVal for each state
         print("Computing Adversarial-Cooperative strategy")

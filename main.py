@@ -22,7 +22,7 @@ from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrS
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
 from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, \
       QuantitativeHopefullAdmissibleReachSyn
-from src.strategy_synthesis.adm_str_syn import QuantitativeNaiveAdmissible
+from src.strategy_synthesis.adm_str_syn import QuantitativeNaiveAdmissible, QuantitativeGoUAdmissible
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -353,8 +353,12 @@ def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool 
      A method to compute Quantitative Best effort strategies for the system player
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=10)
+    be_handle = QuantitativeGoUAdmissible(game=trans_sys, debug=debug, budget=10)
     be_handle.compute_best_effort_strategies(plot=plot)
+
+    
+    # be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=10)
+    # be_handle.compute_best_effort_strategies(plot=plot)
     
     # print admissible strategy dictionary for sanity checking
     if debug: 
@@ -898,10 +902,10 @@ if __name__ == "__main__":
         # two_player_graph = adversarial_game_toy_example(plot=True)
 
         # toy admissibility game graph 1
-        two_player_graph = admissibility_game_toy_example_1(plot=False)
+        # two_player_graph = admissibility_game_toy_example_1(plot=False)
 
         # toy admissibility game graph 2
-        # two_player_graph = admissibility_game_toy_example_2(plot=True)
+        two_player_graph = admissibility_game_toy_example_2(plot=True)
 
         trans_sys = two_player_graph
         # sys.exit(-1)

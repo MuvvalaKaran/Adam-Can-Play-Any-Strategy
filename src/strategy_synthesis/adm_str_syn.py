@@ -769,3 +769,26 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
             print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
             print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
             self.transducer.plot_graph(alias=False)
+
+
+
+class QuantitativeGoUAdmissibleWinning(QuantitativeGoUAdmissible):
+    """
+     Overrides the base class's admissibility checking method to enforce value-preserving property
+    """
+
+    def __init__(self, budget: int, game: TwoPlayerGraph, debug: bool = False) -> QuantitativeNaiveAdmissible:
+        super().__init__(budget, game, debug)
+    
+
+    def check_admissible_edge(self, source: Tuple[str, int], succ: Tuple[str, int], avalues: Set[int]) -> bool:
+        """
+          A function that check if the an edge is admissible winning or not when traversing the tree of plays. 
+          There is an addition check for value presevation property.
+        """
+        if self.coop_winning_state_values[succ] < min(avalues) and ((source not in self.winning_region) or (self.winning_state_values[succ] != math.inf)):
+            return True
+        elif self.winning_state_values[source] == self.winning_state_values[succ] == self.coop_winning_state_values[succ] == self.adv_coop_state_values[source]:
+            return True
+        
+        return False

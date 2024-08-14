@@ -22,7 +22,7 @@ from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrS
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
 from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, \
       QuantitativeHopefullAdmissibleReachSyn
-from src.strategy_synthesis.adm_str_syn import QuantitativeNaiveAdmissible, QuantitativeGoUAdmissible
+from src.strategy_synthesis.adm_str_syn import QuantitativeNaiveAdmissible, QuantitativeGoUAdmissible, QuantitativeGoUAdmissibleWinning
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -354,11 +354,26 @@ def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool 
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
     be_handle = QuantitativeGoUAdmissible(game=trans_sys, debug=debug, budget=10)
-    be_handle.compute_best_effort_strategies(plot=plot)
+    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True)
 
     
     # be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=10)
-    # be_handle.compute_best_effort_strategies(plot=plot)
+    # be_handle.compute_adm_strategies(plot=plot)
+    
+    # print admissible strategy dictionary for sanity checking
+    if debug: 
+        for state, succ_states in be_handle.sys_best_effort_str.items():
+            print(f"Strategy from {state} is {succ_states}")
+
+
+def play_quant_admissbile_winning_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+    """
+     A method to compute Quantitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QuantitativeGoUAdmissibleWinning(game=trans_sys, debug=debug, budget=10)
+    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True)
+
     
     # print admissible strategy dictionary for sanity checking
     if debug: 
@@ -848,7 +863,8 @@ if __name__ == "__main__":
     qual_BE_synthesis: bool = False
     quant_BE_synthesis: bool = False
     quant_hopeful_admissibile_synthesis: bool = False
-    quant_naive_adm: bool = True # AAAI 25
+    quant_naive_adm: bool = False # AAAI 25
+    quant_adm_winning: bool = True  # AAAI 25
     finite_reg_synthesis: bool = False
     infinte_reg_synthesis: bool = False
     adversarial_game: bool = False
@@ -902,10 +918,10 @@ if __name__ == "__main__":
         # two_player_graph = adversarial_game_toy_example(plot=True)
 
         # toy admissibility game graph 1
-        # two_player_graph = admissibility_game_toy_example_1(plot=False)
+        two_player_graph = admissibility_game_toy_example_1(plot=False)
 
         # toy admissibility game graph 2
-        two_player_graph = admissibility_game_toy_example_2(plot=True)
+        # two_player_graph = admissibility_game_toy_example_2(plot=False)
 
         trans_sys = two_player_graph
         # sys.exit(-1)
@@ -943,6 +959,9 @@ if __name__ == "__main__":
     
     elif quant_naive_adm:
         play_quant_admissbile_synthesis_game(trans_sys=trans_sys, debug=False, plot=True)
+    
+    elif quant_adm_winning:
+        play_quant_admissbile_winning_synthesis_game(trans_sys=trans_sys, debug=False, plot=False)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

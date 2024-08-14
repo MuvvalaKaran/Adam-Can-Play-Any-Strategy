@@ -703,7 +703,7 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
                     self.adm_tree._graph[_pre_s][_new_accp_s][0]['weight'] = _u
     
 
-    def compute_adm_strategies(self, plot: bool = False, purge_states: bool = True, plot_transducer: bool = False):
+    def compute_adm_strategies(self, plot: bool = False, purge_states: bool = True, plot_transducer: bool = False, compute_str: bool = True):
         """
          In this algorithm we call the modified Value Iteration algorithm to computer permissive Admissible strategies.
 
@@ -743,8 +743,8 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         if plot:
             self.game.plot_graph(alias=False)
 
-        print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
-        print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
+        # print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
+        # print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
 
         # get winning strategies
         print("Computing Winning strategy")
@@ -760,15 +760,16 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
         print("Computing Adversarial-Cooperative strategy")
         self.compute_adversarial_cooperative_value()
 
-        # Compute Admissible strategies
-        print("Computing Admissible strategy")
         # construct_transuder: bool = True if plot_transducer else False
-        self.dfs_admissibility(construct_transducer=True)
+        if compute_str:
+            # Compute Admissible strategies
+            print("Computing Admissible strategy")
+            self.dfs_admissibility(construct_transducer=True)
 
-        if plot_transducer:
-            print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
-            print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
-            self.transducer.plot_graph(alias=False)
+            if plot_transducer:
+                print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
+                print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
+                self.transducer.plot_graph(alias=False)
 
 
 

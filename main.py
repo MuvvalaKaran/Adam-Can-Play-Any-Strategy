@@ -354,7 +354,7 @@ def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool 
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
     be_handle = QuantitativeGoUAdmissible(game=trans_sys, debug=debug, budget=10)
-    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True)
+    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True, compute_str=False)
 
     
     # be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=10)
@@ -372,7 +372,7 @@ def play_quant_admissbile_winning_synthesis_game(trans_sys: TwoPlayerGraph, debu
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
     be_handle = QuantitativeGoUAdmissibleWinning(game=trans_sys, debug=debug, budget=10)
-    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True)
+    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True, compute_str=False)
 
     
     # print admissible strategy dictionary for sanity checking
@@ -863,8 +863,8 @@ if __name__ == "__main__":
     qual_BE_synthesis: bool = False
     quant_BE_synthesis: bool = False
     quant_hopeful_admissibile_synthesis: bool = False
-    quant_naive_adm: bool = False # AAAI 25
-    quant_adm_winning: bool = True  # AAAI 25
+    quant_naive_adm: bool = True # AAAI 25
+    quant_adm_winning: bool = False  # AAAI 25
     finite_reg_synthesis: bool = False
     infinte_reg_synthesis: bool = False
     adversarial_game: bool = False

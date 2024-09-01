@@ -20,8 +20,9 @@ from src.strategy_synthesis.adversarial_game import ReachabilityGame as Reachabi
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
-from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn
-from src.strategy_synthesis.best_effort_safe_reach import QualitativeSafeReachBestEffort, QuantitativeSafeReachBestEffort
+from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, \
+      QuantitativeHopefullAdmissibleReachSyn
+from src.strategy_synthesis.adm_str_syn import QuantitativeNaiveAdmissible, QuantitativeGoUAdmissible, QuantitativeGoUAdmissibleWinning
 
 
 class GraphInstanceConstructionBase(abc.ABC):
@@ -318,37 +319,6 @@ def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, 
     be_handle.get_winning_region(print_states=print_states)
 
 
-def ijcai24_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
-    """
-     This methods implements my proposed algorithm for IJCAI 24. The algorithm is as follows:
-
-     1. Compute Losing, Pending and Winning region.
-     2. In Winning region compute Winning strategy - BE reachability
-     3. In Winning + Pending region compute BE Safety
-     4. In Pending region compute BE Reachability game with objective of reaching the Winning region
-     5. Merge strategies
-    """
-    # TODO: Need to fix permissive reachability strategy synthesis
-    safe_reach_be_handle = QualitativeSafeReachBestEffort(game=trans_sys, debug=False)
-    safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
-
-
-def ijcai24_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
-    """
-     This methods implements my proposed algorithm for IJCAI 24 with Quantitative objectives. The algorithm is as follows:
-
-     1. Compute Losing, Pending and Winning region.
-     2. In Winning region compute Winning strategy - BE reachability
-     3. In Winning + Pending region compute BE Safety
-     4. In Pending region compute BE Reachability game with objective of reaching the Winning region
-     5. Merge strategies
-    
-     The algorithm is same as the Qualitative one.
-    """
-    safe_reach_be_handle = QuantitativeSafeReachBestEffort(game=trans_sys, debug=False)
-    safe_reach_be_handle.compute_best_effort_strategies(debug=True, plot=True)
-
-
 def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
     """
      A method to compute Quantitative Best effort strategies for the system player
@@ -359,6 +329,56 @@ def play_quant_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False,
     be_handle.get_losing_region(print_states=print_states)
     be_handle.get_pending_region(print_states=print_states)
     be_handle.get_winning_region(print_states=print_states)
+    
+    # print be strategy dictionary for sanity checking
+    for state, succ_states in be_handle.sys_best_effort_str.items():
+        print(f"Strategy from {state} is {succ_states}")
+    
+
+def play_quant_hopeful_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
+    """
+     A method to compute Quantitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QuantitativeHopefullAdmissibleReachSyn(game=trans_sys, debug=debug)
+    be_handle.compute_best_effort_strategies(plot=plot)
+    
+    # print admissible strategy dictionary for sanity checking
+    for state, succ_states in be_handle.sys_best_effort_str.items():
+        print(f"Strategy from {state} is {succ_states}")
+
+
+def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+    """
+     A method to compute Quantitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QuantitativeGoUAdmissible(game=trans_sys, debug=debug, budget=10)
+    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True, compute_str=False)
+
+    
+    # be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=10)
+    # be_handle.compute_adm_strategies(plot=plot)
+    
+    # print admissible strategy dictionary for sanity checking
+    if debug: 
+        for state, succ_states in be_handle.sys_best_effort_str.items():
+            print(f"Strategy from {state} is {succ_states}")
+
+
+def play_quant_admissbile_winning_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+    """
+     A method to compute Quantitative Best effort strategies for the system player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    be_handle = QuantitativeGoUAdmissibleWinning(game=trans_sys, debug=debug, budget=10)
+    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True, compute_str=False)
+
+    
+    # print admissible strategy dictionary for sanity checking
+    if debug: 
+        for state, succ_states in be_handle.sys_best_effort_str.items():
+            print(f"Strategy from {state} is {succ_states}")
 
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
@@ -383,14 +403,14 @@ def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
     reg_syn_handle.edge_weighted_arena_finite_reg_solver(purge_states=True,
                                                          plot=False)
 
-def four_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
+def four_state_BE_example(add_weights: bool = False, plot: bool = False) -> TwoPlayerGraph:
     """
-    A method where I manually create the 4 state toy exmaple form our discussion to test Sstrategy synthesis
+    A method where I manually create the 4 state toy exmaple from our discussion to test Strategy synthesis. Fig. 1. in our paper
     """
 
     # build a graph
     two_player_graph = graph_factory.get("TwoPlayerGraph",
-                                         graph_name="two_player_graph",
+                                         graph_name="two_player_graph1",
                                          config_yaml="/config/two_player_graph",
                                          save_flag=True,
                                          from_file=False,
@@ -421,17 +441,21 @@ def four_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
         for _s in two_player_graph._graph.nodes():
             for _e in two_player_graph._graph.out_edges(_s):
                 two_player_graph._graph[_e[0]][_e[1]][0]["weight"] = 1 if two_player_graph._graph.nodes(data='player')[_s] == 'eve' else 0
+    
+    if plot:
+        two_player_graph.plot_graph()
+    
     return two_player_graph
 
 
-def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
+def eight_state_BE_example(add_weights: bool = False, plot: bool = False) -> TwoPlayerGraph:
     """
-    A method where I manually create the 4 state toy exmaple form our discussion to test Sstrategy synthesis
+    A method where I manually create the 8 state toy exmaple form our discussion to test Sstrategy synthesis
     """
 
     # build a graph
     two_player_graph = graph_factory.get("TwoPlayerGraph",
-                                         graph_name="two_player_graph",
+                                         graph_name="two_player_graph2",
                                          config_yaml="/config/two_player_graph",
                                          save_flag=True,
                                          from_file=False,
@@ -501,10 +525,129 @@ def eight_state_BE_example(add_weights: bool = False) -> TwoPlayerGraph:
     # two_player_graph.add_weighted_edges_from(["s0", "s2", 2])
     two_player_graph._graph["s0"]["s2"][0]["weight"] =  1
 
+    if plot:
+        two_player_graph.plot_graph()
+
     return two_player_graph
 
 
-def adversarial_game_toy_example() -> TwoPlayerGraph:
+
+def example_two_BE_example(add_weights: bool = False, plot: bool = False) -> TwoPlayerGraph:
+    """
+    A method where I manually create the 11 state exmaple form our discussion to test Sstrategy synthesis (Example 2)
+    """
+
+    # build a graph
+    two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                         graph_name="two_player_graph3",
+                                         config_yaml="/config/two_player_graph",
+                                         save_flag=True,
+                                         from_file=False,
+                                         plot=False)
+
+    # circle in this toy example is sys(eve) and square is env(adam) - a little length one
+    two_player_graph.add_states_from(["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"])
+
+    two_player_graph.add_initial_state('s0')
+    two_player_graph.add_state_attribute("s0", "player", "eve")
+    two_player_graph.add_state_attribute("s1", "player", "adam")
+    two_player_graph.add_state_attribute("s2", "player", "eve")
+    two_player_graph.add_state_attribute("s3", "player", "adam")
+    two_player_graph.add_state_attribute("s4", "player", "eve")
+    two_player_graph.add_state_attribute("s5", "player", "adam")
+    two_player_graph.add_state_attribute("s6", "player", "eve")
+    two_player_graph.add_state_attribute("s7", "player", "adam")
+    two_player_graph.add_state_attribute("s8", "player", "eve")
+    two_player_graph.add_state_attribute("s9", "player", "adam")
+    two_player_graph.add_state_attribute("s10", "player", "eve")
+
+    two_player_graph.add_edge("s0", "s1")
+    two_player_graph.add_edge("s1", "s0")
+    two_player_graph.add_edge("s1", "s2")
+    two_player_graph.add_edge("s1", "s6")
+    two_player_graph.add_edge("s2", "s3")
+    two_player_graph.add_edge("s3", "s2")
+    two_player_graph.add_edge("s3", "s4")
+    two_player_graph.add_edge("s4", "s5")
+    two_player_graph.add_edge("s5", "s4")
+    two_player_graph.add_edge("s5", "s6")
+    two_player_graph.add_edge("s6", "s7")
+    two_player_graph.add_edge("s7", "s8")
+    two_player_graph.add_edge("s8", "s9")
+    two_player_graph.add_edge("s9", "s10")
+    two_player_graph.add_edge("s10", "s10")
+    
+    # reachability game
+    two_player_graph.add_accepting_states_from(["s10"])
+
+    if add_weights:
+        for _s in two_player_graph._graph.nodes():
+            for _e in two_player_graph._graph.out_edges(_s):
+                two_player_graph._graph[_e[0]][_e[1]][0]["weight"] = 1 if two_player_graph._graph.nodes(data='player')[_s] == 'eve' else 0
+
+    if plot:
+        two_player_graph.plot_graph()
+
+    return two_player_graph
+
+
+def example_three_BE_example(add_weights: bool = False, plot: bool = False) -> TwoPlayerGraph:
+    """
+    A method where I manually create the 8 state exmaple from our discussion to test Strategy synthesis (Example 3)
+    """
+
+    # build a graph
+    two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                         graph_name="two_player_graph5",
+                                         config_yaml="/config/two_player_graph",
+                                         save_flag=True,
+                                         from_file=False,
+                                         plot=False)
+
+    # circle in this toy example is sys(eve) and square is env(adam) - a little length one
+    two_player_graph.add_states_from(["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9"])
+
+    two_player_graph.add_initial_state('s1')
+    two_player_graph.add_state_attribute("s1", "player", "eve")
+    two_player_graph.add_state_attribute("s2", "player", "adam")
+    two_player_graph.add_state_attribute("s3", "player", "adam")
+    two_player_graph.add_state_attribute("s4", "player", "eve")
+    two_player_graph.add_state_attribute("s5", "player", "adam")
+    two_player_graph.add_state_attribute("s6", "player", "eve")
+    two_player_graph.add_state_attribute("s7", "player", "adam")
+    two_player_graph.add_state_attribute("s8", "player", "adam")
+    two_player_graph.add_state_attribute("s9", "player", "eve")
+
+    two_player_graph.add_edge("s1", "s2")
+    two_player_graph.add_edge("s1", "s3")
+    two_player_graph.add_edge("s2", "s4")
+    two_player_graph.add_edge("s3", "s6")
+    two_player_graph.add_edge("s4", "s5")
+    two_player_graph.add_edge("s5", "s6")
+    two_player_graph.add_edge("s7", "s6")
+    two_player_graph.add_edge("s4", "s7")
+    two_player_graph.add_edge("s6", "s8")
+    two_player_graph.add_edge("s7", "s9")
+    two_player_graph.add_edge("s8", "s9")
+    two_player_graph.add_edge("s8", "s1")
+    two_player_graph.add_edge("s8", "s4")
+    two_player_graph.add_edge("s9", "s9")
+    
+    # reachability game
+    two_player_graph.add_accepting_states_from(["s9"])
+
+    if add_weights:
+        for _s in two_player_graph._graph.nodes():
+            for _e in two_player_graph._graph.out_edges(_s):
+                two_player_graph._graph[_e[0]][_e[1]][0]["weight"] = 1 if two_player_graph._graph.nodes(data='player')[_s] == 'eve' else 0
+
+    if plot:
+        two_player_graph.plot_graph()
+
+    return two_player_graph
+
+
+def adversarial_game_toy_example(plot: bool = False) -> TwoPlayerGraph:
     """
     The example from the Adversarial Game script. 
     """
@@ -549,7 +692,137 @@ def adversarial_game_toy_example() -> TwoPlayerGraph:
 
     two_player_graph.add_accepting_states_from(["s3", "s4"])
 
+    if plot:
+        two_player_graph.plot_graph()
+
     return two_player_graph
+
+
+def admissibility_game_toy_example_1(plot: bool = False) -> TwoPlayerGraph:
+    """
+     The example from Figure of the AAAI 25 paper - 08/01/24
+    """
+
+    # build a graph
+    two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                         graph_name="admissibile_game_1",
+                                         config_yaml="/config/admissibile_game_1",
+                                         save_flag=True,
+                                         from_file=False,
+                                         plot=False)
+
+    # circle in this toy example is sys(eve) and square is env(adam)
+    two_player_graph.add_states_from(["v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10"])
+
+    two_player_graph.add_initial_state('v0')
+    two_player_graph.add_state_attribute("v0", "player", "eve")
+    two_player_graph.add_state_attribute("v1", "player", "adam")
+    two_player_graph.add_state_attribute("v2", "player", "adam")
+    two_player_graph.add_state_attribute("v3", "player", "eve")
+    two_player_graph.add_state_attribute("v4", "player", "eve")
+    two_player_graph.add_state_attribute("v5", "player", "adam")
+    two_player_graph.add_state_attribute("v6", "player", "eve")
+    two_player_graph.add_state_attribute("v7", "player", "adam")
+    two_player_graph.add_state_attribute("v8", "player", "eve")
+    two_player_graph.add_state_attribute("v9", "player", "eve")
+    two_player_graph.add_state_attribute("v10", "player", "adam")
+
+    two_player_graph.add_edge("v0", "v1", weight=1)
+    two_player_graph.add_edge("v0", "v2", weight=1)
+    two_player_graph.add_edge("v1", "v4", weight=0)
+    two_player_graph.add_edge("v2", "v3", weight=0)
+    two_player_graph.add_edge("v3", "v2", weight=1)
+    two_player_graph.add_edge("v2", "v6", weight=0)
+    two_player_graph.add_edge("v4", "v5", weight=9)
+    two_player_graph.add_edge("v4", "v7", weight=1)
+    two_player_graph.add_edge("v5", "v6", weight=0)
+    two_player_graph.add_edge("v7", "v8", weight=0)
+    two_player_graph.add_edge("v7", "v9", weight=0)
+    two_player_graph.add_edge("v9", "v10", weight=1)
+    two_player_graph.add_edge("v8", "v10", weight=8)
+    two_player_graph.add_edge("v10", "v6", weight=0)
+
+    two_player_graph.add_accepting_states_from(["v6"])
+
+    if plot:
+        two_player_graph.plot_graph()
+
+    return two_player_graph
+
+
+def admissibility_game_toy_example_2(plot: bool = False) -> TwoPlayerGraph:
+    """
+     The example from Figure 5 of the AAAI 25 paper - 08/01/24
+    """
+
+    # build a graph
+    two_player_graph = graph_factory.get("TwoPlayerGraph",
+                                         graph_name="admissibile_game_2",
+                                         config_yaml="/config/admissibile_game_2",
+                                         save_flag=True,
+                                         from_file=False,
+                                         plot=False)
+
+    # circle in this toy example is sys(eve) and square is env(adam)
+    two_player_graph.add_states_from(["v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", \
+                                       "v11", "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19"])
+
+    two_player_graph.add_initial_state('v0')
+    two_player_graph.add_state_attribute("v0", "player", "eve")
+    two_player_graph.add_state_attribute("v1", "player", "adam")
+    two_player_graph.add_state_attribute("v2", "player", "adam")
+    two_player_graph.add_state_attribute("v3", "player", "eve")
+    two_player_graph.add_state_attribute("v4", "player", "eve")
+    two_player_graph.add_state_attribute("v5", "player", "adam")
+    two_player_graph.add_state_attribute("v6", "player", "adam")
+    two_player_graph.add_state_attribute("v7", "player", "eve")
+    two_player_graph.add_state_attribute("v8", "player", "adam")
+    two_player_graph.add_state_attribute("v9", "player", "adam")
+    two_player_graph.add_state_attribute("v10", "player", "adam")
+    two_player_graph.add_state_attribute("v11", "player", "eve")
+    two_player_graph.add_state_attribute("v12", "player", "eve")
+    two_player_graph.add_state_attribute("v13", "player", "eve")
+    # value nodes - acceptine states. 
+    two_player_graph.add_state_attribute("v14", "player", "eve")
+    two_player_graph.add_state_attribute("v15", "player", "eve")
+    two_player_graph.add_state_attribute("v16", "player", "eve")
+    two_player_graph.add_state_attribute("v17", "player", "eve")
+    two_player_graph.add_state_attribute("v18", "player", "eve")
+    two_player_graph.add_state_attribute("v19", "player", "eve")
+
+    two_player_graph.add_edge("v0", "v1", weight=0)
+    two_player_graph.add_edge("v0", "v2", weight=0)
+    two_player_graph.add_edge("v0", "v10", weight=0)
+    two_player_graph.add_edge("v10", "v11", weight=0)
+    two_player_graph.add_edge("v11", "v10", weight=1)
+    two_player_graph.add_edge("v1", "v3", weight=0)
+    two_player_graph.add_edge("v1", "v12", weight=0)
+    two_player_graph.add_edge("v12", "v1", weight=1)
+    two_player_graph.add_edge("v2", "v13", weight=0)
+    two_player_graph.add_edge("v13", "v2", weight=1)
+    two_player_graph.add_edge("v2", "v4", weight=0)
+    
+    two_player_graph.add_edge("v3", "v5", weight=0)
+    two_player_graph.add_edge("v3", "v6", weight=0)
+    two_player_graph.add_edge("v4", "v6", weight=0)
+    two_player_graph.add_edge("v6", "v7", weight=0)
+    two_player_graph.add_edge("v7", "v8", weight=0)
+    two_player_graph.add_edge("v7", "v9", weight=0)
+    # leaf node edges
+    two_player_graph.add_edge("v5", "v14", weight=3)
+    two_player_graph.add_edge("v5", "v15", weight=4)
+    two_player_graph.add_edge("v8", "v16", weight=2)
+    two_player_graph.add_edge("v8", "v17", weight=9)
+    two_player_graph.add_edge("v9", "v18", weight=5)
+    two_player_graph.add_edge("v9", "v19", weight=10)
+
+    two_player_graph.add_accepting_states_from(["v14", "v15", "v16", "v17", "v18", "v19"])
+
+    if plot:
+        two_player_graph.plot_graph()
+
+    return two_player_graph
+
 
 
 def construct_ltlf_dfa():
@@ -583,14 +856,15 @@ if __name__ == "__main__":
     five_state_ts: bool = False
     variant_1_paper: bool = False
     target_weighted_arena: bool = False
-    two_player_arena: bool = False
-    check_ltlf_dfa: bool = True
+    two_player_arena: bool = True
+    check_ltlf_dfa: bool = False
 
     # solver to call
     qual_BE_synthesis: bool = False
     quant_BE_synthesis: bool = False
-    ijcai_qual_BE_synthesis: bool = False
-    ijcai_quant_BE_synthesis: bool = True
+    quant_hopeful_admissibile_synthesis: bool = False
+    quant_naive_adm: bool = True # AAAI 25
+    quant_adm_winning: bool = False  # AAAI 25
     finite_reg_synthesis: bool = False
     infinte_reg_synthesis: bool = False
     adversarial_game: bool = False
@@ -629,15 +903,28 @@ if __name__ == "__main__":
 
     elif two_player_arena:
         # 4 state example
-        # two_player_graph = four_state_BE_example(add_weights=True)
+        # two_player_graph = four_state_BE_example(add_weights=True, plot=False)
 
-        # 6 state example
-        two_player_graph = eight_state_BE_example(add_weights=True)
+        # 8 state example
+        # two_player_graph = eight_state_BE_example(add_weights=True, plot=False)
+
+        # Example 2 from Appendix
+        # two_player_graph = example_two_BE_example(add_weights=True, plot=True)
+
+        # Example 3 from Appendix
+        # two_player_graph = example_three_BE_example(add_weights=True, plot=False)
 
         # toy adversarial game graph
-        # two_player_graph = adversarial_game_toy_example()
+        # two_player_graph = adversarial_game_toy_example(plot=True)
+
+        # toy admissibility game graph 1
+        two_player_graph = admissibility_game_toy_example_1(plot=False)
+
+        # toy admissibility game graph 2
+        # two_player_graph = admissibility_game_toy_example_2(plot=False)
 
         trans_sys = two_player_graph
+        # sys.exit(-1)
 
     else:
         warnings.warn("Please ensure at-least one of the flags is True")
@@ -667,11 +954,14 @@ if __name__ == "__main__":
     elif quant_BE_synthesis:
         play_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
     
-    elif ijcai_qual_BE_synthesis:
-        ijcai24_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True)
+    elif quant_hopeful_admissibile_synthesis:
+        play_quant_hopeful_admissbile_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
     
-    elif ijcai_quant_BE_synthesis:
-        ijcai24_quant_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True)
+    elif quant_naive_adm:
+        play_quant_admissbile_synthesis_game(trans_sys=trans_sys, debug=False, plot=True)
+    
+    elif quant_adm_winning:
+        play_quant_admissbile_winning_synthesis_game(trans_sys=trans_sys, debug=False, plot=False)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

@@ -1,5 +1,6 @@
 import warnings
 
+from typing import Iterable
 from collections import defaultdict, deque
 
 # import local packages
@@ -96,7 +97,7 @@ class CooperativeGame(ReachabilityGame):
             self.game.plot_graph()
 
         else:
-            assert self.extract_strategy is True, "Please Rerun the solve with extract_strategy flag set to True"
+            assert self.extract_strategy is True, "Please Rerun the solver with extract_strategy flag set to True"
             assert len(self.sys_str.keys()) != 0, "A winning strategy does not exists. Did you run the solver?"
 
             self.game.set_edge_attribute('strategy', False)
@@ -104,7 +105,7 @@ class CooperativeGame(ReachabilityGame):
             # adding attribute to winning strategy so that they are colored when plotting.
             for curr_node, next_node in self.sys_str.items():
                 # if self.game._graph.nodes[curr_node].get("player") == "eve":
-                if isinstance(next_node, list):
+                if isinstance(next_node, Iterable):
                     for n_node in next_node:
                         self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
                 else:

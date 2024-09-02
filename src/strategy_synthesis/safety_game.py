@@ -53,7 +53,9 @@ class SafetyGame(ReachabilityGame):
 
     def solve(self):
         """
-         Implements the Safety solver.
+         Implements the Safety solver. 
+
+         TODO: Compute
         """
         num_out_edges = self._compute_no_of_node_successors()
 
@@ -61,7 +63,7 @@ class SafetyGame(ReachabilityGame):
 
         _regions = defaultdict(lambda: -1)
         env_winning_region: set = set({})
-        sys_str = defaultdict(lambda: -1)
+        sys_str = defaultdict(lambda: set())
         env_str = defaultdict(lambda: -1)
 
         # Env player's target states: S\F
@@ -106,7 +108,7 @@ class SafetyGame(ReachabilityGame):
             if self.game._graph.nodes[_s]["player"] == "eve":
                 for _successor in self.game._graph.successors(_s):
                     if _regions[_successor] != "adam":
-                        sys_str[_s] = _successor
+                        sys_str[_s] = sys_str[_s].union(set([_successor])) 
         
 
         for _s in env_target_states:

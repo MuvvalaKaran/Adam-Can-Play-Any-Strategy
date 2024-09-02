@@ -1,9 +1,6 @@
 import warnings
-import numpy as np
-import random
 
-from numpy import ndarray
-from typing import Optional, Iterable, Dict, List, Tuple
+from typing import Optional, Iterable, Dict
 from collections import defaultdict
 from collections import deque
 
@@ -194,7 +191,7 @@ class ReachabilityGame:
     
     def plot_graph(self, with_strategy: bool = False):
         """
-        A hleper function to plot the graph with or without the strategy 
+        A helper function to plot the graph with or without the strategy 
         
         :param with_strategy: Flag to set printing to True
         """
@@ -209,7 +206,7 @@ class ReachabilityGame:
             # adding attribute to winning strategy so that they are colored when plotting.
             for curr_node, next_node in self.sys_str.items():
                 if self.game._graph.nodes[curr_node].get("player") == "eve":
-                    if isinstance(next_node, list):
+                    if isinstance(next_node, Iterable):
                         for n_node in next_node:
                             self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
                     else:

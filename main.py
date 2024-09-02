@@ -24,6 +24,7 @@ from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveVal
 from src.strategy_synthesis.best_effort_syn import QualitativeBestEffortReachSyn, QuantitativeBestEffortReachSyn, \
       QuantitativeHopefullAdmissibleReachSyn
 from src.strategy_synthesis.adm_str_syn import QuantitativeNaiveAdmissible, QuantitativeGoUAdmissible, QuantitativeGoUAdmissibleWinning
+from src.strategy_synthesis.adm_str_syn import QuantiativeRefinedAdmissible
 
 def compute_bounded_winning_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
                                 energy_bound: int = 0,
@@ -147,11 +148,11 @@ def play_quant_hopeful_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debu
      A method to compute Quantitative Best effort strategies for the system player
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    be_handle = QuantitativeHopefullAdmissibleReachSyn(game=trans_sys, debug=debug)
-    be_handle.compute_best_effort_strategies(plot=plot)
+    adm_handle = QuantitativeHopefullAdmissibleReachSyn(game=trans_sys, debug=debug)
+    adm_handle.compute_best_effort_strategies(plot=plot)
     
     # print admissible strategy dictionary for sanity checking
-    for state, succ_states in be_handle.sys_best_effort_str.items():
+    for state, succ_states in adm_handle.sys_adm_str.items():
         print(f"Strategy from {state} is {succ_states}")
 
 
@@ -160,16 +161,16 @@ def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool 
      A method to compute Quantitative Admissible strategies for the system player - AAAI 25
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    be_handle = QuantitativeGoUAdmissible(game=trans_sys, debug=debug, budget=10)
-    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True, compute_str=False)
+    adm_handle = QuantitativeGoUAdmissible(game=trans_sys, debug=debug, budget=10)
+    adm_handle.compute_adm_strategies(plot=plot, plot_transducer=True, compute_str=False)
 
     
-    # be_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=10)
-    # be_handle.compute_adm_strategies(plot=plot)
+    # adm_handle = QuantitativeNaiveAdmissible(game=trans_sys, debug=debug, budget=10)
+    # adm_handle.compute_adm_strategies(plot=plot)
     
     # print admissible strategy dictionary for sanity checking
     if debug: 
-        for state, succ_states in be_handle.sys_best_effort_str.items():
+        for state, succ_states in adm_handle.sys_adm_str.items():
             print(f"Strategy from {state} is {succ_states}")
 
 
@@ -178,22 +179,26 @@ def play_quant_admissbile_winning_synthesis_game(trans_sys: TwoPlayerGraph, debu
      A method to compute Quantitative Admissible Winning strategies for the system player - AAAI 25
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    be_handle = QuantitativeGoUAdmissibleWinning(game=trans_sys, debug=debug, budget=10)
-    be_handle.compute_adm_strategies(plot=plot, plot_transducer=True, compute_str=False)
+    adm_handle = QuantitativeGoUAdmissibleWinning(game=trans_sys, debug=debug, budget=10)
+    adm_handle.compute_adm_strategies(plot=plot, plot_transducer=True, compute_str=False)
 
     
     # print admissible strategy dictionary for sanity checking
     if debug: 
-        for state, succ_states in be_handle.sys_best_effort_str.items():
+        for state, succ_states in adm_handle.sys_adm_str.items():
             print(f"Strategy from {state} is {succ_states}")
 
 
-def play_quant_refined_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+def play_quant_refined_admissbile_synthesis_game(game: TwoPlayerGraph, debug: bool = False, plot: bool = False):
     """
      A method to compute Quantitative refined Admissible strategies for the system player - ICRA 25
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    raise NotImplementedError
+    adm_handle = QuantiativeRefinedAdmissible(game=game, debug=debug)
+    adm_handle.compute_adm_strategies(plot=plot)
+    if debug: 
+        for state, succ_states in adm_handle.sys_adm_str.items():
+            print(f"Strategy from {state} is {succ_states}")
 
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
@@ -259,14 +264,14 @@ if __name__ == "__main__":
     quant_hopeful_admissibile_synthesis: bool = False
     quant_naive_adm: bool = False # AAAI 25
     quant_adm_winning: bool = False  # AAAI 25
-    quant_refined_adm_: bool = False # ICRA 25
+    quant_refined_adm_: bool = True # ICRA 25
     finite_reg_synthesis: bool = False
     infinte_reg_synthesis: bool = False
     adversarial_game: bool = False
     iros_str_synthesis: bool = False
     min_max_game: bool = False
     play_coop_game: bool = False
-    safety_game: bool = True
+    safety_game: bool = False
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:
@@ -366,7 +371,7 @@ if __name__ == "__main__":
         play_quant_admissbile_winning_synthesis_game(trans_sys=trans_sys, debug=False, plot=False)
     
     elif quant_refined_adm_:
-        play_quant_refined_admissbile_synthesis_game(trans_sys=trans_sys, debug=False, plot=False)
+        play_quant_refined_admissbile_synthesis_game(game=trans_sys, debug=False, plot=True)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

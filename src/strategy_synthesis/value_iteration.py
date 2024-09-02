@@ -936,7 +936,7 @@ class PermissiveCoopValueIteration(ValueIteration):
       See: "Synthesis of Maximally Permissive Strategies for LTLf Speciﬁcations", Shufang Zhu and G. D. Giacomo, IJCAI 22, for more details.  
     """
     def __init__(self, game: TwoPlayerGraph, int_val: bool = True):
-        super().__init__(game, int_val, competitive=False)
+        super().__init__(game=game, int_val=int_val, competitive=False)
     
 
     def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Union[str, None]:

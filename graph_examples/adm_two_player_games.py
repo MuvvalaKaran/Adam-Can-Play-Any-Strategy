@@ -184,6 +184,10 @@ def admissibility_game_toy_example_3(plot: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_edge("v9", "v13", weight=0)
     two_player_graph.add_edge("v10", "v13", weight=0)
 
+    # testing hopeful str computation when aVal(v') = \inf in pending region
+    two_player_graph.add_edge("v4", "v0", weight=0)
+    two_player_graph.add_edge("v5", "v0", weight=0)
+
     # accepting state self-loop
     two_player_graph.add_edge("v13", "v13", weight=0)
 

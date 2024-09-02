@@ -17,6 +17,7 @@ from graph_examples.adm_two_player_games import *
 from src.strategy_synthesis.regret_str_synthesis \
     import RegretMinimizationStrategySynthesis as RegMinStrSyn
 from src.strategy_synthesis.adversarial_game import ReachabilityGame as ReachabilitySolver
+from src.strategy_synthesis.safety_game import SafetyGame
 from src.strategy_synthesis.cooperative_game import CooperativeGame
 from src.strategy_synthesis.iros_solver import IrosStrategySynthesis as IrosStrSolver
 from src.strategy_synthesis.value_iteration import ValueIteration, PermissiveValueIteration
@@ -96,6 +97,24 @@ def play_cooperative_game(trans_sys: Union[FiniteTransSys, TwoPlayerGraph],
         coop_handle.plot_graph(with_strategy=True)
 
 
+def play_safety_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+    """
+     A method to compute safe states from Sys player
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    # safety_handle = SafetyGame(game=trans_sys, target_states= set(["v0", "v1", "v4", "v5", "v8", "v9", "v10", "v13"]),debug=debug)
+    safety_handle = SafetyGame(game=trans_sys, target_states= set(["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"]),debug=debug)
+    safety_handle.reachability_solver()
+
+    # sys.exit(-1)
+    safety_handle.print_winning_region()
+    safety_handle.print_winning_strategies()
+    
+    if plot:
+        safety_handle.plot_graph(with_strategy=True)
+
+
+
 def play_qual_be_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False, print_states: bool = False):
     """
      A method to compute Qualitative Best effort strategies for the system player
@@ -139,7 +158,7 @@ def play_quant_hopeful_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debu
 
 def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
     """
-     A method to compute Quantitative Best effort strategies for the system player
+     A method to compute Quantitative Admissible strategies for the system player - AAAI 25
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
     be_handle = QuantitativeGoUAdmissible(game=trans_sys, debug=debug, budget=10)
@@ -157,7 +176,7 @@ def play_quant_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool 
 
 def play_quant_admissbile_winning_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
     """
-     A method to compute Quantitative Best effort strategies for the system player
+     A method to compute Quantitative Admissible Winning strategies for the system player - AAAI 25
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
     be_handle = QuantitativeGoUAdmissibleWinning(game=trans_sys, debug=debug, budget=10)
@@ -168,6 +187,14 @@ def play_quant_admissbile_winning_synthesis_game(trans_sys: TwoPlayerGraph, debu
     if debug: 
         for state, succ_states in be_handle.sys_best_effort_str.items():
             print(f"Strategy from {state} is {succ_states}")
+
+
+def play_quant_refined_admissbile_synthesis_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool = False):
+    """
+     A method to compute Quantitative refined Admissible strategies for the system player - ICRA 25
+    """
+    assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
+    raise NotImplementedError
 
 
 def finite_reg_minimizing_str(trans_sys: Union[FiniteTransSys, TwoPlayerGraph]):
@@ -233,12 +260,14 @@ if __name__ == "__main__":
     quant_hopeful_admissibile_synthesis: bool = False
     quant_naive_adm: bool = False # AAAI 25
     quant_adm_winning: bool = False  # AAAI 25
+    quant_refined_adm_: bool = False # ICRA 25
     finite_reg_synthesis: bool = False
     infinte_reg_synthesis: bool = False
     adversarial_game: bool = False
     iros_str_synthesis: bool = False
     min_max_game: bool = False
     play_coop_game: bool = False
+    safety_game: bool = True
 
     # build the graph G on which we will compute the regret minimizing strategy
     if three_state_ts:
@@ -277,7 +306,7 @@ if __name__ == "__main__":
         # two_player_graph = eight_state_BE_example(add_weights=True, plot=False)
 
         # Example 2 from Appendix
-        # two_player_graph = example_two_BE_example(add_weights=True, plot=True)
+        two_player_graph = example_two_BE_example(add_weights=True, plot=False)
 
         # Example 3 from Appendix
         # two_player_graph = example_three_BE_example(add_weights=True, plot=False)
@@ -286,13 +315,13 @@ if __name__ == "__main__":
         # two_player_graph = adversarial_game_toy_example(plot=True)
 
         # toy admissibility game graph 1
-        two_player_graph = admissibility_game_toy_example_1(plot=False)
+        # two_player_graph = admissibility_game_toy_example_1(plot=False)
 
         # toy admissibility game graph 2
         # two_player_graph = admissibility_game_toy_example_2(plot=False)
 
         # toy admissibility game graph 3
-        two_player_graph = admissibility_game_toy_example_3(plot=True)
+        # two_player_graph = admissibility_game_toy_example_3(plot=False)
 
         trans_sys = two_player_graph
         # sys.exit(-1)
@@ -318,6 +347,9 @@ if __name__ == "__main__":
     
     elif play_coop_game:
         play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
+    
+    elif safety_game:
+        play_safety_game(trans_sys=trans_sys, debug=True, plot=False)
 
     elif qual_BE_synthesis:
         play_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)
@@ -333,6 +365,9 @@ if __name__ == "__main__":
     
     elif quant_adm_winning:
         play_quant_admissbile_winning_synthesis_game(trans_sys=trans_sys, debug=False, plot=False)
+    
+    elif quant_refined_adm_:
+        play_quant_refined_admissbile_synthesis_game(trans_sys=trans_sys, debug=False, plot=False)
 
     else:
         warnings.warn("Please make sure that you select at-least one solver.")

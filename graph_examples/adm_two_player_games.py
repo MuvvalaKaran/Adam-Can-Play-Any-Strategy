@@ -130,7 +130,7 @@ def admissibility_game_toy_example_2(plot: bool = False) -> TwoPlayerGraph:
 
 def admissibility_game_toy_example_3(plot: bool = False) -> TwoPlayerGraph:
     """
-     The example for ICRA 25.
+     Toy example for ICRA 25.
     """
 
     # build a graph
@@ -173,6 +173,7 @@ def admissibility_game_toy_example_3(plot: bool = False) -> TwoPlayerGraph:
     two_player_graph.add_edge("v6", "v7", weight=1)
     two_player_graph.add_edge("v7", "v6", weight=0)
     two_player_graph.add_edge("v4", "v8", weight=0)
+    two_player_graph.add_edge("v4", "v6", weight=0)
     two_player_graph.add_edge("v5", "v8", weight=0)
     two_player_graph.add_edge("v8", "v9", weight=100)
     two_player_graph.add_edge("v9", "v8", weight=0)
@@ -192,5 +193,3 @@ def admissibility_game_toy_example_3(plot: bool = False) -> TwoPlayerGraph:
         two_player_graph.plot_graph()
 
     return two_player_graph
-
-

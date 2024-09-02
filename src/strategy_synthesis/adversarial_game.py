@@ -9,7 +9,6 @@ from collections import deque
 
 # import local packages
 from ..graph import TwoPlayerGraph, graph_factory
-from ..graph import TwoPlayerGraph
 
 
 class ReachabilityGame:
@@ -87,7 +86,7 @@ class ReachabilityGame:
         
         return self._sys_winning_region
 
-    def _compute_no_of_node_successors(self) -> dict:
+    def _compute_no_of_node_successors(self) -> Dict[str, int]:
         """
         A helper method that initially compute the number of outgoing edges from a node.
 
@@ -250,7 +249,6 @@ class ReachabilityGame:
                 self.game._graph.add_edge(_n, _n)
 
     def _sanity_check_player(self):
-
         for _n in self.game._graph.nodes.data("player"):
             if _n[1] is None:
                 self.game.add_state_attribute(_n[0], "player", "eve")

@@ -646,19 +646,10 @@ class PermissiveValueIteration(ValueIteration):
     
     def solve(self, debug: bool = False, plot: bool = False, extract_strategy: bool = True):
         """
-        A method that implements Algorithm 1 from the paper. The operation performed at each step can be represented by
-        an operator say F.  F here is the _get_max_env_val() and _get_min_sys_val() methods. F is a monotonic operator
-        and is monotonically decreasing - meaning the function should not increase (it must not increase!) and converges
-        to the greatest fixed point of F.
-
-        As all the weights are positive in our case, the state values monotonically decrease and converge to the greatest
-        fixed point.
-
-        The Val of the game is infact the Greatest Fixed Point.  The upper bound on the # of iterations to converge is
-        (2|V| -1)W|V| + |V|.
-        :param debug:
-        :param plot:
-        :return:
+         TODO: Looks like there isn't much difference in implementation of the parent method's solve(). Can I get rid of this function?
+            :param debug:
+            :param plot:
+            :return:
         """
         # initially in the org val_vector the target node(s) will value 0
         _init_node = self.org_graph.get_initial_states()[0][0]
@@ -933,3 +924,37 @@ class HopefulPermissiveValueIteration(PermissiveValueIteration):
             coop_val = min(coop_succ_vals)
 
             return adv_val, coop_val
+
+
+class PermissiveCoopValueIteration(ValueIteration):
+    """
+     Override base method to compute the maximally persmissive set of Cooperative Strategy. 
+      Note: It is NOT the set of all OPTIMAL strategies rather it the set of all strategy under which you reach goal state while playing memorylessly. 
+
+      Such strategies are also called non-deferring strategies. 
+      
+      See: "Synthesis of Maximally Permissive Strategies for LTLf Speciﬁcations", Shufang Zhu and G. D. Giacomo, IJCAI 22, for more details.  
+    """
+    def __init__(self, game: TwoPlayerGraph, int_val: bool = True):
+        super().__init__(game, int_val, competitive=False)
+    
+
+    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Union[str, None]:
+        """
+         A method that returns the set of nodes along the non-deferring strategies.
+            :param node: The current node in the graph
+            :param pre_vec: The previous value vector
+         :return: The optimal state(s) to transition to if successor states values are not Inf.
+        """
+
+        # _succ_vals: List = []
+        _succ_nodes = []
+        cval_curr_node =   pre_vec[self.node_int_map[node]]
+        for _next_n in self.org_graph._graph.successors(node):
+            if pre_vec[ self.node_int_map[_next_n]] < cval_curr_node:
+                _succ_nodes.append(_next_n)
+        
+        if len(_succ_nodes) == 0:
+            return None
+        
+        return _succ_nodes

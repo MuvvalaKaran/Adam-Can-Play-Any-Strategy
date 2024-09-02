@@ -102,11 +102,10 @@ def play_safety_game(trans_sys: TwoPlayerGraph, debug: bool = False, plot: bool 
      A method to compute safe states from Sys player
     """
     assert isinstance(trans_sys, TwoPlayerGraph), "Make sure the graph is an instance of TwoPlayerGraph class for Best effort experimental code."
-    # safety_handle = SafetyGame(game=trans_sys, target_states= set(["v0", "v1", "v4", "v5", "v8", "v9", "v10", "v13"]),debug=debug)
-    safety_handle = SafetyGame(game=trans_sys, target_states= set(["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"]),debug=debug)
+    safety_handle = SafetyGame(game=trans_sys, target_states= set(["v0", "v1", "v4", "v5", "v8", "v9", "v10", "v13"]),debug=debug)
+    # safety_handle = SafetyGame(game=trans_sys, target_states= set(["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"]),debug=debug)
     safety_handle.reachability_solver()
 
-    # sys.exit(-1)
     safety_handle.print_winning_region()
     safety_handle.print_winning_strategies()
     
@@ -306,7 +305,7 @@ if __name__ == "__main__":
         # two_player_graph = eight_state_BE_example(add_weights=True, plot=False)
 
         # Example 2 from Appendix
-        two_player_graph = example_two_BE_example(add_weights=True, plot=False)
+        # two_player_graph = example_two_BE_example(add_weights=True, plot=False)
 
         # Example 3 from Appendix
         # two_player_graph = example_three_BE_example(add_weights=True, plot=False)
@@ -321,7 +320,7 @@ if __name__ == "__main__":
         # two_player_graph = admissibility_game_toy_example_2(plot=False)
 
         # toy admissibility game graph 3
-        # two_player_graph = admissibility_game_toy_example_3(plot=False)
+        two_player_graph = admissibility_game_toy_example_3(plot=False)
 
         trans_sys = two_player_graph
         # sys.exit(-1)
@@ -349,7 +348,7 @@ if __name__ == "__main__":
         play_cooperative_game(trans_sys=trans_sys, debug=True, plot=True)
     
     elif safety_game:
-        play_safety_game(trans_sys=trans_sys, debug=True, plot=False)
+        play_safety_game(trans_sys=trans_sys, debug=True, plot=True)
 
     elif qual_BE_synthesis:
         play_qual_be_synthesis_game(trans_sys=trans_sys, debug=True, plot=True, print_states=True)

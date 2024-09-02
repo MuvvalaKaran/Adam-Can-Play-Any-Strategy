@@ -10,7 +10,8 @@ from typing import Optional, Union, List, Iterable, Dict, Set, Tuple, Generator
 
 from ..graph import TwoPlayerGraph
 from ..graph import graph_factory
-from .value_iteration import ValueIteration, PermissiveValueIteration
+from .safety_game import SafetyGame
+from .value_iteration import ValueIteration, PermissiveValueIteration, PermissiveCoopValueIteration
 
 
 class AbstractBestEffortReachSyn(metaclass=ABCMeta):
@@ -511,7 +512,7 @@ class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
 
 class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
     """
-     This class overrides the base's class Tree construction code to construct a Graph of Utility. 
+     This class overrides the base class's Tree construction code to construct a Graph of Utility. 
      Just like we did in Regret Synthesis and run synthesis algorithm on this graph
     """
 
@@ -793,3 +794,118 @@ class QuantitativeGoUAdmissibleWinning(QuantitativeGoUAdmissible):
             return True
         
         return False
+
+
+class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
+    """
+     This class inherits the class and implemente's the proposed algorithm of ICRA 25. We compute Adm strategies and progressive refine them as follows:
+     1. If a admissible strategy exists, choose that, 
+     2. If a safe-admissible strategy exists, choose that
+     3. If a safe-admissible does not exists then play hopeful admissible strategy, finally, 
+     4. If a winning admissible strategy exists then compute Wcoop and choose those strategies.
+
+     Unlike or AAAI's proposed algorithm, this algorithm is indepedent of the budget and does require us to rollout the game.  
+    """
+
+    def compute_winning_strategies(self, plot: bool = True):
+        """
+         Implement method to run the Value Iteration code
+        """
+        reachability_game_handle = PermissiveValueIteration(game=self.game, competitive=True)
+        reachability_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        self._sys_winning_str = reachability_game_handle.sys_str_dict
+        self._env_winning_str = reachability_game_handle.env_str_dict
+        self._winning_state_values = reachability_game_handle.state_value_dict
+
+        # sometime an accepting may not have a winning strategy. Thus, we only store states that have an winning strategy
+        _sys_states_winning_str = reachability_game_handle.sys_str_dict.keys()
+
+        # update winning region and optimal state values
+        for ws in reachability_game_handle.sys_winning_region:
+            if self.game.get_state_w_attribute(ws, 'player') == 'eve' and ws in _sys_states_winning_str:
+                self._winning_region.add(ws)
+            elif self.game.get_state_w_attribute(ws, 'player') == 'adam':
+                self._winning_region.add(ws)
+        
+        if self.debug and reachability_game_handle.is_winning():
+            print("There exists a Winning strategy from the Initial State")
+    
+
+    def compute_cooperative_winning_strategy(self, permissive: bool = False, plot: bool = False):
+        """
+         Override the base method to run the Permissive Coop Value Iteration code
+        """
+        coop_handle = PermissiveCoopValueIteration(game=self.game)
+        coop_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        self._sys_coop_winning_str = coop_handle.sys_str_dict
+        self._env_coop_winning_str = coop_handle.env_str_dict
+        self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
+        self._coop_winning_state_values = coop_handle.state_value_dict
+        
+        if self.debug and coop_handle.is_winning():
+            print("There exists a path from the Initial State")
+    
+
+    def compute_adm_strategies(self, plot: bool = False) -> None:
+        """
+         Main method that implements computation of Admissible strategies. 
+
+         1. First play, Min-Min (Permissive Coop) and Min-Max game and compute Losing, Pending, and Winning regions.
+         2. If initial state belongs to Losing region, then return the original game - all strategies are admissible.
+         3. Play safety game with Pending and Winning as target states for the Sys player. 
+         4. If safe strategy exists from all Sys player states in Pending Region then 
+         4.1 Check if safety and Permissive Coop strategy's intersetion is empty for any Sys player states in Pending region
+         4.2 If yes, then Remove Hopeless strategies for Env player and play Min-Max game on this hopeful games
+         4.3 If no, then stitch strategies and return them. In winning region, play WCoop, in Pending play safe-admissible strategy
+         5. stitch: adm - safe-adm - hopeful-adm and Wcoop strategy
+         5.1. Remove Sys player edges that transit to Losing region - as they are never admissible.
+         5.2. In pending region, Sys states that have safe-adm  will play that str else they will play hopeful-adm.
+         5.3 In Winning region, Sys will play Wcoop as they are winning and admissible.
+        """
+        # get permissive cooperative winning strategies
+        print("Computing Cooperative Winning strategy")
+        self.compute_cooperative_winning_strategy(plot=False)
+
+        # break if init state belongs to losing region
+        if self.game.get_initial_states()[0][0] not in self.coop_winning_region:
+            print("No path to the Accepting states exisits.")
+            return None
+
+        
+        # get winning strategies
+        print("Computing Winning strategy")
+        self.compute_winning_strategies(plot=False)
+
+        # play safety game
+        safe_states: set = self.get_pending_region.union(self.winning_region)
+        safety_handle = SafetyGame(game=self.game, target_states= safe_states, debug=self.debug)
+        safety_handle.reachability_solver()
+
+        # check if safety exists 
+        play_hopeful_game: bool = False
+        safe_adm_str: dict = {} 
+        if len(safety_handle.sys_str) != 0:
+            # check intersection of safety and Permissive Coop strategy
+            for state in self.pending_region:
+                # not empty set
+                safe_adm: set = safety_handle.sys_str.get(state).intersection(set(self.sys_coop_winning_str.get(state)))
+                if not safe_adm == set():
+                    safe_adm_str[state] = safe_adm
+                else:
+                    # if an empty intersection exists we need to play hopeful game too.
+                    play_hopeful_game = True
+        
+        # Stitch winning str 
+        self.sys_adm_str = {**safe_adm_str, **self.sys_winning_str}
+
+        if not play_hopeful_game:
+            return None
+        
+        # remove hopeless edge
+
+        # play hopeful game
+
+
+
+
+

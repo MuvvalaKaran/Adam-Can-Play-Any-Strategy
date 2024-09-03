@@ -18,8 +18,8 @@ class SafetyGame(ReachabilityGame):
         If Sys player has a safety objective to stay in F, the Env player has reachability objective to reach S\F.
     """
 
-    def __init__(self, game: TwoPlayerGraph, target_states, debug: bool = False):
-        super().__init__(game, debug)
+    def __init__(self, game: TwoPlayerGraph, target_states, debug: bool = False, **kwargs):
+        super().__init__(game, debug, **kwargs)
         self._target_states = target_states
     
     @property
@@ -39,7 +39,7 @@ class SafetyGame(ReachabilityGame):
             if _n[1] is None:
                 warnings.warn(f"Please ensure all nodes have a player attribute. Node {_n} does not have one.")
             
-            if not self.game._finite and len(list(self.game._graph.successors(_n))) == 0:
+            if not self.game._finite and len(list(self.game._graph.successors(_n[0]))) == 0:
                 warnings.warn(f"Please ensure all nodes have at-least one successor. Node {_n} does not have one.")
     
     def _sanity_check_total(self, debug: bool = False):

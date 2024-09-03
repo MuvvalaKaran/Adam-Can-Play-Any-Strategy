@@ -810,12 +810,26 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
     def __init__(self, game: TwoPlayerGraph, debug: bool = False):
         super().__init__(game, debug)
         self._wcoop: dict = defaultdict(lambda: set())
+        self._play_hopeful_game: bool = False
+        self._safe_adm_str : Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
+        self._hopeful_adm_str: Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
     
-
     @property
     def wcoop(self):
         assert len(self._wcoop) != 0, "Please run the solver before accessing the WCoop strategies."
         return self._wcoop
+
+    @property
+    def play_hopeful_game(self):
+        return self._play_hopeful_game
+    
+    @property
+    def safe_adm_str(self):
+        return self._safe_adm_str
+    
+    @property
+    def hopeful_adm_str(self):
+        return self._hopeful_adm_str
     
 
     def compute_winning_strategies(self, plot: bool = True):
@@ -832,7 +846,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         _sys_states_winning_str = reachability_game_handle.sys_str_dict.keys()
 
         # update winning region and optimal state values
-        for ws in reachability_game_handle.sys_winning_region:
+        for ws in reachability_game_handle.winning_region:
             if self.game.get_state_w_attribute(ws, 'player') == 'eve' and ws in _sys_states_winning_str:
                 self._winning_region.add(ws)
             elif self.game.get_state_w_attribute(ws, 'player') == 'adam':
@@ -896,31 +910,33 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
 
         # play safety game
         safe_states: set = self.pending_region.union(self.winning_region)
-        safety_handle = SafetyGame(game=self.game, target_states=safe_states, debug=self.debug)
+        safety_handle = SafetyGame(game=self.game, target_states=safe_states, debug=self.debug, sanity_check=False)
         safety_handle.reachability_solver()
 
         # check if safety exists 
-        play_hopeful_game: bool = False
         hopeful_sys_state: set = set()
-        safe_adm_str: dict = {} 
+        # safe_adm_str: dict = {} 
         if len(safety_handle.sys_str) != 0:
             # check intersection of safety and Permissive Coop strategy
             for state in self.pending_region:
                 # not empty set
                 if self.game.get_state_w_attribute(state, "player") == "eve":
-                    safe_adm: set = safety_handle.sys_str.get(state).intersection(set(self.sys_coop_winning_str.get(state)))
+                    safe_adm: set = safety_handle.sys_str.get(state, set()).intersection(set(self.sys_coop_winning_str.get(state)))
                     if not safe_adm == set():
-                        safe_adm_str[state] = safe_adm
+                        self._safe_adm_str[state] = safe_adm
                     else:
                         # if an empty intersection exists we need to play hopeful game too.
-                        play_hopeful_game = True
+                        self._play_hopeful_game = True
                         hopeful_sys_state.add(state)
+        else:
+            self._play_hopeful_game = True
+
         
         # Stitch winning str - values from Sys winning str dict will overide the values from safe-adm str
         self.compute_wcoop_strategies()
-        self._sys_adm_str = {**safe_adm_str, **self.wcoop}
+        self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}
 
-        if play_hopeful_game:
+        if self._play_hopeful_game:
             # remove hopeless edges - env winning str such that successor is in losing region
             hopeful_game: TwoPlayerGraph = deepcopy(self.game)  ### very slow on very large graph - see if it can be avoided 
             for state, succ_state in safety_handle.env_str.items():
@@ -938,18 +954,17 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             # play hopeful game - we could maybe speed this be using Values from previous Min-Max VI
             hope_game_handle = PermissiveValueIteration(game=hopeful_game, competitive=True)
             hope_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
-            hopeful_sys_dict: Dict[str, Iterable] = {}
             for s in hopeful_sys_state:
                 if hope_game_handle.sys_str_dict.get(s):
-                    hopeful_sys_dict[s] = hope_game_handle.sys_str_dict[s]
+                    self._hopeful_adm_str[s] = hope_game_handle.sys_str_dict[s]
                 else:
                     # if aVal(v') = inf then all actions s.t Sys player stays in pending/ go to winning region
                     # are hopeful admissible
-                    hopeful_sys_dict[s] = [succ for succ in hopeful_game._graph.successors(s)]
+                    self._hopeful_adm_str[s] = [succ for succ in hopeful_game._graph.successors(s)]
 
             # when hope-adm is same adm then FOR ROLLOUT purposes we can play one of the cooperative winning strategy.
             # cooperative winning strategy is non-deferring strategy and as such will ensure reaching goal state as long as Env cooperates
-            self._sys_adm_str = {**hopeful_sys_dict, **safe_adm_str, **self.wcoop}
+            self._sys_adm_str = {**self._hopeful_adm_str, **self._safe_adm_str, **self.wcoop}
 
         if plot:
             self.add_str_flag()

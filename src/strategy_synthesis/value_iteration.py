@@ -34,7 +34,8 @@ class ValueIteration:
         self._str_dict: Dict = defaultdict(lambda: -1)
         self._sys_str_dict: Dict = defaultdict(lambda: -1)
         self._env_str_dict: Dict = defaultdict(lambda: -1)
-        self._sys_winning_region = None
+        self._sys_winning_region: set = None
+        self._winning_region: set = None
         self._accp_states: set = set(self.org_graph.get_accepting_states())
         self._iterations_to_converge = math.inf
         self._convergence_dict = defaultdict(lambda: -1)
@@ -85,6 +86,10 @@ class ValueIteration:
     @property
     def sys_winning_region(self):
         return self._sys_winning_region
+    
+    @property
+    def winning_region(self):
+        return self._winning_region
     
     @property
     def iterations_to_converge(self):
@@ -687,6 +692,7 @@ class PermissiveValueIteration(ValueIteration):
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
         self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
+        self._winning_region = set([s for s, val in self.state_value_dict.items() if val != math.inf])
 
         if plot:
             self.plot_graph()

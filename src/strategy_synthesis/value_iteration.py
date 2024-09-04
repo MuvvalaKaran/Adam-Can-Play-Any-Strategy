@@ -445,6 +445,7 @@ class ValueIteration:
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
         self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
+        self._winning_region = set([s for s, val in self.state_value_dict.items() if val != math.inf])
 
         if plot:
             self._change_orig_graph_name(prefix='adv_str_on_')
@@ -943,24 +944,60 @@ class PermissiveCoopValueIteration(ValueIteration):
     """
     def __init__(self, game: TwoPlayerGraph, int_val: bool = True):
         super().__init__(game=game, int_val=int_val, competitive=False)
+        self._sys_coop_opt_str_dict: Dict = defaultdict(lambda: -1)
+
+    @property
+    def sys_coop_opt_str_dict(self):
+        return self._sys_coop_opt_str_dict
     
 
-    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Union[str, None]:
+    def extract_strategy(self) -> Tuple[dict, dict]:
+        """
+         Overide the base method as get_min_sys_val return Coop and Coop Optimal strategy.
+        """
+        _env_str_dict = {}
+        _sys_str_dict = {}
+        for _n in self.org_graph._graph.nodes():
+            # get the max value
+            if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
+                _next_max_node = self._get_max_env_val(_n, self.val_vector[:, -1])
+                if _next_max_node is not None:
+                    _env_str_dict[_n] = _next_max_node
+            
+            # get the min value
+            elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                _next_min_node, opt_next_min_node = self._get_min_sys_val(_n, self.val_vector[:, -1])
+                if _next_min_node is not None:
+                    _sys_str_dict[_n] = _next_min_node
+                    self._sys_coop_opt_str_dict[_n] =  opt_next_min_node
+        
+        return _sys_str_dict, _env_str_dict
+    
+
+    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Tuple[Union[str], str]:
         """
          A method that returns the set of nodes along the non-deferring strategies.
             :param node: The current node in the graph
             :param pre_vec: The previous value vector
          :return: The optimal state(s) to transition to if successor states values are not Inf.
         """
-
-        # _succ_vals: List = []
+        _succ_vals: List[Tuple[str, int]] = []
         _succ_nodes = []
         cval_curr_node =   pre_vec[self.node_int_map[node]]
         for _next_n in self.org_graph._graph.successors(node):
-            if pre_vec[ self.node_int_map[_next_n]] < cval_curr_node:
+            _node_int = self.node_int_map[_next_n]
+            _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int]
+            if _val != math.inf:
+                _succ_vals.append((_next_n, _val))
+            if pre_vec[_node_int] < cval_curr_node:
                 _succ_nodes.append(_next_n)
         
-        if len(_succ_nodes) == 0:
-            return None
+        try:
+            opt_succ_node, _ = min(_succ_vals, key=operator.itemgetter(1))
+        except ValueError: 
+            opt_succ_node = None
         
-        return _succ_nodes
+        if len(_succ_nodes) == 0:
+            return None, opt_succ_node
+        
+        return _succ_nodes, opt_succ_node

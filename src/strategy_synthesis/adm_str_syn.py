@@ -808,11 +808,17 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
      Unlike or AAAI's proposed algorithm, this algorithm is indepedent of the budget and does require us to rollout the game.  
     """
     def __init__(self, game: TwoPlayerGraph, debug: bool = False):
+        """
+         Note: Coop Sys Str Dict is the Str for set of all Cooperative str - non-deferring str that always reach the goal state(s). 
+         Coop Optimal Str: Set of all Cooperative Optimal str - non-deferring str that always reach the goal state(s) optimally. 
+        """
+        
         super().__init__(game, debug)
         self._wcoop: dict = defaultdict(lambda: set())
         self._play_hopeful_game: bool = False
         self._safe_adm_str : Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
         self._hopeful_adm_str: Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
+        self._coop_optimal_sys_str: Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
     
     @property
     def wcoop(self):
@@ -822,6 +828,10 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
     @property
     def play_hopeful_game(self):
         return self._play_hopeful_game
+
+    @property
+    def coop_optimal_sys_str(self):
+        return self._coop_optimal_sys_str
     
     @property
     def safe_adm_str(self):
@@ -866,6 +876,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self._env_coop_winning_str = coop_handle.env_str_dict
         self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
         self._coop_winning_state_values = coop_handle.state_value_dict
+        self._coop_optimal_sys_str = coop_handle.sys_coop_opt_str_dict
         
         if self.debug and coop_handle.is_winning():
             print("There exists a path from the Initial State")

@@ -966,10 +966,10 @@ class PermissiveCoopValueIteration(ValueIteration):
             
             # get the min value
             elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
-                _next_min_node, opt_next_min_node = self._get_min_sys_val(_n, self.val_vector[:, -1])
+                _next_min_node, opt_next_min_nodes = self._get_min_sys_val(_n, self.val_vector[:, -1])
                 if _next_min_node is not None:
                     _sys_str_dict[_n] = _next_min_node
-                    self._sys_coop_opt_str_dict[_n] =  opt_next_min_node
+                    self._sys_coop_opt_str_dict[_n] =  opt_next_min_nodes
         
         return _sys_str_dict, _env_str_dict
     
@@ -993,7 +993,8 @@ class PermissiveCoopValueIteration(ValueIteration):
                 _succ_nodes.append(_next_n)
         
         try:
-            opt_succ_node, _ = min(_succ_vals, key=operator.itemgetter(1))
+            _, min_val = min(_succ_vals, key=operator.itemgetter(1))
+            opt_succ_node = [s for s, v in _succ_vals if v == min_val]
         except ValueError: 
             opt_succ_node = None
         

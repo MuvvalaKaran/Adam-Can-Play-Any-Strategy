@@ -417,7 +417,23 @@ class ProductAutomaton(TwoPlayerGraph):
         :param _v_prod_node:
         :return: Updated graph with the edge
         """
-        if not self._graph.has_edge(_u_prod_node, _v_prod_node):
+        u_ts_node = _u_prod_node[0] if isinstance(_u_prod_node, tuple) else _u_prod_node
+        v_ts_node = _v_prod_node[0] if isinstance(_v_prod_node, tuple) else _v_prod_node
+        try:
+            is_env_node: bool = True if self._trans_sys._graph.nodes[u_ts_node].get('player', '') == 'adam' else False
+        except KeyError:
+            is_env_node: bool = False
+
+        # is_env_node: bool = True if self._trans_sys._graph.nodes[u_ts_node].get('player', ) == 'adam' else False
+        is_nxt_abs: bool = True if v_ts_node in self._auto_graph.get_absorbing_states() else False
+        check = True if not self._graph.has_edge(_u_prod_node, _v_prod_node) else False
+        
+        # if at env state and edbe from same u to accepting node exists then skip the "check", i.e.,
+        #  construct multiple Env edges between u and v as Env can satisfy taks in multiple ways at u.
+        if is_env_node and is_nxt_abs:
+            check = True
+        if check:
+        # if is_env_node or not self._graph.has_edge(_u_prod_node, _v_prod_node):
             if _u_prod_node in self._auto_graph.get_absorbing_states():
                 # absorbing state
                 self.add_edge(_u_prod_node, _v_prod_node,

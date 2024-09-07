@@ -819,6 +819,8 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self._safe_adm_str : Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
         self._hopeful_adm_str: Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
         self._coop_optimal_sys_str: Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
+        self._env_pending_region: set= set()
+        self._sys_pending_region: set = set() 
     
     @property
     def wcoop(self):
@@ -841,6 +843,40 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
     def hopeful_adm_str(self):
         return self._hopeful_adm_str
     
+    @property
+    def env_pending_region(self):
+        return self._env_pending_region
+
+    @property
+    def sys_pending_region(self):
+        return self._sys_pending_region
+
+
+    def get_pending_region(self, print_states: bool = False):
+        """
+        Overide base method to further sort states based on Sys and Env player.
+         A Method that compute the set of states from which there does exists a path to the target state(s). 
+        """
+        assert bool(self._winning_region) is True, "Please Run the solver before accessing the Pending region."
+        if not bool(self._losing_region):
+            self._losing_region = self.game_states.difference(self._coop_winning_region)
+        
+        tmp_states = self._losing_region.union(self.winning_region)
+        self._pending_region =  self.game_states.difference(tmp_states)
+
+        if print_states:
+            print("Pending Region: \n", self._pending_region)
+        
+        for state in self._pending_region:
+            player: str = self.game.get_state_w_attribute(state, "player")
+            if  player == "eve":
+                self._sys_pending_region.add(state)
+            elif player == "adam":
+                self._env_pending_region.add(state)
+            else:
+                warnings.warn(f"[Error] State {state} does not have a player attribute.") 
+        
+        return self._pending_region 
 
     def compute_winning_strategies(self, plot: bool = True):
         """
@@ -911,56 +947,68 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self.compute_cooperative_winning_strategy(plot=False)
 
         # break if init state belongs to losing region
-        if self.game.get_initial_states()[0][0] not in self.coop_winning_region:
+        init_state = self.game.get_initial_states()[0][0]
+        if init_state not in self.coop_winning_region:
             print("No path to the Accepting states exisits.")
             return None
         
         # get winning strategies
         print("Computing Winning strategy")
         self.compute_winning_strategies(plot=False)
+        self.compute_wcoop_strategies()
+
+        # break if winning str exists
+        if self.is_winning():
+            self._sys_adm_str = self.wcoop
+            return None
 
         # play safety game
+        print("Computing Safety strategy")
         safe_states: set = self.pending_region.union(self.winning_region)
         safety_handle = SafetyGame(game=self.game, target_states=safe_states, debug=self.debug, sanity_check=False)
         safety_handle.reachability_solver()
 
-        # check if safety exists 
+        # check if safety exists
+        print("Checking Safe-Adm strategy exists") 
         hopeful_sys_state: set = set()
-        # safe_adm_str: dict = {} 
         if len(safety_handle.sys_str) != 0:
             # check intersection of safety and Permissive Coop strategy
-            for state in self.pending_region:
+            for state in self.sys_pending_region:
                 # not empty set
-                if self.game.get_state_w_attribute(state, "player") == "eve":
-                    safe_adm: set = safety_handle.sys_str.get(state, set()).intersection(set(self.sys_coop_winning_str.get(state)))
-                    if not safe_adm == set():
-                        self._safe_adm_str[state] = safe_adm
-                    else:
-                        # if an empty intersection exists we need to play hopeful game too.
-                        self._play_hopeful_game = True
-                        hopeful_sys_state.add(state)
+                safe_adm: set = safety_handle.sys_str.get(state, set()).intersection(set(self.sys_coop_winning_str.get(state)))
+                if not safe_adm == set():
+                    self._safe_adm_str[state] = safe_adm
+                else:
+                    # if an empty intersection exists we need to play hopeful game too.
+                    self._play_hopeful_game = True
+                    hopeful_sys_state.add(state)
         else:
             self._play_hopeful_game = True
-
         
-        # Stitch winning str - values from Sys winning str dict will overide the values from safe-adm str
-        self.compute_wcoop_strategies()
+        # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str
         self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}
 
         if self._play_hopeful_game:
+            print("Computing Hopeful strategy")
+            # create copy only if you are plotting.
+            hopeful_game: TwoPlayerGraph = deepcopy(self.game) if plot else self.game 
+            env_edges_to_rm = set()
             # remove hopeless edges - env winning str such that successor is in losing region
-            hopeful_game: TwoPlayerGraph = deepcopy(self.game)  ### very slow on very large graph - see if it can be avoided 
             for state, succ_state in safety_handle.env_str.items():
-                if hopeful_game.get_state_w_attribute(state, "player") == "adam" and state in self.pending_region and succ_state in self.losing_region:
-                    hopeful_game._graph.remove_edge(state, succ_state)
+                if state in self.pending_region and succ_state in self.losing_region:
+                    assert hopeful_game.get_state_w_attribute(state, "player") == "adam", "[Error] Remove hopeless edge from Sys's state."
+                    env_edges_to_rm.add((state, succ_state))
+                    
+            hopeful_game._graph.remove_edges_from(env_edges_to_rm)
             
             # remove non-admissble sys edges from Pending region to Losing region
-            for state in self.pending_region:
-                # not empty set
-                if self.game.get_state_w_attribute(state, "player") == "eve":
-                    for succ_state in self.game._graph.successors(state):
-                        if succ_state in self.losing_region:
-                            hopeful_game._graph.remove_edge(state, succ_state)
+            sys_edges_to_rm = set()
+            for state in self.sys_pending_region:
+                for succ_state in self.game._graph.successors(state):
+                    if succ_state in self.losing_region:
+                        sys_edges_to_rm.add((state, succ_state))
+            
+            hopeful_game._graph.remove_edges_from(sys_edges_to_rm)
 
             # play hopeful game - we could maybe speed this be using Values from previous Min-Max VI
             hope_game_handle = PermissiveValueIteration(game=hopeful_game, competitive=True)
@@ -971,7 +1019,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
                 else:
                     # if aVal(v') = inf then all actions s.t Sys player stays in pending/ go to winning region
                     # are hopeful admissible
-                    self._hopeful_adm_str[s] = [succ for succ in hopeful_game._graph.successors(s)]
+                    self._hopeful_adm_str[s] = list(hopeful_game._graph.successors(s))
 
             # when hope-adm is same adm then FOR ROLLOUT purposes we can play one of the cooperative winning strategy.
             # cooperative winning strategy is non-deferring strategy and as such will ensure reaching goal state as long as Env cooperates

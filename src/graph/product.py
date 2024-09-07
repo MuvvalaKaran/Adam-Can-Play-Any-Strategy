@@ -43,7 +43,7 @@ class ProductAutomaton(TwoPlayerGraph):
                  integrate_accepting: bool = False,
                  use_trans_sys_weights: bool = False,
                  pdfa_compose: bool = False,
-                 skip_empty: bool = True) -> 'ProductAutomaton()':
+                 skip_empty: bool = True) -> 'ProductAutomaton':
 
         self._trans_sys: Optional[TwoPlayerGraph] = copy.deepcopy(trans_sys)
         self._auto_graph: Union[DFAGraph, PDFAGraph] = copy.deepcopy(automaton)
@@ -84,6 +84,15 @@ class ProductAutomaton(TwoPlayerGraph):
                                 config_yaml=config_yaml,
                                 save_flag=save_flag,
                                 finite=finite)
+    
+    @property
+    def trans_sys(self):
+        return self._trans_sys
+    
+    @property
+    def automaton(self):
+        return self._automaton
+
 
     def get_attr(self, key: str, attr_name: str, attr_dict: Dict):
         if key not in self._default_attr:

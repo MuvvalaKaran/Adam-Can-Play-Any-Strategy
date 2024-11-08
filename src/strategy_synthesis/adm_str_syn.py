@@ -821,6 +821,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self._coop_optimal_sys_str: Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
         self._env_pending_region: set= set()
         self._sys_pending_region: set = set() 
+        self._hopeful_game: PermissiveValueIteration = False
     
     @property
     def wcoop(self):
@@ -850,6 +851,10 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
     @property
     def sys_pending_region(self):
         return self._sys_pending_region
+
+    @property
+    def hopeful_game(self):
+        return self._hopeful_game
 
 
     def get_pending_region(self, print_states: bool = False):
@@ -926,6 +931,48 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             self._wcoop[state] = [i for i in succ_state if self.coop_winning_state_values[i] == coop_val]
     
 
+    def helper_func_tic_tac_toe(self, hopeful_game_handle):
+        """
+         Check the reachable states for Tic-tac-toe under F(win) specfication
+        """
+        init_state = self.game.get_initial_states()[0][0]
+        stack = deque()
+        path: set = set()
+        values_of_states_in_hopeless_game = set()
+
+        stack.append(init_state)
+        while stack:
+            vertex = stack.pop()
+            if vertex in path:
+                # if vertex != 'q2':
+                    # print(f"error: {vertex} already visited in the Tree")
+                continue
+            path.add(vertex)
+            if self.game.get_state_w_attribute(vertex, "player") == 'eve':
+                # get successors from the str
+                try:
+                    for _neighbour in self.sys_adm_str[vertex]:
+                        stack.append(_neighbour)
+                        # values_of_states_in_hopeless_game.add(hopeful_game_handle.state_value_dict.get(_neighbour))
+                except KeyError:
+                    continue
+            elif self.game.get_state_w_attribute(vertex, "player") == 'adam':
+                for _neighbour in self.game._graph.successors(vertex):
+                    stack.append(_neighbour)
+                    values_of_states_in_hopeless_game.add(hopeful_game_handle.state_value_dict.get(_neighbour))
+            else:
+                 print(f"error: {vertex} does not have a player attribute")
+
+        # check if there is "losing state"
+        for state in path:
+            if self.game.get_state_w_attribute(state, 'ap') == 'lose':
+                print(f"Losing state reachable: {state}")
+        
+        import pprint
+        pprint.pp(values_of_states_in_hopeless_game)
+        
+    
+
     def compute_adm_strategies(self, plot: bool = False) -> None:
         """
          Main method that implements computation of Admissible strategies. 
@@ -944,7 +991,10 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         """
         # get permissive cooperative winning strategies and optimal cooperative values 
         print("Computing Cooperative Winning strategy")
+        start = time.time()
         self.compute_cooperative_winning_strategy(plot=False)
+        stop = time.time()
+        print(f"******************** Co-op Computation time: {stop - start} ********************")
 
         # break if init state belongs to losing region
         init_state = self.game.get_initial_states()[0][0]
@@ -954,8 +1004,11 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         
         # get winning strategies
         print("Computing Winning strategy")
+        start = time.time()
         self.compute_winning_strategies(plot=False)
         self.compute_wcoop_strategies()
+        stop = time.time()
+        print(f"******************** WCo-op Computation time: {stop - start} ********************")
 
         # break if winning str exists
         if self.is_winning():
@@ -964,6 +1017,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
 
         # play safety game
         print("Computing Safety strategy")
+        start = time.time()
         safe_states: set = self.pending_region.union(self.winning_region)
         safety_handle = SafetyGame(game=self.game, target_states=safe_states, debug=self.debug, sanity_check=False)
         safety_handle.reachability_solver()
@@ -985,13 +1039,18 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         else:
             self._play_hopeful_game = True
         
+        stop = time.time()
+        print(f"******************** Safe-Admissible Computation time: {stop - start} ********************")
+        
         # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str
         self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}
 
         if self._play_hopeful_game:
             print("Computing Hopeful strategy")
             # create copy only if you are plotting.
-            hopeful_game: TwoPlayerGraph = deepcopy(self.game) if plot else self.game 
+            start = time.time()
+            # hopeful_game: TwoPlayerGraph = deepcopy(self.game) if plot else self.game 
+            hopeful_game: TwoPlayerGraph = deepcopy(self.game) # if plot else self.game 
             env_edges_to_rm = set()
             # remove hopeless edges - env winning str such that successor is in losing region
             for state, succ_state in safety_handle.env_str.items():
@@ -1011,7 +1070,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             hopeful_game._graph.remove_edges_from(sys_edges_to_rm)
 
             # play hopeful game - we could maybe speed this be using Values from previous Min-Max VI
-            hope_game_handle = PermissiveValueIteration(game=hopeful_game, competitive=True)
+            hope_game_handle: PermissiveValueIteration = PermissiveValueIteration(game=hopeful_game, competitive=True)
             hope_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
             for s in hopeful_sys_state:
                 if hope_game_handle.sys_str_dict.get(s):
@@ -1020,10 +1079,18 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
                     # if aVal(v') = inf then all actions s.t Sys player stays in pending/ go to winning region
                     # are hopeful admissible
                     self._hopeful_adm_str[s] = list(hopeful_game._graph.successors(s))
+            
+            stop = time.time()
+            print(f"******************** Hope-Admissible Computation time: {stop - start} ********************")
+            self._hopeful_game = hope_game_handle
 
             # when hope-adm is same adm then FOR ROLLOUT purposes we can play one of the cooperative winning strategy.
             # cooperative winning strategy is non-deferring strategy and as such will ensure reaching goal state as long as Env cooperates
             self._sys_adm_str = {**self._hopeful_adm_str, **self._safe_adm_str, **self.wcoop}
+        
+        ### sanity check for F(win) - formula to check if robot every reaches a losing region?
+        self.helper_func_tic_tac_toe(hopeful_game_handle=hope_game_handle)
+        sys.exit(-1)
 
         if plot:
             self.add_str_flag()

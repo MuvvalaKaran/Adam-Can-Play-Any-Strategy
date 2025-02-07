@@ -772,6 +772,10 @@ class QuantitativeGoUAdmissible(QuantitativeNaiveAdmissible):
                 print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
                 print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
                 self.transducer.plot_graph(alias=False)
+        
+        if self.debug:
+            print(f"No. of nodes in the Tree :{len(self.adm_tree._graph.nodes())}")
+            print(f"No. of edges in the Tree :{len(self.adm_tree._graph.edges())}")
 
 
 
@@ -805,7 +809,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
      3. If a safe-admissible does not exists then play hopeful admissible strategy, finally, 
      4. If a winning admissible strategy exists then compute Wcoop and choose those strategies.
 
-     Unlike or AAAI's proposed algorithm, this algorithm is indepedent of the budget and does require us to rollout the game.  
+     Unlike our IJCAI 25's proposed algorithm, this algorithm is indepedent of the budget and does NOT require us to rollout the game.  
     """
     def __init__(self, game: TwoPlayerGraph, debug: bool = False):
         """
@@ -822,6 +826,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self._env_pending_region: set= set()
         self._sys_pending_region: set = set() 
         self._hopeful_game: PermissiveValueIteration = False
+        self._safety_game: SafetyGame = None
     
     @property
     def wcoop(self):
@@ -855,6 +860,12 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
     @property
     def hopeful_game(self):
         return self._hopeful_game
+    
+
+    @property
+    def safety_game(self):
+        return self._safety_game
+
 
 
     def get_pending_region(self, print_states: bool = False):
@@ -1089,8 +1100,8 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             self._sys_adm_str = {**self._hopeful_adm_str, **self._safe_adm_str, **self.wcoop}
         
         ### sanity check for F(win) - formula to check if robot every reaches a losing region?
-        self.helper_func_tic_tac_toe(hopeful_game_handle=hope_game_handle)
-        sys.exit(-1)
+        # self.helper_func_tic_tac_toe(hopeful_game_handle=hope_game_handle)
+        # sys.exit(-1)
 
         if plot:
             self.add_str_flag()

@@ -39,7 +39,7 @@ class ValueIteration:
         self._accp_states: set = set(self.org_graph.get_accepting_states())
         self._iterations_to_converge = math.inf
         self._convergence_dict = defaultdict(lambda: -1)
-        self._init_state = self.set_init_state()
+        # self._init_state = self.set_init_state()
         self._initialize_val_vector()
         
 
@@ -404,8 +404,6 @@ class ValueIteration:
         :return:
         """
         # initially in the org val_vector the target node(s) will value 0
-        _init_node = self.org_graph.get_initial_states()[0][0]
-
         _val_vector = copy.deepcopy(self.val_vector)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
@@ -455,6 +453,7 @@ class ValueIteration:
 
         if debug:
             print(f"Number of iteration to converge: {iter_var}")
+            _init_node = self.org_graph.get_initial_states()[0][0]
             print(f"Init state value: {self.state_value_dict[_init_node]}")
             self._sanity_check()
             # self.print_state_values()

@@ -39,7 +39,7 @@ class ValueIteration:
         self._accp_states: set = set(self.org_graph.get_accepting_states())
         self._iterations_to_converge = math.inf
         self._convergence_dict = defaultdict(lambda: -1)
-        # self._init_state = self.set_init_state()
+        self._init_state = self.set_init_state()
         self._initialize_val_vector()
         
 
@@ -125,9 +125,13 @@ class ValueIteration:
 
 
     def set_init_state(self):
-        _init_state: List[tuple] = self.org_graph.get_initial_states()
-        assert len(_init_state) == 1, "The initial state should be a single."
-        return _init_state[0][0]
+        try:
+            _init_state: List[tuple] = self.org_graph.get_initial_states()
+            assert len(_init_state) == 1, "The initial state should be a single."
+            return _init_state[0][0]
+        except:
+            return None
+        
     
 
     def is_winning(self) -> bool:

@@ -4,8 +4,9 @@ import time
 import json
 import flask
 import warnings
-
 import networkx as nx
+
+from flask import send_file
 
 from copy import deepcopy
 from typing import Optional, Union, Dict, Tuple, Generator
@@ -19,7 +20,12 @@ app = flask.Flask(__name__, static_folder="d3_viz")
 
 @app.route("/")
 def static_proxy():
-    return app.send_static_file("tree_dfs_all_attrs_scrollable.html")
+    return app.send_static_file("tree_dfs_all_attrs_scrollable_3.html")
+
+@app.route('/d3_viz/tree_dfs.json')
+def serve_json():
+    # Assuming your JSON file is in the d3_viz folder
+    return send_file('d3_viz/tree_dfs.json')
 
 
 class InteractiveGraph():
@@ -28,19 +34,21 @@ class InteractiveGraph():
     """
     
     @staticmethod
-    def visualize_game(game, depth_limit: None):
+    def visualize_game(game, source = None, depth_limit: Optional[int] = None, strategy: dict = None, value_dict: dict = None):
         """
          Main method to visualize the gam. We first run a DFS on the game graph and then construct a tree for the given depth limit. 
          Then, we dump the tree data to a json file and serve it over http using D3.js package.
         """
-        # call NEtworkX and construct Tree for a given depth limit
+        # call NetworkX and construct Tree for a given depth limit
         if depth_limit is None:
             depth_limit = len(game._graph)
 
         # run bfs/dfs upto certian depth
         dfs_tree = TreeTraversalMyGame(game=game)
-        dfs_tree.tree_traversal(bfs=True, dfs=False, depth_limit=depth_limit)
-        d = TreeTraversalMyGame.tree_data(G=dfs_tree._tree, root=game.get_initial_states()[0][0], ident="parent")
+        dfs_tree.tree_traversal(bfs=True, dfs=False, depth_limit=depth_limit, source=source)
+        if source is None:
+            source = game.get_initial_states()[0][0]
+        d = TreeTraversalMyGame.tree_data(G=dfs_tree._tree, root=source, ident="parent", strategy=strategy, value_dict=value_dict)
         
         # write json file
         json.dump(d, open(ROOT_PATH + "/d3_viz/tree_dfs.json", "w"), cls=NpEncoder)
@@ -53,12 +61,14 @@ class InteractiveGraph():
 
 class TreeTraversalMyGame():
     
-    def __init__(self, game):
+    def __init__(self, game):# strategy: dict = None, value_dict: dict = None):
         self._tree =  nx.DiGraph()
         self.game: TwoPlayerGraph = deepcopy(game)
+        # self.strategy: Optional[dict] = strategy
+        # self.value_dict: Optional[Dict[str, int]] = value_dict
     
     @staticmethod
-    def tree_data(G, root, ident="id", children="children"):
+    def tree_data(G: nx.DiGraph, root, strategy: dict = None, value_dict: dict = None, ident="id", children="children"):
         """Returns data in tree format that is suitable for JSON serialization
         and use in JavaScript documents.
 
@@ -107,21 +117,42 @@ class TreeTraversalMyGame():
         """
         if ident == children:
             raise nx.NetworkXError("The values for `id` and `children` must be different.")
-
+        
+        def get_strategy_flag(node, child):
+            if isinstance(strategy.get(node), list):
+                return True if child in strategy.get(node) else False
+            else:
+                return True if child == strategy.get(node) else False
+        
+        
         def add_children(n, G):
+            # book keeping
+            strategy_flag: bool = False
+            
             nbrs = G[n]
             if len(nbrs) == 0:
                 return []
             children_ = []
             for child in nbrs:
-                d = {"name": str(child), "edge_name": G[n][child]['actions'], "label": G.nodes[child].get('ap'), "player": G.nodes[child]['player'], ident: child}
+                if strategy is not None:
+                    strategy_flag: bool = get_strategy_flag(n, child)
+                
+                if value_dict is not None:
+                    value = value_dict.get(child)
+                    d = {"name": str(child), "edge_name": G[n][child].get('actions'), "label": G.nodes[child].get('ap'), "val": value, "strategy": strategy_flag, "player": G.nodes[child].get('player'), ident: child}
+                else:
+                    d = {"name": str(child), "edge_name": G[n][child].get('actions'), "label": G.nodes[child].get('ap'), "strategy": strategy_flag, "player": G.nodes[child].get('player'), ident: child}
                 c = add_children(child, G)
                 if c:
                     d[children] = c
                 children_.append(d)
             return children_
-
-        return {"name": str(root), "player": G.nodes[root]['player'], "label": G.nodes[root].get('ap'), ident: root, children: add_children(root, G)}
+        
+        if value_dict is not None:
+            value = value_dict.get(root)
+            return {"name": str(root), "player": G.nodes[root].get('player'), "label": G.nodes[root].get('ap'), "val": value, ident: root, children: add_children(root, G)}
+        
+        return {"name": str(root), "player": G.nodes[root].get('player'), "label": G.nodes[root].get('ap'), ident: root, children: add_children(root, G)}
 
     def add_edges(self, ebunch_to_add, **attr) -> None:
             """
@@ -153,12 +184,13 @@ class TreeTraversalMyGame():
                 if not self._tree.has_edge(u_node, v_node):
                     self._tree.add_edge(u_node, v_node, **self.game._graph[u_node][v_node][0])
 
-    def construct_tree_dfs(self, depth_limit: Union[int, None]) -> Generator[Tuple, Tuple, Dict]:
+    def construct_tree_dfs(self, source: None, depth_limit: Union[int, None]) -> Generator[Tuple, Tuple, Dict]:
         """
         This method constructs a tree in a non-recurisve depth first fashion for all plays in the original graph whose depth < depth_limit.
         """
-        source = self.game.get_initial_states()[0][0]
-        nodes = [source]
+        if source is None:
+            source = self.game.get_initial_states()[0][0]
+            nodes = [source]
 
         if depth_limit is None:
             depth_limit = len(self.game)
@@ -186,11 +218,12 @@ class TreeTraversalMyGame():
                     depth_now -= 1
     
 
-    def construct_tree_bfs(self, depth_limit: Union[int, None]) -> Generator[Tuple, Tuple, Dict]:
+    def construct_tree_bfs(self, source: None, depth_limit: Union[int, None]) -> Generator[Tuple, Tuple, Dict]:
         """
         This method constructs a tree in a non-recurisve breadth first fashion for all plays in the original graph whose depth < depth_limit.
         """
-        source = self.game.get_initial_states()[0][0]
+        if source is None:
+            source = self.game.get_initial_states()[0][0]
 
         if depth_limit is None:
             depth_limit = len(self.game)
@@ -215,23 +248,17 @@ class TreeTraversalMyGame():
         print(f"Done with BFS: {len(visited)}") 
 
 
-    def tree_traversal(self, bfs: bool, dfs: bool = False, depth_limit: Optional[int] = None):
+    def tree_traversal(self, bfs: bool, dfs: bool = False, depth_limit: Optional[int] = None, source = None) -> nx.DiGraph:
         """
          Parent method to call the traversal.
         """
 
         start = time.time()
-        # if bfs and dfs is False:
-        #     warnings.warn("[Error] Please set either bfs or dfs to true")
-        #     sys.exit(-1)
-        
-        # if bfs and dfa
-
-        self._tree.add_node(self.game.get_initial_states()[0][0])
+        # self._tree.add_node(self.game.get_initial_states()[0][0])
         if bfs:
-            self.add_edges(self.construct_tree_bfs(depth_limit))
+            self.add_edges(self.construct_tree_bfs(source=source, depth_limit=depth_limit))
         elif dfs:
-            self.add_edges(self.construct_tree_dfs(depth_limit))
+            self.add_edges(self.construct_tree_dfs(source=source, depth_limit=depth_limit))
         else:
             warnings.warn("[Error] Please set either bfs or dfs to true")
             sys.exit(-1)

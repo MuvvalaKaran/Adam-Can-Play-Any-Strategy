@@ -13,6 +13,8 @@ from ..graph import TwoPlayerGraph
 from ..graph import graph_factory
 from .safety_game import SafetyGame
 from .value_iteration import ValueIteration, PermissiveValueIteration, PermissiveCoopValueIteration
+from ...helper import InteractiveGraph
+
 
 
 class AbstractBestEffortReachSyn(metaclass=ABCMeta):
@@ -1039,13 +1041,13 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         safety_handle = SafetyGame(game=self.game, target_states=safe_states, debug=self.debug, sanity_check=False)
         safety_handle.reachability_solver()
         
-        safeadm_game: TwoPlayerGraph = deepcopy(self.game)
         # compute set of unsafe sys states from after playing the safety game
         all_sys_nodes: set = set()
         for i in self.game._graph.nodes():
             if self.game.get_state_w_attribute(i, 'player') == 'eve':
                 all_sys_nodes.add(i)
         unsafe_states = all_sys_nodes.difference(safety_handle.sys_str.keys())
+        safeadm_game: TwoPlayerGraph = deepcopy(self.game)
         safeadm_game._graph.remove_nodes_from(unsafe_states)
         
         # remove edges that are neither safe nor reachable admissible 
@@ -1075,10 +1077,21 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             self._play_hopeful_game = False
         elif self.game_init_states[0][0] in unsafe_states:
             print("SAdm Strategy from Initial state does NOT exists!!! :()")
-        
+
         def dict_for_json(my_dict: dict):
-            # return {str(k): list(str(i) for i in v) for k, v in my_dict.items()}
-            return {str(k): list(str(s) + "__" + str(sval) for s, sval in vals) for k, vals in my_dict.items()}
+            return {str(k): list(str(i) for i in v) for k, v in my_dict.items()}
+            # return {str(k): list(str(s) + "__" + str(sval) for s, sval in vals) for k, vals in my_dict.items()}
+        
+        # import json
+        # with open('safe_str.json', 'w') as file:
+        #     json.dump(dict_for_json(safety_handle.sys_str), file, indent=4)
+        
+        # def dict_for_json(my_dict: dict):
+        #     # return {str(k): list(str(i) for i in v) for k, v in my_dict.items()}
+        #     return {str(k): list(str(s) + "__" + str(sval) for s, sval in vals) for k, vals in my_dict.items()}
+        
+        # with open('safe_and_adm_str.json', 'w') as file:
+        #     json.dump(dict_for_json(safe_adm_handle.sys_str_dict), file, indent=4)
         
         # Construct SAdm - safe strategy that choose actions minimum cVal at the nexr state.
         for sys_state, succ_states in safe_adm_handle.sys_str_dict.items():
@@ -1094,9 +1107,9 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self._coop_winning_state_values = safe_adm_handle.state_value_dict
         # self._coop_optimal_sys_str = reachability_game_handle.sys_coop_opt_str_dict
         ### dumpipng dictionary for sanity checking
-        # import json
-        # with open('sadm_strs_new.json', 'w') as file:
-        #     json.dump(dict_for_json(self._safe_adm_str), file, indent=4)
+        import json
+        with open('sadm_strs_new.json', 'w') as file:
+            json.dump(dict_for_json(self._safe_adm_str), file, indent=4)
 
         self._safety_game = safe_adm_handle
         stop = time.time()
@@ -1104,6 +1117,11 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         
         # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str
         self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}
+        InteractiveGraph.visualize_game(game=safeadm_game,
+                                        strategy=self._sys_adm_str,
+                                        value_dict=safe_adm_handle.state_value_dict,
+                                        source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
+                                        depth_limit=30)
 
         if self._play_hopeful_game:
             print("Computing Hopeful strategy")

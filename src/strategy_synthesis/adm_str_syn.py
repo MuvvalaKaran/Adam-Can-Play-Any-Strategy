@@ -1077,21 +1077,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             self._play_hopeful_game = False
         elif self.game_init_states[0][0] in unsafe_states:
             print("SAdm Strategy from Initial state does NOT exists!!! :()")
-
-        def dict_for_json(my_dict: dict):
-            return {str(k): list(str(i) for i in v) for k, v in my_dict.items()}
-            # return {str(k): list(str(s) + "__" + str(sval) for s, sval in vals) for k, vals in my_dict.items()}
         
-        # import json
-        # with open('safe_str.json', 'w') as file:
-        #     json.dump(dict_for_json(safety_handle.sys_str), file, indent=4)
-        
-        # def dict_for_json(my_dict: dict):
-        #     # return {str(k): list(str(i) for i in v) for k, v in my_dict.items()}
-        #     return {str(k): list(str(s) + "__" + str(sval) for s, sval in vals) for k, vals in my_dict.items()}
-        
-        # with open('safe_and_adm_str.json', 'w') as file:
-        #     json.dump(dict_for_json(safe_adm_handle.sys_str_dict), file, indent=4)
         
         # Construct SAdm - safe strategy that choose actions minimum cVal at the nexr state.
         for sys_state, succ_states in safe_adm_handle.sys_str_dict.items():
@@ -1101,27 +1087,26 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             # self._safe_adm_str[sys_state] = [(state, state_val) for state, state_val in succ_vals if min_val == state_val]
             self._safe_adm_str[sys_state] = [state for state, state_val in succ_vals if min_val == state_val]
 
-        # self._sys_coop_winning_str = safe_adm_handle.sys_str_dict
-        # self._env_coop_winning_str = safe_adm_handle.env_str_dict
-        # self._coop_winning_region = set(safe_adm_handle.sys_str_dict.keys()).union(set(safe_adm_handle.env_str_dict.keys()))
         self._coop_winning_state_values = safe_adm_handle.state_value_dict
-        # self._coop_optimal_sys_str = reachability_game_handle.sys_coop_opt_str_dict
-        ### dumpipng dictionary for sanity checking
-        import json
-        with open('sadm_strs_new.json', 'w') as file:
-            json.dump(dict_for_json(self._safe_adm_str), file, indent=4)
-
         self._safety_game = safe_adm_handle
         stop = time.time()
         print(f"******************** Safe-Admissible Computation time: {stop - start} ********************")
         
         # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str
         self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}
-        InteractiveGraph.visualize_game(game=safeadm_game,
-                                        strategy=self._sys_adm_str,
-                                        value_dict=safe_adm_handle.state_value_dict,
-                                        source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
-                                        depth_limit=30)
+        if not self._play_hopeful_game:
+            InteractiveGraph.visualize_game(game=safeadm_game,
+                                            strategy=self._sys_adm_str,
+                                            value_dict=safe_adm_handle.state_value_dict,
+                                            source=init_state,
+                                            # source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
+                                            depth_limit=30)
+        # InteractiveGraph.visualize_game(game=safety_handle._game,
+        #                                 # strategy=self._sys_adm_str,
+        #                                 # value_dict=safe_adm_handle.state_value_dict,
+        #                                 source=init_state,
+        #                                 # source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
+        #                                 depth_limit=30)
 
         if self._play_hopeful_game:
             print("Computing Hopeful strategy")

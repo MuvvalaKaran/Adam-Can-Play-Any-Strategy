@@ -361,6 +361,7 @@ class TwoPlayerGraphBuilder(Builder):
                  graph_name: str,
                  config_yaml: str,
                  minigrid = None,
+                 minigrid_wait: bool = True,
                  n_step: int = None,
                  save_flag: bool = False,
                  from_file: bool = False,
@@ -381,7 +382,7 @@ class TwoPlayerGraphBuilder(Builder):
             graph_yaml = self._from_yaml(config_yaml)
 
         if graph_yaml is None and minigrid is not None:
-            graph_yaml = self._from_minigrid(minigrid, n_step)
+            graph_yaml = self._from_minigrid(minigrid, n_step, wait=minigrid_wait)
 
         if graph_yaml:
             self._instance.construct_graph(graph_yaml)
@@ -396,8 +397,8 @@ class TwoPlayerGraphBuilder(Builder):
 
         return config_data
 
-    def _from_minigrid(self, minigrid_environment, n_step) -> dict:
-        config_data = minigrid_environment.extract_transition_system(n_step)
+    def _from_minigrid(self, minigrid_environment, n_step, wait: bool = True) -> dict:
+        config_data = minigrid_environment.extract_transition_system(n_step, wait=wait)
 
         # Translate minigrid player to this library's player names
         node_names = list(config_data['nodes'].keys())

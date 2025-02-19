@@ -1101,12 +1101,6 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
                                             source=init_state,
                                             # source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
                                             depth_limit=30)
-        # InteractiveGraph.visualize_game(game=safety_handle._game,
-        #                                 # strategy=self._sys_adm_str,
-        #                                 # value_dict=safe_adm_handle.state_value_dict,
-        #                                 source=init_state,
-        #                                 # source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
-        #                                 depth_limit=30)
 
         if self._play_hopeful_game:
             print("Computing Hopeful strategy")

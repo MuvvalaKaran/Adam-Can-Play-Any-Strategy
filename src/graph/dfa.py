@@ -345,7 +345,6 @@ class DFABuilder(Builder):
                                 save_flag=save_flag,
                                 use_alias=use_alias)
             
-        # if sc_ltl != "": 
         self._instance.construct_graph(plot=plot, view=view, format=format, directory=directory, filename=filename)
 
 

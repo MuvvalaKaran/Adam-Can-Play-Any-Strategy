@@ -1094,13 +1094,13 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         
         # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str
         self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}
-        if not self._play_hopeful_game:
-            InteractiveGraph.visualize_game(game=safeadm_game,
-                                            strategy=self._sys_adm_str,
-                                            value_dict=safe_adm_handle.state_value_dict,
-                                            source=init_state,
-                                            # source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
-                                            depth_limit=30)
+        # if not self._play_hopeful_game:
+        #     InteractiveGraph.visualize_game(game=safeadm_game,
+        #                                     strategy=self._sys_adm_str,
+        #                                     value_dict=safe_adm_handle.state_value_dict,
+        #                                     source=init_state,
+        #                                     # source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
+        #                                     depth_limit=30)
 
         if self._play_hopeful_game:
             print("Computing Hopeful strategy")
@@ -1161,5 +1161,61 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         return None
 
 
+class QuantitativeAdmMemorless(QuantiativeRefinedAdmissible):
+    """
+     This class inherits from QuantiativeRefinedAdmissible. We compute only the set of Memoryless admissible strategies (IJCAI 25).
+
+     In Winning Region: Sys player is playing WCoop Strategies
+     In Pending Region: Sys player is Cooperative Optimal Strategies
+     In Losig Region: Sys player can play any strategy.
+    """
+    
+    def __init__(self, game, debug = False):
+        super().__init__(game, debug)
+    
+
+    def compute_adm_strategies(self, plot: bool = False) -> None:
+        """
+         Main method that implements computation of Admissible strategies. 
+
+         1. First play, Min-Min (Permissive Coop) and Min-Max game and compute Losing, Pending, and Winning regions.
+         2. If initial state belongs to Losing region, then return the original game - all strategies are admissible.
+         3. Else Composer WCoop and Coop strategies and return them
+        """
+        # get permissive cooperative winning strategies and optimal cooperative values 
+        print("Computing Cooperative Winning strategy")
+        start = time.time()
+        self.compute_cooperative_winning_strategy(plot=False)
+        stop = time.time()
+        print(f"******************** Co-op Computation time: {stop - start} ********************")
+
+        # if init state belongs to losing region
+        init_state = self.game.get_initial_states()[0][0]
+        if init_state not in self.coop_winning_region:
+            print("No path to the Accepting states exisits. Returning random strategy")
+            for state in self.game._graph.nodes():
+                if self.game.get_state_w_attribute(state, 'player') == 'eve':
+                    self._sys_adm_str[state] = list(self.game._graph.successors(state))
+            return
+        
+        # get winning strategies
+        print("Computing Winning strategy")
+        start = time.time()
+        self.compute_winning_strategies(plot=False)
+        self.compute_wcoop_strategies()
+        stop = time.time()
+        print(f"******************** WCo-op Computation time: {stop - start} ********************")
+
+        # break if winning str exists
+        if self.is_winning():
+            self._sys_adm_str = self.wcoop
+        
+        elif self.self.game_init_states[0][0] in self.pending_region:
+            print("No Winning strategy exists. Init state belongs to Pending sttae. Returning Coop + =Wcoop strategies")
+            self._sys_adm_str = {**self._sys_coop_winning_str, **self.wcoop}
+        
+        return
+
+    
 
 

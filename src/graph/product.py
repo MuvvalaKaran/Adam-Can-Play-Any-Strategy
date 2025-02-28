@@ -62,7 +62,7 @@ class ProductAutomaton(TwoPlayerGraph):
 
         self._pdfa_compose: bool = pdfa_compose
 
-        self._sanity_check: bool = sanity_check 
+        self._sanity_check_flag: bool = sanity_check 
         self._extend_trans_init : bool = extend_trans_init
 
         ts_node_default_attr = {'ap': set()}
@@ -142,7 +142,7 @@ class ProductAutomaton(TwoPlayerGraph):
             if self._integrate_accepting:
                 self._integrate_accepting_states()
 
-            if self._sanity_check:
+            if self._sanity_check_flag:
                 self._sanity_check(debug=True)
 
             self._initialize_edge_labels_on_fancy_graph()
@@ -151,7 +151,7 @@ class ProductAutomaton(TwoPlayerGraph):
         else:
             self.construct_product_absorbing()
             
-            if self._sanity_check:
+            if self._sanity_check_flag:
                 self._sanity_check(debug=False)
 
     def _extend_trans_init(self):

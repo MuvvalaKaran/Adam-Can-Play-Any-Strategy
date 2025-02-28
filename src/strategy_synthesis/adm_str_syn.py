@@ -1210,9 +1210,9 @@ class QuantitativeAdmMemorless(QuantiativeRefinedAdmissible):
         if self.is_winning():
             self._sys_adm_str = self.wcoop
         
-        elif self.self.game_init_states[0][0] in self.pending_region:
-            print("No Winning strategy exists. Init state belongs to Pending sttae. Returning Coop + =Wcoop strategies")
-            self._sys_adm_str = {**self._sys_coop_winning_str, **self.wcoop}
+        elif self.game_init_states[0][0] in self.pending_region:
+            print("No Winning strategy exists. Init state belongs to Pending sttae. Returning Coop + Wcoop strategies")
+            self._sys_adm_str = {**self._coop_optimal_sys_str, **self.wcoop}
         
         return
 

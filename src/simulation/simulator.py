@@ -1,3 +1,4 @@
+import yaml
 import numpy as np
 from collections import defaultdict
 from typing import List, Any, Union
@@ -19,8 +20,8 @@ class Simulator:
 
     def __init__(self, env, game: ProductAutomaton):
         self._env = env
-        self._env_width = self._env.unwrapped.width
-        self._env_height = self._env.unwrapped.height
+        # self._env_width = self._env.unwrapped.width
+        # self._env_height = self._env.unwrapped.height
         self._game = game
         self._logger = Logger()
         self.reset()
@@ -35,7 +36,8 @@ class Simulator:
         self._observations = []
         self._sys_actions = []
         self._env_actions = []
-        self._sys_grid = np.zeros((self._env_width, self._env_height))
+        self._state_type = []
+        # self._sys_grid = np.zeros((self._env_width, self._env_height))
         # self._env_grid = np.zeros((self._env_width, self._env_height))
 
     def run(self, iterations: int = 1, plot: bool = True, debug: bool = False,
@@ -59,12 +61,17 @@ class Simulator:
 
     def get_stats(self):
         costs = np.max([r['Cost'] for r in self._results], axis=0)
+        # count_obs = defaultdict(lambda: 0)
+        # for r in self._results:
+        #     count_obs[tuple(r['Observation'])] += 1
         count_obs = defaultdict(lambda: 0)
         for r in self._results:
-            count_obs[tuple(r['Observation'])] += 1
+            count_obs[r['status']] += 1
 
-        print('Maximum Costs', costs)
-        print('Observation', dict(count_obs))
+        print('Maximum Costs:', costs)
+        # print('Observation:', dict(count_obs))
+        print('Game Stats:', dict(count_obs))
+        # print('Game Status:', self._state_type[-1])
 
     def plot_grid(self):
 
@@ -175,7 +182,7 @@ class Simulator:
 
         return sys_strategy, env_strategy
 
-    def log(self, steps, cost, obs, action, state, curr_player) -> None:
+    def log(self, steps, cost, obs, action, state, curr_player, state_type: str = '') -> None:
         """
         Log all metrics
         """
@@ -191,13 +198,14 @@ class Simulator:
         obs = None if len(obs) == 0 else list(obs)[0]
         self._costs.append(cost)
         self._observations.append(obs)
+        self._state_type.append(state_type)
 
         if curr_player == 'sys':
             self._sys_actions.append(action)
-            if isinstance(state, tuple) or isinstance(state, list):
-                pos = state[0][1][0]
-            elif state == 'accept_all':
-                pos = 'goal'
+            # if isinstance(state, tuple) or isinstance(state, list):
+            #     pos = state[0][1][0]
+            # elif state == 'accept_all':
+            #     pos = 'goal'
 
             # self._sys_grid[pos[0], pos[1]] += 1
         else:
@@ -211,5 +219,24 @@ class Simulator:
             'Observation': [o for o in self._observations if o is not None],
             'SysActions': self._sys_actions,
             'EnvActions': self._env_actions,
-            'SysPlay': self._sys_grid}
+            'status': self._state_type[-1],
+            # 'SysPlay': self._sys_grid
+            }
+
+    def dump_results_to_yaml(self, file_path: str):
+        """
+        Dump the _results list to a YAML file.
+
+        :param file_path: The path to the YAML file.
+        """
+        # refactor the list to be a dictinary
+        tmp_dict = {}
+        for num, data in enumerate(self._results):
+            # change the numpy array to int
+            data['Cost'] = int(data['Cost'][0])
+            tmp_dict[f"Run {num}"] = data
+        with open(file_path, 'w') as file:
+            yaml.dump(tmp_dict, file, default_flow_style=False)
+
+
 

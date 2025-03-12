@@ -272,21 +272,19 @@ class TopologicalValueIteration(ValueIteration):
         return val_vector
     
 
-    def solve(self, debug: bool = False, plot: bool = False, extract_strategy: bool = True):
+    def solve(self, debug: bool = False, plot: bool = False, extract_strategy: bool = True, terminate_on_init: bool = False):
         # initially in the org val_vector the target node(s) will value 0
         _init_node = self.org_graph.get_initial_states()[0][0]
         _val_vector = copy.deepcopy(self.val_vector)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
         vi_iter_var: int = 0
+        terminated_early: bool = False
 
         for scc_num in self.scc_order:
             # if self._check_scc_has_only_accp_or_trap_states(scc_num):
             #     vi_iter_var += 1
             #     continue
-            
-            # scc_val_vector = np.full(shape=(len(self.condensed_graph.nodes[scc_num]['members']), 1), fill_value=math.inf)
-            # scc_val_pre = scc_val_vector
             
             scc_iter_var: int = 0
 
@@ -306,12 +304,21 @@ class TopologicalValueIteration(ValueIteration):
                 _val_vector: ndarray = self.update_state_values(val_vector=_val_vector, topological_order=scc_num)
 
                 if self._is_same(_val_pre, _val_vector):
-                # if self._is_same_at_indices(_val_pre, _val_vector, scc_num):
                     break
             
             vi_iter_var += 1
-            
-        assert vi_iter_var == len(self.scc_order), "[Error] The number of VI iterations does not match the number of SCCs."
+
+            if terminate_on_init and self._init_state in self.condensed_graph.nodes[scc_num]['members']:
+                init_node_int = self.node_int_map.inverse[self._init_state]
+                if INT_MIN_VAL < self.val_vector[init_node_int, -1] < INT_MAX_VAL:
+                    terminated_early = True
+                    print(f"Terminating While loop early: Reached init state after {vi_iter_var} iterations.")
+                    break
+                else:
+                    print("Winning Strategy form init state does not exist. Not termination While loop early")
+
+        if not terminate_on_init or not terminated_early:    
+            assert vi_iter_var == len(self.scc_order), "[Error] The number of VI iterations does not match the number of SCCs."
         
         self._iterations_to_converge = vi_iter_var
         

@@ -1295,7 +1295,7 @@ class TopoQuatitativeRefinedAdmissible(QuantiativeRefinedAdmissible):
         """
         start = time.time()
         topo_reachability_game_handle = TopologicalValueIteration(game=self.game, competitive=True, condensed_graph=self.condensed_graph, scc_order=self._scc_order)
-        topo_reachability_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        topo_reachability_game_handle.solve(debug=False, plot=plot, extract_strategy=True, terminate_on_init=True)
         stop = time.time()
         print(f"Time to compute Topological Winning Strategy: {stop - start:.2f}")
 
@@ -1305,12 +1305,19 @@ class TopoQuatitativeRefinedAdmissible(QuantiativeRefinedAdmissible):
         stop = time.time()
         print(f"Time to compute Winning Strategy: {stop - start:.2f}")
 
-        self.check_VI(topo_val_dict=topo_reachability_game_handle.state_value_dict,
-                      topo_sys_str_dict=topo_reachability_game_handle.sys_str_dict,
-                      topo_env_str_dict=topo_reachability_game_handle.env_str_dict,
-                      val_dict=reachability_game_handle.state_value_dict,
-                      sys_str_dict=reachability_game_handle.sys_str_dict,
-                      env_str_dict=reachability_game_handle.env_str_dict)
+        assert topo_reachability_game_handle.state_value_dict[self._game_init_states[0][0]] == reachability_game_handle.state_value_dict[self._game_init_states[0][0]], \
+            "[Error] The state values computed using topological value iteration and normal value iteration are not the same. Please check your code." 
+
+
+        assert topo_reachability_game_handle.sys_str_dict[self._game_init_states[0][0]] == reachability_game_handle.sys_str_dict[self._game_init_states[0][0]], \
+            "[Error] The state values computed using topological value iteration and normal value iteration are not the same. Please check your code." 
+
+        # self.check_VI(topo_val_dict=topo_reachability_game_handle.state_value_dict,
+        #               topo_sys_str_dict=topo_reachability_game_handle.sys_str_dict,
+        #               topo_env_str_dict=topo_reachability_game_handle.env_str_dict,
+        #               val_dict=reachability_game_handle.state_value_dict,
+        #               sys_str_dict=reachability_game_handle.sys_str_dict,
+        #               env_str_dict=reachability_game_handle.env_str_dict)
         sys.exit(-1)
 
         # self._sys_winning_str = reachability_game_handle.sys_str_dict

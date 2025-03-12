@@ -4,6 +4,7 @@ import math
 import operator
 import warnings
 
+from networkx import DiGraph
 from copy import deepcopy
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict, deque
@@ -13,6 +14,7 @@ from ..graph import TwoPlayerGraph
 from ..graph import graph_factory
 from .safety_game import SafetyGame
 from .value_iteration import ValueIteration, PermissiveValueIteration, PermissiveCoopValueIteration
+from .topological_value_iteration import TopologicalValueIteration
 from ...helper import InteractiveGraph
 
 
@@ -1215,6 +1217,118 @@ class QuantitativeAdmMemorless(QuantiativeRefinedAdmissible):
             self._sys_adm_str = {**self._coop_optimal_sys_str, **self.wcoop}
         
         return
+    
+
+class TopoQuatitativeRefinedAdmissible(QuantiativeRefinedAdmissible):
+    """
+     This class overrider the base class's Coop and Adv Value Computation code.
+    """
+    def __init__(self, game, debug = False):
+        super().__init__(game, debug)
+        self._condensed_graph: DiGraph = None
+        self._scc_order: List[int] = None
+    
+    @property
+    def condensed_graph(self):
+        return self._condensed_graph
+    
+    @property
+    def scc_order(self):
+        return self._scc_order
+
+
+    def check_VI(self, topo_val_dict: dict, topo_sys_str_dict: dict, topo_env_str_dict: dict, val_dict: dict, sys_str_dict: dict, env_str_dict: dict):
+        """
+         A helper function to check if the two dictionaries are the same. 
+        """
+        try:
+            assert topo_val_dict == val_dict, \
+            "[Error] The state values computed using topological value iteration and normal value iteration are not the same. Please check your code." 
+        except AssertionError:
+            for key in topo_val_dict:
+                if key in val_dict and topo_val_dict[key] != val_dict[key]:
+                    print(f"Key: {key}, Topological Value: {topo_val_dict[key]}, Normal Value: {val_dict[key]}")
+        try:
+            assert topo_sys_str_dict == sys_str_dict, \
+            "[Error] The strategies computed using topological value iteration and normal value iteration are not the same. Please check your code."
+        except AssertionError:
+            for key in topo_sys_str_dict:
+                if key in sys_str_dict and topo_sys_str_dict[key] != sys_str_dict[key]:
+                    print(f"Key: {key}, Topological Sys Strategy: {topo_sys_str_dict[key]}, Normal Sys Strategy: {sys_str_dict[key]}")
+        try:
+            assert topo_env_str_dict == env_str_dict, \
+            "[Error] The Env strategies computed using topological value iteration and normal value iteration are not the same. Please check your code."
+        except AssertionError:
+            for key in topo_env_str_dict:
+                if key in env_str_dict and topo_env_str_dict[key] != env_str_dict[key]:
+                    print(f"Key: {key}, Topological Env Strategy: {topo_env_str_dict[key]}, Normal Env Strategy: {env_str_dict[key]}")
+
+    def compute_cooperative_winning_strategy(self, permissive = False, plot = False):
+        start = time.time()
+        topo_reachability_game_handle = TopologicalValueIteration(game=self.game, competitive=False)
+        topo_reachability_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        stop = time.time()
+        print(f"Time to compute Topological Cooperative Winning Strategy: {stop - start:.2f}")
+
+        
+        start = time.time()
+        coop_handle = ValueIteration(game=self.game, competitive=False)
+        coop_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        stop = time.time()
+        print(f"Time to compute Cooperative Winning Strategy: {stop - start:.2f}")
+        self._condensed_graph = topo_reachability_game_handle.condensed_graph
+        self._scc_order = topo_reachability_game_handle.scc_order
+
+        self._coop_winning_region = set(coop_handle.sys_str_dict.keys()).union(set(coop_handle.env_str_dict.keys()))
+
+        
+        self.check_VI(topo_val_dict=topo_reachability_game_handle.state_value_dict,
+                      topo_sys_str_dict=topo_reachability_game_handle.sys_str_dict,
+                      topo_env_str_dict=topo_reachability_game_handle.env_str_dict,
+                      val_dict=coop_handle.state_value_dict,
+                      sys_str_dict=coop_handle.sys_str_dict,
+                      env_str_dict=coop_handle.env_str_dict)
+
+    def compute_winning_strategies(self, plot: bool = False):
+        """
+         Implement method to run the Value Iteration code
+        """
+        start = time.time()
+        topo_reachability_game_handle = TopologicalValueIteration(game=self.game, competitive=True, condensed_graph=self.condensed_graph, scc_order=self._scc_order)
+        topo_reachability_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        stop = time.time()
+        print(f"Time to compute Topological Winning Strategy: {stop - start:.2f}")
+
+        start = time.time()
+        reachability_game_handle = ValueIteration(game=self.game, competitive=True)
+        reachability_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        stop = time.time()
+        print(f"Time to compute Winning Strategy: {stop - start:.2f}")
+
+        self.check_VI(topo_val_dict=topo_reachability_game_handle.state_value_dict,
+                      topo_sys_str_dict=topo_reachability_game_handle.sys_str_dict,
+                      topo_env_str_dict=topo_reachability_game_handle.env_str_dict,
+                      val_dict=reachability_game_handle.state_value_dict,
+                      sys_str_dict=reachability_game_handle.sys_str_dict,
+                      env_str_dict=reachability_game_handle.env_str_dict)
+        sys.exit(-1)
+
+        # self._sys_winning_str = reachability_game_handle.sys_str_dict
+        # self._env_winning_str = reachability_game_handle.env_str_dict
+        # self._winning_state_values = reachability_game_handle.state_value_dict
+
+        # # sometime an accepting may not have a winning strategy. Thus, we only store states that have an winning strategy
+        # _sys_states_winning_str = reachability_game_handle.sys_str_dict.keys()
+
+        # # update winning region and optimal state values
+        # for ws in reachability_game_handle.winning_region:
+        #     if self.game.get_state_w_attribute(ws, 'player') == 'eve' and ws in _sys_states_winning_str:
+        #         self._winning_region.add(ws)
+        #     elif self.game.get_state_w_attribute(ws, 'player') == 'adam':
+        #         self._winning_region.add(ws)
+        
+        # if self.debug and reachability_game_handle.is_winning():
+        #     print("There exists a Winning strategy from the Initial State")
 
     
 

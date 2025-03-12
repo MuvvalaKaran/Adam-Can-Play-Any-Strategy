@@ -1,13 +1,20 @@
 import sys
 import math
 import copy
+import time
 import warnings
 import numpy as np
+import networkx as nx
 
-from typing import List, Dict
+from networkx import DiGraph
+from typing import List, Dict, Tuple, Set
 
 from numpy import ndarray
 from collections import defaultdict 
+
+from ..helper_methods import timer_decorator
+from ..graph import TwoPlayerGraph
+from ..graph import graph_factory
 from .value_iteration import ValueIteration
 
 
@@ -20,38 +27,42 @@ class TopologicalValueIteration(ValueIteration):
     """
      A class that overrides the ValueIteration class to compute topologically's informed value iteration
     """
-    def __init__(self, game, competitive: bool = False, int_val: bool = True, experimental: bool = False):
+    def __init__(self, game, competitive: bool = False, int_val: bool = True, condensed_graph: DiGraph = None, scc_order: List[int] = None, sanity_check: bool = True):
         super().__init__(game, competitive, int_val)
         self._states_by_payoff = None
         self._valid_payoff_values = None
-
-        if experimental:
-            self.get_nx_kosaraju_sort()
+        self.condensed_graph = condensed_graph
+        self.scc_order = scc_order
+        if condensed_graph is None:
+            self.condensed_graph, self.scc_order = self.get_nx_kosaraju_sort()
+        if sanity_check:
+            self._check_scc_has_all_states()
+            self._check_trap_topological_order()
             
             # SCC related stuff
-            adjacency_list = self.get_adjacency_list()
-            sccs = StronglyConnectedComponentComputation(adjacency_list).get_result()
+            # adjacency_list = self.get_adjacency_list()
+            # sccs = StronglyConnectedComponentComputation(adjacency_list).get_result()
             
-            # debugging
-            print("Ordering according to Tarjan's algorithm")
-            for iter, scc in enumerate(sccs):
-                print(f"Order: {iter}")
-                print(', '.join([str(self.node_int_map.inverse[s]) for s in scc]))
+            # # debugging
+            # print("Ordering according to Tarjan's algorithm")
+            # for iter, scc in enumerate(sccs):
+            #     print(f"Order: {iter}")
+            #     print(', '.join([str(self.node_int_map.inverse[s]) for s in scc]))
 
-        if 'utls' in game.graph_name:
-            self._get_nodes_per_gou()
-        elif 'alts' in game.graph_name:
-            self._get_nodes_per_alt()
-        else:
-            warnings.warn(f"[Waring] Graph name {game.graph_name} is not recognized.]")
-            sys.exit(1)
+        # if 'utls' in game.graph_name:
+        #     self._get_nodes_per_gou()
+        # elif 'alts' in game.graph_name:
+        #     self._get_nodes_per_alt()
+        # else:
+        #     warnings.warn(f"[Waring] Graph name {game.graph_name} is not recognized.]")
+        #     sys.exit(1)
         
-        if experimental:
-            print("Sorted layers")
-            for u in self.valid_payoff_values:
-                print(f"Val: {u}")
-                print(', '.join([str(s) for s in self.states_by_payoff[u]['nodes']]))
-            sys.exit(-1)
+        # if experimental:
+        #     print("Sorted layers")
+        #     for u in self.valid_payoff_values:
+        #         print(f"Val: {u}")
+        #         print(', '.join([str(s) for s in self.states_by_payoff[u]['nodes']]))
+        #     sys.exit(-1)
 
     
 
@@ -91,13 +102,65 @@ class TopologicalValueIteration(ValueIteration):
         self._states_by_payoff = states_by_payoff
     
 
-    def get_nx_kosaraju_sort(self):
-        import networkx as nx
-        sccs = nx.strongly_connected_components(self.org_graph._graph)
-        for scc in sccs:
-            # print(type(scc))
-            print(scc)
-        sys.exit(-1)
+    def _check_scc_has_all_states(self) -> None:
+        """
+         A method that checks if the SCC has all the states in the graph.
+        """
+        set_of_states = set()
+        for scc_state, org_state_set in self.condensed_graph.nodes.data():
+            set_of_states = set_of_states.union(org_state_set['members'])
+
+        try:
+            assert set(self.org_graph._graph.nodes) == set_of_states, "[Error] The SCC does not have all the states in the graph."
+        except AssertionError:
+            print(f"The states are missing from the SCCs are: {self.org_graph._graph.nodes - set_of_states}")
+    
+    def _check_trap_topological_order(self) -> None:
+        """
+         A method that check if trap state is the first or second state in the topological order. 
+         
+         Note: This is true only when we construct the DFA games with absorbing flag set to True
+        """
+        first_scc, second_scc = self.condensed_graph.nodes[0]['members'], self.condensed_graph.nodes[1]['members']
+        if len(self.org_graph.get_trap_states()) > 0:
+            assert len(self.org_graph.get_trap_states()) == 1, "[Error] More than one trap state is present in the graph."
+            if not(self.org_graph.get_trap_states()[0] in first_scc or self.org_graph.get_trap_states()[0] in second_scc):
+                raise AssertionError("[Error] The trap state is not in the first or second SCC.")
+
+    
+    @timer_decorator
+    def get_nx_kosaraju_sort(self) -> Tuple[DiGraph, List[int]]:
+        # import networkx as nx
+        # start = time.time()
+        # sccs = nx.strongly_connected_components(self.org_graph._graph)
+        # for scc in sccs:
+        #     # print(type(scc))
+        #     print(scc)
+        # stop = time.time()
+        # print(f"******************** SCC Computation: {stop - start} seconds ********************")
+
+        start = time.time()
+        condensed_graph = nx.condensation(self.org_graph._graph)
+        stop = time.time()
+        print(f"******************** Condensed Graph: {stop - start} seconds ********************")
+        # print(condensed_graph.nodes)
+        # print("SCC order in which the values iteration code shold run.")
+        scc_order = list(reversed(list(nx.topological_sort(condensed_graph))))
+
+
+        # self._adm_tree: TwoPlayerGraph = graph_factory.get("TwoPlayerGraph",
+                                                        #    graph_name="SCC_DAG_NO_UNREACHABLE",
+                                                        #    config_yaml="config/SCC_DAGNO_UNREACHABLE",
+                                                        #    save_flag=True,
+                                                        #    from_file=False, 
+                                                        #    plot=False)
+        # self._adm_tree._graph = condensed_graph
+        # self._adm_tree.plot_graph()
+        print(f"{max(scc_order) + 1} - Number of SCCs")
+
+        return condensed_graph, scc_order
+
+        # sys.exit(-1)
     
 
     def _get_nodes_per_alt(self):
@@ -140,6 +203,18 @@ class TopologicalValueIteration(ValueIteration):
         self._states_by_payoff = states_by_payoff
     
 
+    def _check_scc_has_only_accp_or_trap_states(self, scc_num: int) -> bool:
+        """
+         A method that checks if the SCC has only accepting states.
+        """
+        # for scc_state, org_state_set in self.condensed_graph.nodes.data():
+        if self.condensed_graph.nodes[scc_num]['members'] == set(self.org_graph.get_trap_states()):
+            return True 
+        elif self.condensed_graph.nodes[scc_num]['members'].issubset(self._accp_states):
+            return True
+        return False
+    
+
     def get_adjacency_list(self) -> List[List]:
         """
          Construct a adjancecny of list from the graph.
@@ -157,6 +232,22 @@ class TopologicalValueIteration(ValueIteration):
         
         return adjacency_list
 
+
+    def _is_same_at_indices(self, array1: np.ndarray, array2: np.ndarray, scc_num: Set) -> bool:
+        """
+        Check if two arrays are the same only at a specific set of indices.
+
+        :param array1: First array.
+        :param array2: Second array.
+        :param indices: List of indices to check.
+        :return: True if the arrays are the same at the specified indices, False otherwise.
+        """
+        for state in self.condensed_graph.nodes[scc_num]['members']:
+            index = self.node_int_map[state]
+            if array1[index] != array2[index]:
+                return False
+        return True
+
     def update_state_values(self, val_vector: ndarray, topological_order: int) -> ndarray:
         """
         A method that back propagates the state values. Specfically, at the
@@ -169,7 +260,7 @@ class TopologicalValueIteration(ValueIteration):
         """
 
         val_pre = copy.copy(val_vector)
-        for _n in self.states_by_payoff[topological_order]['nodes']:
+        for _n in self.condensed_graph.nodes[topological_order]['members']:
             if _n in self._accp_states and self.org_graph.get_state_w_attribute(_n, "player") == "eve":
                 continue
             
@@ -187,26 +278,44 @@ class TopologicalValueIteration(ValueIteration):
         _val_vector = copy.deepcopy(self.val_vector)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
-        iter_var: int = 0
+        vi_iter_var: int = 0
 
-        for payoff in self.valid_payoff_values:
+        for scc_num in self.scc_order:
+            # if self._check_scc_has_only_accp_or_trap_states(scc_num):
+            #     vi_iter_var += 1
+            #     continue
+            
+            # scc_val_vector = np.full(shape=(len(self.condensed_graph.nodes[scc_num]['members']), 1), fill_value=math.inf)
+            # scc_val_pre = scc_val_vector
+            
+            scc_iter_var: int = 0
+
+            # create a local node int map for the states in this scc
+            if debug: 
+                print(f"********SCC Num: {scc_num}********")
             while True:
                 if debug:
                     # if iter_var % 1000 == 0:
-                    print(f"{iter_var} Iterations & Payoff {payoff}")
+                    # print(f"{iter_var} Iterations & Payoff {payoff}")
+                    print(f"{scc_iter_var} Iterations")
                 
-                u_val_pre = copy.copy(_val_vector)
-                iter_var += 1
+                _val_pre = copy.copy(_val_vector)
+                scc_iter_var += 1
 
                 # perform one step Value Iteration
-                _val_vector: ndarray = self.update_state_values(val_vector=_val_vector, topological_order=payoff)
+                _val_vector: ndarray = self.update_state_values(val_vector=_val_vector, topological_order=scc_num)
 
-                if self._is_same(u_val_pre, _val_vector):
+                if self._is_same(_val_pre, _val_vector):
+                # if self._is_same_at_indices(_val_pre, _val_vector, scc_num):
                     break
             
-        self._iterations_to_converge = iter_var
+            vi_iter_var += 1
+            
+        assert vi_iter_var == len(self.scc_order), "[Error] The number of VI iterations does not match the number of SCCs."
         
-         # safely convert values in the last col of val vector to ints
+        self._iterations_to_converge = vi_iter_var
+        
+        # safely convert values in the last col of val vector to ints
         if self._int_val:
             _int_val_vector = self.val_vector[:, -1].astype(int)
         else:
@@ -228,7 +337,7 @@ class TopologicalValueIteration(ValueIteration):
             self.plot_graph()
 
         if debug:
-            print(f"Number of iteration to converge: {iter_var}")
+            print(f"Number of iteration to converge: {vi_iter_var}")
             print(f"Init state value: {self.state_value_dict[_init_node]}")
             # self._sanity_check()
 

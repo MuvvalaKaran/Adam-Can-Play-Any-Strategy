@@ -1,6 +1,6 @@
 [submodule "wombats"]
 	path = wombats
-	url = git@github.com:aria-systems-group/wombats.git
+	url = https://github.com/aria-systems-group/wombats.git
 [submodule "src/LTLf2DFA"]
 	path = src/LTLf2DFA
-	url = git@github.com:whitemech/LTLf2DFA.git
+	url = https://github.com/whitemech/LTLf2DFA.git

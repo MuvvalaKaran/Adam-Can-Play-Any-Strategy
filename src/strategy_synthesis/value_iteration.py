@@ -34,7 +34,8 @@ class ValueIteration:
         self._str_dict: Dict = defaultdict(lambda: -1)
         self._sys_str_dict: Dict = defaultdict(lambda: -1)
         self._env_str_dict: Dict = defaultdict(lambda: -1)
-        self._sys_winning_region = None
+        self._sys_winning_region: set = None
+        self._winning_region: set = None
         self._accp_states: set = set(self.org_graph.get_accepting_states())
         self._iterations_to_converge = math.inf
         self._convergence_dict = defaultdict(lambda: -1)
@@ -87,6 +88,10 @@ class ValueIteration:
         return self._sys_winning_region
     
     @property
+    def winning_region(self):
+        return self._winning_region
+    
+    @property
     def iterations_to_converge(self):
         if self._iterations_to_converge == math.inf:
             warnings.warn("[Error] Please Run the Value Iteration's solve() method before accessing the `iterations_to_converge` attribute.")
@@ -120,9 +125,13 @@ class ValueIteration:
 
 
     def set_init_state(self):
-        _init_state: List[tuple] = self.org_graph.get_initial_states()
-        assert len(_init_state) == 1, "The initial state should be a single."
-        return _init_state[0][0]
+        try:
+            _init_state: List[tuple] = self.org_graph.get_initial_states()
+            assert len(_init_state) == 1, "The initial state should be a single."
+            return _init_state[0][0]
+        except:
+            return None
+        
     
 
     def is_winning(self) -> bool:
@@ -399,8 +408,6 @@ class ValueIteration:
         :return:
         """
         # initially in the org val_vector the target node(s) will value 0
-        _init_node = self.org_graph.get_initial_states()[0][0]
-
         _val_vector = copy.deepcopy(self.val_vector)
         _val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
 
@@ -440,6 +447,7 @@ class ValueIteration:
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
         self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
+        self._winning_region = set([s for s, val in self.state_value_dict.items() if val != math.inf])
 
         if plot:
             self._change_orig_graph_name(prefix='adv_str_on_')
@@ -449,6 +457,7 @@ class ValueIteration:
 
         if debug:
             print(f"Number of iteration to converge: {iter_var}")
+            _init_node = self.org_graph.get_initial_states()[0][0]
             print(f"Init state value: {self.state_value_dict[_init_node]}")
             self._sanity_check()
             # self.print_state_values()
@@ -660,19 +669,10 @@ class PermissiveValueIteration(ValueIteration):
     
     def solve(self, debug: bool = False, plot: bool = False, extract_strategy: bool = True):
         """
-        A method that implements Algorithm 1 from the paper. The operation performed at each step can be represented by
-        an operator say F.  F here is the _get_max_env_val() and _get_min_sys_val() methods. F is a monotonic operator
-        and is monotonically decreasing - meaning the function should not increase (it must not increase!) and converges
-        to the greatest fixed point of F.
-
-        As all the weights are positive in our case, the state values monotonically decrease and converge to the greatest
-        fixed point.
-
-        The Val of the game is infact the Greatest Fixed Point.  The upper bound on the # of iterations to converge is
-        (2|V| -1)W|V| + |V|.
-        :param debug:
-        :param plot:
-        :return:
+         TODO: Looks like there isn't much difference in implementation of the parent method's solve(). Can I get rid of this function?
+            :param debug:
+            :param plot:
+            :return:
         """
         # initially in the org val_vector the target node(s) will value 0
         _init_node = self.org_graph.get_initial_states()[0][0]
@@ -710,6 +710,7 @@ class PermissiveValueIteration(ValueIteration):
 
         self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
         self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
+        self._winning_region = set([s for s, val in self.state_value_dict.items() if val != math.inf])
 
         if plot:
             self.plot_graph()
@@ -731,55 +732,290 @@ class PermissiveValueIteration(ValueIteration):
             self.org_graph.add_state_attribute(_n, "val", [sval if INT_MIN_VAL < sval < INT_MAX_VAL else 'inf'])
 
 
-class PermissiveSafetyValueIteration(PermissiveValueIteration):
-    """
-    This class inherits Permissive Value iteration class. In this class, we are computing maximally permissive strategies that ensures
-     that the system remains the pending region. Thus, every state in the pending region is an accepting state and every state that belongs
-     to the losing region are the non-accepting states.
+class HopefulPermissiveValueIteration(PermissiveValueIteration):
 
-    We slightly modify the _get_min_sys_val() and _get_max_env_val methods and keep the rest of the Value Iteration algorithm the same.
-    """
+    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
+        super().__init__(game, competitive, int_val)
+        self._adv_val_vector: Optional[ndarray] = self._val_vector
+        self._coop_val_vector: Optional[ndarray] = self._val_vector
+    
+    @property
+    def adv_val_vector(self):
+        return self._adv_val_vector
+    
+    @property
+    def coop_val_vector(self):
+        return self._coop_val_vector
+    
 
-    def _get_min_sys_val(self, node: str, pre_vec: ndarray) -> List[str]:
+    def extract_strategy(self) -> Tuple[dict, dict]:
         """
-        At Sys state: argmin_a(W(s')) for all s'
-
-         Here W(s') shuld be zero or infinity
+         Override the base method to reason over the adv_val_vector.
         """
-        _succ_vals: List = []
+        _env_str_dict = {}
+        _sys_str_dict = {}
+        for _n in self.org_graph._graph.nodes():
+            # get the max value
+            if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
+                _next_max_node = self._get_max_env_val(_n, self.adv_val_vector[:, -1])
+                if _next_max_node is not None:
+                    _env_str_dict[_n] = _next_max_node
+            
+            # get the min value
+            elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                _next_min_node = self._get_min_sys_val(node=_n)
+                if _next_min_node is not None:
+                    _sys_str_dict[_n] = _next_min_node 
+        
+        return _sys_str_dict, _env_str_dict
+    
+
+    def _get_min_sys_val(self, node: Union[str, tuple]) -> Union[List[str], None]:
+        """
+        Override the base method to compute acVal, i.e., the strategy with the optimal cooperative value.
+        :param node: The current node in in the graph
+        :param pre_vec: The previous value vector
+        :return: A List of states
+        """
+        adv_succ_vals: List = []
+        coop_succ_vals: List = []
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
-            _val = pre_vec[_node_int]
-            if _val != math.inf:
-                _succ_vals.append((_next_n, _val))
-
+            adv_val = self.adv_val_vector[:, -1][_node_int] + self.org_graph.get_edge_weight(node, _next_n)
+            coop_val = self.coop_val_vector[:, -1][_node_int] + self.org_graph.get_edge_weight(node, _next_n)
+            if adv_val != math.inf:
+                adv_succ_vals.append((_next_n, adv_val))
+                coop_succ_vals.append((_next_n, coop_val))
         try:
-            _, min_val = min(_succ_vals, key=operator.itemgetter(1))
-            return [_node for _node, _node_val in _succ_vals if min_val == _node_val]
+            _, min_val = min(adv_succ_vals, key=operator.itemgetter(1))
+            opt_adv_states = [_node for _node, _node_val in adv_succ_vals if min_val == _node_val]
+            adv_coop_vals = [_coop_node_val for _node, _coop_node_val in coop_succ_vals if _node in opt_adv_states]
+            opt_adv_coop_val = min(adv_coop_vals)
+            return [_node for _node, _node_val in coop_succ_vals if opt_adv_coop_val == _node_val and _node in opt_adv_states]
         except ValueError:
             return None
-    
+
+
+    def update_state_values(self, adv_val_vector: ndarray, coop_val_vector: ndarray) -> Tuple[ndarray, ndarray]:
+        """
+        Overide base method to update value vector for both the adv value and the cooperative value. 
+        """
+
+        adv_val_pre = copy.copy(adv_val_vector)
+        coop_val_pre = copy.copy(coop_val_vector)
+
+        for _n in self.org_graph._graph.nodes():
+            _int_node = self.node_int_map[_n]
+
+            if _n in self._accp_states and self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                continue
+            
+            adv_val_vector[_int_node][0], coop_val_vector[_int_node][0] = self._get_opt_val(node=_n, adv_pre_vec=adv_val_pre, coop_pre_vec=coop_val_pre)
+
+        self._adv_val_vector = np.append(self.adv_val_vector, adv_val_vector, axis=1)
+        self._coop_val_vector = np.append(self.coop_val_vector, coop_val_vector, axis=1)
+
+        return adv_val_vector, coop_val_vector
+
+
+    def solve(self, debug: bool = False, plot: bool = False, extract_strategy: bool = True):
+        """
+            Overides the base method to run min-max  and min-min Value Iteration inside the loop.
+        :param debug:
+        :param plot:
+        :return:
+        """
+
+        # initially in the org val_vector the target node(s) will value 0
+        adv_val_vector = copy.deepcopy(self.adv_val_vector)
+        adv_val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
+
+        # initiate 
+        coop_val_vector = copy.deepcopy(self.coop_val_vector)
+        coop_val_pre = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
+
+        iter_var = 0
+
+        while not (self._is_same(adv_val_pre, adv_val_vector) and self._is_same(coop_val_pre, coop_val_vector)):
+            if debug:
+                # if iter_var % 1000 == 0:
+                print(f"{iter_var} Iterations")
+
+            adv_val_pre = copy.copy(adv_val_vector)
+            coop_val_pre = copy.copy(coop_val_vector)
+            iter_var += 1
+
+            # Adversarial perform one step Value Iteration 
+            adv_val_vector, coop_val_vector = self.update_state_values(adv_val_vector=adv_val_vector, coop_val_vector=coop_val_vector)
+
+        # safely convert values in the last col of val vector to ints
+        if self._int_val:
+            adv_int_val_vector = self.adv_val_vector[:, -1].astype(int)
+            # coop_int_val_vector = self.coop_val_vector[:, -1].astype(int)
+        else:
+            adv_int_val_vector = self.adv_val_vector[:, -1]
+            # coop_int_val_vector = self.coop_val_vector[:, -1]
+
+        # update the state value dict
+        for i in range(self.num_of_nodes):
+            _s = self.node_int_map.inverse[i]
+            self.state_value_dict.update({_s: adv_int_val_vector[i] if INT_MIN_VAL <  adv_int_val_vector[i] < INT_MAX_VAL  else math.inf})
+
+        # extract sys and env strategy after converging.
+        if extract_strategy:
+            self._sys_str_dict, self._env_str_dict = self.extract_strategy()
+
+        self._str_dict = {**self._sys_str_dict, **self._env_str_dict}
+        self._sys_winning_region = set(self._sys_str_dict.keys()) #.union(self._accp_states)
+
+        if plot:
+            self.plot_graph()
+
+        if debug:
+            print(f"Number of iteration to converge: {iter_var}")
+            # print(f"Init state value: {self.state_value_dict[_init_node]}")
+            # self._sanity_check()
 
     def _get_max_env_val(self, node: Union[str, tuple], pre_vec: ndarray) -> List[str]:
         """
         A method that returns the max value for the current node that belongs to the env.
-         At Env state: argmax_a(W(s')) for all s'
-
-        Here W(s') shuld be zero or infinity
-        
         :param node: The current node in in the graph
         :param pre_vec: The previous value vector
         :return: A List of states
         """
 
-        _succ_vals: List = []
+        _succ_vals: List[tuple] = []
+        _only_vals = set({})
         for _next_n in self.org_graph._graph.successors(node):
             _node_int = self.node_int_map[_next_n]
             _val = pre_vec[_node_int] + self.org_graph.get_edge_weight(node, _next_n)
+            _only_vals.add(_val)
             _succ_vals.append((_next_n, _val))
-        
 
-        assert self.competitive is True, "[Error] Running Permissive Value Iteration in Pending region with non-cooperative human! Make sure self.competitive is set to True"
-        _, _val = max(_succ_vals, key=operator.itemgetter(1))
+        # get org node int value
+        if self.competitive:
+            _lonly_vals = list(_only_vals)
+            if math.inf in _lonly_vals:
+                if len(_lonly_vals) == 1 and _lonly_vals[0] == math.inf:
+                    _, _val = max(_succ_vals, key=operator.itemgetter(1))
+                # if the succ state are all NOT inf
+                elif len(_lonly_vals) == 1 and _lonly_vals[0] != math.inf:
+                    _val = _lonly_vals[0]
+                else:
+                    # get the 2nd highest value
+                    _lonly_vals.sort()
+                    _val = _lonly_vals[-2]
+            else:
+                _, _val = max(_succ_vals, key=operator.itemgetter(1))
+        else:
+            _, _val = min(_succ_vals, key=operator.itemgetter(1))
+            if _val == math.inf:
+                return None
 
         return [_node for _node, _node_val in _succ_vals if _val == _node_val]
+
+    def _get_opt_val(self, node: Union[str, tuple], adv_pre_vec: ndarray, coop_pre_vec: ndarray) -> Tuple[int, int]:
+        """
+         This method only return the max (adverasrial)/min (cooperative) value
+        """
+        adv_succ_vals = set({})
+        coop_succ_vals = set({})
+        for _next_n in self.org_graph._graph.successors(node):
+            _node_int = self.node_int_map[_next_n]
+            adv_val = (self.org_graph.get_edge_weight(node, _next_n) + adv_pre_vec[_node_int][0])
+            coop_val = (self.org_graph.get_edge_weight(node, _next_n) + coop_pre_vec[_node_int][0])
+            adv_succ_vals.add(adv_val)
+            coop_succ_vals.add(coop_val)
+        
+        if self.org_graph.get_state_w_attribute(node, "player") == "eve":
+            return min(adv_succ_vals) , min(coop_succ_vals)
+        else:
+            # Computation for adversarial human
+            _lvals = list(adv_succ_vals)
+            if math.inf in _lvals:
+                if len(_lvals) == 1 and _lvals[0] == math.inf:
+                    adv_val = max(adv_succ_vals)
+                # if the succ state are all NOT vals
+                elif len(_lvals) == 1 and _lvals[0] != math.inf:
+                    adv_val = _lvals[0]
+                else:
+                    # get the 2nd highest value
+                    _lvals.sort()
+                    adv_val = _lvals[-2]
+            else:
+                adv_val = max(adv_succ_vals)
+            # computation for cooperative human    
+            coop_val = min(coop_succ_vals)
+
+            return adv_val, coop_val
+
+
+class PermissiveCoopValueIteration(ValueIteration):
+    """
+     Override base method to compute the maximally persmissive set of Cooperative Strategy. 
+      Note: It is NOT the set of all OPTIMAL strategies rather it the set of all strategy under which you reach goal state while playing memorylessly. 
+
+      Such strategies are also called non-deferring strategies. 
+      
+      See: "Synthesis of Maximally Permissive Strategies for LTLf Speciﬁcations", Shufang Zhu and G. D. Giacomo, IJCAI 22, for more details.  
+    """
+    def __init__(self, game: TwoPlayerGraph, int_val: bool = True):
+        super().__init__(game=game, int_val=int_val, competitive=False)
+        self._sys_coop_opt_str_dict: Dict = defaultdict(lambda: -1)
+
+    @property
+    def sys_coop_opt_str_dict(self):
+        return self._sys_coop_opt_str_dict
+    
+
+    def extract_strategy(self) -> Tuple[dict, dict]:
+        """
+         Overide the base method as get_min_sys_val return Coop and Coop Optimal strategy.
+        """
+        _env_str_dict = {}
+        _sys_str_dict = {}
+        for _n in self.org_graph._graph.nodes():
+            # get the max value
+            if self.org_graph.get_state_w_attribute(_n, "player") == "adam":
+                _next_max_node = self._get_max_env_val(_n, self.val_vector[:, -1])
+                if _next_max_node is not None:
+                    _env_str_dict[_n] = _next_max_node
+            
+            # get the min value
+            elif self.org_graph.get_state_w_attribute(_n, "player") == "eve":
+                _next_min_node, opt_next_min_nodes = self._get_min_sys_val(_n, self.val_vector[:, -1])
+                if _next_min_node is not None:
+                    _sys_str_dict[_n] = _next_min_node
+                    self._sys_coop_opt_str_dict[_n] =  opt_next_min_nodes
+        
+        return _sys_str_dict, _env_str_dict
+    
+
+    def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Tuple[Union[str], str]:
+        """
+         A method that returns the set of nodes along the non-deferring strategies.
+            :param node: The current node in the graph
+            :param pre_vec: The previous value vector
+         :return: The optimal state(s) to transition to if successor states values are not Inf.
+        """
+        _succ_vals: List[Tuple[str, int]] = []
+        _succ_nodes = []
+        cval_curr_node =   pre_vec[self.node_int_map[node]]
+        for _next_n in self.org_graph._graph.successors(node):
+            _node_int = self.node_int_map[_next_n]
+            _val = self.org_graph.get_edge_weight(node, _next_n) + pre_vec[_node_int]
+            if _val != math.inf:
+                _succ_vals.append((_next_n, _val))
+            if pre_vec[_node_int] < cval_curr_node:
+                _succ_nodes.append(_next_n)
+        
+        try:
+            _, min_val = min(_succ_vals, key=operator.itemgetter(1))
+            opt_succ_node = [s for s, v in _succ_vals if v == min_val]
+        except ValueError: 
+            opt_succ_node = None
+        
+        if len(_succ_nodes) == 0:
+            return None, opt_succ_node
+        
+        return _succ_nodes, opt_succ_node

@@ -18,7 +18,7 @@ from graphviz import Digraph
 class TwoPlayerGraph(Graph):
 
     def __init__(self, graph_name: str, config_yaml: str, save_flag: bool = False,
-                 finite: bool = True) -> 'TwoPlayerGraph()':
+                 finite: bool = True) -> 'TwoPlayerGraph':
         Graph.__init__(self, config_yaml=config_yaml, save_flag=save_flag)
         self._graph_name = graph_name
         self._graph = nx.MultiDiGraph(name=graph_name)
@@ -102,6 +102,9 @@ class TwoPlayerGraph(Graph):
         start_node: str=None, n_neighbor: int=3,**kwargs) -> None:
         """
         Method to create a illustration of the graph
+        kwargs: alais: bool =  Pass as True to plot nodes with their original node name rather than node, payoff.
+                    Currently, this key word argument is being called from QuantitativeNaiveAdmissible's compute_best_effort_strategies method.
+
         :return: Diagram of the graph
         """
         dot: Digraph = Digraph(name="graph")
@@ -136,10 +139,17 @@ class TwoPlayerGraph(Graph):
                 obs = ''
             else:
                 obs = str(obs) #"\n".join(obs)
-            dot.node(str(n[0]), _attributes={"style": "filled",
-                                             "fillcolor": color[0],
-                                             "xlabel": obs,
-                                             "shape": "rectangle"})
+            if kwargs.get('alias'):
+                dot.node(str(n[0]), _attributes={"style": "filled",
+                                                "fillcolor": color[0],
+                                                "xlabel": obs,
+                                                "label": str(n[0][0]),
+                                                "shape": "rectangle"})
+            else:
+                dot.node(str(n[0]), _attributes={"style": "filled",
+                                                "fillcolor": color[0],
+                                                "xlabel": obs,
+                                                "shape": "rectangle"})
             if n[1].get('init'):
                 dot.node(str(n[0]), _attributes={"style": "filled", "fillcolor": color[1], "xlabel": obs})
             if n[1].get('accepting'):
@@ -173,7 +183,7 @@ class TwoPlayerGraph(Graph):
         dot.edge_attr.update(arrowhead='vee', arrowsize='1', decorate='True')
 
         if self._save_flag:
-            self.save_dot_graph(dot, self._graph_name, **kwargs)
+            self.save_dot_graph(dot, self._graph_name)
 
     def print_edges(self):
         print("=====================================")
@@ -351,6 +361,7 @@ class TwoPlayerGraphBuilder(Builder):
                  graph_name: str,
                  config_yaml: str,
                  minigrid = None,
+                 minigrid_wait: bool = True,
                  n_step: int = None,
                  save_flag: bool = False,
                  from_file: bool = False,
@@ -371,7 +382,7 @@ class TwoPlayerGraphBuilder(Builder):
             graph_yaml = self._from_yaml(config_yaml)
 
         if graph_yaml is None and minigrid is not None:
-            graph_yaml = self._from_minigrid(minigrid, n_step)
+            graph_yaml = self._from_minigrid(minigrid, n_step, wait=minigrid_wait)
 
         if graph_yaml:
             self._instance.construct_graph(graph_yaml)
@@ -386,8 +397,8 @@ class TwoPlayerGraphBuilder(Builder):
 
         return config_data
 
-    def _from_minigrid(self, minigrid_environment, n_step) -> dict:
-        config_data = minigrid_environment.extract_transition_system(n_step)
+    def _from_minigrid(self, minigrid_environment, n_step, wait: bool = True) -> dict:
+        config_data = minigrid_environment.extract_transition_system(n_step, wait=wait)
 
         # Translate minigrid player to this library's player names
         node_names = list(config_data['nodes'].keys())

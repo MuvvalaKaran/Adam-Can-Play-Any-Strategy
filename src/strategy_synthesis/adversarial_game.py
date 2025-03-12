@@ -1,15 +1,11 @@
 import warnings
-import numpy as np
-import random
 
-from numpy import ndarray
-from typing import Optional, Iterable, Dict, List, Tuple
+from typing import Optional, Iterable, Dict
 from collections import defaultdict
 from collections import deque
 
 # import local packages
 from ..graph import TwoPlayerGraph, graph_factory
-from ..graph import TwoPlayerGraph
 
 
 class ReachabilityGame:
@@ -32,8 +28,11 @@ class ReachabilityGame:
     The code does a sanity check to ensure that every state has an outgoing edge and has a player assigned to it. A
     state that does not have an edge is added a self-loop with weight 0 and a state that does not have a player
     assigned is assigned as sys's (eve) state.
+
+    kwargs: pass sanity_check=True to check if the game is semantically correct, i.e., every state has a player atttribute and
+      every states has atleast one outgoing edge
     """
-    def __init__(self, game: TwoPlayerGraph, debug: bool = False):
+    def __init__(self, game: TwoPlayerGraph, debug: bool = False, **kwargs):
         self._game = game
         self._sys_winning_region: Optional[Iterable] = None
         self._env_winning_region: Optional[Iterable] = None
@@ -41,8 +40,9 @@ class ReachabilityGame:
         self._env_str: Optional[dict] = None
 
         self.game_states = set(self.game.get_states()._nodes.keys())
-        self._sanity_check_player()
-        self._sanity_check_total(debug=debug)
+        if kwargs.get('sanity_check', False) is True:
+            self._sanity_check_player()
+            self._sanity_check_total(debug=debug)
 
     @property
     def game(self):
@@ -87,7 +87,7 @@ class ReachabilityGame:
         
         return self._sys_winning_region
 
-    def _compute_no_of_node_successors(self) -> dict:
+    def _compute_no_of_node_successors(self) -> Dict[str, int]:
         """
         A helper method that initially compute the number of outgoing edges from a node.
 
@@ -195,7 +195,7 @@ class ReachabilityGame:
     
     def plot_graph(self, with_strategy: bool = False):
         """
-        A hleper function to plot the graph with or without the strategy 
+        A helper function to plot the graph with or without the strategy 
         
         :param with_strategy: Flag to set printing to True
         """
@@ -210,7 +210,7 @@ class ReachabilityGame:
             # adding attribute to winning strategy so that they are colored when plotting.
             for curr_node, next_node in self.sys_str.items():
                 if self.game._graph.nodes[curr_node].get("player") == "eve":
-                    if isinstance(next_node, list):
+                    if isinstance(next_node, Iterable):
                         for n_node in next_node:
                             self.game._graph.edges[curr_node, n_node, 0]['strategy'] = True
                     else:
@@ -250,7 +250,6 @@ class ReachabilityGame:
                 self.game._graph.add_edge(_n, _n)
 
     def _sanity_check_player(self):
-
         for _n in self.game._graph.nodes.data("player"):
             if _n[1] is None:
                 self.game.add_state_attribute(_n[0], "player", "eve")

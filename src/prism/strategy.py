@@ -278,7 +278,7 @@ class DeterministicStrategy(Strategy):
             raise Exception('Please provide an initial pareto point')
 
     def set_initial_pareto_point(self, initial_pareto_point: ParetoPoint):
-        self._init_pareto_point = init_pareto_point
+        self._init_pareto_point = initial_pareto_point
 
     def construct_graph(self, adversarial: bool = True):
         # add this graph object of type of Networkx to our Graph class

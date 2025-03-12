@@ -30,12 +30,19 @@ class DFAGraph(Graph):
         buchi_automaton = nx.MultiDiGraph(name=self._graph_name)
         self._graph = buchi_automaton
 
-        states, edges, initial, accepts = self._from_spot(self._formula)
+        if self._formula != "":
+            states, edges, initial, accepts = self._from_spot(self._formula)
 
-        if self._use_alias:
-            self._construct_dfa_w_alias(states, edges)
+            if self._use_alias:
+                self._construct_dfa_w_alias(states, edges)
+            else:
+                self._construct_dfa(states, edges)
+        
         else:
-            self._construct_dfa(states, edges)
+            assert self._config_yaml != "", "Please provide a config file to read from or provide the LTL Formula to construct"
+            # Read yaml file and load to self._graph_yaml
+            self.read_yaml_file()
+            self._construct_dfa_from_yaml(self._graph_yaml)
 
         if plot:
             self.plot_graph(**kwargs)
@@ -69,6 +76,39 @@ class DFAGraph(Graph):
                           v,
                           guard=transition_expr,
                           guard_formula=transition_formula)
+    
+
+    def _construct_dfa_from_yaml(self, graph_yaml):
+        """
+        A method that construct a DFA from a config file.
+        :return: An instance of DFAGraph with nodes, edges, and transition labels that enable those transitions
+        """
+
+        # add nodes
+        for node_name, attr in graph_yaml['nodes'].items():
+            self.add_state(node_name)
+            for attr_name, attr_val in attr.items():
+                self.add_state(node_name)
+
+            # add init and accepting node attribute
+            if node_name == graph_yaml['start_state']:
+                self.add_initial_state(node_name)
+
+            if attr['is_accepting'] == 'True':
+                self.add_accepting_state(node_name)
+
+        # add edges
+        for start_name, edge_dict in graph_yaml['edges'].items():
+            for end_name, attr in edge_dict.items():
+                formula: list = attr.get('formulas')
+                transition_formula = formula[0]
+                transition_expr = parse_guard(transition_formula)
+
+                self.add_edge(start_name,
+                              end_name,
+                              guard=transition_expr,
+                              guard_formula=transition_formula)
+                    
 
     def _construct_dfa_w_alias(self, states, edges):
         """
@@ -298,13 +338,14 @@ class DFABuilder(Builder):
 
         if use_alias:
             print("Using custom names for automaton nodes instead of the original ones by SPOT toolbox")
-
+        
         self._instance = DFAGraph(formula=sc_ltl,
-                                  graph_name=graph_name,
-                                  config_yaml=config_yaml,
-                                  save_flag=save_flag,
-                                  use_alias=use_alias)
-
+                                graph_name=graph_name,
+                                config_yaml=config_yaml,
+                                save_flag=save_flag,
+                                use_alias=use_alias)
+            
         self._instance.construct_graph(plot=plot, view=view, format=format, directory=directory, filename=filename)
+
 
         return self._instance

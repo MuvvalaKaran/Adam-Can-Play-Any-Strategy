@@ -43,7 +43,9 @@ class ProductAutomaton(TwoPlayerGraph):
                  integrate_accepting: bool = False,
                  use_trans_sys_weights: bool = False,
                  pdfa_compose: bool = False,
-                 skip_empty: bool = True) -> 'ProductAutomaton()':
+                 skip_empty: bool = True,
+                 sanity_check: bool = True, 
+                 extend_trans_init: bool = False) -> 'ProductAutomaton()':
 
         self._trans_sys: Optional[TwoPlayerGraph] = copy.deepcopy(trans_sys)
         self._auto_graph: Union[DFAGraph, PDFAGraph] = copy.deepcopy(automaton)
@@ -59,6 +61,9 @@ class ProductAutomaton(TwoPlayerGraph):
         self._use_trans_sys_weights = use_trans_sys_weights
 
         self._pdfa_compose: bool = pdfa_compose
+
+        self._sanity_check_flag: bool = sanity_check 
+        self._extend_trans_init : bool = extend_trans_init
 
         ts_node_default_attr = {'ap': set()}
         ts_edge_default_attr = {'actions': '', 'weight': 0, 'weights': None}
@@ -84,6 +89,15 @@ class ProductAutomaton(TwoPlayerGraph):
                                 config_yaml=config_yaml,
                                 save_flag=save_flag,
                                 finite=finite)
+    
+    @property
+    def trans_sys(self):
+        return self._trans_sys
+    
+    @property
+    def automaton(self):
+        return self._automaton
+
 
     def get_attr(self, key: str, attr_name: str, attr_dict: Dict):
         if key not in self._default_attr:
@@ -110,7 +124,8 @@ class ProductAutomaton(TwoPlayerGraph):
         # This is the product construction method used by Kandai in fpr his PDFA product construction
         # TODO: Add confunctionality to construct non-absorbing product automaton for non-pdfa instances too!
         if self._pdfa_compose:
-            self._extend_trans_init()
+            if self._extend_trans_init:
+                self._extend_trans_init()
 
             if self._absorbing:
 
@@ -127,7 +142,8 @@ class ProductAutomaton(TwoPlayerGraph):
             if self._integrate_accepting:
                 self._integrate_accepting_states()
 
-            self._sanity_check(debug=True)
+            if self._sanity_check_flag:
+                self._sanity_check(debug=True)
 
             self._initialize_edge_labels_on_fancy_graph()
             if self._config_yaml is not None:
@@ -135,7 +151,8 @@ class ProductAutomaton(TwoPlayerGraph):
         else:
             self.construct_product_absorbing()
             
-            self._sanity_check(debug=False)
+            if self._sanity_check_flag:
+                self._sanity_check(debug=False)
 
     def _extend_trans_init(self):
         # Get the original initial state
@@ -316,14 +333,10 @@ class ProductAutomaton(TwoPlayerGraph):
 
                         for auto_weight, pref, auto_action in zip(auto_weights, prefs, auto_actions):
                             # determine if a transition is possible or not, if yes then add that edge
-                            exists, _v_prod_node = self._check_transition(_u_ts_node,
-                                                                        _v_ts_node,
-                                                                        _u_a_node,
-                                                                        _v_a_node,
-                                                                        _v_prod_node,
-                                                                        action=auto_action,
-                                                                        obs=ap,)
-                                                                        # pref=pref)
+                            exists, _v_prod_node = self._check_transition(_v_prod_node,
+                                                                          action=auto_action,
+                                                                          obs=ap,)
+                                                                          # pref=pref)
 
                             if exists:
                                 self._add_transition(_u_prod_node,
@@ -417,7 +430,23 @@ class ProductAutomaton(TwoPlayerGraph):
         :param _v_prod_node:
         :return: Updated graph with the edge
         """
-        if not self._graph.has_edge(_u_prod_node, _v_prod_node):
+        u_ts_node = _u_prod_node[0] if isinstance(_u_prod_node, tuple) else _u_prod_node
+        v_ts_node = _v_prod_node[0] if isinstance(_v_prod_node, tuple) else _v_prod_node
+        try:
+            is_env_node: bool = True if self._trans_sys._graph.nodes[u_ts_node].get('player', '') == 'adam' else False
+        except KeyError:
+            is_env_node: bool = False
+
+        # is_env_node: bool = True if self._trans_sys._graph.nodes[u_ts_node].get('player', ) == 'adam' else False
+        is_nxt_abs: bool = True if v_ts_node in self._auto_graph.get_absorbing_states() else False
+        check = True if not self._graph.has_edge(_u_prod_node, _v_prod_node) else False
+        
+        # if at env state and edbe from same u to accepting node exists then skip the "check", i.e.,
+        #  construct multiple Env edges between u and v as Env can satisfy taks in multiple ways at u.
+        if is_env_node and is_nxt_abs:
+            check = True
+        if check:
+        # if is_env_node or not self._graph.has_edge(_u_prod_node, _v_prod_node):
             if _u_prod_node in self._auto_graph.get_absorbing_states():
                 # absorbing state
                 self.add_edge(_u_prod_node, _v_prod_node,
@@ -455,10 +484,7 @@ class ProductAutomaton(TwoPlayerGraph):
             for _pre_s in self._graph.predecessors(_s):
                 self._graph[_pre_s][_s][0]['weight'] = 0
 
-    def _check_transition(self, _u_ts_node,
-                          _v_ts_node,
-                          _u_a_node,
-                          _v_a_node,
+    def _check_transition(self,
                           _v_prod_node,
                           action,
                           obs) -> Tuple[bool, Tuple]:
@@ -472,20 +498,11 @@ class ProductAutomaton(TwoPlayerGraph):
         :param _u_a_node:
         :return: True if there is a transition else False
         """
-
-        # if the current node in TS belongs to eve
-        if self._trans_sys._graph.nodes[_u_ts_node].get('player') == 'eve':
-            if action.formula == "(true)" or action.formula == "1":
-                return True, _v_prod_node
-            else:
-                return action.check(obs), _v_prod_node
-
-        # if the current node in TS belongs to adam
-        # we force the next node in automaton to be the current node and add that transition
-        else:
-            _v_a_node = _u_a_node
-            _v_prod_node = self._composition(_v_ts_node, _v_a_node)
+        if action.formula == "(true)" or action.formula == "1":
             return True, _v_prod_node
+        else:
+            return action.check(obs), _v_prod_node
+
 
     def _check_transition_absorbing(self, _u_ts_node,
                                     _v_ts_node,

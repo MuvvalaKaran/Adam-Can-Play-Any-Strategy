@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+.node {
+  cursor: pointer;
+}
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node rect {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 3px;
+}
+
+.link.strategy {
+  stroke: red;
+}
+
+.edge-label {
+  font: 8px sans-serif;
+  fill: #666;
+}
+
+.edge-label-background {
+  fill: white;
+  fill-opacity: 0.8;
+}
+
+.search-container {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.search-input {
+  padding: 5px;
+  margin: 5px;
+  width: 200px;
+}
+
+.search-select {
+  padding: 5px;
+  margin: 5px;
+  width: 200px;
+}
+
+.node.highlighted circle,
+.node.highlighted rect {
+  stroke: #ff4444;
+  stroke-width: 3px;
+}
+
+.node.highlighted text {
+  font-weight: bold;
+  fill: #ff4444;
+}
+
+#tree-container {
+  width: 100%;
+  height: 100vh;
+  overflow: auto;
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Add style for the expand button */
+.search-button {
+    padding: 5px 10px;
+    margin: 5px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.search-button:hover {
+    background-color: #45a049;
+}
+</style>
+<body>
+  <div class="search-container">
+    <select id="searchAttribute" class="search-select">
+        <option value="name">Name</option>
+        <option value="label">Label</option>
+        <option value="val">Value</option>
+        <option value="player">Player</option>
+        <option value="strategy">Strategy</option>
+    </select>
+    <input type="text" id="searchBox" class="search-input" placeholder="Search nodes...">
+    <button id="expandButton" class="search-button">Expand to Node</button>
+    <div id="searchResults"></div>
+</div>
+<div id="tree-container"></div>
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+// Initialize all variables at the top
+var margin = {top: 20, right: 120, bottom: 20, left: 120};
+var tree_width = 20000;
+var tree_height = 1000;
+var tree_level_depth = 180;
+var duration = 750;
+var i = 0;
+var root;
+var tree;
+var diagonal;
+var svg;
+var tooltip;
+
+// Initialize tree layout
+tree = d3.layout.tree()
+    .size([tree_height, tree_width]);
+
+diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.y, d.x]; });
+
+// Initialize SVG
+svg = d3.select("#tree-container").append("svg")
+    .attr("width", tree_width + margin.right + margin.left)
+    .attr("height", tree_height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// Initialize tooltip
+tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip");
+
+function showTooltip(d) {
+    var tooltipContent = [
+        `Name: ${d.name}`,
+        `Label: ${d.label || 'N/A'}`,
+        `Value: ${d.val || 'N/A'}`,
+        `Player: ${d.player || 'N/A'}`
+    ];
+    
+    if (d.strategy) {
+        tooltipContent.push(`Strategy: ${d.strategy}`);
+    }
+    
+    tooltip.html(tooltipContent.join('<br/>'))
+        .style("left", (d3.event.pageX + 10) + "px")
+        .style("top", (d3.event.pageY - 10) + "px")
+        .style("opacity", 1);
+}
+
+function hideTooltip() {
+    tooltip.style("opacity", 0);
+}
+
+// Add new function to find path to node
+function findNodePath(searchTerm) {
+    var paths = [];
+    
+    function traverse(node, path) {
+        // Create a new path array with the current node
+        var currentPath = path.concat(node);
+        
+        // Check if this is the node we're looking for
+        if (node.name && node.name.toLowerCase() === searchTerm.toLowerCase()) {
+            paths.push(currentPath);
+        }
+        
+        // Search in visible children
+        if (node.children) {
+            node.children.forEach(function(child) {
+                traverse(child, currentPath);
+            });
+        }
+        // Search in collapsed children
+        if (node._children) {
+            node._children.forEach(function(child) {
+                traverse(child, currentPath);
+            });
+        }
+    }
+    
+    traverse(root, []);
+    return paths;
+}
+
+// Add function to expand path to node
+function expandToNode(path) {
+    // First collapse all nodes
+    function collapseAll(node) {
+        if (node.children) {
+            node._children = node.children;
+            node.children = null;
+            node._children.forEach(collapseAll);
+        }
+    }
+    
+    // Then expand only the nodes in the path
+    function expandPath(node) {
+        if (node._children) {
+            node.children = node._children;
+            node._children = null;
+        }
+        if (node.children) {
+            node.children.forEach(function(child) {
+                if (path.includes(child)) {
+                    expandPath(child);
+                }
+            });
+        }
+    }
+    
+    // Collapse all nodes first
+    collapseAll(root);
+    
+    // Expand the path
+    path.forEach(function(node, index) {
+        if (index < path.length - 1) {
+            expandPath(node);
+        }
+    });
+    
+    // Update the visualization
+    update(root);
+}
+
+function update(source) {
+    // Compute the new tree layout
+    var nodes = tree.nodes(root);
+    var links = tree.links(nodes);
+
+    // Normalize for fixed-depth
+    nodes.forEach(function(d) { d.y = d.depth * tree_level_depth; });
+
+    // Update the nodes
+    var node = svg.selectAll("g.node")
+        .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+    // Enter any new nodes at the parent's previous position
+    var nodeEnter = node.enter().append("g")
+        .attr("class", "node")
+        .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+        .on("click", click)
+        .on("mouseover", showTooltip)
+        .on("mouseout", hideTooltip);
+
+    // Add shapes based on player
+    nodeEnter.each(function(d) {
+        var node = d3.select(this);
+        if (d.player === "eve") {
+            node.append("circle")
+                .attr("r", 1e-6)
+                .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+        } else {
+            node.append("rect")
+                .attr("x", -4.5)
+                .attr("y", -4.5)
+                .attr("width", 9)
+                .attr("height", 9)
+                .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+        }
+    });
+
+    nodeEnter.append("text")
+        .attr("x", function(d) { return d.children || d._children ? -15 : 15; })
+        .attr("dy", ".35em")
+        .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+        .text(function(d) { return d.name; })
+        .style("fill-opacity", 1e-6);
+
+    // Transition nodes to their new position
+    var nodeUpdate = node.transition()
+        .duration(duration)
+        .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+    nodeUpdate.selectAll("circle")
+        .attr("r", 4.5)
+        .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+
+    nodeUpdate.selectAll("rect")
+        .attr("x", -4.5)
+        .attr("y", -4.5)
+        .attr("width", 9)
+        .attr("height", 9)
+        .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+
+    nodeUpdate.select("text")
+        .style("fill-opacity", 1);
+
+    // Transition exiting nodes to the parent's new position
+    var nodeExit = node.exit().transition()
+        .duration(duration)
+        .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+        .remove();
+
+    nodeExit.selectAll("circle, rect")
+        .attr("r", 1e-6);
+
+    nodeExit.select("text")
+        .style("fill-opacity", 1e-6);
+
+    // Update the links
+    var link = svg.selectAll("path.link")
+        .data(links, function(d) { return d.target.id; });
+
+    // Enter any new links at the parent's previous position
+    link.enter().insert("path", "g")
+        .attr("class", function(d) {
+            return "link" + (d.target.strategy ? " strategy" : "");
+        })
+        .attr("d", function(d) {
+            var o = {x: source.x0, y: source.y0};
+            return diagonal({source: o, target: o});
+        });
+
+    // Add edge labels
+    var edgeLabels = svg.selectAll(".edge-label")
+        .data(links, function(d) { return d.target.id; });
+
+    edgeLabels.enter().append("text")
+        .attr("class", "edge-label")
+        .attr("text-anchor", "middle")
+        .text(function(d) { return d.target.edge_name; });
+
+    edgeLabels.transition()
+        .duration(duration)
+        .attr("transform", function(d) {
+            var midX = (d.source.x * 0.25 + d.target.x * 0.75);
+            var midY = (d.source.y * 0.25 + d.target.y * 0.75);
+            return "translate(" + midY + "," + midX + ")";
+        });
+
+    edgeLabels.exit().remove();
+
+    // Transition links to their new position
+    link.transition()
+        .duration(duration)
+        .attr("d", diagonal);
+
+    // Transition exiting nodes to the parent's new position
+    link.exit().transition()
+        .duration(duration)
+        .attr("d", function(d) {
+            var o = {x: source.x, y: source.y};
+            return diagonal({source: o, target: o});
+        })
+        .remove();
+
+    // Stash the old positions for transition
+    nodes.forEach(function(d) {
+        d.x0 = d.x;
+        d.y0 = d.y;
+    });
+}
+
+function click(d) {
+    if (d.children) {
+        d._children = d.children;
+        d.children = null;
+    } else {
+        d.children = d._children;
+        d._children = null;
+    }
+    update(d);
+}
+
+// Modify setupSearch function to include expansion functionality
+function setupSearch() {
+    var searchBox = document.getElementById('searchBox');
+    var searchAttribute = document.getElementById('searchAttribute');
+    var expandButton = document.getElementById('expandButton');
+    
+    function searchNodes() {
+        var searchTerm = searchBox.value.toLowerCase();
+        var attribute = searchAttribute.value;
+        
+        // Remove previous highlights
+        d3.selectAll('.node').classed('highlighted', false);
+        
+        if (searchTerm === '') {
+            document.getElementById('searchResults').textContent = '';
+            return;
+        }
+        
+        function searchTree(node) {
+            var matches = [];
+            
+            function traverse(node) {
+                if (node[attribute] && 
+                    node[attribute].toString().toLowerCase().includes(searchTerm)) {
+                    matches.push(node);
+                }
+                
+                if (node.children) {
+                    node.children.forEach(traverse);
+                }
+                if (node._children) {
+                    node._children.forEach(traverse);
+                }
+            }
+            
+            traverse(node);
+            return matches;
+        }
+        
+        var matches = searchTree(root);
+        
+        matches.forEach(function(node) {
+            d3.selectAll('.node').filter(function(d) {
+                return d.id === node.id;
+            }).classed('highlighted', true);
+        });
+        
+        document.getElementById('searchResults').textContent = 
+            matches.length + ' matches found';
+    }
+    
+    // Add expand button click handler
+    expandButton.addEventListener('click', function() {
+        var searchTerm = searchBox.value;
+        if (searchTerm) {
+            var paths = findNodePath(searchTerm);
+            if (paths.length > 0) {
+                // Use the first found path
+                expandToNode(paths[0]);
+                
+                // Highlight the target node
+                d3.selectAll('.node').classed('highlighted', false);
+                d3.selectAll('.node').filter(function(d) {
+                    return d.name.toLowerCase() === searchTerm.toLowerCase();
+                }).classed('highlighted', true);
+                
+                document.getElementById('searchResults').textContent = 
+                    'Path expanded to node "' + searchTerm + '"';
+            } else {
+                document.getElementById('searchResults').textContent = 
+                    'Node "' + searchTerm + '" not found';
+            }
+        }
+    });
+    
+    searchBox.addEventListener('input', searchNodes);
+    searchAttribute.addEventListener('change', searchNodes);
+}
+
+
+// Load data and initialize visualization
+d3.json("d3_viz/tree_dfs.json", function(error, tree_data) {
+    if (error) throw error;
+    
+    root = tree_data;
+    root.x0 = tree_height / 2;
+    root.y0 = 0;
+
+    function collapse(d) {
+        if (d.children) {
+            d._children = d.children;
+            d._children.forEach(collapse);
+            d.children = null;
+        }
+    }
+
+    root.children.forEach(collapse);
+    update(root);
+    setupSearch();
+});
+</script>
+</body>

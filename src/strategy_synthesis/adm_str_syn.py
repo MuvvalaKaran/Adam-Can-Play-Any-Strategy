@@ -14,6 +14,7 @@ from ..graph import graph_factory
 from .safety_game import SafetyGame
 from .value_iteration import ValueIteration, PermissiveValueIteration, PermissiveCoopValueIteration
 from ...helper import InteractiveGraph
+from ..helper_methods import timer_decorator
 
 
 
@@ -983,6 +984,21 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         
         import pprint
         pprint.pp(values_of_states_in_hopeless_game)
+    
+
+    @timer_decorator
+    def compute_coop_with_warm_start(self, safe_adm_game: TwoPlayerGraph):
+        """
+         Testing the new approach where we warm start the cooperative value iteration with Optimal Coop values from states in the Winning region. 
+        """
+        coop_values_in_win_region = {k: v for k, v in self.coop_winning_state_values.items() if k in self.winning_region}
+
+        warm_start_coop_handle = PermissiveCoopValueIteration(game=safe_adm_game,
+                                                              prior_val_vector=coop_values_in_win_region)
+        warm_start_coop_handle.solve(extract_strategy=True)
+
+        return warm_start_coop_handle
+        
         
     
 
@@ -1067,9 +1083,11 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             if safeadm_game.get_state_w_attribute(s, "player") == "adam" and len(list(safeadm_game._graph.successors(s))) == 0:
                 env_state_to_rm.add(s)
         safeadm_game._graph.remove_nodes_from(env_state_to_rm)
-        
+        start = time.time()
         safe_adm_handle = PermissiveCoopValueIteration(game=safeadm_game)
         safe_adm_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        stop = time.time()
+        print(f"******************** Safe Coop Computation time: {stop - start} ********************")
 
         self._play_hopeful_game = True
         if self.game_init_states[0][0] not in unsafe_states and safe_adm_handle.is_winning():
@@ -1091,6 +1109,13 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self._safety_game = safe_adm_handle
         stop = time.time()
         print(f"******************** Safe-Admissible Computation time: {stop - start} ********************")
+
+        ################# TESTING WARMSTARTING
+        warm_start_coop_handle = self.compute_coop_with_warm_start(safe_adm_game=safeadm_game)
+        assert warm_start_coop_handle.state_value_dict == safe_adm_handle.state_value_dict, \
+            "[Error] The state values computed using Warm Started value iteration and normal value iteration are not the same. Please check your code."
+        assert warm_start_coop_handle.sys_str_dict == safe_adm_handle.sys_str_dict, \
+            "[Error] The strategies computed using Warm Started value iteration and normal value iteration are not the same. Please check your code."  
         
         # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str
         self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}

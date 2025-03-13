@@ -23,7 +23,7 @@ INT_MAX_VAL = 2147483647
 
 class ValueIteration:
 
-    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
+    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True,  prior_val_vector: Optional[dict] = None):
         self.org_graph: Optional[TwoPlayerGraph] = copy.deepcopy(game)
         self.competitive = competitive
         self._int_val: bool = int_val
@@ -39,8 +39,12 @@ class ValueIteration:
         self._accp_states: set = set(self.org_graph.get_accepting_states())
         self._iterations_to_converge = math.inf
         self._convergence_dict = defaultdict(lambda: -1)
+        self._prior_val_vector: dict = prior_val_vector
         self._init_state = self.set_init_state()
-        self._initialize_val_vector()
+        if prior_val_vector:
+            self._initialize_warm_started_val_vector()
+        else:
+            self._initialize_val_vector()
         
 
     @property
@@ -90,6 +94,11 @@ class ValueIteration:
     @property
     def winning_region(self):
         return self._winning_region
+    
+
+    @property
+    def prior_val_vector(self):
+        return self._prior_val_vector
     
     @property
     def iterations_to_converge(self):
@@ -201,6 +210,19 @@ class ValueIteration:
         self._node_int_map = bidict({state: index for index, state in enumerate(self.org_graph._graph.nodes)})
         self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
         self._initialize_target_state_costs()
+    
+
+    def _initialize_warm_started_val_vector(self):
+        """
+        A method to initialize parameters such the
+        :return:
+        """
+        self._num_of_nodes = len(list(self.org_graph._graph.nodes))
+        self._node_int_map = bidict({state: index for index, state in enumerate(self.org_graph._graph.nodes)})
+        self._val_vector = np.full(shape=(self.num_of_nodes, 1), fill_value=math.inf)
+
+        for state, state_val in self.prior_val_vector.items():
+            self._val_vector[self._node_int_map[state]] = state_val
 
     def _is_same(self, pre_val_vec, curr_val_vec):
         """
@@ -380,6 +402,9 @@ class ValueIteration:
         val_pre = copy.copy(val_vector)
 
         for _n in self.org_graph._graph.nodes():
+            if self.prior_val_vector is not None and _n in self.prior_val_vector.keys():
+                continue
+            
             _int_node = self.node_int_map[_n]
 
             if _n in self._accp_states and self.org_graph.get_state_w_attribute(_n, "player") == "eve":
@@ -608,8 +633,8 @@ class PermissiveValueIteration(ValueIteration):
     The solve() function is modified to store set (permissive) of optimal strategies. 
     """
 
-    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
-        super().__init__(game, competitive, int_val)
+    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True, prior_val_vector: Optional[dict] = None):
+        super().__init__(game, competitive, int_val, prior_val_vector)
     
 
     def _get_min_sys_val(self,  node: Union[str, tuple], pre_vec: ndarray) -> Union[List[str], None]:
@@ -734,8 +759,8 @@ class PermissiveValueIteration(ValueIteration):
 
 class HopefulPermissiveValueIteration(PermissiveValueIteration):
 
-    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True):
-        super().__init__(game, competitive, int_val)
+    def __init__(self, game: TwoPlayerGraph, competitive: bool = False, int_val: bool = True, prior_val_vector: Optional[dict] = None):
+        super().__init__(game, competitive, int_val, prior_val_vector)
         self._adv_val_vector: Optional[ndarray] = self._val_vector
         self._coop_val_vector: Optional[ndarray] = self._val_vector
     
@@ -959,8 +984,8 @@ class PermissiveCoopValueIteration(ValueIteration):
       
       See: "Synthesis of Maximally Permissive Strategies for LTLf Speciﬁcations", Shufang Zhu and G. D. Giacomo, IJCAI 22, for more details.  
     """
-    def __init__(self, game: TwoPlayerGraph, int_val: bool = True):
-        super().__init__(game=game, int_val=int_val, competitive=False)
+    def __init__(self, game: TwoPlayerGraph, int_val: bool = True, prior_val_vector: Optional[dict] = None):
+        super().__init__(game=game, int_val=int_val, competitive=False, prior_val_vector=prior_val_vector)
         self._sys_coop_opt_str_dict: Dict = defaultdict(lambda: -1)
 
     @property

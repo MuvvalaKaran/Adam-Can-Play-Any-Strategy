@@ -12,7 +12,7 @@ from copy import deepcopy
 from typing import Optional, Union, Dict, Tuple, Generator
 
 from .utls import NpEncoder
-from regret_synthesis_toolbox.src.graph import TwoPlayerGraph
+from regret_synthesis_toolbox.src.graph import TwoPlayerGraph, Graph
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -34,7 +34,7 @@ class InteractiveGraph():
     """
     
     @staticmethod
-    def visualize_game(game, source = None, depth_limit: Optional[int] = None, strategy: dict = None, value_dict: dict = None):
+    def visualize_game(game: Graph, source = None, depth_limit: Optional[int] = None, strategy: dict = None, value_dict: dict = None):
         """
          Main method to visualize the gam. We first run a DFS on the game graph and then construct a tree for the given depth limit. 
          Then, we dump the tree data to a json file and serve it over http using D3.js package.

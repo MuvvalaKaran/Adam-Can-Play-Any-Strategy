@@ -828,8 +828,10 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self._coop_optimal_sys_str: Dict[str, Union[str, Iterable]] = defaultdict(lambda: set())
         self._env_pending_region: set= set()
         self._sys_pending_region: set = set() 
-        self._hopeful_game: PermissiveValueIteration = False
+        self._safe_states: Set = set()
         self._safety_game: SafetyGame = None
+        self._hopeful_game: PermissiveValueIteration = False
+        self._safeadm_game: PermissiveCoopValueIteration = None
     
     @property
     def wcoop(self):
@@ -864,10 +866,17 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
     def hopeful_game(self):
         return self._hopeful_game
     
-
     @property
     def safety_game(self):
         return self._safety_game
+
+    @property
+    def safeadm_game(self):
+        return self._safeadm_game
+
+    @property
+    def safe_states(self):
+        return self._safe_states
 
 
 
@@ -987,7 +996,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
     
 
     @timer_decorator
-    def compute_coop_with_warm_start(self, safe_adm_game: TwoPlayerGraph):
+    def compute_coop_with_warm_start(self, safe_adm_game: TwoPlayerGraph) -> PermissiveCoopValueIteration:
         """
          Testing the new approach where we warm start the cooperative value iteration with Optimal Coop values from states in the Winning region. 
         """
@@ -995,12 +1004,134 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
 
         warm_start_coop_handle = PermissiveCoopValueIteration(game=safe_adm_game,
                                                               prior_val_vector=coop_values_in_win_region)
-        warm_start_coop_handle.solve(extract_strategy=True)
+        warm_start_coop_handle.solve(debug=False, plot=False, extract_strategy=True)
 
         return warm_start_coop_handle
-        
-        
     
+    @timer_decorator
+    def play_safety_game(self) -> Set:
+        """
+         Compute the Safe strategies for the Sys player and return the set of safe states
+        """
+        print("Computing Safety strategy")
+        # start = time.time()
+        safe_states: set = self.pending_region.union(self.winning_region)
+        self._safety_game = SafetyGame(game=self.game, target_states=safe_states, debug=self.debug, sanity_check=False)
+        self._safety_game.reachability_solver()
+        
+        # compute set of unsafe sys states after playing the safety game
+        # all_sys_nodes: set = set()
+        # for i in self.game._graph.nodes():
+        #     if self.game.get_state_w_attribute(i, 'player') == 'eve':
+        #         all_sys_nodes.add(i)
+        all_sys_nodes = {i for i in self.game._graph.nodes() if self.game.get_state_w_attribute(i, 'player') == 'eve'}
+        self._safe_states = self._safety_game.sys_str.keys()
+        unsafe_states = all_sys_nodes.difference(self._safe_states)
+        print("Done Computing Safety strategy")
+
+        return unsafe_states
+
+
+    def compute_safe_adm_strategy(self, plot: bool = False):
+        """
+         Compute SAdm strategy
+          1. play safety game
+          2. Prune out unsafe actions, losing region and unsafe states
+          3. Play permissive min-min game to compute cVals
+          4. Construct SAdm - safe strategy that choose actions minimum cVal at the nexr state.
+          5. If init state in safe game, break else compute hopeful strategies. 
+        """
+        # play safety game
+        unsafe_states = self.play_safety_game()
+        safeadm_game: TwoPlayerGraph = deepcopy(self.game)
+        safeadm_game._graph.remove_nodes_from(unsafe_states)
+        
+        # remove edges that are neither safe nor reachable admissible 
+        sys_edges_to_rm = set()
+        for curr_state, succ_state in self._safety_game.sys_str.items():
+            assert safeadm_game.get_state_w_attribute(curr_state, "player") == "eve", "[Error] Trying to remove unsafe edges from Eve's state."
+            bad_succ: set =  set(self.game._graph.successors(curr_state)).difference(succ_state)
+            assert bad_succ != succ_state, "[Error], removing all successor state(s). This should NOT happen! FIX THIS!!!"
+            for bs in bad_succ:
+                sys_edges_to_rm.add((curr_state, bs))
+         # loop over to check if there are env state with no sucessors, if so remove them.
+        safeadm_game._graph.remove_edges_from(sys_edges_to_rm)
+
+        # after removing some sys states, there might exist Env states that do not transition to any Sys states. Need ot remove those too
+        env_state_to_rm = set()
+        for s in safeadm_game._graph.nodes():
+            if safeadm_game.get_state_w_attribute(s, "player") == "adam" and len(list(safeadm_game._graph.successors(s))) == 0:
+                env_state_to_rm.add(s)
+        safeadm_game._graph.remove_nodes_from(env_state_to_rm)
+        start = time.time()
+        safe_adm_handle = self.compute_coop_with_warm_start(safe_adm_game=safeadm_game)
+        stop = time.time()
+        print(f"******************** Safe Coop Computation time: {stop - start} ********************")
+
+        # Construct SAdm - safe strategy that choose actions minimum cVal at the nexr state.
+        for sys_state, succ_states in safe_adm_handle.sys_str_dict.items():
+            assert safeadm_game.get_state_w_attribute(sys_state, "player") == "eve", "[Error] Trying to add SAdm strategy from Eve's state."
+            succ_vals = [(succ, safe_adm_handle.state_value_dict.get(succ)) for succ in succ_states]
+            _, min_val = min(succ_vals, key=operator.itemgetter(1))
+            # self._safe_adm_str[sys_state] = [(state, state_val) for state, state_val in succ_vals if min_val == state_val]
+            self._safe_adm_str[sys_state] = [state for state, state_val in succ_vals if min_val == state_val]
+
+        self._coop_winning_state_values = safe_adm_handle.state_value_dict
+        self._safeadm_game = safe_adm_handle
+        
+        return unsafe_states
+    
+
+    def compute_hopeful_strategies(self, plot: bool = False):
+        """
+         Compute Hopeful strategy for the Sys player.
+        """
+        print("Computing Hopeful strategy")
+        hopeful_sys_state: set = set()
+        for state in self.sys_pending_region:
+            if self._safeadm_game.sys_str_dict.get(state, None) is None:
+                hopeful_sys_state.add(state)
+        
+        # create copy only if you are plotting.
+        start = time.time()
+        # hopeful_game: TwoPlayerGraph = deepcopy(self.game) if plot else self.game 
+        hopeful_game: TwoPlayerGraph = deepcopy(self.game) # if plot else self.game 
+        env_edges_to_rm = set()
+        # remove hopeless edges - env winning str such that successor is in losing region
+        for state, succ_state in self._safety_game.env_str.items():
+            if state in self.pending_region and succ_state in self.losing_region:
+                assert hopeful_game.get_state_w_attribute(state, "player") == "adam", "[Error] Removing hopeless edge(s) from Sys's state."
+                env_edges_to_rm.add((state, succ_state))
+                
+        hopeful_game._graph.remove_edges_from(env_edges_to_rm)
+        
+        # remove non-admissble sys edges from Pending region to Losing region
+        sys_edges_to_rm = set()
+        for state in self.sys_pending_region:
+            for succ_state in self.game._graph.successors(state):
+                if succ_state in self.losing_region:
+                    sys_edges_to_rm.add((state, succ_state))
+        
+        hopeful_game._graph.remove_edges_from(sys_edges_to_rm)
+
+        # play hopeful game - we could maybe speed this be using Values from previous Min-Max VI
+        hope_game_handle: PermissiveValueIteration = PermissiveValueIteration(game=hopeful_game, competitive=True)
+        hope_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        for s in hopeful_sys_state:
+            if hope_game_handle.sys_str_dict.get(s):
+                self._hopeful_adm_str[s] = hope_game_handle.sys_str_dict[s]
+            else:
+                # if aVal(v') = inf then all actions s.t Sys player stays in pending/ go to winning region
+                # are hopeful admissible
+                self._hopeful_adm_str[s] = list(hopeful_game._graph.successors(s))
+        
+        stop = time.time()
+        print(f"******************** Hope-Admissible Computation time: {stop - start} ********************")
+        self._hopeful_game = hope_game_handle
+
+        # when hope-adm is same adm then FOR ROLLOUT purposes we can play one of the cooperative winning strategy.
+        # cooperative winning strategy is non-deferring strategy and as such will ensure reaching goal state as long as Env cooperates
+        self._sys_adm_str = {**self._hopeful_adm_str, **self._safe_adm_str, **self.wcoop}
 
     def compute_adm_strategies(self, plot: bool = False, plot_interactive_graph: bool = False) -> None:
         """
@@ -1018,6 +1149,9 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             5.2. In pending region, Sys states that have safe-adm  will play that str else they will play hopeful-adm.
             5.3 In Winning region, Sys will play Wcoop as they are winning and admissible.
         """
+        # Setup
+        self._play_hopeful_game = True
+        
         # get permissive cooperative winning strategies and optimal cooperative values 
         print("Computing Cooperative Winning strategy")
         start = time.time()
@@ -1043,140 +1177,28 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         if self.is_winning():
             self._sys_adm_str = self.wcoop
             return None
-
-        # Compute SAdm strategy
-        # 1. play safety game
-        # 2. Prune out unsafe actions, losing region and unsafe states
-        # 3. Play permissive min-min game to compute cVals
-        # 4. Construct SAdm - safe strategy that choose actions minimum cVal at the nexr state.
-        # 5. If init state in safe game, break else compute hopeful strategies. 
-        # play safety game
-        print("Computing Safety strategy")
-        start = time.time()
-        safe_states: set = self.pending_region.union(self.winning_region)
-        safety_handle = SafetyGame(game=self.game, target_states=safe_states, debug=self.debug, sanity_check=False)
-        safety_handle.reachability_solver()
         
-        # compute set of unsafe sys states from after playing the safety game
-        all_sys_nodes: set = set()
-        for i in self.game._graph.nodes():
-            if self.game.get_state_w_attribute(i, 'player') == 'eve':
-                all_sys_nodes.add(i)
-        unsafe_states = all_sys_nodes.difference(safety_handle.sys_str.keys())
-        safeadm_game: TwoPlayerGraph = deepcopy(self.game)
-        safeadm_game._graph.remove_nodes_from(unsafe_states)
-        
-        # remove edges that are neither safe nor reachable admissible 
-        sys_edges_to_rm = set()
-        for curr_state, succ_state in safety_handle.sys_str.items():
-            assert safeadm_game.get_state_w_attribute(curr_state, "player") == "eve", "[Error] Trying to remove unsafe edges from Eve's state."
-            bad_succ: set =  set(self.game._graph.successors(curr_state)).difference(succ_state)
-            assert bad_succ != succ_state, "[Error], removing all successor state(s). This should NOT happen! FIX THIS!!!"
-            for bs in bad_succ:
-                sys_edges_to_rm.add((curr_state, bs))
-         # loop over to check if there are env state with no sucessors, if so remove them.
-        safeadm_game._graph.remove_edges_from(sys_edges_to_rm)
-        
-        # after removing some sys states, there might exist Env states that do not transition to any Sys states. Need ot remove those too
-        env_state_to_rm = set()
-        for s in safeadm_game._graph.nodes():
-            if safeadm_game.get_state_w_attribute(s, "player") == "adam" and len(list(safeadm_game._graph.successors(s))) == 0:
-                env_state_to_rm.add(s)
-        safeadm_game._graph.remove_nodes_from(env_state_to_rm)
-        start = time.time()
-        safe_adm_handle = PermissiveCoopValueIteration(game=safeadm_game)
-        safe_adm_handle.solve(debug=False, plot=plot, extract_strategy=True)
-        stop = time.time()
-        print(f"******************** Safe Coop Computation time: {stop - start} ********************")
-
-        self._play_hopeful_game = True
-        if self.game_init_states[0][0] not in unsafe_states and safe_adm_handle.is_winning():
+        unsafe_states = self.compute_safe_adm_strategy(plot=False)
+        if self.game_init_states[0][0] not in unsafe_states and self._safeadm_game.is_winning():
             print("SAdm Strategy from Initial state exists!!!")
             self._play_hopeful_game = False
         elif self.game_init_states[0][0] in unsafe_states:
             print("SAdm Strategy from Initial state does NOT exists!!! :()")
         
-        
-        # Construct SAdm - safe strategy that choose actions minimum cVal at the nexr state.
-        for sys_state, succ_states in safe_adm_handle.sys_str_dict.items():
-            assert safeadm_game.get_state_w_attribute(sys_state, "player") == "eve", "[Error] Trying to add SAdm strategy from Eve's state."
-            succ_vals = [(succ, safe_adm_handle.state_value_dict.get(succ)) for succ in succ_states]
-            _, min_val = min(succ_vals, key=operator.itemgetter(1))
-            # self._safe_adm_str[sys_state] = [(state, state_val) for state, state_val in succ_vals if min_val == state_val]
-            self._safe_adm_str[sys_state] = [state for state, state_val in succ_vals if min_val == state_val]
-
-        self._coop_winning_state_values = safe_adm_handle.state_value_dict
-        self._safety_game = safe_adm_handle
         stop = time.time()
         print(f"******************** Safe-Admissible Computation time: {stop - start} ********************")
 
-        ################# TESTING WARMSTARTING
-        warm_start_coop_handle = self.compute_coop_with_warm_start(safe_adm_game=safeadm_game)
-        assert warm_start_coop_handle.state_value_dict == safe_adm_handle.state_value_dict, \
-            "[Error] The state values computed using Warm Started value iteration and normal value iteration are not the same. Please check your code."
-        assert warm_start_coop_handle.sys_str_dict == safe_adm_handle.sys_str_dict, \
-            "[Error] The strategies computed using Warm Started value iteration and normal value iteration are not the same. Please check your code."  
-        
         # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str
         self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}
         if plot_interactive_graph:
-            InteractiveGraph.visualize_game(game=safeadm_game,
+            InteractiveGraph.visualize_game(game=self._safeadm_game.org_graph,
                                             strategy=self._sys_adm_str,
-                                            value_dict=safe_adm_handle.state_value_dict,
+                                            value_dict=self._safeadm_game.state_value_dict,
                                             source=init_state,
                                             depth_limit=30)
 
         if self._play_hopeful_game:
-            print("Computing Hopeful strategy")
-            hopeful_sys_state: set = set()
-            for state in self.sys_pending_region:
-                if safe_adm_handle.sys_str_dict.get(state, None) is None:
-                    hopeful_sys_state.add(state)
-            
-            # create copy only if you are plotting.
-            start = time.time()
-            # hopeful_game: TwoPlayerGraph = deepcopy(self.game) if plot else self.game 
-            hopeful_game: TwoPlayerGraph = deepcopy(self.game) # if plot else self.game 
-            env_edges_to_rm = set()
-            # remove hopeless edges - env winning str such that successor is in losing region
-            for state, succ_state in safety_handle.env_str.items():
-                if state in self.pending_region and succ_state in self.losing_region:
-                    assert hopeful_game.get_state_w_attribute(state, "player") == "adam", "[Error] Removing hopeless edge(s) from Sys's state."
-                    env_edges_to_rm.add((state, succ_state))
-                    
-            hopeful_game._graph.remove_edges_from(env_edges_to_rm)
-            
-            # remove non-admissble sys edges from Pending region to Losing region
-            sys_edges_to_rm = set()
-            for state in self.sys_pending_region:
-                for succ_state in self.game._graph.successors(state):
-                    if succ_state in self.losing_region:
-                        sys_edges_to_rm.add((state, succ_state))
-            
-            hopeful_game._graph.remove_edges_from(sys_edges_to_rm)
-
-            # play hopeful game - we could maybe speed this be using Values from previous Min-Max VI
-            hope_game_handle: PermissiveValueIteration = PermissiveValueIteration(game=hopeful_game, competitive=True)
-            hope_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
-            for s in hopeful_sys_state:
-                if hope_game_handle.sys_str_dict.get(s):
-                    self._hopeful_adm_str[s] = hope_game_handle.sys_str_dict[s]
-                else:
-                    # if aVal(v') = inf then all actions s.t Sys player stays in pending/ go to winning region
-                    # are hopeful admissible
-                    self._hopeful_adm_str[s] = list(hopeful_game._graph.successors(s))
-            
-            stop = time.time()
-            print(f"******************** Hope-Admissible Computation time: {stop - start} ********************")
-            self._hopeful_game = hope_game_handle
-
-            # when hope-adm is same adm then FOR ROLLOUT purposes we can play one of the cooperative winning strategy.
-            # cooperative winning strategy is non-deferring strategy and as such will ensure reaching goal state as long as Env cooperates
-            self._sys_adm_str = {**self._hopeful_adm_str, **self._safe_adm_str, **self.wcoop}
-        
-        ### sanity check for F(win) - formula to check if robot every reaches a losing region?
-        # self.helper_func_tic_tac_toe(hopeful_game_handle=hope_game_handle)
-        # sys.exit(-1)
+            self.compute_hopeful_strategies(plot=plot)
 
         if plot:
             self.add_str_flag()

@@ -205,7 +205,6 @@ class AbstractBestEffortReachSyn(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-
 class QuantitativeNaiveAdmissible(AbstractBestEffortReachSyn):
     """
      Overrides baseclass to construct a tree up until a pyaoff is reached. 
@@ -832,6 +831,36 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         self._safety_game: SafetyGame = None
         self._hopeful_game: PermissiveValueIteration = False
         self._safeadm_game: PermissiveCoopValueIteration = None
+        self._logger = self.AdmRatLogger()
+    
+    class AdmRatLogger():
+        """
+         A class to log the progress of the algorithm. 
+        """
+        def __init__(self):
+            self.coop_time: Optional[float] = None
+            self.wco_time: Optional[float] = None
+            self.wcoop_time: Optional[float] = None
+            self.safety_time: Optional[float] = None
+            self.safe_coop_time: Optional[float] = None
+            self.safeadm_time: Optional[float] = None
+            self.hopeadm_time: Optional[float] = None
+        
+        def package_data(self) -> Dict[str, Optional[float]]:
+            """
+             A helper function to package the data for logging
+            """
+            data = {
+                'coop_time': self.coop_time,
+                'wco_time': self.wco_time,
+                'wcoop_time': self.wcoop_time,
+                'safety_time': self.safety_time,
+                'safe_coop_time': self.safe_coop_time,
+                'safeadm_time': self.safeadm_time,
+                'hopeadm_time': self.hopeadm_time
+            }
+            
+            return data 
     
     @property
     def wcoop(self):
@@ -910,8 +939,11 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         """
          Implement method to run the Value Iteration code
         """
+        start = time.time()
         reachability_game_handle = PermissiveValueIteration(game=self.game, competitive=True)
         reachability_game_handle.solve(debug=False, plot=plot, extract_strategy=True)
+        stop = time.time()
+        self._logger.wco_time = stop - start
         self._sys_winning_str = reachability_game_handle.sys_str_dict
         self._env_winning_str = reachability_game_handle.env_str_dict
         self._winning_state_values = reachability_game_handle.state_value_dict
@@ -1014,11 +1046,12 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
          Compute the Safe strategies for the Sys player and return the set of safe states
         """
         print("Computing Safety strategy")
-        # start = time.time()
+        start = time.time()
         safe_states: set = self.pending_region.union(self.winning_region)
         self._safety_game = SafetyGame(game=self.game, target_states=safe_states, debug=self.debug, sanity_check=False)
         self._safety_game.reachability_solver()
-        
+        stop = time.time()
+        self._logger.safety_time = stop - start
         # compute set of unsafe sys states after playing the safety game
         # all_sys_nodes: set = set()
         # for i in self.game._graph.nodes():
@@ -1054,7 +1087,6 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             assert bad_succ != succ_state, "[Error], removing all successor state(s). This should NOT happen! FIX THIS!!!"
             for bs in bad_succ:
                 sys_edges_to_rm.add((curr_state, bs))
-         # loop over to check if there are env state with no sucessors, if so remove them.
         safeadm_game._graph.remove_edges_from(sys_edges_to_rm)
 
         # after removing some sys states, there might exist Env states that do not transition to any Sys states. Need ot remove those too
@@ -1067,6 +1099,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         safe_adm_handle = self.compute_coop_with_warm_start(safe_adm_game=safeadm_game)
         stop = time.time()
         print(f"******************** Safe Coop Computation time: {stop - start} ********************")
+        self._logger.safe_coop_time = stop - start
 
         # Construct SAdm - safe strategy that choose actions minimum cVal at the nexr state.
         for sys_state, succ_states in safe_adm_handle.sys_str_dict.items():
@@ -1127,6 +1160,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         
         stop = time.time()
         print(f"******************** Hope-Admissible Computation time: {stop - start} ********************")
+        self._logger.hopeadm_time = stop - start
         self._hopeful_game = hope_game_handle
 
         # when hope-adm is same adm then FOR ROLLOUT purposes we can play one of the cooperative winning strategy.
@@ -1157,6 +1191,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         start = time.time()
         self.compute_cooperative_winning_strategy(plot=False)
         stop = time.time()
+        self._logger.coop_time = stop - start
         print(f"******************** Co-op Computation time: {stop - start} ********************")
 
         # break if init state belongs to losing region
@@ -1167,10 +1202,11 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         
         # get winning strategies
         print("Computing Winning strategy")
-        start = time.time()
         self.compute_winning_strategies(plot=False)
+        start = time.time()
         self.compute_wcoop_strategies()
         stop = time.time()
+        self._logger.wcoop_time = stop - start
         print(f"******************** WCo-op Computation time: {stop - start} ********************")
 
         # break if winning str exists
@@ -1178,14 +1214,16 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
             self._sys_adm_str = self.wcoop
             return None
         
+        start = time.time()
         unsafe_states = self.compute_safe_adm_strategy(plot=False)
+        stop = time.time()
+        self._logger.safeadm_time = stop - start
         if self.game_init_states[0][0] not in unsafe_states and self._safeadm_game.is_winning():
             print("SAdm Strategy from Initial state exists!!!")
             self._play_hopeful_game = False
         elif self.game_init_states[0][0] in unsafe_states:
             print("SAdm Strategy from Initial state does NOT exists!!! :()")
         
-        stop = time.time()
         print(f"******************** Safe-Admissible Computation time: {stop - start} ********************")
 
         # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str

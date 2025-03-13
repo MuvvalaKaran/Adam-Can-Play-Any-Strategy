@@ -1002,7 +1002,7 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         
     
 
-    def compute_adm_strategies(self, plot: bool = False) -> None:
+    def compute_adm_strategies(self, plot: bool = False, plot_interactive_graph: bool = False) -> None:
         """
          Main method that implements computation of Admissible strategies. 
 
@@ -1119,13 +1119,12 @@ class QuantiativeRefinedAdmissible(AbstractBestEffortReachSyn):
         
         # Stitch adm str - values from Sys winning str dict will overide the values from safe-adm str
         self._sys_adm_str = {**self._safe_adm_str, **self.wcoop}
-        # if not self._play_hopeful_game:
-        #     InteractiveGraph.visualize_game(game=safeadm_game,
-        #                                     strategy=self._sys_adm_str,
-        #                                     value_dict=safe_adm_handle.state_value_dict,
-        #                                     source=init_state,
-        #                                     # source=(('sys', ((7, 5), 'right'), ((8, 2), 'right')), 'q1'),
-        #                                     depth_limit=30)
+        if plot_interactive_graph:
+            InteractiveGraph.visualize_game(game=safeadm_game,
+                                            strategy=self._sys_adm_str,
+                                            value_dict=safe_adm_handle.state_value_dict,
+                                            source=init_state,
+                                            depth_limit=30)
 
         if self._play_hopeful_game:
             print("Computing Hopeful strategy")
